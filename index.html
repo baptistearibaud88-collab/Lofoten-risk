@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lofoten Traverse</title>
+<meta name="description" content="Traversée autonome des Lofoten, 14–22 juin 2026 : la trace, les campements et les sommets en 3D.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="map" aria-label="Carte 3D de la traversée"></div>
+
+<header class="title-block">
+  <p class="eyebrow">Lofoten · Norvège · 14–22 juin 2026</p>
+  <h1>Napp → Å, en autonomie</h1>
+  <p class="lede">Neuf jours de traversée sous le soleil de minuit. Chaque tente sur la carte est une nuit : touche-la pour voir comment elle s'est passée.</p>
+  <dl class="stats" id="stats"></dl>
+</header>
+
+<div class="controls" role="toolbar" aria-label="Affichage de la carte">
+  <button type="button" id="btn-overview">Vue d'ensemble</button>
+  <button type="button" id="btn-relief" aria-pressed="true">Relief 3D</button>
+  <button type="button" id="btn-base">Fond : satellite</button>
+</div>
+
+<aside class="panel" id="panel" aria-live="polite">
+  <div class="panel-inner" id="panel-inner"></div>
+</aside>
+
+<div class="legend" aria-label="Légende">
+  <span><i class="sw sw-avec"></i>avec le sac</span>
+  <span><i class="sw sw-sans"></i>sans sac (trail)</span>
+  <span><i class="sw sw-camp"></i>campement</span>
+  <span><i class="sw sw-peak"></i>sommet</span>
+</div>
+
+<div class="map-error" id="map-error" hidden>
+  La carte n'a pas pu se charger. Elle a besoin d'une connexion internet pour récupérer le fond de carte et le relief.
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
