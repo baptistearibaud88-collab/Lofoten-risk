@@ -6,7 +6,7 @@ Traversée autonome des îles Lofoten (Norvège), de Napp à Å, du 14 au 22 jui
 
 ## La carte
 
-La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace rouge marchée avec le sac, trace bleue en trail sans sac, campements et sommets. Un clic sur un campement fait voler la caméra jusqu'à lui et affiche la nuit : sommeil, fréquence cardiaque au repos, HRV, Body Battery, météo corrigée de l'altitude, poids estimé du sac le lendemain.
+La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu clair marchée avec le sac, trace rouge en trail sans sac, campements en bleu foncé, campements et sommets. Un clic sur un campement fait voler la caméra jusqu'à lui et affiche la nuit : sommeil, fréquence cardiaque au repos, HRV, Body Battery, météo corrigée de l'altitude, poids estimé du sac le lendemain.
 
 ## En cours
 

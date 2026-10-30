@@ -9,7 +9,10 @@
   --mist: #9fb1bf;         /* secondary text */
   --dnt: #e0472f;          /* DNT trail-marker red: walking with the pack */
   --glacier: #6fd3e6;      /* glacier water: trail runs without the pack */
-  --sun: #f2b544;          /* midnight sun: campsites */
+  --sun: #f2b544;          /* midnight sun: highlights */
+  --pack: #8fd0f5;         /* light blue: walking with the pack */
+  --trail: #e0472f;        /* DNT trail-marker red: trail runs without the pack */
+  --camp: #1d3f8f;         /* deep blue: campsites */
   --font-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
   --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-data: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -127,9 +130,9 @@ button:focus-visible, .marker:focus-visible, .camp-row:focus-visible {
 }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
-.sw-avec { background: var(--dnt); }
-.sw-sans { background: var(--glacier); }
-.sw-camp { width: 10px; height: 10px; border-radius: 50%; background: var(--sun); }
+.sw-avec { background: var(--pack); }
+.sw-sans { background: var(--trail); }
+.sw-camp { width: 10px; height: 10px; border-radius: 50%; background: var(--camp); box-shadow: 0 0 0 1.5px var(--snow); }
 .sw-peak { width: 0; height: 0; border-radius: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--snow); }
 
 /* ---------- panel ---------- */
@@ -236,10 +239,10 @@ button:focus-visible, .marker:focus-visible, .camp-row:focus-visible {
 .m-camp {
   width: 26px; height: 26px; border-radius: 50%;
   display: grid; place-items: center;
-  background: var(--sun);
-  color: var(--night);
+  background: var(--camp);
+  color: var(--snow);
   font: 700 13px/1 var(--font-data);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sun) 35%, transparent), 0 2px 8px #0008;
+  box-shadow: 0 0 0 2px var(--snow), 0 2px 8px #0008;
   transition: transform .15s ease;
 }
 .m-camp:hover, .m-camp.active { transform: scale(1.18); }

@@ -51,7 +51,7 @@
     setActive(null);
     panel.replaceChildren(
       el('h2', null, 'Neuf nuits, sept campements'),
-      el('p', { class: 'note' }, 'La trace rouge est marchée avec le gros sac, la bleue en trail sans sac. Choisis un campement pour voler jusqu’à lui et lire sa nuit : sommeil, cœur, météo, poids du sac le lendemain.'),
+      el('p', { class: 'note' }, 'La trace bleu clair est marchée avec le gros sac, la rouge en trail sans sac. Choisis un campement pour voler jusqu’à lui et lire sa nuit : sommeil, cœur, météo, poids du sac le lendemain.'),
       el('h3', null, 'Campements'),
       el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
         el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
@@ -209,7 +209,7 @@
       paint: { 'line-color': '#0b1118', 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 4, 14, 8], 'line-opacity': 0.75 } });
     map.addLayer({ id: 'trace', type: 'line', source: 'trace',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': ['match', ['get', 'sac'], 'avec', '#e0472f', '#6fd3e6'],
+      paint: { 'line-color': ['match', ['get', 'sac'], 'avec', '#8fd0f5', '#e0472f'],
         'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 4.5] } });
 
     map.on('click', 'trace', e => {
