@@ -7,12 +7,19 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  const COL = { pack: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa' };
+  const COL = { pack: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#2ec4c6' };
   const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   /* A summit's outing = the trail activities of that day that lead to it.
      Reinebringen and Helvete: the whole day from Munkebu, not only from Reine. */
   const SUMMIT_OUTINGS = { reinebringen_helvete: ['munkebu_reine', 'reinebringen_helvete'] };
+
+  /* Boat crossings that the watch did not record, drawn as a circular arc over the sea
+     between the end of one activity and the start of the next.
+     side: which side of the straight line the arc bulges to (left / right of travel);
+     bulge: arc height as a share of the straight distance. */
+  const BOATS = { 'horseid_kirkefjord>vindstad_bunes': { side: 'left', bulge: 0.32, label: 'Bateau Kirkefjord → Vindstad' } };
+
 
   /* Camera per kind of replay. zoom/pitch: how far and how high the drone flies.
      W: half-length (km) of the chord used for the heading, S: extra smoothing (km).
@@ -56,22 +63,63 @@
 
   /* A sequence = activities glued in order, with cumulative counters. Gaps between
      activities (boat, unrecorded links) are skipped: the line breaks there. */
+  function boatArc(A, B, side, bulge, n = 48) {
+    // circular arc in a local metric frame (x east, y north, metres)
+    const k = Math.cos(A[1] * Math.PI / 180) * 111320, m = 110540;
+    const bx = (B[0] - A[0]) * k, by = (B[1] - A[1]) * m, c = Math.hypot(bx, by);
+    const h = Math.max(1, bulge * c), r = (c * c / 4 + h * h) / (2 * h);
+    const ux = bx / c, uy = by / c, nx = side === 'left' ? -uy : uy, ny = side === 'left' ? ux : -ux;
+    const mx = bx / 2, my = by / 2, cx = mx - nx * (r - h), cy = my - ny * (r - h);
+    let a0 = Math.atan2(-cy, -cx), a1 = Math.atan2(by - cy, bx - cx);
+    let sweep = a1 - a0;
+    const am = Math.atan2(my + ny * h - cy, mx + nx * h - cx);   // the arc must pass through the bulge point
+    const dm = ((am - a0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+    sweep = ((sweep % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    if (dm > sweep) sweep -= 2 * Math.PI;
+    const out = [];
+    for (let i = 0; i <= n; i++) {
+      const t = a0 + sweep * i / n;
+      out.push([A[0] + (cx + r * Math.cos(t)) / k, A[1] + (cy + r * Math.sin(t)) / m]);
+    }
+    out[0] = [A[0], A[1]]; out[n] = [B[0], B[1]];
+    return out;
+  }
+  const arcKm = arc => arc.reduce((d, q, i) => i ? d + Math.hypot((q[0] - arc[i - 1][0]) * Math.cos(q[1] * Math.PI / 180) * 111.32, (q[1] - arc[i - 1][1]) * 110.54) : 0, 0);
+
+  /* p.km = animation axis (walking + boat), p.wk = walking distance only. sac: 1 pack, 0 trail, 2 boat. */
   function buildSeq(ids) {
     const pts = [];
-    let km = 0, mov = 0, kcal = 0, dplus = 0, prevAlt = null;
-    ids.forEach((id, seg) => {
+    let km = 0, wk = 0, mov = 0, kcal = 0, dplus = 0, prevAlt = null, seg = 0;
+    ids.forEach((id, j0) => {
       const a = ACTS[id];
+      const boat = j0 && BOATS[`${ids[j0 - 1]}>${id}`];
+      if (boat) {
+        const prev = pts[pts.length - 1], first = a.pts[0];
+        const arc = boatArc([prev.lon, prev.lat], [first[0], first[1]], boat.side, boat.bulge);
+        seg++;
+        arc.forEach((q, i) => {
+          if (i) km += Math.hypot((q[0] - arc[i - 1][0]) * Math.cos(q[1] * Math.PI / 180) * 111.32, (q[1] - arc[i - 1][1]) * 110.54);
+          pts.push({ lon: q[0], lat: q[1], alt: 0, km, wk, mov, hr: null, kcal, dplus, heure: 'bateau', sac: 2, seg, act: boat.label, day: a.day, id: 'boat' });
+        });
+        seg++;
+      } else if (j0) seg++;
       a.pts.forEach((p, j) => {
-        km += j ? p[3] : 0; mov += j ? p[4] : 0; kcal += j ? p[6] : 0;
+        km += j ? p[3] : 0; wk += j ? p[3] : 0; mov += j ? p[4] : 0; kcal += j ? p[6] : 0;
         if (j && prevAlt != null && p[2] > prevAlt) dplus += p[2] - prevAlt;
         prevAlt = p[2];
-        pts.push({ lon: p[0], lat: p[1], alt: p[2], km, mov, hr: p[5], kcal, dplus, heure: p[7],
-          sac: a.sac === 'avec' ? 1 : 0, seg, act: a.name, day: a.day });
+        pts.push({ lon: p[0], lat: p[1], alt: p[2], km, wk, mov, hr: p[5], kcal, dplus, heure: p[7],
+          sac: a.sac === 'avec' ? 1 : 0, seg, act: a.name, day: a.day, id: a.id });
       });
       prevAlt = null;
     });
     return pts;
   }
+  /* static boat arcs for the overview trace */
+  const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
+    const [x, y] = key.split('>'), A = ACTS[x].pts[ACTS[x].pts.length - 1], B = ACTS[y].pts[0];
+    const arc = boatArc([A[0], A[1]], [B[0], B[1]], b.side, b.bulge);
+    return { type: 'Feature', properties: { id: `boat:${key}`, sac: 'bateau', name: b.label, km: arcKm(arc) }, geometry: { type: 'LineString', coordinates: arc } };
+  });
   function idxAt(pts, km) {          // last point at or before km
     let lo = 0, hi = pts.length - 1;
     while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (pts[mid].km <= km) lo = mid; else hi = mid - 1; }
@@ -82,6 +130,40 @@
     if (b === a || b.seg !== a.seg || b.km <= a.km) return { lon: a.lon, lat: a.lat, sac: a.sac };
     const f = Math.min(1, Math.max(0, (km - a.km) / (b.km - a.km)));
     return { lon: a.lon + (b.lon - a.lon) * f, lat: a.lat + (b.lat - a.lat) * f, sac: a.sac };
+  }
+  const metres = (a, b) => Math.hypot((a.lon - b.lon) * Math.cos(a.lat * Math.PI / 180) * 111320, (a.lat - b.lat) * 110540);
+
+  /* Checkpoints of a sequence: summits reached (middle of an outing) and camps
+     (leaving in the morning, arriving in the evening). Each fires once as the replay passes it. */
+  function checkpoints(pts) {
+    const out = [];
+    const ids = new Set(pts.map(p => p.id));
+    T.summits.forEach(s => {
+      if (!ids.has(s.activite)) return;
+      let best = -1, bd = Infinity;
+      pts.forEach((p, i) => { if (p.id !== s.activite) return; const d = metres(p, s); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0) out.push({ km: pts[best].km, type: 'summit', s });
+    });
+    // camps: leaving in the morning (first activity of the day, or first one with the pack)
+    // and arriving in the evening (last activity with the pack, else the last one if it ends near the camp)
+    const span = new Map();
+    pts.forEach((p, i) => { if (p.sac === 2) return; const r = span.get(p.id); if (!r) span.set(p.id, { f: i, l: i }); else r.l = i; });
+    const campOfNight = nextDay => camps.find(c => c.nights.some(n => n.next_day === nextDay));
+    const near = (q, c) => metres({ lon: q[0], lat: q[1] }, c) < 1000;
+    const seen = new Set();
+    const add = (i, c) => { const key = `${c.id}@${i}`; if (!seen.has(key)) { seen.add(key); out.push({ km: pts[i].km, type: 'camp', c }); } };
+    for (let d = 1; d <= T.stats.days; d++) {
+      const acts = T.acts.filter(a => a.day === d), avec = acts.filter(a => a.sac === 'avec');
+      if (!acts.length) continue;
+      const dep = campOfNight(d), arr = campOfNight(d + 1);
+      if (dep) [acts[0], avec[0]].forEach(a => {
+        const r = a && span.get(a.id);
+        if (r && (a.sac === 'avec' || near(a.pts[0], dep))) add(r.f, dep);
+      });
+      const last = avec.length ? avec[avec.length - 1] : acts[acts.length - 1], r = span.get(last.id);
+      if (arr && r && (last.sac === 'avec' || near(last.pts[last.pts.length - 1], arr))) add(r.l, arr);
+    }
+    return out.sort((a, b) => a.km - b.km);
   }
   function movAt(pts, km) {
     const i = idxAt(pts, km), a = pts[i], b = pts[Math.min(i + 1, pts.length - 1)];
@@ -135,7 +217,9 @@
   const titleBox = document.getElementById('title');
   const markers = new Map();
   let map = null, popup = null, rubric = 'camps', inDetail = false;
-  let anim = null, lastLineDraw = 0;
+  let anim = null, lastLineDraw = 0, boatMarker = null;
+  const summitMarkers = new Map();
+  let fireCheckpoint = () => {};
   const tracks = new WeakMap();
   const ease = (dt, tau) => 1 - Math.exp(-dt / tau);   // frame-rate independent smoothing
 
@@ -230,7 +314,7 @@
               el('span', { class: 'camp-num num-day' }, `J${e.day}`),
               el('span', { class: 'stage-main' },
                 el('span', { class: 'camp-name' }, `${e.from} → ${e.to}`),
-                el('span', { class: 'stage-meta' }, `${nf(last.km, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}`))));
+                el('span', { class: 'stage-meta' }, `${nf(last.wk, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}${seq.some(p => p.sac === 2) ? ' · bateau' : ''}`))));
         })));
     }
     panel.replaceChildren(body,
@@ -322,7 +406,7 @@
       svg.append(svText({ x: L - 5, y: ya(f * aMax) + 3, class: 'axis', 'text-anchor': 'end' }, nf(f * aMax)));
     });
     [0, kmMax / 2, kmMax].forEach((k, j) =>
-      svg.append(svText({ x: x(k), y: H - 3, class: 'axis', 'text-anchor': j === 0 ? 'start' : j === 2 ? 'end' : 'middle' }, `${nf(k, kmMax < 20 ? 1 : 0)} km`)));
+      svg.append(svText({ x: x(k), y: H - 3, class: 'axis', 'text-anchor': j === 0 ? 'start' : j === 2 ? 'end' : 'middle' }, `${nf(pts[idxAt(pts, k)].wk, kmMax < 20 ? 1 : 0)} km`)));
     let area = `M${x(0)},${ya(0)}`, line = '';
     pts.forEach((p, k) => {
       area += `L${x(p.km).toFixed(1)},${ya(p.alt).toFixed(1)}`;
@@ -355,7 +439,10 @@
   }
 
   /* ---------- pace histogram: minutes per km, km by km (5 km bins for the whole traverse) ---------- */
-  function paceChart(pts, bin, onSeek) {
+  function paceChart(all, bin, onSeekKm) {
+    // work on walking km only: the boat is left out
+    const pts = all.filter(p => p.sac !== 2).map(p => ({ ...p, km: p.wk }));
+    const onSeek = wk => { const i = all.findIndex(p => p.sac !== 2 && p.wk >= wk); onSeekKm(i < 0 ? all[all.length - 1].km : all[i].km); };
     const kmMax = pts[pts.length - 1].km;
     const bins = [];
     for (let k0 = 0; k0 < kmMax - 1e-6; k0 += bin) {
@@ -393,7 +480,8 @@
     });
     const caption = el('p', { class: 'pace-now' }, '—');
     let curBin = -1;
-    function move(km) {
+    function move(animKm) {
+      const km = all[idxAt(all, animKm)].wk;
       let j = bins.findIndex(b => km < b.k1);
       if (j < 0) j = bins.length - 1;
       if (j === curBin) return;
@@ -422,16 +510,21 @@
       cnt('kcal', 'Calories', 'kcal'), cnt('heure', 'Heure'), cnt('hr', 'FC', 'bpm'));
     const where = opts.showWhere ? el('p', { class: 'where' }, '—') : null;
     const state = { km: 0, speed: 1, cam: 'drone' };
-    const seek = km => { state.km = km; render(km, true); };
+    const seek = km => { state.km = km; state.lastCk = km; render(km, true); };
+    const cps = checkpoints(pts);
     const chart = profileChart(pts, opts.marks, seek);
     const paces = paceChart(pts, opts.paceBin || 1, seek);
 
     function render(km, full) {
       const i = idxAt(pts, km), p = pts[i];
-      counters.km.textContent = nf(p.km, 1); counters.dplus.textContent = nf(p.dplus);
+      counters.km.textContent = nf(p.wk, 1); counters.dplus.textContent = nf(p.dplus);
       counters.mov.textContent = hms(p.mov); counters.kcal.textContent = nf(p.kcal);
       counters.heure.textContent = p.heure; counters.hr.textContent = nf(p.hr);
-      if (where) where.textContent = `J${p.day} · ${p.act}`;
+      if (where) where.textContent = p.sac === 2 ? p.act : `J${p.day} · ${p.act}`;
+      if (!full && state.lastCk != null) {
+        cps.forEach(c => { if (c.km > state.lastCk && c.km <= km) fireCheckpoint(c, opts.keepPopup); });
+        state.lastCk = km;
+      }
       chart.move(km, p.alt);
       paces.move(km);
       drawLine(pts, i, full);
@@ -450,6 +543,7 @@
     playBtn.addEventListener('click', () => {
       if (anim && anim.running) { anim.running = false; playBtn.textContent = '▶ Reprendre'; return; }
       if (state.km >= pts[pts.length - 1].km) state.km = 0;
+      state.lastCk = state.km === 0 ? -1 : state.km;
       startAnim(pts, state, opts.view, render, () => { playBtn.textContent = '↺ Rejouer'; opts.onEnd && opts.onEnd(); });
       playBtn.textContent = '❚❚ Pause';
     });
@@ -481,7 +575,7 @@
       el('p', { class: 'eyebrow-sm' }, `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`),
       el('h2', null, `${e.from} → ${e.to}`),
       el('dl', { class: 'kv' },
-        el('div', null, el('dt', null, 'Distance'), el('dd', null, nf(last.km, 1), el('small', null, ' km'))),
+        el('div', null, el('dt', null, 'Distance à pied'), el('dd', null, nf(last.wk, 1), el('small', null, ' km'))),
         el('div', null, el('dt', null, 'Dénivelé +'), el('dd', null, nf(last.dplus), el('small', null, ' m'))),
         el('div', null, el('dt', null, 'En mouvement'), el('dd', null, hms(last.mov))),
         el('div', null, el('dt', null, 'FC moyenne'), el('dd', null, nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), el('small', null, ' bpm'))),
@@ -517,7 +611,7 @@
     const hrs = pts.map(p => p.hr).filter(v => v != null);
     const d = day(s.heure.slice(0, 10));
     const several = ids.length > 1;
-    const pl = player(pts, { view: VIEW.summit, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+    const pl = player(pts, { view: VIEW.summit, keepPopup: true, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
       eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
       backButton('Tous les sommets', 'summits'),
@@ -532,7 +626,7 @@
         el('div', null, el('dt', null, 'D+ de la montée'), el('dd', null, nf(climbM), el('small', null, ' m'))),
         el('div', null, el('dt', null, 'Vitesse verticale'), el('dd', null, nf(climbM / Math.max(1 / 60, climbS / 3600)), el('small', null, ' m/h'))),
         el('div', null, el('dt', null, 'FC max (lissée)'), el('dd', null, nf(hrs.length ? Math.max(...hrs) : null), el('small', null, ' bpm'))),
-        el('div', null, el('dt', null, several ? 'Sortie du jour' : 'Sortie complète'), el('dd', null, nf(last.km, 1), el('small', null, ' km'))),
+        el('div', null, el('dt', null, several ? 'Sortie du jour' : 'Sortie complète'), el('dd', null, nf(last.wk, 1), el('small', null, ' km'))),
         el('div', null, el('dt', null, 'Calories'), el('dd', null, nf(last.kcal), el('small', null, ' kcal')))),
       el('h3', null, 'Rejouer la sortie'),
       ...pl.nodes);
@@ -549,7 +643,7 @@
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
       el('h2', null, 'Toute la traversée'),
-      el('p', { class: 'note' }, `Les ${nf(pts[pts.length - 1].km)} km dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.`),
+      el('p', { class: 'note' }, `Les ${nf(pts[pts.length - 1].wk)} km à pied dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.`),
       ...pl.nodes);
     panel.scrollTop = 0;
     overview();
@@ -611,19 +705,29 @@
       right: Math.round(vw - p.left) + 24,
     };
   }
+  /* camera framing: on wide screens the subject sits in the middle of the screen
+     (the bubbles are see-through); on phones, between the title and the bottom sheet */
+  const ZERO = { top: 0, bottom: 0, left: 0, right: 0 };
+  const centerPad = () => isPhone() ? padding() : ZERO;
+  const fitPad = () => isPhone() ? padding() : { top: 110, bottom: 70, left: 110, right: 110 };
+  const OVERVIEW_ZOOM_BONUS = 0.7;   // a bit closer than "everything fits": the island outlines stay readable
   function overview(instant) {
     if (!map) return;
-    map.fitBounds(bounds, { padding: padding(), pitch: 48, bearing: -18, duration: instant || reduceMotion ? 0 : 2400, essential: true });
+    const pad = isPhone() ? padding() : { top: 40, bottom: 40, left: 40, right: 40 };
+    const cam = map.cameraForBounds ? map.cameraForBounds(bounds, { padding: pad, bearing: -18 }) : null;
+    if (!cam) { map.fitBounds(bounds, { padding: pad, pitch: 48, bearing: -18, duration: instant || reduceMotion ? 0 : 2400, essential: true }); return; }
+    map.easeTo({ center: cam.center, zoom: cam.zoom + OVERVIEW_ZOOM_BONUS, pitch: 48, bearing: -18, padding: isPhone() ? pad : ZERO,
+      duration: instant || reduceMotion ? 0 : 2400, essential: true });
   }
   function fitPts(pts, maxZoom = 13.6) {
     if (!map) return;
     const b = new maplibregl.LngLatBounds();
     pts.forEach(p => b.extend([p.lon, p.lat]));
-    map.fitBounds(b, { padding: padding(), pitch: 52, bearing: -15, maxZoom, duration: reduceMotion ? 0 : 2200, essential: true });
+    map.fitBounds(b, { padding: fitPad(), pitch: 52, bearing: -15, maxZoom, duration: reduceMotion ? 0 : 2200, essential: true });
   }
   function flyToCamp(c) {
     if (!map) return;
-    map.flyTo({ center: [c.lon, c.lat], zoom: 13.2, pitch: 60, bearing: (c.id * 47) % 360 - 180, duration: reduceMotion ? 0 : 2800, essential: true, padding: padding() });
+    map.flyTo({ center: [c.lon, c.lat], zoom: 13.2, pitch: 60, bearing: (c.id * 47) % 360 - 180, duration: reduceMotion ? 0 : 2800, essential: true, padding: centerPad() });
   }
 
   /* dim the whole trace while one sequence is on stage */
@@ -660,12 +764,16 @@
   }
   function drawHead(h) {
     if (!map || !map.getSource('head')) return;
-    map.getSource('head').setData({ type: 'Feature', properties: { sac: h.sac }, geometry: { type: 'Point', coordinates: [h.lon, h.lat] } });
+    const onBoat = h.sac === 2;
+    if (boatMarker) { boatMarker.getElement().hidden = !onBoat; if (onBoat) boatMarker.setLngLat([h.lon, h.lat]); }
+    map.getSource('head').setData(onBoat ? { type: 'FeatureCollection', features: [] }
+      : { type: 'Feature', properties: { sac: h.sac }, geometry: { type: 'Point', coordinates: [h.lon, h.lat] } });
   }
   function clearAnim() {
     if (!map || !map.getSource('anim')) return;
     map.getSource('anim').setData({ type: 'FeatureCollection', features: [] });
     map.getSource('head').setData({ type: 'FeatureCollection', features: [] });
+    if (boatMarker) boatMarker.getElement().hidden = true;
   }
   function startAnim(pts, state, view, render, onEnd) {
     stopAnim(false);
@@ -678,7 +786,7 @@
     if (map && a.cam !== 'fixed' && !reduceMotion) {
       const h = headAt(pts, state.km);
       a.bearing = a.cam === 'drone' ? heading(state.km) : map.getBearing();
-      map.easeTo({ center: [h.lon, h.lat], zoom: view.zoom, pitch: view.pitch, bearing: a.bearing, duration: 1600, padding: padding(), essential: true });
+      map.easeTo({ center: [h.lon, h.lat], zoom: view.zoom, pitch: view.pitch, bearing: a.bearing, duration: 1600, padding: centerPad(), essential: true });
       a.delayUntil = performance.now() + 1650;
       a.orbitBase = a.bearing;
     }
@@ -700,7 +808,7 @@
         } else {
           a.bearing = a.orbitBase + (now - a.orbitStart) / 1000 * 8;
         }
-        const target = padding();
+        const target = centerPad();
         if (!a.pad) a.pad = { ...target };
         const fp = ease(dt, 0.35);
         for (const k in target) a.pad[k] += (target[k] - a.pad[k]) * fp;
@@ -724,18 +832,21 @@
     try { map.setTerrain(terrain); } catch (e) { terrainOn = false; }
     try { if (map.setSky) map.setSky({ 'sky-color': '#9cc7d8', 'horizon-color': '#f4d6a0', 'fog-color': '#cfe0e4', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.9 }); } catch (e) { /* sky optional */ }
 
-    map.addSource('trace', { type: 'geojson', data: T.trace });
-    map.addLayer({ id: 'trace-casing', type: 'line', source: 'trace', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    map.addSource('trace', { type: 'geojson', data: { type: 'FeatureCollection', features: T.trace.features.concat(BOAT_FEATURES) } });
+    const notBoat = ['!=', ['get', 'sac'], 'bateau'];
+    map.addLayer({ id: 'trace-boat', type: 'line', source: 'trace', filter: ['==', ['get', 'sac'], 'bateau'], layout: { 'line-cap': 'round' },
+      paint: { 'line-color': COL.boat, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 4], 'line-dasharray': [1.2, 1.6], 'line-opacity': 0.9 } });
+    map.addLayer({ id: 'trace-casing', type: 'line', source: 'trace', filter: notBoat, layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': COL.casing, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 4.5, 14, 9], 'line-opacity': 0.85 } });
-    map.addLayer({ id: 'trace', type: 'line', source: 'trace', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    map.addLayer({ id: 'trace', type: 'line', source: 'trace', filter: notBoat, layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['match', ['get', 'sac'], 'avec', COL.pack, COL.trail], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2.5, 14, 5] } });
 
     map.addSource('anim', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addSource('head', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    map.addLayer({ id: 'anim-casing', type: 'line', source: 'anim', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    map.addLayer({ id: 'anim-casing', type: 'line', source: 'anim', filter: ['!=', ['get', 'sac'], 2], layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': COL.casing, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 6, 14, 11] } });
     map.addLayer({ id: 'anim', type: 'line', source: 'anim', layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': ['match', ['get', 'sac'], 1, COL.pack, COL.trail], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 3.5, 14, 6.5] } });
+      paint: { 'line-color': ['match', ['get', 'sac'], 1, COL.pack, 2, COL.boat, COL.trail], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 3.5, 14, 6.5] } });
     map.addLayer({ id: 'head', type: 'circle', source: 'head',
       paint: { 'circle-radius': 7, 'circle-color': ['match', ['get', 'sac'], 1, COL.pack, COL.trail], 'circle-stroke-color': COL.casing, 'circle-stroke-width': 3 } });
 
@@ -768,23 +879,53 @@
     new maplibregl.Marker({ element: node }).setLngLat([c.lon, c.lat]).addTo(map);
   });
   function setActive(id) { markers.forEach((n, k) => n.classList.toggle('active', k === id)); }
-  function summitPopup(s) {
+  /* summit card: name, altitude, air temperature when he stood there */
+  let popupTimer = null;
+  function summitPopup(s, ttl) {
     if (!map) return;
     if (popup) popup.remove();
-    const d = day(s.heure.slice(0, 10));
-    popup = new maplibregl.Popup({ closeButton: false, offset: 18 }).setLngLat([s.lon, s.lat])
-      .setDOMContent(el('div', null,
-        el('div', { class: 'pop-title' }, s.sommet),
-        el('div', { class: 'pop-meta' }, `${nf(s.alt_gps_m)} m au GPS · ${d.d} ${d.m} à ${s.heure.slice(11, 16)}`)))
+    clearTimeout(popupTimer);
+    popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 24, anchor: 'bottom', className: 'peak-pop', maxWidth: '260px' })
+      .setLngLat([s.lon, s.lat])
+      .setDOMContent(el('div', { class: 'peak-card' },
+        el('div', { class: 'peak-name' }, peakIcon(), s.sommet),
+        el('div', { class: 'peak-figs' },
+          el('span', { class: 'peak-alt' }, nf(s.hauteur_officielle_m || s.alt_gps_m), el('small', null, ' m')),
+          s.temp_c != null ? el('span', { class: 'peak-temp' }, `${nf(s.temp_c, 0)} °C`) : null)))
       .addTo(map);
+    if (ttl) { const mine = popup; popupTimer = setTimeout(() => { if (popup === mine) { mine.remove(); popup = null; } }, ttl); }
   }
+  function ping(node) {
+    if (!node || reduceMotion) return;
+    node.classList.remove('ping');
+    void node.offsetWidth;            // restart the animation
+    node.classList.add('ping');
+    clearTimeout(node._pingT);
+    node._pingT = setTimeout(() => node.classList.remove('ping'), 2600);
+  }
+  fireCheckpoint = (c, keepPopup) => {
+    if (c.type === 'summit') { ping(summitMarkers.get(c.s.sommet)); summitPopup(c.s, keepPopup ? 0 : 5000); }
+    else ping(markers.get(c.c.id));
+  };
   T.summits.forEach(s => {
     const node = el('button', { type: 'button', class: 'marker m-peak', 'aria-label': `Sommet ${s.sommet}` });
     const icon = peakIcon(); icon.setAttribute('width', '20'); icon.setAttribute('height', '18');
     node.append(icon);
     node.addEventListener('click', e => { e.stopPropagation(); openSummit(s); });
+    summitMarkers.set(s.sommet, node);
     new maplibregl.Marker({ element: node, anchor: 'bottom' }).setLngLat([s.lon, s.lat]).addTo(map);
   });
+
+  /* boat head: a small boat that sails the arc */
+  {
+    const node = el('div', { class: 'm-boat', 'aria-hidden': 'true' });
+    const svg = sv('svg', { viewBox: '0 0 24 24' });
+    svg.append(sv('path', { d: 'M3 14h18l-2.6 4.6a2 2 0 0 1-1.7 1H7.3a2 2 0 0 1-1.7-1z', fill: '#fff' }),
+      sv('path', { d: 'M12 3v9M12 4l6 7h-6', fill: 'none', stroke: '#fff', 'stroke-width': '1.8', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    node.append(svg);
+    node.hidden = true;
+    boatMarker = new maplibregl.Marker({ element: node }).setLngLat([13, 68]).addTo(map);
+  }
 
   /* controls */
   document.getElementById('btn-overview').addEventListener('click', () => { showHome(); overview(); });
@@ -802,6 +943,7 @@
     map.setLayoutProperty('sat', 'visibility', base === 'sat' ? 'visible' : 'none');
     map.setLayoutProperty('topo', 'visibility', base === 'topo' ? 'visible' : 'none');
     btnBase.textContent = base === 'sat' ? 'Satellite' : 'Carte topo';
+    document.body.classList.toggle('base-topo', base === 'topo');
   });
 
   showHome();
