@@ -748,7 +748,7 @@
   const ZERO = { top: 0, bottom: 0, left: 0, right: 0 };
   const centerPad = () => isPhone() ? padding() : ZERO;
   const fitPad = () => isPhone() ? padding() : { top: 110, bottom: 70, left: 110, right: 110 };
-  const OVERVIEW_ZOOM_BONUS = 0.7;   // a bit closer than "everything fits": the island outlines stay readable
+  const OVERVIEW_ZOOM_BONUS = -0.3;   // a bit closer than "everything fits": the island outlines stay readable
   function overview(instant) {
     if (!map) return;
     const pad = isPhone() ? padding() : { top: 40, bottom: 40, left: 40, right: 40 };

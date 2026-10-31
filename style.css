@@ -207,7 +207,7 @@ body.panel-folded .panel-inner { display: none; }
 }
 .num-peak { background: none; box-shadow: none; }
 .num-peak svg { width: 18px; height: 16px; }
-.num-day { border-radius: 7px; width: 28px; background: var(--accent); color: var(--on-accent); text-shadow: none; box-shadow: none; }
+.num-day { border-radius: 7px; width: 28px; background: #1d3f8f; color: #fff; text-shadow: none; box-shadow: none; }
 .camp-name { font-weight: 600; font-size: 15.5px; letter-spacing: -.01em; min-width: 0; }
 .camp-dates { font-size: 13px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .stage-row { grid-template-columns: 28px minmax(0, 1fr) 10px; }
