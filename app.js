@@ -830,7 +830,7 @@
 
     panel.replaceChildren(
       el('h2', { class: 'recap-title', title: 'Garmin Connect, nuit par nuit. Moyennes sur les 9 nuits, nuit courte de Bunes beach comprise.' }, 'Récap des nuits'),
-      el('h3', null, 'Durée et phases du sommeil · nuits du 13 au 21 juin'), s1, sleepKv,
+      el('h3', null, 'Sommeil et phases · nuits du 13 au 21'), s1, sleepKv,
       el('h3', null, 'FC au repos et HRV'), s2, fcKv,
       el('h3', null, 'Body Battery du lendemain (min → max)'), s3, bbKv,
       el('p', { class: 'foot' }, 'Garmin Connect, nuit par nuit. Moyennes sur les 9 nuits, nuit courte de Bunes beach comprise.'));
