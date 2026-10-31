@@ -656,3 +656,17 @@ body.base-topo .sw-photo::after { background: #fff; }
 .sw-info::after { content: "i"; top: 0; font: 800 10px/1 var(--font); color: #9fd0ff; letter-spacing: 0; }
 body.base-topo .sw-info { background: #fff; box-shadow: 0 0 0 1px #111418; }
 body.base-topo .sw-info::after { color: #2f6fb0; }
+/* recaps take the room they need (the panel scrolls a little) */
+.recap .recap-chart .axis { font-size: 12px; }
+.recap .recap-chart .peak-label { font-size: 12.5px; }
+.recap .recap-chart .peak-val, .recap .recap-chart .peak-temp-t { font-size: 12px; }
+.recap h3 { font-size: 15px; margin: 18px 0 6px; }
+.recap .avg-line { font-size: 14.5px; gap: 6px 16px; margin-top: 6px; }
+.recap .avg-big { font-size: 16px; gap: 8px 18px; }
+.recap .records { display: grid; gap: 5px; font-size: 14.5px; }
+.recap .records span { white-space: normal; }
+.k-hard { background: #7a1d10; box-shadow: inset 0 0 0 1.5px #ff6a50; }
+.recap-chart .vv-dot.hard { fill: #7a1d10; stroke: #ff6a50; }
+.recap .avg-big { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; padding: 12px 14px; border-radius: 14px; background: var(--fill); }
+.recap .avg-big span { white-space: normal; display: grid; gap: 1px; font-size: 13px; }
+.recap .avg-big b { font-family: var(--font-num); font-size: 19px; }
