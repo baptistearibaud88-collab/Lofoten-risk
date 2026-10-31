@@ -1,6 +1,6 @@
 # Lofoten Traverse — Planning, Luck and Risk
 
-Traversée autonome des îles Lofoten (Norvège), de Napp à Å, du 14 au 22 juin 2026 : 159 km, 9 889 m de dénivelé positif, 7 campements, 9 sommets.
+Traversée des îles Lofoten (Norvège), du 13 au 23 juin 2026 : 159 km, 9 889 m de dénivelé positif, 7 campements, 9 sommets.
 
 > Dans quelle mesure la réussite d'une expédition vient-elle du plan et des décisions, plutôt que de circonstances favorables ?
 
