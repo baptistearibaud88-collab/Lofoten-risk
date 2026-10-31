@@ -146,7 +146,7 @@
     return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
-  const COL_PHOTO = '#3fd0c9';
+  const COL_PHOTO = '#2bb3ac';
   const kmTxt = a => `km ${nf(a.km, a.km % 1 ? 1 : 0)}`;
 
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
@@ -351,7 +351,7 @@
   }
 
   /* ---------- panel: home lists ---------- */
-  const resetPanel = () => panel.classList.remove('recap');
+  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); };
   function showHome(which) {
     resetPanel();
     stopAnim(true);
@@ -447,17 +447,42 @@
   }
 
   function badgeIcon(draw) { const s = sv('svg', { viewBox: '0 0 22 22', 'aria-hidden': 'true' }); draw(s); return s; }
-  const photoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, fill: COL_PHOTO, stroke: '#fff', 'stroke-width': 1.6 }),
-    sv('rect', { x: 5.2, y: 7.6, width: 11.6, height: 8.2, rx: 1.8, fill: '#fff' }), sv('rect', { x: 8.6, y: 6, width: 4.8, height: 2.4, rx: .8, fill: '#fff' }),
-    sv('circle', { cx: 11, cy: 11.7, r: 2.4, fill: COL_PHOTO })));
-  const infoIcon = () => badgeIcon(s => s.append(sv('path', { d: 'M5.5 3h11a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-6.5l-4.6 3.8 1-3.8H5.5a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z', fill: '#fff', stroke: '#111418', 'stroke-width': 1.2, 'stroke-linejoin': 'round' }),
-    ...[6.6, 11, 15.4].map(x => sv('circle', { cx: x, cy: 10, r: 1.5, fill: COL.camp }))));
+  // colours come from the stylesheet: dark versions on the satellite map, light ones on the topo map
+  const photoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, class: 'ph-bg' }),
+    sv('rect', { x: 5.2, y: 7.6, width: 11.6, height: 8.2, rx: 1.8, class: 'ph-cam' }), sv('rect', { x: 8.6, y: 6, width: 4.8, height: 2.4, rx: .8, class: 'ph-cam' }),
+    sv('circle', { cx: 11, cy: 11.7, r: 2.4, class: 'ph-lens' })));
+  const infoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, class: 'in-bg' }),
+    sv('circle', { cx: 11, cy: 6.6, r: 1.5, class: 'in-i' }), sv('rect', { x: 9.7, y: 9.2, width: 2.6, height: 7.4, rx: 1.2, class: 'in-i' })));
+
+  /* where a photo looks: rings of a wedge (direction ± half the field), more transparent further away */
+  function setFov(a) {
+    if (!map || !map.getSource('fov')) return;
+    if (!a || a.direction_deg == null) { map.getSource('fov').setData({ type: 'FeatureCollection', features: [] }); return; }
+    const k = Math.cos(a.lat * Math.PI / 180) * 111320, m = 110540, half = (a.champ_deg || 60) / 2, R = a.portee_m || 800, bands = 6;
+    const at = (d, r) => { const t = (a.direction_deg + d) * Math.PI / 180; return [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / m]; };
+    const arc = r => Array.from({ length: 13 }, (_, i) => at(-half + i * (2 * half) / 12, r));
+    const feats = [];
+    for (let b = 0; b < bands; b++) {
+      const r0 = R * b / bands, r1 = R * (b + 1) / bands;
+      const ring = b === 0 ? [[a.lon, a.lat], ...arc(r1), [a.lon, a.lat]] : [...arc(r0), ...arc(r1).reverse(), arc(r0)[0]];
+      feats.push({ type: 'Feature', properties: { o: 0.42 * (1 - b / bands) }, geometry: { type: 'Polygon', coordinates: [ring] } });
+    }
+    map.getSource('fov').setData({ type: 'FeatureCollection', features: feats });
+  }
 
   function openRoutePoint(kind, a) {
     resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(kind, true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
-    if (map) map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
     const isPh = kind === 'photos';
+    if (map) {
+      if (isPh && a.direction_deg != null) {
+        // stand behind the photographer and look the same way
+        setFov(a);
+        const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, r = (a.portee_m || 800) * 0.35;
+        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: 14, pitch: 62, bearing: a.direction_deg,
+          duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
+      } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
+    }
     panel.replaceChildren(...[
       backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · J${a.day} · ${kmTxt(a)} ${a.where}`),
@@ -1166,8 +1191,7 @@
     camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1)), { pixelRatio: 2 }));
     map.addImage('finish', finishImage(), { pixelRatio: 2 });
     map.addImage('alert', alertImage(), { pixelRatio: 2 });
-    map.addImage('photo', badgeImage('photo'), { pixelRatio: 2 });
-    map.addImage('info', badgeImage('info'), { pixelRatio: 2 });
+    ['sat', 'topo'].forEach(t => ['photo', 'info'].forEach(k => map.addImage(`${k}-${t}`, badgeImage(k, t), { pixelRatio: 2 })));
     VILLAGES.forEach(v => map.addImage(`village-${v.name}`, villageImage(v.name, v.beside), { pixelRatio: 2 }));
     map.addSource('villages', { type: 'geojson', data: { type: 'FeatureCollection', features: VILLAGES.map(v =>
       ({ type: 'Feature', properties: { icon: `village-${v.name}` }, geometry: { type: 'Point', coordinates: [v.lon, v.lat] } })) } });
@@ -1179,16 +1203,19 @@
       ...T.summits.map(x => ({ type: 'Feature', properties: { kind: 'peak', name: x.sommet, icon: 'peak' }, geometry: { type: 'Point', coordinates: [x.lon, x.lat] } })),
       { type: 'Feature', properties: { kind: 'finish', icon: 'finish' }, geometry: { type: 'Point', coordinates: [FINISH.lon, FINISH.lat] } },
       ...ALERTS.map(a => ({ type: 'Feature', properties: { kind: 'alert', aid: a.id, icon: 'alert' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
-      ...PHOTOS.map(a => ({ type: 'Feature', properties: { kind: 'photo', aid: a.id, icon: 'photo' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
-      ...INFOS.map(a => ({ type: 'Feature', properties: { kind: 'info', aid: a.id, icon: 'info' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
+      ...PHOTOS.map(a => ({ type: 'Feature', properties: { kind: 'photo', aid: a.id }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
+      ...INFOS.map(a => ({ type: 'Feature', properties: { kind: 'info', aid: a.id }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
     ] } });
     const sym = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' };
     map.addLayer({ id: 'peaks', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'peak'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.addLayer({ id: 'finish', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'finish'], layout: sym });
     map.addLayer({ id: 'alerts', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'alert'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.on('click', 'alerts', e => { const a = ALERTS.find(x => x.id === e.features[0].properties.aid); if (a) openAlert(a); });
-    map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
-    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
+    map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-image': 'photo-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
+    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
+    // field of view of the open photo: a turquoise wedge that fades with distance
+    map.addSource('fov', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({ id: 'fov', type: 'fill', source: 'fov', paint: { 'fill-color': COL_PHOTO, 'fill-opacity': ['get', 'o'] } }, 'trace-boat-casing');
     map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a); });
     map.on('click', 'infos', e => { const a = INFOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('infos', a); });
     updateLayers();
@@ -1259,20 +1286,26 @@
     g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(name, x0, H / 2 + .5); g.fillText(name, x0, H / 2 + .5);
     return g.getImageData(0, 0, W * S, H * S);
   }
-  function badgeImage(kind) {   // photo: turquoise badge with a camera; info: a speech bubble ("a story here")
+  /* photo: turquoise badge with a camera (black on the satellite map, white on the topo map);
+     info: round badge with an "i" (dark on the satellite map, white on the topo map) */
+  function badgeImage(kind, theme) {
     const S = 2, W = 28, H = 30, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
     const g = cv.getContext('2d'); g.scale(S, S);
+    const sat = theme === 'sat';
+    const ring = kind === 'info' && sat ? '#e9eef0' : '#fff';
     g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
+    g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = ring; g.fill();
+    g.beginPath(); g.arc(14, 12, 11.5, 0, 2 * Math.PI); g.fillStyle = ring; g.fill(); g.shadowColor = 'transparent';
     if (kind === 'photo') {
-      g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = '#fff'; g.fill();
-      g.beginPath(); g.arc(14, 12, 11.5, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill(); g.shadowColor = 'transparent';
+      const cam = sat ? '#111418' : '#fff';
       g.beginPath(); g.arc(14, 12, 9.8, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
-      g.fillStyle = '#fff'; roundRect(g, 7.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); g.fill();
+      g.fillStyle = cam; roundRect(g, 7.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); g.fill();
       g.beginPath(); g.arc(14, 12.9, 2.7, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
     } else {
-      roundRect(g, 2.5, 3, 23, 17, 6); g.fillStyle = '#fff'; g.fill();
-      g.beginPath(); g.moveTo(8, 19); g.lineTo(6.5, 27); g.lineTo(14.5, 19.5); g.closePath(); g.fill(); g.shadowColor = 'transparent';
-      g.fillStyle = COL.camp; [8.6, 14, 19.4].forEach(x => { g.beginPath(); g.arc(x, 11.5, 1.9, 0, 2 * Math.PI); g.fill(); });
+      g.beginPath(); g.arc(14, 12, 10, 0, 2 * Math.PI); g.fillStyle = sat ? '#1b2328' : '#fff'; g.fill();
+      if (!sat) { g.lineWidth = 1.2; g.strokeStyle = '#111418'; g.stroke(); }
+      g.fillStyle = sat ? '#9fd0ff' : '#2f6fb0';
+      g.beginPath(); g.arc(14, 7.4, 1.6, 0, 2 * Math.PI); g.fill(); roundRect(g, 12.6, 10.2, 2.8, 8, 1.3); g.fill();
     }
     return g.getImageData(0, 0, W * S, H * S);
   }
@@ -1399,6 +1432,7 @@
     btnBase.textContent = base === 'sat' ? 'Satellite' : 'Carte topo';
     document.body.classList.toggle('base-topo', base === 'topo');
     if (map.getLayer('villages')) map.setLayoutProperty('villages', 'visibility', base === 'sat' ? 'visible' : 'none');
+    ['photos', 'infos'].forEach(l => map.getLayer(l) && map.setLayoutProperty(l, 'icon-image', `${l.slice(0, -1)}-${base}`));
     // the trace keeps a white edge on the imagery and gets a black one on the pale topo map
     const edge = base === 'sat' ? COL.casing : '#0b1014';
     ['trace-casing', 'anim-casing'].forEach(l => map.getLayer(l) && map.setPaintProperty(l, 'line-color', edge));

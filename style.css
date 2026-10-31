@@ -640,3 +640,19 @@ body.base-topo .warn-ink { color: #a07800 !important; }
 .fx-dust { width: 110px; height: 50px; margin: 30px 0 0 -55px; background: radial-gradient(ellipse at 50% 60%, rgba(214, 200, 180, .7), rgba(214, 200, 180, .25) 50%, transparent 72%); }
 .fx-dust2 { margin-top: 60px; animation-delay: 1s; }
 .fx-rock { margin-top: 8px; }
+/* photo and info icons: dark versions on the satellite map, light ones on the topo map */
+.ph-bg { fill: #2bb3ac; stroke: #fff; stroke-width: 1.6; }
+.ph-cam { fill: #111418; }
+.ph-lens { fill: #2bb3ac; }
+.in-bg { fill: #1b2328; stroke: #e9eef0; stroke-width: 1.6; }
+.in-i { fill: #9fd0ff; }
+body.base-topo .ph-cam { fill: #fff; }
+body.base-topo .in-bg { fill: #fff; stroke: #111418; stroke-width: 1.2; }
+body.base-topo .in-i { fill: #2f6fb0; }
+.sw-photo { background: #2bb3ac; }
+.sw-photo::after { background: #111418; }
+body.base-topo .sw-photo::after { background: #fff; }
+.sw-info { width: 13px; height: 13px; border-radius: 50%; background: #1b2328; box-shadow: 0 0 0 1.5px #e9eef0; }
+.sw-info::after { content: "i"; top: 0; font: 800 10px/1 var(--font); color: #9fd0ff; letter-spacing: 0; }
+body.base-topo .sw-info { background: #fff; box-shadow: 0 0 0 1px #111418; }
+body.base-topo .sw-info::after { color: #2f6fb0; }
