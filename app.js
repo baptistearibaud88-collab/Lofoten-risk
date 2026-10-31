@@ -465,8 +465,8 @@
                 el('span', { class: 'stage-meta' }, `${nf(last.wk, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}${seq.some(p => p.sac === 2) ? ' · bateau' : ''}`))));
         })));
     }
-    // the sources footnote stays on the other rubrics, not under the bivouacs and the summits
-    panel.replaceChildren(body, rubric === 'camps' || rubric === 'summits' ? '' : 
+    // the sources footnote stays only under the étapes
+    panel.replaceChildren(body, rubric !== 'etapes' ? '' : 
       el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Distance totale : ${nf(S.strava_distance)} km selon Strava ; ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
     panel.scrollTop = 0;
   }
