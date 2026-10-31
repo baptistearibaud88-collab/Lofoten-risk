@@ -1350,7 +1350,7 @@
     map.addLayer({ id: 'finish', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'finish'], layout: sym });
     map.addLayer({ id: 'alerts', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'alert'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.on('click', 'alerts', e => { const a = ALERTS.find(x => x.id === e.features[0].properties.aid); if (a) openAlert(a); });
-    map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-image': photoIconExpr('sat'), 'icon-anchor': 'bottom', 'icon-offset': [0, -2], 'symbol-sort-key': ['case', ['get', 'fav'], 1, 0] } });
+    map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-image': photoIconExpr('sat'), 'icon-anchor': 'bottom', 'icon-offset': [0, -2], 'symbol-sort-key': ['case', ['get', 'fav'], 1, 0], 'icon-size': ['case', ['get', 'fav'], 1.25, 1] } });
     map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
     // field of view of the open photo: a turquoise wedge that fades with distance
     map.on('move', drawFov);
@@ -1439,10 +1439,10 @@
     g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = ring; g.fill();
     g.beginPath(); g.arc(14, 12, 11.5, 0, 2 * Math.PI); g.fillStyle = ring; g.fill(); g.shadowColor = 'transparent';
     if (kind === 'photo') {
-      if (fav) { g.beginPath(); g.arc(14, 12, 9.4, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill(); }
-      const cam = sat ? '#111418' : '#fff';
-      g.beginPath(); g.arc(14, 12, fav ? 8.6 : 9.8, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
-      g.fillStyle = cam; roundRect(g, 7.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); g.fill();
+      let cam = sat ? '#111418' : '#fff';
+      if (fav) { cam = g.createLinearGradient(8, 6, 20, 18); cam.addColorStop(0, '#fff1b8'); cam.addColorStop(.5, '#f0c043'); cam.addColorStop(1, '#c98f1e'); }
+      g.beginPath(); g.arc(14, 12, fav ? 9.2 : 9.8, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
+      g.fillStyle = cam; g.strokeStyle = 'rgba(40,25,0,.55)'; g.lineWidth = .9; roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); if (fav) g.stroke(); g.fill(); roundRect(g, 7.6, 8.4, 12.8, 9, 2); if (fav) g.stroke(); g.fill();
       g.beginPath(); g.arc(14, 12.9, 2.7, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
     } else {
       g.beginPath(); g.arc(14, 12, 10, 0, 2 * Math.PI); g.fillStyle = sat ? '#1b2328' : '#fff'; g.fill();
