@@ -1062,6 +1062,7 @@
     map.setLayoutProperty('topo', 'visibility', base === 'topo' ? 'visible' : 'none');
     btnBase.textContent = base === 'sat' ? 'Satellite' : 'Carte topo';
     document.body.classList.toggle('base-topo', base === 'topo');
+    if (map.getLayer('villages')) map.setLayoutProperty('villages', 'visibility', base === 'sat' ? 'visible' : 'none');
   });
 
   showHome();
