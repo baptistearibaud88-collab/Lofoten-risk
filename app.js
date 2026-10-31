@@ -590,7 +590,7 @@
     const g = v => v == null ? '—' : v >= 1000 ? `${nf(v / 1000, 2)} kg` : `${nf(v)} g`;
     const tile = (label, value, unit, note) => el('div', { class: 'dp-tile' }, el('span', { class: 'dp-l' }, label),
       el('b', null, value, unit ? el('small', null, ` ${unit}`) : null), note ? el('span', { class: 'dp-n' }, note) : null);
-    const kcal = D.nourriture.reduce((a, x) => a + (x.kcal || 0), 0);
+    const kcal = D.nourriture.reduce((a, x) => a + (x.kcal || 0), 0), foodKg = D.nourriture.reduce((a, x) => a + (x.poids_g || 0), 0) / 1000;
     const group = (rows, key) => { const m = new Map(); rows.forEach(r => { if (!m.has(r[key])) m.set(r[key], []); m.get(r[key]).push(r); }); return [...m]; };
     const gearList = el('div', { class: 'dp-list' }, group(D.equipement, 'categorie').map(([cat, rows]) => {
       const sum = rows.filter(r => r.pris && !r.porte).reduce((a, r) => a + (r.poids_g || 0), 0);
@@ -627,6 +627,12 @@
             el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
               el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
             el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir')),
+          el('h2', { class: 'dp-sub' }, 'Le sac en chiffres'),
+          el('div', { class: 'dp-tiles' },
+            tile('Sac au départ', `≈ ${nf(D.sac_kg, 1)}`, 'kg', 'sans eau'),
+            tile('Part de mon poids', nf(100 * D.sac_kg / P.poids_kg), '%', `${nf(D.sac_kg, 1)} kg pour ${nf(P.poids_kg, 1)} kg`),
+            tile('Nourriture', nf(foodKg, 1), 'kg', `${nf(kcal)} kcal`),
+            tile('Par jour', nf(kcal / 9), 'kcal', 'sur 9 jours')),
           el('h2', { class: 'dp-sub' }, 'Mon profil'),
           el('div', { class: 'dp-tiles' },
             tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
