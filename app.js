@@ -483,6 +483,37 @@
     fovSvg.style.display = '';
   }
 
+  /* photos of a point: stacked in the panel, a tap opens them full screen */
+  const photoFiles = a => (a.fichier || '').split(';').map(x => x.trim()).filter(Boolean);
+  function photoGallery(a) {
+    const files = photoFiles(a);
+    if (!files.length) return el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, 'Photo à ajouter'));
+    return el('div', { class: 'gallery' }, files.map((f, i) =>
+      el('button', { type: 'button', class: 'gallery-item', 'aria-label': `Agrandir la photo ${i + 1}`, onclick: () => lightbox(files, i) },
+        el('img', { src: f, alt: `${a.titre}, photo ${i + 1}`, loading: 'lazy', decoding: 'async' }))));
+  }
+  function lightbox(files, i) {
+    let k = i;
+    const img = el('img', { alt: '' });
+    const show = () => { img.src = files[k]; count.textContent = `${k + 1} / ${files.length}`; };
+    const count = el('span', { class: 'lb-count' });
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+    const go = d => { k = (k + d + files.length) % files.length; show(); };
+    const onKey = e => { if (e.key === 'Escape') close(); if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); };
+    const box = el('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Photo en grand' },
+      img, count,
+      el('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer', onclick: close }, '×'),
+      files.length > 1 ? el('button', { type: 'button', class: 'lb-prev', 'aria-label': 'Photo précédente', onclick: e => { e.stopPropagation(); go(-1); } }, '‹') : null,
+      files.length > 1 ? el('button', { type: 'button', class: 'lb-next', 'aria-label': 'Photo suivante', onclick: e => { e.stopPropagation(); go(1); } }, '›') : null);
+    box.addEventListener('click', e => { if (e.target === box) close(); });
+    let x0 = null;
+    box.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    box.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); x0 = null; });
+    document.addEventListener('keydown', onKey);
+    document.body.append(box);
+    show();
+  }
+
   function openRoutePoint(kind, a) {
     resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(kind, true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
@@ -501,7 +532,7 @@
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · J${a.day} · ${kmTxt(a)} ${a.where}`),
       el('h2', null, a.titre),
       el('p', { class: 'meta' }, `${nf(a.alt)} m · vers ${a.heure} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
-      isPh ? el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, a.fichier_drive ? 'Photo à charger' : 'Photo à relier depuis le Drive')) : null,
+      isPh ? photoGallery(a) : null,
       isPh ? (a.legende ? el('p', { class: 'note' }, a.legende) : null) : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),
       el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`))].filter(Boolean));
     panel.scrollTop = 0;
