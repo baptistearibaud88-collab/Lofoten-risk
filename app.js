@@ -942,13 +942,14 @@
     });
     // 2. grade-adjusted pace of each climb (the longer the line, the faster)
     const sp = r => 60 / r.gap, vMax = Math.ceil(Math.max(...rows.map(sp)) / 2) * 2;
-    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Allure ajustée à la pente de chaque montée' });
+    const rowH2 = 20, H2 = T0 + rows.length * rowH2 + 4;   // the pace chart gets more room
+    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart chart-big', role: 'img', 'aria-label': 'Allure ajustée à la pente de chaque montée' });
     rows.forEach((r, j) => {
-      const y = T0 + j * rowH, w = (W - L - R) * sp(r) / vMax;
-      s2.append(svText({ x: L - 8, y: y + 11.5, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
-      s2.append(sv('line', { x1: L, x2: L + w, y1: y + 7.5, y2: y + 7.5, class: 'vv-stem' }));
-      s2.append(sv('circle', { cx: (L + w).toFixed(1), cy: y + 7.5, r: 4.2, class: `vv-dot${r === best ? ' top' : ''}${r === hardest ? ' hard' : ''}` }));
-      s2.append(svText({ x: L + w + 8, y: y + 11.5, class: 'axis peak-val' }, `${pace(r.gap)} /km`));
+      const y = T0 + j * rowH2, w = (W - L - R) * sp(r) / vMax;
+      s2.append(svText({ x: L - 8, y: y + 14, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
+      s2.append(sv('line', { x1: L, x2: L + w, y1: y + 9.5, y2: y + 9.5, class: 'vv-stem' }));
+      s2.append(sv('circle', { cx: (L + w).toFixed(1), cy: y + 9.5, r: 5, class: `vv-dot${r === best ? ' top' : ''}${r === hardest ? ' hard' : ''}` }));
+      s2.append(svText({ x: L + w + 9, y: y + 14, class: 'axis peak-val' }, `${pace(r.gap)} /km`));
     });
     const it = (label, value) => el('span', null, label, el('b', null, value));
     const kv = el('div', { class: 'avg-line avg-big' },
