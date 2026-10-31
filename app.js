@@ -416,7 +416,7 @@
         recapRow('rem', 'Récap des nuits', `${T.camps.length} nuits`, openNightsRecap),
         el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
-            el('span', { class: 'camp-num' }, String(i + 1)),
+            el('span', { class: `camp-num${i === 0 ? ' camp-start' : ''}` }, String(i + 1)),
             el('span', { class: 'camp-name' }, c.name),
             el('span', { class: 'camp-dates' }, c.nights.map(n => day(n.night).d).join(' + ') + ' ' + day(c.nights[0].night).m))))));
     } else if (rubric === 'summits') {
@@ -1556,7 +1556,7 @@
     /* camps and summits are drawn by the map itself (not HTML markers) so they stay
        glued to their coordinates on the 3D relief, exactly like the trace */
     map.addImage('peak', peakImage(), { pixelRatio: 2 });
-    camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1)), { pixelRatio: 2 }));
+    camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1), i === 0 ? COL_START : undefined), { pixelRatio: 2 }));
     map.addImage('finish', finishImage(), { pixelRatio: 2 });
     map.addImage('alert', alertImage(), { pixelRatio: 2 });
     ['sat', 'topo'].forEach(t => {
@@ -1624,11 +1624,12 @@
   });
 
   /* icons drawn on a canvas for the map's symbol layers (no font server needed) */
-  function campImage(label) {
+  const COL_START = '#3ccf6e';   // bivouac 1, where it all started: green ring instead of white
+  function campImage(label, ring = '#ffffff') {
     const S = 2, W = 30, cv = document.createElement('canvas'); cv.width = cv.height = W * S;
     const g = cv.getContext('2d'); g.scale(S, S);
     g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 5; g.shadowOffsetY = 1.5;
-    g.beginPath(); g.arc(W / 2, W / 2, 12, 0, 2 * Math.PI); g.fillStyle = '#ffffff'; g.fill();
+    g.beginPath(); g.arc(W / 2, W / 2, 12, 0, 2 * Math.PI); g.fillStyle = ring; g.fill();
     g.shadowColor = 'transparent';
     g.beginPath(); g.arc(W / 2, W / 2, 10, 0, 2 * Math.PI); g.fillStyle = COL.camp; g.fill();
     g.fillStyle = '#fff'; g.font = '700 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
