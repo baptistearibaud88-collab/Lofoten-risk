@@ -633,7 +633,7 @@
             tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin')),
           el('p', { class: 'dp-thanks' },
             el('b', null, 'Merci à mon oncle, Cyrille Livet. '),
-            'Sans son aide matérielle, ses conseils et le goût de la montagne qu’il m’a transmis au travers d’aventures, ce projet n’aurait jamais vu le jour.')),
+            'Sans tout ce qu’il m’a appris, son aide matérielle et le goût de la montagne transmis au travers d’aventures, ce projet n’aurait jamais vu le jour.')),
           el('div', { class: 'dp-lists' },
             el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
             gearList, foodList))));
