@@ -825,6 +825,7 @@
       backButton('Tous les bivouacs', 'camps'),
       el('h2', null, c.name),
       el('p', { class: 'meta' }, `${c.nights.length > 1 ? `${c.nights.length} nuits · ` : nightLabel(c.nights[0].night, c.nights[0].wake) + ' · '}${nf(c.alt)} m · ${c.lat.toFixed(4)} N, ${c.lon.toFixed(4)} E`),
+      (T.camp_recits || {})[c.id] ? el('p', { class: 'info-text camp-recit' }, T.camp_recits[c.id]) : null,   // the bivouac's story
       ...[tabs, body].filter(Boolean));
     render(nightIdx);
     panel.scrollTop = 0;
