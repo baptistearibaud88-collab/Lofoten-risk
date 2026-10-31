@@ -544,7 +544,7 @@ body.base-topo .recap-chart .peak-temp-t.cold { fill: #0b4f78; }
 .stats div:nth-child(n+5), .stats-grid div:nth-child(n+5) { grid-column: span 4; }
 /* first row: give the long D+ figure more room, Jours moves a bit towards Sommets */
 .stats div:nth-child(2) { grid-column: span 4; }
-.stats div:nth-child(4) { grid-column: span 2; }
+.stats div:nth-child(3) { grid-column: span 2; }   /* Jours, Sommets keeps its place */
 
 /* ---------- alerts ---------- */
 .warn-ink { color: #f4d35e !important; }
