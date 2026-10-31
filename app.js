@@ -492,7 +492,7 @@
       el('p', { class: 'eyebrow-sm warn-ink' }, `Alerte · J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`),
       el('h2', null, a.titre),
       el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
-      el('p', { class: 'empty' }, a.recit || 'Récit à venir.'),
+      a.recit ? el('p', { class: 'info-text' }, a.recit) : el('p', { class: 'empty' }, 'Récit à venir.'),
       el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)));
     panel.scrollTop = 0;
   }
