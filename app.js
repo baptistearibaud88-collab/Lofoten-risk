@@ -8,7 +8,20 @@
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   const COL = { pack: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa' };
-  const nf = (v, d = 0) => v == null ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  /* A summit's outing = the trail activities of that day that lead to it.
+     Reinebringen and Helvete: the whole day from Munkebu, not only from Reine. */
+  const SUMMIT_OUTINGS = { reinebringen_helvete: ['munkebu_reine', 'reinebringen_helvete'] };
+
+  /* Camera per kind of replay. zoom/pitch: how far and how high the drone flies.
+     W: half-length (km) of the chord used for the heading, S: extra smoothing (km).
+     A long chord ignores switchbacks and a few hundred metres of wrong turn. */
+  const VIEW = {
+    etape: { zoom: 13.3, pitch: 56, W: 0.6, S: 0.5, secPerKm: 3.2 },
+    summit: { zoom: 12.8, pitch: 54, W: 0.45, S: 0.4, secPerKm: 4 },
+    trek: { zoom: 11.8, pitch: 50, W: 2.5, S: 2, secPerKm: 0.6 },
+  };
 
   /* ---------- small DOM helpers ---------- */
   function el(tag, attrs, ...kids) {
@@ -24,10 +37,13 @@
   }
   const SVGNS = 'http://www.w3.org/2000/svg';
   function sv(tag, attrs) { const n = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v); return n; }
+  function svText(attrs, text) { const t = sv('text', attrs); t.textContent = text; return t; }
   const day = iso => { const d = new Date(iso + 'T12:00:00'); return { d: d.getDate(), m: MONTHS[d.getMonth()] }; };
   const nightLabel = (night, wake) => { const a = day(night), b = day(wake); return `nuit du ${a.d} au ${b.d} ${b.m}`; };
   const hm = min => min == null ? '—' : `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}`;
   const hms = s => `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
+  const pace = minPerKm => { if (!isFinite(minPerKm)) return '—'; let m = Math.floor(minPerKm), s = Math.round((minPerKm - m) * 60); if (s === 60) { m++; s = 0; } return `${m}′${String(s).padStart(2, '0')}″`; };
+  const peakIcon = () => { const s = sv('svg', { viewBox: '0 0 20 18', 'aria-hidden': 'true' }); s.append(sv('polygon', { points: '10,1.8 18.4,16.4 1.6,16.4', fill: '#111418', stroke: COL.trail, 'stroke-width': '2.2', 'stroke-linejoin': 'round' })); return s; };
 
   /* ---------- data ---------- */
   const camps = [];
@@ -56,68 +72,174 @@
     });
     return pts;
   }
+  function idxAt(pts, km) {          // last point at or before km
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (pts[mid].km <= km) lo = mid; else hi = mid - 1; }
+    return lo;
+  }
+  function headAt(pts, km, i = idxAt(pts, km)) {
+    const a = pts[i], b = pts[Math.min(i + 1, pts.length - 1)];
+    if (b === a || b.seg !== a.seg || b.km <= a.km) return { lon: a.lon, lat: a.lat, sac: a.sac };
+    const f = Math.min(1, Math.max(0, (km - a.km) / (b.km - a.km)));
+    return { lon: a.lon + (b.lon - a.lon) * f, lat: a.lat + (b.lat - a.lat) * f, sac: a.sac };
+  }
+  function movAt(pts, km) {
+    const i = idxAt(pts, km), a = pts[i], b = pts[Math.min(i + 1, pts.length - 1)];
+    if (b === a || b.km <= a.km) return a.mov;
+    return a.mov + (b.mov - a.mov) * Math.min(1, Math.max(0, (km - a.km) / (b.km - a.km)));
+  }
+  const bearingTo = (a, b) => {
+    const toR = Math.PI / 180, y = Math.sin((b.lon - a.lon) * toR) * Math.cos(b.lat * toR);
+    const x = Math.cos(a.lat * toR) * Math.sin(b.lat * toR) - Math.sin(a.lat * toR) * Math.cos(b.lat * toR) * Math.cos((b.lon - a.lon) * toR);
+    return Math.atan2(y, x) / toR;
+  };
+  const angleDiff = (from, to) => ((to - from + 540) % 360) - 180;
+
+  /* Smoothed direction of travel along a sequence, for the drone camera.
+     At each point: bearing of the chord from (km − W) to (km + W), then a moving
+     average of those unit vectors over ±S km. Out-and-back detours shorter than
+     the chord cancel out, so the camera keeps looking along the real route. */
+  function headingTrack(pts, W, S) {
+    const n = pts.length, kmMax = pts[n - 1].km;
+    const vx = new Float64Array(n), vy = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = headAt(pts, Math.max(0, pts[i].km - W)), b = headAt(pts, Math.min(kmMax, pts[i].km + W));
+      if (a.lon === b.lon && a.lat === b.lat) continue;
+      const r = bearingTo(a, b) * Math.PI / 180;
+      vx[i] = Math.sin(r); vy[i] = Math.cos(r);
+    }
+    const cx = new Float64Array(n + 1), cy = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) { cx[i + 1] = cx[i] + vx[i]; cy[i + 1] = cy[i] + vy[i]; }
+    const out = new Float64Array(n);
+    let lo = 0, hi = 0, prev = 0;
+    for (let i = 0; i < n; i++) {
+      while (pts[lo].km < pts[i].km - S) lo++;
+      while (hi + 1 < n && pts[hi + 1].km <= pts[i].km + S) hi++;
+      const sx = cx[hi + 1] - cx[lo], sy = cy[hi + 1] - cy[lo];
+      out[i] = prev = (sx || sy) ? Math.atan2(sx, sy) * 180 / Math.PI : prev;
+    }
+    return km => out[idxAt(pts, km)];
+  }
 
   /* ---------- stats ---------- */
   const S = T.stats;
   const statItems = [
-    ['Distance', `${nf(S.km)} km`], ['Dénivelé +', `${nf(S.dplus)} m`], ['Jours', S.days],
-    ['Bivouacs', S.camps], ['Sommets', S.summits], ['Avec le sac', `${nf(S.bag_hours, 1)} h`],
+    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus), 'm'], ['Jours', S.days],
+    ['Bivouacs', S.camps], ['Sommets', S.summits], ['Avec le sac', nf(S.bag_hours, 1), 'h'],
   ];
-  document.getElementById('stats').append(...statItems.map(([k, v]) => el('div', null, el('dt', null, k), el('dd', null, v))));
+  document.getElementById('stats').append(...statItems.map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
 
   /* ---------- shared state ---------- */
   const panel = document.getElementById('panel-inner');
+  const panelBox = document.getElementById('panel');
+  const titleBox = document.getElementById('title');
   const markers = new Map();
-  let map = null, popup = null, rubric = 'camps';
-  let anim = null;
+  let map = null, popup = null, rubric = 'camps', inDetail = false;
+  let anim = null, lastLineDraw = 0;
+  const tracks = new WeakMap();
+  const ease = (dt, tau) => 1 - Math.exp(-dt / tau);   // frame-rate independent smoothing
 
-  /* ---------- panel: home with three rubrics ---------- */
+  /* ---------- folding the two bubbles ---------- */
+  function setFold(cls, btn, folded, label) {
+    document.body.classList.toggle(cls, folded);
+    btn.setAttribute('aria-expanded', String(!folded));
+    btn.setAttribute('aria-label', `${folded ? 'Agrandir' : 'Réduire'} ${label}`);
+    layoutChanged();
+  }
+  const btnTitleFold = document.getElementById('btn-title-fold');
+  const btnPanelFold = document.getElementById('btn-panel-fold');
+  btnTitleFold.addEventListener('click', () => setFold('title-folded', btnTitleFold, !document.body.classList.contains('title-folded'), 'le titre'));
+  btnPanelFold.addEventListener('click', () => setFold('panel-folded', btnPanelFold, !document.body.classList.contains('panel-folded'), 'le panneau'));
+  const unfoldPanel = () => { if (document.body.classList.contains('panel-folded')) setFold('panel-folded', btnPanelFold, false, 'le panneau'); };
+
+  function layoutChanged() {
+    const root = document.documentElement.style;
+    const pr = panelBox.getBoundingClientRect();
+    root.setProperty('--panel-h', `${Math.round(pr.height)}px`);
+    root.setProperty('--ctrl-right', isPhone() ? '0px' : `${Math.round(window.innerWidth - pr.left)}px`);
+  }
+  if (window.ResizeObserver) new ResizeObserver(layoutChanged).observe(panelBox);
+  window.addEventListener('resize', layoutChanged);
+
+  /* ---------- title bubble: intro, or the activity and its profile ---------- */
+  const titleDefault = document.getElementById('title-default');
+  const titleAct = document.getElementById('title-activity');
+  function setTitleActivity(eyebrow, name, profileNodes) {
+    document.getElementById('act-eyebrow').textContent = eyebrow;
+    document.getElementById('act-title').textContent = name;
+    document.getElementById('act-profile').replaceChildren(...profileNodes);
+    titleDefault.hidden = true; titleAct.hidden = false;
+  }
+  function setTitleDefault() { titleDefault.hidden = false; titleAct.hidden = true; document.getElementById('act-profile').replaceChildren(); }
+
+  /* ---------- panel head: the three rubrics, always visible ---------- */
   const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Sommets'], ['etapes', 'Étapes']];
+  const tabBox = document.getElementById('rubric-tabs');
+  const tabBtns = RUBRICS.map(([id, label]) => {
+    const b = el('button', { type: 'button', role: 'tab', 'data-r': id }, label);
+    b.addEventListener('click', () => { unfoldPanel(); showHome(id); overview(); });
+    tabBox.append(b);
+    return b;
+  });
+  function setTabs(active, detail) {
+    rubric = active || rubric; inDetail = !!detail;
+    tabBtns.forEach(b => {
+      const on = b.dataset.r === active;
+      b.setAttribute('aria-selected', String(on));
+      b.classList.toggle('in-detail', on && !!detail);
+      b.title = on && detail ? 'Revenir à la liste' : '';
+    });
+  }
 
+  /* ---------- panel: home lists ---------- */
   function showHome(which) {
     stopAnim(true);
     setActive(null);
     highlight(null);
+    if (popup) { popup.remove(); popup = null; }
+    setTitleDefault();
     if (which) rubric = which;
+    setTabs(rubric, false);
     const body = el('div');
-    const tabs = el('div', { class: 'tabs rubrics', role: 'tablist' }, RUBRICS.map(([id, label]) =>
-      el('button', { type: 'button', role: 'tab', 'aria-selected': String(id === rubric), onclick: () => showHome(id) }, label)));
     if (rubric === 'camps') {
       body.append(
-        el('p', { class: 'note' }, 'Bivouac 100 % autonome, tente montée chaque soir. Choisis-en un pour voler jusqu’à lui et lire sa nuit.'),
+        el('h2', null, 'Sept bivouacs, neuf nuits'),
+        el('p', { class: 'note' }, 'Tente montée chaque soir, en autonomie complète. Choisis un bivouac pour voler jusqu’à lui et lire sa nuit.'),
         el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
-            el('span', { class: 'camp-num' }, String(i + 1).padStart(2, '0')),
+            el('span', { class: 'camp-num' }, String(i + 1)),
             el('span', { class: 'camp-name' }, c.name),
             el('span', { class: 'camp-dates' }, c.nights.map(n => day(n.night).d).join(' + ') + ' ' + day(c.nights[0].night).m))))));
     } else if (rubric === 'summits') {
       body.append(
-        el('p', { class: 'note' }, 'Neuf sommets en trail, sans le sac. Choisis-en un pour rejouer la montée.'),
+        el('h2', null, 'Neuf sommets'),
+        el('p', { class: 'note' }, 'En trail, sans le sac. Choisis un sommet pour rejouer la sortie du jour.'),
         el('ul', { class: 'camp-list' }, T.summits.map(s => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openSummit(s) },
-            el('span', { class: 'camp-num' }, '▲'),
+            el('span', { class: 'camp-num num-peak' }, peakIcon()),
             el('span', { class: 'camp-name' }, s.sommet),
             el('span', { class: 'camp-dates' }, `${nf(s.alt_gps_m)} m`))))));
     } else {
       body.append(
-        el('p', { class: 'note' }, 'La marche avec le gros sac, de bivouac en bivouac. Les J6 et J8 se passent sans sac : ils sont dans les sommets.'),
+        el('h2', null, 'Sept étapes avec le sac'),
+        el('p', { class: 'note' }, 'De bivouac en bivouac, avec le gros sac. Les J6 et J8 se passent sans sac : ils sont dans les sommets.'),
         el('ul', { class: 'camp-list' }, T.etapes.map(e => {
           const seq = buildSeq(e.acts), last = seq[seq.length - 1];
           return el('li', null,
             el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openEtape(e) },
-              el('span', { class: 'camp-num' }, `J${e.day}`),
+              el('span', { class: 'camp-num num-day' }, `J${e.day}`),
               el('span', { class: 'stage-main' },
                 el('span', { class: 'camp-name' }, `${e.from} → ${e.to}`),
                 el('span', { class: 'stage-meta' }, `${nf(last.km, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}`))));
         })));
     }
-    panel.replaceChildren(el('h2', null, 'Neuf jours, sept bivouacs'), tabs, body,
+    panel.replaceChildren(body,
       el('p', { class: 'foot' }, 'Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Météo : réanalyse ERA5. Sommeil : Garmin Connect.'));
     panel.scrollTop = 0;
   }
 
   function backButton(label, to) {
-    return el('button', { type: 'button', class: 'back', onclick: () => { showHome(to); overview(); } }, `← ${label}`);
+    return el('button', { type: 'button', class: 'back', onclick: () => { showHome(to); overview(); } }, `‹ ${label}`);
   }
 
   /* ---------- panel: one camp ---------- */
@@ -148,15 +270,15 @@
     }
     kids.push(el('h3', null, 'Météo de la nuit'));
     kids.push(el('dl', { class: 'kv' },
-      el('div', null, el('dt', null, 'Minimum au camp'), el('dd', null, `${nf(w.temp_min_camp, 1)} °C`)),
-      el('div', null, el('dt', null, 'Pluie'), el('dd', null, `${nf(w.rain_mm, 1)} mm`)),
-      el('div', null, el('dt', null, 'Rafales max'), el('dd', null, `${nf(w.gust_max)} km/h`)),
-      el('div', null, el('dt', null, 'Nuages'), el('dd', null, `${nf(w.cloud_pct)} %`))));
-    kids.push(el('p', { class: 'meta' }, `ERA5 ${nf(w.temp_min_era5, 1)} °C, corrigé de l’altitude du camp (−6,5 °C par 1 000 m).`));
+      el('div', null, el('dt', null, 'Minimum au camp'), el('dd', null, nf(w.temp_min_camp, 1), el('small', null, ' °C'))),
+      el('div', null, el('dt', null, 'Pluie'), el('dd', null, nf(w.rain_mm, 1), el('small', null, ' mm'))),
+      el('div', null, el('dt', null, 'Rafales max'), el('dd', null, nf(w.gust_max), el('small', null, ' km/h'))),
+      el('div', null, el('dt', null, 'Nuages'), el('dd', null, nf(w.cloud_pct), el('small', null, ' %')))));
+    kids.push(el('p', { class: 'meta', style: 'margin-top:8px' }, `ERA5 ${nf(w.temp_min_era5, 1)} °C, corrigé de l’altitude du camp (−6,5 °C par 1 000 m).`));
     if (n.bag_next_morning_kg != null) {
       kids.push(el('h3', null, `Le lendemain matin · J${n.next_day}`));
-      kids.push(el('dl', { class: 'kv' }, el('div', null, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)} kg`))));
-      kids.push(el('p', { class: 'meta' }, T.bag_note));
+      kids.push(el('dl', { class: 'kv' }, el('div', null, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg')))));
+      kids.push(el('p', { class: 'meta', style: 'margin-top:8px' }, T.bag_note));
     }
     return kids;
   }
@@ -165,9 +287,12 @@
     stopAnim(true);
     highlight(null);
     setActive(c.id);
+    setTitleDefault();
+    setTabs('camps', true);
+    unfoldPanel();
     flyToCamp(c);
     const body = el('div');
-    const render = i => body.replaceChildren(el('p', { class: 'note' }, c.nights[i].note || ''), ...nightBlock(c.nights[i]));
+    const render = i => body.replaceChildren(c.nights[i].note ? el('p', { class: 'note' }, c.nights[i].note) : null, ...nightBlock(c.nights[i]));
     const tabs = c.nights.length > 1 ? el('div', { class: 'tabs', role: 'tablist' }, c.nights.map((n, i) =>
       el('button', { type: 'button', role: 'tab', 'aria-selected': String(i === nightIdx), onclick: e => {
         tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', 'false'));
@@ -183,57 +308,110 @@
     panel.scrollTop = 0;
   }
 
-  /* ---------- profile chart ---------- */
+  /* ---------- elevation profile (shown in the title bubble) ---------- */
   function profileChart(pts, marks, onSeek) {
-    const W = 360, H = 150, L = 30, R = 30, Tp = 12, B = 20;
+    const W = 380, H = 118, L = 30, R = 6, Tp = marks && marks.length ? 16 : 8, B = 16;
     const kmMax = pts[pts.length - 1].km || 1;
-    const alts = pts.map(p => p.alt), hrs = pts.map(p => p.hr).filter(v => v != null);
+    const alts = pts.map(p => p.alt);
     const aMax = Math.max(100, Math.ceil(Math.max(...alts) / 100) * 100);
-    const hMin = hrs.length ? Math.floor(Math.min(...hrs) / 10) * 10 : 60, hMax = hrs.length ? Math.ceil(Math.max(...hrs) / 10) * 10 : 180;
     const x = km => L + (km / kmMax) * (W - L - R);
     const ya = a => Tp + (1 - a / aMax) * (H - Tp - B);
-    const yh = h => Tp + (1 - (h - hMin) / Math.max(1, hMax - hMin)) * (H - Tp - B);
-    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'profile', role: 'img', 'aria-label': `Profil d’altitude et fréquence cardiaque, ${nf(kmMax, 1)} km` });
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'profile', role: 'img', 'aria-label': `Profil d’altitude, ${nf(kmMax, 1)} km, jusqu’à ${nf(Math.max(...alts))} m` });
     [0, 0.5, 1].forEach(f => {
       svg.append(sv('line', { x1: L, x2: W - R, y1: ya(f * aMax), y2: ya(f * aMax), class: 'grid' }));
-      const t = sv('text', { x: L - 5, y: ya(f * aMax) + 3, class: 'axis', 'text-anchor': 'end' }); t.textContent = nf(f * aMax); svg.append(t);
-      const hv = hMin + f * (hMax - hMin);
-      const t2 = sv('text', { x: W - R + 5, y: yh(hv) + 3, class: 'axis hr-axis' }); t2.textContent = nf(hv); svg.append(t2);
+      svg.append(svText({ x: L - 5, y: ya(f * aMax) + 3, class: 'axis', 'text-anchor': 'end' }, nf(f * aMax)));
     });
-    [0, kmMax / 2, kmMax].forEach((k, j) => {
-      const t = sv('text', { x: x(k), y: H - 5, class: 'axis', 'text-anchor': j === 0 ? 'start' : j === 2 ? 'end' : 'middle' });
-      t.textContent = `${nf(k, 1)} km`; svg.append(t);
-    });
-    let area = `M${x(0)},${ya(0)}`, line = '', hr = '', pen = false;
+    [0, kmMax / 2, kmMax].forEach((k, j) =>
+      svg.append(svText({ x: x(k), y: H - 3, class: 'axis', 'text-anchor': j === 0 ? 'start' : j === 2 ? 'end' : 'middle' }, `${nf(k, kmMax < 20 ? 1 : 0)} km`)));
+    let area = `M${x(0)},${ya(0)}`, line = '';
     pts.forEach((p, k) => {
-      area += `L${x(p.km)},${ya(p.alt)}`;
-      line += `${k && pts[k - 1].seg === p.seg ? 'L' : 'M'}${x(p.km)},${ya(p.alt)}`;
-      if (p.hr == null || (k && pts[k - 1].seg !== p.seg)) pen = false;
-      if (p.hr != null) { hr += `${pen ? 'L' : 'M'}${x(p.km)},${yh(p.hr)}`; pen = true; }
+      area += `L${x(p.km).toFixed(1)},${ya(p.alt).toFixed(1)}`;
+      line += `${k && pts[k - 1].seg === p.seg ? 'L' : 'M'}${x(p.km).toFixed(1)},${ya(p.alt).toFixed(1)}`;
     });
     area += `L${x(kmMax)},${ya(0)}Z`;
-    svg.append(sv('path', { d: area, class: 'alt-area' }), sv('path', { d: line, class: 'alt-line' }), sv('path', { d: hr, class: 'hr-line' }));
+    const clipId = `done-${Math.random().toString(36).slice(2, 8)}`;
+    const clip = sv('clipPath', { id: clipId }), clipRect = sv('rect', { x: 0, y: 0, width: L, height: H });
+    clip.append(clipRect);
+    svg.append(clip, sv('path', { d: area, class: 'alt-area' }), sv('path', { d: area, class: 'alt-done', 'clip-path': `url(#${clipId})` }), sv('path', { d: line, class: 'alt-line' }));
     (marks || []).forEach((m, j, all) => {
       const close = all.length > 1 && Math.abs(x(all[1].km) - x(all[0].km)) < 90;
       const anchor = close ? (j === 0 ? 'end' : 'start') : 'middle';
       svg.append(sv('line', { x1: x(m.km), x2: x(m.km), y1: ya(m.alt), y2: Tp - 2, class: 'mark' }));
-      const t = sv('text', { x: Math.min(W - R, Math.max(L, x(m.km) + (anchor === 'end' ? -3 : anchor === 'start' ? 3 : 0))), y: Tp - 3, class: 'axis mark-label', 'text-anchor': anchor });
-      t.textContent = m.label; svg.append(t);
+      svg.append(svText({ x: Math.min(W - R, Math.max(L, x(m.km) + (anchor === 'end' ? -3 : anchor === 'start' ? 3 : 0))), y: Tp - 5, class: 'axis mark-label', 'text-anchor': anchor }, m.label));
     });
     const cur = sv('line', { x1: L, x2: L, y1: Tp, y2: H - B, class: 'cursor' });
-    const dot = sv('circle', { r: 3.5, cx: L, cy: ya(pts[0].alt), class: 'cursor-dot' });
-    const hit = sv('rect', { x: L, y: Tp, width: W - L - R, height: H - Tp - B, fill: 'transparent', class: 'hit' });
+    const dot = sv('circle', { r: 4, cx: L, cy: ya(pts[0].alt), class: 'cursor-dot' });
+    const hit = sv('rect', { x: L, y: 0, width: W - L - R, height: H - B, fill: 'transparent', class: 'hit' });
     hit.addEventListener('click', e => {
       const r = svg.getBoundingClientRect();
       onSeek(Math.max(0, Math.min(kmMax, ((e.clientX - r.left) / r.width * W - L) / (W - L - R) * kmMax)));
     });
     svg.append(cur, dot, hit);
-    return { svg, move: (km, alt) => { cur.setAttribute('x1', x(km)); cur.setAttribute('x2', x(km)); dot.setAttribute('cx', x(km)); dot.setAttribute('cy', ya(alt)); } };
+    return { svg, move: (km, alt) => {
+      const X = x(km).toFixed(1);
+      cur.setAttribute('x1', X); cur.setAttribute('x2', X); dot.setAttribute('cx', X); dot.setAttribute('cy', ya(alt).toFixed(1));
+      clipRect.setAttribute('width', X);
+    } };
   }
 
-  /* ---------- player: buttons, live counters, profile ---------- */
+  /* ---------- pace histogram: minutes per km, km by km (5 km bins for the whole traverse) ---------- */
+  function paceChart(pts, bin, onSeek) {
+    const kmMax = pts[pts.length - 1].km;
+    const bins = [];
+    for (let k0 = 0; k0 < kmMax - 1e-6; k0 += bin) {
+      const k1 = Math.min(kmMax, k0 + bin), len = k1 - k0;
+      if (len < 0.15 * bin && bins.length) {   // a tiny last piece joins the previous bin
+        const b = bins[bins.length - 1];
+        b.k1 = k1; b.min = (movAt(pts, b.k1) - movAt(pts, b.k0)) / 60 / (b.k1 - b.k0);
+        continue;
+      }
+      const mid = pts[idxAt(pts, (k0 + k1) / 2)];
+      bins.push({ k0, k1, min: (movAt(pts, k1) - movAt(pts, k0)) / 60 / len, sac: mid.sac });
+    }
+    const vals = bins.map(b => b.min).filter(isFinite).sort((a, b) => a - b);
+    const p95 = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.95))] || 10;
+    const step = p95 > 40 ? 20 : p95 > 20 ? 10 : 5;
+    const yMax = Math.max(step, Math.ceil(p95 * 1.08 / step) * step);
+    const W = 340, H = 128, L = 30, R = 4, Tp = 6, B = 16;
+    const bw = (W - L - R) / bins.length, gap = Math.min(2, bw * 0.18);
+    const y = v => Tp + (1 - Math.min(v, yMax) / yMax) * (H - Tp - B);
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pace', role: 'img',
+      'aria-label': `Allure par tranche de ${bin} km, de ${pace(vals[0])} à ${pace(vals[vals.length - 1])} par km` });
+    [0, 0.5, 1].forEach(f => {
+      svg.append(sv('line', { x1: L, x2: W - R, y1: y(f * yMax), y2: y(f * yMax), class: 'grid' }));
+      svg.append(svText({ x: L - 5, y: y(f * yMax) + 3, class: 'axis', 'text-anchor': 'end' }, `${nf(f * yMax)}′`));
+    });
+    const lab = bins.length <= 16 ? 1 : Math.ceil(bins.length / 8);
+    const rects = bins.map((b, j) => {
+      const r = sv('rect', { x: (L + j * bw + gap / 2).toFixed(2), y: y(b.min).toFixed(1), width: Math.max(0.6, bw - gap).toFixed(2),
+        height: Math.max(0.5, H - B - y(b.min)).toFixed(1), rx: Math.min(2.5, bw / 4), class: `bar ${b.sac ? 'b-avec' : 'b-sans'} future` });
+      r.addEventListener('click', () => onSeek(b.k0 + 1e-3));
+      svg.append(r);
+      if (b.min > yMax) svg.append(sv('rect', { x: (L + j * bw + gap / 2).toFixed(2), y: Tp + 3, width: Math.max(0.6, bw - gap).toFixed(2), height: 1.5, class: 'clip' }));
+      if (j % lab === 0 || j === bins.length - 1) svg.append(svText({ x: (L + (j + 0.5) * bw).toFixed(1), y: H - 3, class: 'axis', 'text-anchor': 'middle' }, nf(bin * (j + 1))));
+      return r;
+    });
+    const caption = el('p', { class: 'pace-now' }, '—');
+    let curBin = -1;
+    function move(km) {
+      let j = bins.findIndex(b => km < b.k1);
+      if (j < 0) j = bins.length - 1;
+      if (j === curBin) return;
+      curBin = j;
+      rects.forEach((r, k) => { r.classList.toggle('future', k > j); r.classList.toggle('now', k === j); });
+      const b = bins[j];
+      caption.replaceChildren(`${bin === 1 ? `km ${j + 1}` : `km ${nf(b.k0)} à ${nf(b.k1)}`} · `, el('b', null, pace(b.min)), ' par km · ', b.sac ? 'avec le sac' : 'sans sac');
+    }
+    const key = el('div', { class: 'key' },
+      bins.some(b => b.sac) ? el('span', null, el('i', { class: 'k-avec' }), 'avec le sac') : null,
+      bins.some(b => !b.sac) ? el('span', null, el('i', { class: 'k-sans' }), 'sans sac') : null,
+      el('span', null, 'temps en mouvement · touche une barre pour y aller'));
+    return { nodes: [svg, caption, key], move };
+  }
+
+  /* ---------- player: buttons, live counters, profile in the title, pace in the panel ---------- */
   const SPEEDS = [1, 2, 4, 8];
-  const CAMS = [['drone', 'Caméra : drone'], ['orbit', 'Caméra : orbite'], ['fixed', 'Caméra : fixe']];
+  const CAMS = [['drone', 'Drone'], ['orbit', 'Orbite'], ['fixed', 'Fixe']];
 
   function player(pts, opts) {
     const counters = {};
@@ -243,64 +421,64 @@
       cnt('km', 'Distance', 'km'), cnt('dplus', 'Dénivelé +', 'm'), cnt('mov', 'En mouvement'),
       cnt('kcal', 'Calories', 'kcal'), cnt('heure', 'Heure'), cnt('hr', 'FC', 'bpm'));
     const where = opts.showWhere ? el('p', { class: 'where' }, '—') : null;
-    const chart = profileChart(pts, opts.marks, km => { state.km = km; render(km, true); });
     const state = { km: 0, speed: 1, cam: 'drone' };
+    const seek = km => { state.km = km; render(km, true); };
+    const chart = profileChart(pts, opts.marks, seek);
+    const paces = paceChart(pts, opts.paceBin || 1, seek);
 
-    function idxAt(km) {          // last point at or before km
-      let lo = 0, hi = pts.length - 1;
-      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (pts[mid].km <= km) lo = mid; else hi = mid - 1; }
-      return lo;
-    }
     function render(km, full) {
-      const i = idxAt(km), p = pts[i];
+      const i = idxAt(pts, km), p = pts[i];
       counters.km.textContent = nf(p.km, 1); counters.dplus.textContent = nf(p.dplus);
       counters.mov.textContent = hms(p.mov); counters.kcal.textContent = nf(p.kcal);
       counters.heure.textContent = p.heure; counters.hr.textContent = nf(p.hr);
       if (where) where.textContent = `J${p.day} · ${p.act}`;
-      chart.move(p.km, p.alt);
+      chart.move(km, p.alt);
+      paces.move(km);
       drawLine(pts, i, full);
       drawHead(headAt(pts, km, i));
     }
 
-    const playBtn = el('button', { type: 'button', class: 'play' }, '▶ Lancer la trace');
+    const playBtn = el('button', { type: 'button', class: 'play' }, '▶ Lancer');
     const speedBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Vitesse' }, '×1');
     speedBtn.addEventListener('click', () => { state.speed = SPEEDS[(SPEEDS.indexOf(state.speed) + 1) % SPEEDS.length]; speedBtn.textContent = `×${state.speed}`; if (anim) anim.speed = state.speed; });
-    const camBtn = el('button', { type: 'button', class: 'ghost' }, CAMS[0][1]);
+    const camBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Mode de caméra' }, `Caméra : ${CAMS[0][1]}`);
     camBtn.addEventListener('click', () => {
       const i = (CAMS.findIndex(c => c[0] === state.cam) + 1) % CAMS.length;
-      state.cam = CAMS[i][0]; camBtn.textContent = CAMS[i][1];
-      if (anim) { anim.cam = state.cam; anim.orbitStart = performance.now(); anim.orbitBase = map ? map.getBearing() : 0; }
+      state.cam = CAMS[i][0]; camBtn.textContent = `Caméra : ${CAMS[i][1]}`;
+      if (anim) { anim.cam = state.cam; anim.orbitStart = performance.now(); anim.orbitBase = map ? map.getBearing() : 0; anim.bearing = map ? map.getBearing() : anim.bearing; }
     });
     playBtn.addEventListener('click', () => {
       if (anim && anim.running) { anim.running = false; playBtn.textContent = '▶ Reprendre'; return; }
       if (state.km >= pts[pts.length - 1].km) state.km = 0;
-      startAnim(pts, state, opts.secPerKm, render, () => { playBtn.textContent = '↺ Rejouer'; opts.onEnd && opts.onEnd(); });
+      startAnim(pts, state, opts.view, render, () => { playBtn.textContent = '↺ Rejouer'; opts.onEnd && opts.onEnd(); });
       playBtn.textContent = '❚❚ Pause';
     });
+
+    setTitleActivity(opts.eyebrow, opts.name, [chart.svg, el('p', { class: 'profile-hint' }, 'Profil d’altitude (m) · touche-le pour te déplacer')]);
     render(0, true);
     return {
-      nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board].filter(Boolean).concat([ el('h3', null, 'Profil'), chart.svg,
-        el('div', { class: 'phase-key' },
-          el('span', null, el('i', { class: 'k-alt' }), 'altitude (m)'),
-          el('span', null, el('i', { class: 'k-hr' }), 'fréquence cardiaque lissée (bpm)'),
-          el('span', null, 'touche le profil pour te déplacer'))]),
+      nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
+        el('h3', null, opts.paceBin > 1 ? `Allure par tranche de ${opts.paceBin} km` : 'Allure par kilomètre'), ...paces.nodes].filter(Boolean),
       start: () => playBtn.click(),
     };
   }
 
   /* ---------- panel: one étape (camp to camp, with the pack) ---------- */
   function openEtape(e) {
-    stopAnim(true); setActive(null);
+    stopAnim(true); setActive(null); setTabs('etapes', true); unfoldPanel();
+    if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(e.acts);
     highlight(e.acts);
     fitPts(pts);
     const last = pts[pts.length - 1];
     const night = T.camps.find(n => n.next_day === e.day);
     const hrs = pts.map(p => p.hr).filter(v => v != null);
-    const pl = player(pts, { secPerKm: 3.2, onEnd: () => fitPts(pts) });
+    const d = day(ACTS[e.acts[0]].date);
+    const pl = player(pts, { view: VIEW.etape, onEnd: () => fitPts(pts),
+      eyebrow: `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`, name: `${e.from} → ${e.to}` });
     panel.replaceChildren(
       backButton('Toutes les étapes', 'etapes'),
-      el('p', { class: 'eyebrow-sm' }, `Étape J${e.day} · ${day(ACTS[e.acts[0]].date).d} ${day(ACTS[e.acts[0]].date).m} · avec le sac`),
+      el('p', { class: 'eyebrow-sm' }, `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`),
       el('h2', null, `${e.from} → ${e.to}`),
       el('dl', { class: 'kv' },
         el('div', null, el('dt', null, 'Distance'), el('dd', null, nf(last.km, 1), el('small', null, ' km'))),
@@ -308,43 +486,53 @@
         el('div', null, el('dt', null, 'En mouvement'), el('dd', null, hms(last.mov))),
         el('div', null, el('dt', null, 'FC moyenne'), el('dd', null, nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), el('small', null, ' bpm'))),
         el('div', null, el('dt', null, 'Calories'), el('dd', null, nf(last.kcal), el('small', null, ' kcal'))),
-        el('div', null, el('dt', null, 'Sac le matin'), el('dd', null, night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)} kg` : '—'))),
+        el('div', null, el('dt', null, 'Sac le matin'), el('dd', null, night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? el('small', null, ' kg') : null))),
       el('h3', null, 'Rejouer l’étape'),
       ...pl.nodes,
       el('p', { class: 'foot' }, `Calories : estimation de la montre. Sac : ${T.bag_note}. Les passages non enregistrés (bateau, liaisons) sont sautés.`));
     panel.scrollTop = 0;
   }
 
-  /* ---------- panel: one summit (the trail outing that reaches it) ---------- */
+  /* ---------- panel: one summit (the whole trail outing of that day) ---------- */
   function openSummit(s) {
-    stopAnim(true); setActive(null);
-    const pts = buildSeq([s.activite]);
-    highlight([s.activite]);
-    fitPts(pts);
+    stopAnim(true); setActive(null); setTabs('summits', true); unfoldPanel();
+    const ids = SUMMIT_OUTINGS[s.activite] || [s.activite];
+    const pts = buildSeq(ids);
+    highlight(ids);
+    fitPts(pts, 13.2);
     summitPopup(s);
     const tops = T.summits.filter(x => x.activite === s.activite).map(x => {
       let best = 0, bd = Infinity;
-      pts.forEach((p, i) => { const d = (p.lat - x.lat) ** 2 + ((p.lon - x.lon) * 0.37) ** 2; if (d < bd) { bd = d; best = i; } });
+      pts.forEach((p, i) => { const dd = (p.lat - x.lat) ** 2 + ((p.lon - x.lon) * 0.37) ** 2; if (dd < bd) { bd = dd; best = i; } });
       return { s: x, i: best };
-    });
-    const me = tops.find(t => t.s.sommet === s.sommet) || tops[0];
-    const atTop = pts[me.i], last = pts[pts.length - 1];
+    }).sort((a, b) => a.i - b.i);
+    const k = Math.max(0, tops.findIndex(t => t.s.sommet === s.sommet));
+    const me = tops[k];
+    // the climb = from the lowest point since the previous summit (or the start) up to this one
+    const from = k ? tops[k - 1].i : 0;
+    let low = from;
+    for (let i = from; i <= me.i; i++) if (pts[i].alt < pts[low].alt) low = i;
+    const top = pts[me.i], base = pts[low], last = pts[pts.length - 1];
+    const climbS = top.mov - base.mov, climbM = top.dplus - base.dplus;
     const hrs = pts.map(p => p.hr).filter(v => v != null);
-    const pl = player(pts, { secPerKm: 4, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts) });
     const d = day(s.heure.slice(0, 10));
+    const several = ids.length > 1;
+    const pl = player(pts, { view: VIEW.summit, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+      eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
       backButton('Tous les sommets', 'summits'),
       el('p', { class: 'eyebrow-sm' }, `Sommet · ${d.d} ${d.m} · sans sac`),
       el('h2', null, s.sommet),
-      el('p', { class: 'meta' }, s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m au GPS · ${nf(s.hauteur_officielle_m)} m officiels` : `${nf(s.alt_gps_m)} m au GPS`),
+      el('p', { class: 'meta' }, (s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m au GPS · ${nf(s.hauteur_officielle_m)} m officiels` : `${nf(s.alt_gps_m)} m au GPS`)
+        + (several ? ` · sortie depuis ${ACTS[ids[0]].name}` : '')),
       el('dl', { class: 'kv' },
-        el('div', null, el('dt', null, 'Départ'), el('dd', null, nf(pts[0].alt), el('small', null, ' m'))),
-        el('div', null, el('dt', null, 'Sommet à'), el('dd', null, s.heure.slice(11, 16))),
-        el('div', null, el('dt', null, 'Montée'), el('dd', null, hms(atTop.mov))),
-        el('div', null, el('dt', null, 'D+ jusqu’au sommet'), el('dd', null, nf(atTop.dplus), el('small', null, ' m'))),
-        el('div', null, el('dt', null, 'Vitesse verticale'), el('dd', null, nf(atTop.dplus / Math.max(1 / 60, atTop.mov / 3600)), el('small', null, ' m/h'))),
+        el('div', null, el('dt', null, 'Pied de la montée'), el('dd', null, nf(base.alt), el('small', null, ' m'))),
+        el('div', null, el('dt', null, 'Au sommet à'), el('dd', null, s.heure.slice(11, 16))),
+        el('div', null, el('dt', null, 'Montée'), el('dd', null, hms(climbS))),
+        el('div', null, el('dt', null, 'D+ de la montée'), el('dd', null, nf(climbM), el('small', null, ' m'))),
+        el('div', null, el('dt', null, 'Vitesse verticale'), el('dd', null, nf(climbM / Math.max(1 / 60, climbS / 3600)), el('small', null, ' m/h'))),
         el('div', null, el('dt', null, 'FC max (lissée)'), el('dd', null, nf(hrs.length ? Math.max(...hrs) : null), el('small', null, ' bpm'))),
-        el('div', null, el('dt', null, 'Sortie complète'), el('dd', null, nf(last.km, 1), el('small', null, ' km'))),
+        el('div', null, el('dt', null, several ? 'Sortie du jour' : 'Sortie complète'), el('dd', null, nf(last.km, 1), el('small', null, ' km'))),
         el('div', null, el('dt', null, 'Calories'), el('dd', null, nf(last.kcal), el('small', null, ' kcal')))),
       el('h3', null, 'Rejouer la sortie'),
       ...pl.nodes);
@@ -353,14 +541,15 @@
 
   /* ---------- panel: the whole traverse ---------- */
   function openTrek() {
-    stopAnim(true); setActive(null); highlight([]);
+    stopAnim(true); setActive(null); highlight([]); setTabs(null, false); unfoldPanel();
+    if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(T.acts.map(a => a.id));
-    const pl = player(pts, { secPerKm: 0.6, showWhere: true, marks: [], onEnd: () => overview() });
+    const pl = player(pts, { view: VIEW.trek, paceBin: 5, showWhere: true, marks: [], onEnd: () => overview(),
+      eyebrow: '14 → 22 juin 2026 · 24 enregistrements', name: 'Toute la traversée' });
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
-      el('p', { class: 'eyebrow-sm' }, '14 → 22 juin 2026 · 24 enregistrements'),
       el('h2', null, 'Toute la traversée'),
-      el('p', { class: 'note' }, 'Les 159 km dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.'),
+      el('p', { class: 'note' }, `Les ${nf(pts[pts.length - 1].km)} km dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.`),
       ...pl.nodes);
     panel.scrollTop = 0;
     overview();
@@ -372,6 +561,7 @@
   if (typeof maplibregl === 'undefined') {
     document.getElementById('map-error').hidden = false;
     showHome();
+    layoutChanged();
     return;
   }
 
@@ -393,11 +583,11 @@
         hs: { ...DEM },
       },
       layers: [
-        { id: 'bg', type: 'background', paint: { 'background-color': '#0f1720' } },
-        { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-saturation': -0.15, 'raster-contrast': 0.05 } },
+        { id: 'bg', type: 'background', paint: { 'background-color': '#141b1f' } },
+        { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-saturation': -0.1, 'raster-contrast': 0.05 } },
         { id: 'topo', type: 'raster', source: 'topo', layout: { visibility: 'none' } },
         { id: 'hillshade', type: 'hillshade', source: 'hs',
-          paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#0b1118', 'hillshade-highlight-color': '#ffffff' } },
+          paint: { 'hillshade-exaggeration': 0.3, 'hillshade-shadow-color': '#0b1118', 'hillshade-highlight-color': '#ffffff' } },
       ],
     },
     center: [13.15, 68.0], zoom: 8.6, pitch: 0, maxPitch: 80,
@@ -408,24 +598,32 @@
   const bounds = new maplibregl.LngLatBounds();
   T.trace.features.forEach(f => f.geometry.coordinates.forEach(c => bounds.extend([c[0], c[1]])));
 
+  /* free area of the map = the window minus the bubbles that are open */
   function padding() {
-    return isPhone()
-      ? { top: 110, bottom: Math.round(window.innerHeight * 0.46) + 20, left: 20, right: 20 }
-      : { top: 60, bottom: 90, left: 470, right: 420 };
+    const t = titleBox.getBoundingClientRect(), p = panelBox.getBoundingClientRect();
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (isPhone()) return { top: Math.round(t.bottom) + 12, bottom: Math.round(vh - p.top) + 12, left: 24, right: 24 };
+    const titleTall = t.height > vh * 0.3;
+    return {
+      top: titleTall ? 40 : Math.round(t.bottom) + 16,
+      bottom: 80,
+      left: titleTall ? Math.round(t.right) + 24 : 40,
+      right: Math.round(vw - p.left) + 24,
+    };
   }
   function overview(instant) {
     if (!map) return;
     map.fitBounds(bounds, { padding: padding(), pitch: 48, bearing: -18, duration: instant || reduceMotion ? 0 : 2400, essential: true });
   }
-  function fitPts(pts) {
+  function fitPts(pts, maxZoom = 13.6) {
     if (!map) return;
     const b = new maplibregl.LngLatBounds();
     pts.forEach(p => b.extend([p.lon, p.lat]));
-    map.fitBounds(b, { padding: padding(), pitch: 55, bearing: -15, maxZoom: 14, duration: reduceMotion ? 0 : 2200, essential: true });
+    map.fitBounds(b, { padding: padding(), pitch: 52, bearing: -15, maxZoom, duration: reduceMotion ? 0 : 2200, essential: true });
   }
   function flyToCamp(c) {
     if (!map) return;
-    map.flyTo({ center: [c.lon, c.lat], zoom: 13.4, pitch: 62, bearing: (c.id * 47) % 360 - 180, duration: reduceMotion ? 0 : 2800, essential: true, padding: padding() });
+    map.flyTo({ center: [c.lon, c.lat], zoom: 13.2, pitch: 60, bearing: (c.id * 47) % 360 - 180, duration: reduceMotion ? 0 : 2800, essential: true, padding: padding() });
   }
 
   /* dim the whole trace while one sequence is on stage */
@@ -442,7 +640,6 @@
   }
 
   /* ---------- animation ---------- */
-  let lastLineDraw = 0;
   function drawLine(pts, k, force) {
     if (!map || !map.getSource('anim')) return;
     const now = performance.now();
@@ -461,12 +658,6 @@
     }
     map.getSource('anim').setData({ type: 'FeatureCollection', features: feats.filter(f => f.geometry.coordinates.length > 1).map(({ seg, ...f }) => f) });
   }
-  function headAt(pts, km, i) {
-    const a = pts[i], b = pts[Math.min(i + 1, pts.length - 1)];
-    if (b === a || b.seg !== a.seg || b.km <= a.km) return { lon: a.lon, lat: a.lat, sac: a.sac };
-    const f = Math.min(1, Math.max(0, (km - a.km) / (b.km - a.km)));
-    return { lon: a.lon + (b.lon - a.lon) * f, lat: a.lat + (b.lat - a.lat) * f, sac: a.sac };
-  }
   function drawHead(h) {
     if (!map || !map.getSource('head')) return;
     map.getSource('head').setData({ type: 'Feature', properties: { sac: h.sac }, geometry: { type: 'Point', coordinates: [h.lon, h.lat] } });
@@ -476,44 +667,44 @@
     map.getSource('anim').setData({ type: 'FeatureCollection', features: [] });
     map.getSource('head').setData({ type: 'FeatureCollection', features: [] });
   }
-  const bearingTo = (a, b) => {
-    const toR = Math.PI / 180, y = Math.sin((b.lon - a.lon) * toR) * Math.cos(b.lat * toR);
-    const x = Math.cos(a.lat * toR) * Math.sin(b.lat * toR) - Math.sin(a.lat * toR) * Math.cos(b.lat * toR) * Math.cos((b.lon - a.lon) * toR);
-    return Math.atan2(y, x) / toR;
-  };
-  const lerpAngle = (a, b, t) => { const d = ((b - a + 540) % 360) - 180; return a + d * t; };
-
-  function startAnim(pts, state, secPerKm, render, onEnd) {
+  function startAnim(pts, state, view, render, onEnd) {
     stopAnim(false);
     const kmMax = pts[pts.length - 1].km;
-    const trek = kmMax > 60;
+    if (!tracks.has(pts)) tracks.set(pts, headingTrack(pts, view.W, view.S));
+    const heading = tracks.get(pts);
     const a = anim = { running: true, speed: state.speed, cam: state.cam, last: performance.now(),
-      bearing: map ? map.getBearing() : 0, center: null, orbitStart: performance.now(), orbitBase: map ? map.getBearing() : 0, delayUntil: 0 };
-    const zoom = trek ? 12.6 : 14.2, pitch = 64;
+      bearing: map ? map.getBearing() : 0, center: null, pad: null,
+      orbitStart: performance.now(), orbitBase: map ? map.getBearing() : 0, delayUntil: 0 };
     if (map && a.cam !== 'fixed' && !reduceMotion) {
-      const h = headAt(pts, state.km, 0);
-      map.easeTo({ center: [h.lon, h.lat], zoom, pitch, duration: 1400, padding: padding() });
-      a.delayUntil = performance.now() + 1450;
+      const h = headAt(pts, state.km);
+      a.bearing = a.cam === 'drone' ? heading(state.km) : map.getBearing();
+      map.easeTo({ center: [h.lon, h.lat], zoom: view.zoom, pitch: view.pitch, bearing: a.bearing, duration: 1600, padding: padding(), essential: true });
+      a.delayUntil = performance.now() + 1650;
+      a.orbitBase = a.bearing;
     }
     const step = now => {
       if (a !== anim || !a.running) return;
-      const dt = now - a.last; a.last = now;
-      if (now < a.delayUntil) { requestAnimationFrame(step); return; }
-      state.km = Math.min(kmMax, state.km + (dt / 1000) / secPerKm * a.speed);
+      const dt = Math.min(0.1, (now - a.last) / 1000); a.last = now;
+      if (now < a.delayUntil) { a.orbitStart = now; requestAnimationFrame(step); return; }
+      state.km = Math.min(kmMax, state.km + dt / view.secPerKm * a.speed);
       render(state.km, false);
       if (map && a.cam !== 'fixed') {
-        const i = pts.findIndex(p => p.km >= state.km);
-        const h = headAt(pts, state.km, Math.max(0, (i < 0 ? pts.length : i) - 1));
-        a.center = a.center ? { lon: a.center.lon + (h.lon - a.center.lon) * 0.12, lat: a.center.lat + (h.lat - a.center.lat) * 0.12 } : h;
-        let bearing;
+        const h = headAt(pts, state.km);
+        const fc = ease(dt, 0.12);
+        a.center = a.center ? { lon: a.center.lon + (h.lon - a.center.lon) * fc, lat: a.center.lat + (h.lat - a.center.lat) * fc } : h;
         if (a.cam === 'drone') {
-          const ahead = headAt(pts, Math.min(kmMax, state.km + (trek ? 1.5 : 0.35)), Math.max(0, pts.findIndex(p => p.km >= Math.min(kmMax, state.km + (trek ? 1.5 : 0.35))) - 1));
-          const target = (ahead.lon !== h.lon || ahead.lat !== h.lat) ? bearingTo(h, ahead) : a.bearing;
-          bearing = a.bearing = lerpAngle(a.bearing, target, 0.025);
+          // turn towards the smoothed heading, gently and never faster than maxRate
+          const diff = angleDiff(a.bearing, heading(state.km));
+          const maxRate = 12 * Math.sqrt(a.speed) * dt;
+          a.bearing += Math.max(-maxRate, Math.min(maxRate, diff * ease(dt, 1.1)));
         } else {
-          bearing = a.bearing = a.orbitBase + (now - a.orbitStart) / 1000 * 9;
+          a.bearing = a.orbitBase + (now - a.orbitStart) / 1000 * 8;
         }
-        map.jumpTo({ center: [a.center.lon, a.center.lat], bearing, pitch, zoom, padding: padding() });
+        const target = padding();
+        if (!a.pad) a.pad = { ...target };
+        const fp = ease(dt, 0.35);
+        for (const k in target) a.pad[k] += (target[k] - a.pad[k]) * fp;
+        map.jumpTo({ center: [a.center.lon, a.center.lat], bearing: a.bearing, pitch: view.pitch, zoom: view.zoom, padding: a.pad });
       }
       if (state.km >= kmMax) { a.running = false; render(kmMax, true); onEnd(); return; }
       requestAnimationFrame(step);
@@ -527,11 +718,11 @@
   }
 
   let terrainOn = true;
-  const terrain = { source: 'dem', exaggeration: 1.35 };
+  const terrain = { source: 'dem', exaggeration: 1.3 };
 
   map.on('load', () => {
     try { map.setTerrain(terrain); } catch (e) { terrainOn = false; }
-    try { if (map.setSky) map.setSky({ 'sky-color': '#1d3346', 'horizon-color': '#f2b544', 'fog-color': '#0f1720', 'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.85 }); } catch (e) { /* sky optional */ }
+    try { if (map.setSky) map.setSky({ 'sky-color': '#9cc7d8', 'horizon-color': '#f4d6a0', 'fog-color': '#cfe0e4', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.9 }); } catch (e) { /* sky optional */ }
 
     map.addSource('trace', { type: 'geojson', data: T.trace });
     map.addLayer({ id: 'trace-casing', type: 'line', source: 'trace', layout: { 'line-join': 'round', 'line-cap': 'round' },
@@ -550,7 +741,7 @@
 
     map.on('click', 'trace', e => {
       const p = e.features[0].properties;
-      new maplibregl.Popup({ closeButton: false, offset: 6 }).setLngLat(e.lngLat)
+      new maplibregl.Popup({ closeButton: false, offset: 8 }).setLngLat(e.lngLat)
         .setDOMContent(el('div', null,
           el('div', { class: 'pop-title' }, p.name),
           el('div', { class: 'pop-meta' }, `J${p.day} · ${day(p.date).d} ${day(p.date).m} · départ ${p.start}`),
@@ -581,7 +772,7 @@
     if (!map) return;
     if (popup) popup.remove();
     const d = day(s.heure.slice(0, 10));
-    popup = new maplibregl.Popup({ closeButton: false, offset: 16 }).setLngLat([s.lon, s.lat])
+    popup = new maplibregl.Popup({ closeButton: false, offset: 18 }).setLngLat([s.lon, s.lat])
       .setDOMContent(el('div', null,
         el('div', { class: 'pop-title' }, s.sommet),
         el('div', { class: 'pop-meta' }, `${nf(s.alt_gps_m)} m au GPS · ${d.d} ${d.m} à ${s.heure.slice(11, 16)}`)))
@@ -589,10 +780,9 @@
   }
   T.summits.forEach(s => {
     const node = el('button', { type: 'button', class: 'marker m-peak', 'aria-label': `Sommet ${s.sommet}` });
-    const svg = sv('svg', { viewBox: '0 0 20 18', width: '20', height: '18', 'aria-hidden': 'true' });
-    svg.append(sv('polygon', { points: '10,1.8 18.4,16.4 1.6,16.4', fill: '#111418', stroke: COL.trail, 'stroke-width': '2.2', 'stroke-linejoin': 'round' }));
-    node.append(svg);
-    node.addEventListener('click', e => { e.stopPropagation(); rubric = 'summits'; openSummit(s); });
+    const icon = peakIcon(); icon.setAttribute('width', '20'); icon.setAttribute('height', '18');
+    node.append(icon);
+    node.addEventListener('click', e => { e.stopPropagation(); openSummit(s); });
     new maplibregl.Marker({ element: node, anchor: 'bottom' }).setLngLat([s.lon, s.lat]).addTo(map);
   });
 
@@ -611,8 +801,9 @@
     base = base === 'sat' ? 'topo' : 'sat';
     map.setLayoutProperty('sat', 'visibility', base === 'sat' ? 'visible' : 'none');
     map.setLayoutProperty('topo', 'visibility', base === 'topo' ? 'visible' : 'none');
-    btnBase.textContent = base === 'sat' ? 'Fond : satellite' : 'Fond : topo';
+    btnBase.textContent = base === 'sat' ? 'Satellite' : 'Carte topo';
   });
 
   showHome();
+  layoutChanged();
 })();

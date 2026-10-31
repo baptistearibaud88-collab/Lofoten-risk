@@ -4,44 +4,63 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Traversée des Lofoten</title>
-<meta name="description" content="Traversée autonome des Lofoten, 14–22 juin 2026 : la trace, les campements et les sommets en 3D.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<meta name="description" content="Traversée autonome des Lofoten, 14–22 juin 2026 : la trace, les bivouacs et les sommets en 3D.">
+<meta name="theme-color" content="#eef3f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141b1f" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="map" aria-label="Carte 3D de la traversée"></div>
 
-<header class="title-block">
-  <p class="eyebrow">Napp → Å · Norvège · 14–22 juin 2026</p>
-  <div class="title-row">
+<header class="title-block bubble" id="title">
+  <button type="button" class="fold" id="btn-title-fold" aria-expanded="true" aria-label="Réduire le titre">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>
+  </button>
+
+  <div id="title-default">
+    <p class="eyebrow foldable">Napp → Å · Norvège · 14–22 juin 2026</p>
     <h1>Traversée des Lofoten</h1>
-    <button type="button" class="trek-btn" id="btn-trek" aria-label="Lancer toute la traversée">▶ Toute la traversée</button>
+    <div class="foldable">
+      <p class="lede">Neuf jours en bivouac 100 % autonome sous le soleil de minuit. Touche un point de la carte, une rubrique, ou lance toute la traversée.</p>
+      <dl class="stats" id="stats"></dl>
+      <button type="button" class="pill-btn" id="btn-trek">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z"/></svg>Toute la traversée
+      </button>
+    </div>
   </div>
-  <p class="lede">Neuf jours de traversée sous le soleil de minuit. Bivouacs, sommets et étapes : touche un point de la carte ou une rubrique, ou lance toute la traversée.</p>
-  <dl class="stats" id="stats"></dl>
+
+  <div id="title-activity" hidden>
+    <p class="eyebrow foldable" id="act-eyebrow"></p>
+    <h1 class="act-title" id="act-title"></h1>
+    <div class="foldable" id="act-profile"></div>
+  </div>
 </header>
+
+<aside class="panel bubble" id="panel" aria-label="Rubriques et détails">
+  <div class="panel-head">
+    <div class="seg" role="tablist" id="rubric-tabs" aria-label="Rubriques"></div>
+    <button type="button" class="fold" id="btn-panel-fold" aria-expanded="true" aria-label="Réduire le panneau">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>
+    </button>
+  </div>
+  <div class="panel-inner" id="panel-inner" aria-live="polite"></div>
+</aside>
 
 <div class="controls" role="toolbar" aria-label="Affichage de la carte">
   <button type="button" id="btn-overview">Vue d'ensemble</button>
   <button type="button" id="btn-relief" aria-pressed="true">Relief 3D</button>
-  <button type="button" id="btn-base">Fond : satellite</button>
+  <button type="button" id="btn-base">Satellite</button>
 </div>
 
-<aside class="panel" id="panel" aria-live="polite">
-  <div class="panel-inner" id="panel-inner"></div>
-</aside>
-
-<div class="legend" aria-label="Légende">
+<div class="legend bubble" aria-label="Légende">
   <span><i class="sw sw-avec"></i>avec le sac</span>
   <span><i class="sw sw-sans"></i>sans sac (trail)</span>
   <span><i class="sw sw-camp"></i>bivouac 100 % autonome</span>
   <span><i class="sw sw-peak"></i>sommet</span>
 </div>
 
-<div class="map-error" id="map-error" hidden>
+<div class="map-error bubble" id="map-error" hidden>
   La carte n'a pas pu se charger. Elle a besoin d'une connexion internet pour récupérer le fond de carte et le relief.
 </div>
 
