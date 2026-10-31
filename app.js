@@ -296,7 +296,7 @@
   let map = null, popup = null, rubric = 'camps', inDetail = false;
   let anim = null, lastLineDraw = 0, boatMarker = null;
   let fireCheckpoint = () => {};
-  let alertsOn = true, photosOn = true, infosOn = true, replayMode = false;
+  let alertsOn = false, photosOn = false, infosOn = false, replayMode = false;   // off when the site opens; their tab turns them on
   /* photos and infos stay off the map while a trace is replayed; each layer can be switched off */
   /* an info at the same spot as a photo sits on top of the photo pin, without its own pointer,
      but only while photos are shown; otherwise it stands on the ground like any other info */
@@ -362,10 +362,18 @@
   const tabBox = document.getElementById('rubric-tabs');
   const tabBtns = RUBRICS.map(([id, label]) => {
     const b = el('button', { type: 'button', role: 'tab', 'data-r': id }, label);
-    b.addEventListener('click', () => { unfoldPanel(); showHome(id); overview(); });
+    b.addEventListener('click', () => { unfoldPanel(); showLayerOf(id); showHome(id); overview(); });
     tabBox.append(b);
     return b;
   });
+  /* opening the Alertes, Photos or Infos tab shows those points on the map */
+  function showLayerOf(r) {
+    const k = { alerts: ['btn-alerts', v => { alertsOn = v; }], photos: ['btn-photos', v => { photosOn = v; }], infos: ['btn-infos', v => { infosOn = v; }] }[r];
+    if (!k) return;
+    k[1](true);
+    document.getElementById(k[0]).setAttribute('aria-pressed', 'true');
+    updateLayers();
+  }
   function setTabs(active, detail) {
     rubric = active || rubric; inDetail = !!detail;
     tabBtns.forEach(b => {
@@ -457,6 +465,7 @@
   }
 
   function openAlert(a) {
+    showLayerOf('alerts');
     resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs('alerts', true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
     if (map) {
@@ -560,6 +569,60 @@
     show();
   }
 
+  /* start sheet: who left, with what on the back and what to eat; full screen like the mosaic */
+  function openDepart() {
+    const D = T.depart; if (!D) return;
+    const g = v => v == null ? '—' : v >= 1000 ? `${nf(v / 1000, 2)} kg` : `${nf(v)} g`;
+    const tile = (label, value, unit, note) => el('div', { class: 'dp-tile' }, el('span', { class: 'dp-l' }, label),
+      el('b', null, value, unit ? el('small', null, ` ${unit}`) : null), note ? el('span', { class: 'dp-n' }, note) : null);
+    const taken = D.equipement.filter(x => x.pris), kcal = D.nourriture.reduce((a, x) => a + (x.kcal || 0), 0);
+    const group = (rows, key) => { const m = new Map(); rows.forEach(r => { if (!m.has(r[key])) m.set(r[key], []); m.get(r[key]).push(r); }); return [...m]; };
+    const badge = m => m ? el('span', { class: `dp-m dp-${m === 'pesé' ? 'pese' : m}` }, m) : null;
+    const gearList = el('div', { class: 'dp-list' }, group(D.equipement, 'categorie').map(([cat, rows]) => {
+      const sum = rows.filter(r => r.pris && !r.porte).reduce((a, r) => a + (r.poids_g || 0), 0);
+      return el('section', null, el('h4', null, cat, el('span', null, g(sum))),
+        el('ul', null, rows.map(r => el('li', { class: r.pris ? null : 'dp-off' },
+          el('span', { class: 'dp-o' }, r.objet, r.marque ? el('small', null, ` · ${r.marque}`) : null,
+            !r.pris ? el('small', { class: 'dp-tag' }, ' non emporté') : r.porte ? el('small', { class: 'dp-tag' }, ' porté') : null),
+          el('span', { class: 'dp-q' }, !r.quantite || String(r.quantite) === '1' || String(r.quantite) === '0' ? '' : /^\d+$/.test(r.quantite) ? `×${r.quantite}` : r.quantite),
+          el('span', { class: 'dp-w' }, g(r.poids_g), badge(r.mesure))))));
+    }));
+    const foodList = el('div', { class: 'dp-list', hidden: '' }, group(D.nourriture, 'categorie').map(([cat, rows]) => {
+      const k = rows.reduce((a, r) => a + (r.kcal || 0), 0);
+      return el('section', null, el('h4', null, cat, el('span', null, `${nf(k)} kcal`)),
+        el('ul', null, rows.map(r => el('li', null,
+          el('span', { class: 'dp-o' }, r.produit, r.marque ? el('small', null, ` · ${r.marque}`) : null),
+          el('span', { class: 'dp-q' }, r.quantite == null ? '?' : r.unite === 'g' || r.unite === 'ml' ? `${nf(r.quantite)} ${r.unite}` : `×${nf(r.quantite)}`),
+          el('span', { class: 'dp-w' }, r.kcal == null ? '—' : `${nf(r.kcal)} kcal`)))));
+    }));
+    const tabG = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'true' }, `Équipement · ${taken.length}`);
+    const tabF = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'false' }, `Nourriture · ${nf(kcal)} kcal`);
+    const pick = food => { tabG.setAttribute('aria-pressed', String(!food)); tabF.setAttribute('aria-pressed', String(food)); gearList.hidden = food; foodList.hidden = !food; };
+    tabG.onclick = () => pick(false); tabF.onclick = () => pick(true);
+    const close = () => { sheet.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
+    const P = D.profil;
+    const sheet = el('div', { class: 'depart', role: 'dialog', 'aria-label': 'Fiche départ' },
+      el('div', { class: 'dp-card' },
+        el('header', { class: 'dp-head' },
+          el('div', null, el('p', { class: 'dp-eyebrow' }, 'Fiche départ · Napp, 14 juin 2026'), el('h2', null, 'Avant de partir')),
+          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
+        el('div', { class: 'dp-tiles' },
+          tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
+          tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin'),
+          tile('Nourriture', nf(kcal), 'kcal', `objectif ${nf(D.kcal_objectif)}`), tile('Objets', taken.length, null, 'dans le sac ou portés')),
+        el('div', { class: 'dp-body' },
+          el('figure', { class: 'dp-photo' },
+            el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
+              el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
+            el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir')),
+          el('div', { class: 'dp-lists' }, el('div', { class: 'dp-tabs' }, tabG, tabF), gearList, foodList,
+            el('p', { class: 'dp-foot' }, 'Poids : pesé, fiche produit ou estimé (valeur typique en attendant les pesées). Total par catégorie : ce qui est dans le sac, sans ce qui est porté. Calories : quantités emportées, fiches produits ou valeurs typiques.')))));
+    sheet.addEventListener('click', e => { if (e.target === sheet) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.append(sheet);
+  }
+
   /* every photo of the trek as one full-screen mosaic, no text: 7 columns, as many rows as needed
      to hold them all (28 photos = 7 x 4), stretched to fill the screen. A tap opens the viewer on
      that photo; its arrows then run through all of them in order. */
@@ -579,6 +642,7 @@
   }
 
   function openRoutePoint(kind, a) {
+    showLayerOf(kind);
     resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(kind, true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
     const isPh = kind === 'photos';
@@ -1186,6 +1250,7 @@
     setTimeout(pl.start, reduceMotion ? 0 : 2500);
   }
   document.getElementById('btn-trek').addEventListener('click', openTrek);
+  document.getElementById('btn-depart').addEventListener('click', openDepart);
 
   /* ---------- map ---------- */
   if (typeof maplibregl === 'undefined') {
