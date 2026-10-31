@@ -327,11 +327,21 @@
   }
   const btnTitleFold = document.getElementById('btn-title-fold');
   const btnPanelFold = document.getElementById('btn-panel-fold');
-  btnTitleFold.addEventListener('click', () => setFold('title-folded', btnTitleFold, !document.body.classList.contains('title-folded'), 'le titre'));
+  btnTitleFold.addEventListener('click', () => { setFold('title-folded', btnTitleFold, !document.body.classList.contains('title-folded'), 'le titre'); placeDepart(); });
   btnPanelFold.addEventListener('click', () => setFold('panel-folded', btnPanelFold, !document.body.classList.contains('panel-folded'), 'le panneau'));
   const unfoldPanel = () => { if (document.body.classList.contains('panel-folded')) setFold('panel-folded', btnPanelFold, false, 'le panneau'); };
 
+  // "Inventaire" centred under the last figure of the title stats (Trail running)
+  function placeDepart() {
+    const btn = document.getElementById('btn-depart'), dd = document.querySelector('#stats div:last-child dd');
+    if (!btn || !dd || !btn.offsetParent) return;
+    const r = document.createRange(); r.selectNodeContents(dd);   // the figure itself, not its whole column
+    const row = btn.parentElement.getBoundingClientRect(), d = r.getBoundingClientRect();
+    const x = d.left + d.width / 2 - row.left - btn.offsetWidth / 2;
+    btn.style.left = `${Math.max(0, Math.min(row.width - btn.offsetWidth, x))}px`;
+  }
   function layoutChanged() {
+    placeDepart();
     const root = document.documentElement.style;
     const pr = panelBox.getBoundingClientRect();
     root.setProperty('--panel-h', `${Math.round(pr.height)}px`);
@@ -357,7 +367,7 @@
   }
   function setTitleDefault() {
     titleDefault.hidden = false; titleAct.hidden = true; document.getElementById('act-profile').replaceChildren();
-    replayMode = false; updateLayers();
+    replayMode = false; updateLayers(); placeDepart();
   }
 
   /* ---------- panel head: the three rubrics, always visible ---------- */
@@ -1311,6 +1321,7 @@
   }
   document.getElementById('btn-trek').addEventListener('click', openTrek);
   document.getElementById('btn-depart').addEventListener('click', openDepart);
+  placeDepart(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeDepart);
 
   /* ---------- map ---------- */
   if (typeof maplibregl === 'undefined') {
