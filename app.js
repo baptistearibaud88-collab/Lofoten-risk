@@ -132,6 +132,20 @@
     return pts;
   }
   /* static boat arcs for the overview trace */
+  /* alerts: a point on an étape or a summit outing, given by its km (data/raw/alertes.csv) */
+  const ALERTS = (T.alerts || []).map(a => {
+    let ids, where, open, replay;
+    if (a.rubrique === 'etape') {
+      const e = T.etapes.find(x => String(x.day) === String(a.reference));
+      ids = e.acts; where = `de l’étape J${e.day} · ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Rejouer l’étape';
+    } else {
+      const sm = T.summits.find(x => x.sommet === a.reference);
+      ids = SUMMIT_OUTINGS[sm.activite] || [sm.activite]; where = `de la sortie ${sm.sommet}`; open = () => openSummit(sm); replay = 'Rejouer la sortie';
+    }
+    const seq = buildSeq(ids), i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
+    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay };
+  });
+
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
     const [x, y] = key.split('>'), A = ACTS[x].pts[ACTS[x].pts.length - 1], B = ACTS[y].pts[0];
     const arc = boatPath([A[0], A[1]], [B[0], B[1]], b.via);
@@ -199,6 +213,11 @@
       const last = avec.length ? avec[avec.length - 1] : acts[acts.length - 1], r = span.get(last.id);
       if (arr && r && (last.sac === 'avec' || near(last.pts[last.pts.length - 1], arr))) add(r.l, arr);
     }
+    ALERTS.forEach(a => {
+      let best = -1, bd = Infinity;
+      pts.forEach((p, i) => { if (p.id !== a.act) return; const d = metres(p, a); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0) out.push({ km: pts[best].km, type: 'alert', a });
+    });
     const lastIdx = pts.map(p => p.id).lastIndexOf(LAST_ACT.id);
     if (lastIdx >= 0 && lastIdx === pts.length - 1) out.push({ km: pts[lastIdx].km, type: 'finish' });
     return out.sort((a, b) => a.km - b.km);
@@ -243,11 +262,12 @@
 
   /* ---------- stats ---------- */
   const S = T.stats;
-  const statItems = [
-    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'], ['Jours', S.days],
-    ['Bivouacs', S.camps], ['Sommets', S.summits], ['Avec le sac', nf(S.bag_hours, 1), 'h'],
+  /* first row: distance, D+, days, summits; second row: moving time, with the pack, trail running */
+  const statItems = () => [
+    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'], ['Jours', S.days], ['Sommets', S.summits],
+    ['Temps total', hm(S.pack_min + S.trail_min)], ['Avec le sac', hm(S.pack_min)], ['Trail running', hm(S.trail_min)],
   ];
-  document.getElementById('stats').append(...statItems.map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
+  document.getElementById('stats').append(...statItems().map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
 
   /* ---------- shared state ---------- */
   const panel = document.getElementById('panel-inner');
@@ -294,7 +314,7 @@
   function setTitleDefault() { titleDefault.hidden = false; titleAct.hidden = true; document.getElementById('act-profile').replaceChildren(); }
 
   /* ---------- panel head: the three rubrics, always visible ---------- */
-  const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Sommets'], ['etapes', 'Étapes']];
+  const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Sommets'], ['etapes', 'Étapes'], ['alerts', 'Alertes']];
   const tabBox = document.getElementById('rubric-tabs');
   const tabBtns = RUBRICS.map(([id, label]) => {
     const b = el('button', { type: 'button', role: 'tab', 'data-r': id }, label);
@@ -344,6 +364,16 @@
             el('span', { class: 'camp-num num-peak' }, peakIcon()),
             el('span', { class: 'camp-name' }, s.sommet),
             el('span', { class: 'camp-dates' }, `${nf(s.alt_gps_m)} m`))))));
+    } else if (rubric === 'alerts') {
+      body.append(
+        el('h2', null, 'Alertes'),
+        el('p', { class: 'note' }, 'Les moments où ça a coincé sur le parcours. Le récit viendra compléter chaque alerte.'),
+        el('ul', { class: 'camp-list' }, ALERTS.map(a => el('li', null,
+          el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openAlert(a) },
+            el('span', { class: 'camp-num num-peak' }, warnIcon()),
+            el('span', { class: 'stage-main' },
+              el('span', { class: 'camp-name' }, a.titre),
+              el('span', { class: 'stage-meta' }, `J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`)))))));
     } else {
       body.append(
         el('h2', null, 'Sept étapes avec le sac'),
@@ -360,6 +390,30 @@
     }
     panel.replaceChildren(body,
       el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre (${nf(S.dplus)} m après lissage de l’altitude, 10 890 m selon Strava), hors recherches de bivouac non enregistrées. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
+    panel.scrollTop = 0;
+  }
+
+  function warnIcon() {
+    const s = sv('svg', { viewBox: '0 0 22 20', 'aria-hidden': 'true' });
+    s.append(sv('path', { d: 'M11 1.8 20.6 18.2H1.4Z', fill: '#ffd21f', stroke: '#111418', 'stroke-width': '1.8', 'stroke-linejoin': 'round' }),
+      sv('rect', { x: 10, y: 7, width: 2, height: 6, rx: 1, fill: '#111418' }), sv('circle', { cx: 11, cy: 15.3, r: 1.15, fill: '#111418' }));
+    return s;
+  }
+
+  function openAlert(a) {
+    resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs('alerts', true); unfoldPanel();
+    if (popup) { popup.remove(); popup = null; }
+    if (map) {
+      map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
+      clearTimeout(openAlert.t); openAlert.t = setTimeout(() => fireCheckpoint({ type: 'alert', a }), reduceMotion ? 0 : 2700);
+    }
+    panel.replaceChildren(
+      backButton('Toutes les alertes', 'alerts'),
+      el('p', { class: 'eyebrow-sm warn-ink' }, `Alerte · J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`),
+      el('h2', null, a.titre),
+      el('p', { class: 'meta' }, `${nf(a.alt)} m · vers ${a.heure} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      el('p', { class: 'empty' }, a.recit || 'Récit à venir.'),
+      el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)));
     panel.scrollTop = 0;
   }
 
@@ -828,8 +882,8 @@
     if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(T.acts.map(a => a.id));
     const summary = el('dl', { class: 'title-kv' },
-      kvItem('Distance', nf(S.km), 'km'), kvItem('Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'), kvItem('Jours', S.days),
-      kvItem('Bivouacs', S.camps), kvItem('Sommets', S.summits), kvItem('Avec le sac', nf(S.bag_hours, 1), 'h'));
+      ...statItems().map(([k, v, u]) => kvItem(k, v, u)));
+    summary.classList.add('stats-grid');
     const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(), summary: [summary],
       eyebrow: '14 → 22 juin 2026 · Napp → Moskenes', name: 'Toute la traversée' });
     panel.replaceChildren(
@@ -1049,6 +1103,7 @@
     map.addImage('peak', peakImage(), { pixelRatio: 2 });
     camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1)), { pixelRatio: 2 }));
     map.addImage('finish', finishImage(), { pixelRatio: 2 });
+    map.addImage('alert', alertImage(), { pixelRatio: 2 });
     VILLAGES.forEach(v => map.addImage(`village-${v.name}`, villageImage(v.name, v.beside), { pixelRatio: 2 }));
     map.addSource('villages', { type: 'geojson', data: { type: 'FeatureCollection', features: VILLAGES.map(v =>
       ({ type: 'Feature', properties: { icon: `village-${v.name}` }, geometry: { type: 'Point', coordinates: [v.lon, v.lat] } })) } });
@@ -1059,21 +1114,24 @@
       ...camps.map(c => ({ type: 'Feature', properties: { kind: 'camp', cid: c.id, icon: `camp-${c.id}` }, geometry: { type: 'Point', coordinates: [c.lon, c.lat] } })),
       ...T.summits.map(x => ({ type: 'Feature', properties: { kind: 'peak', name: x.sommet, icon: 'peak' }, geometry: { type: 'Point', coordinates: [x.lon, x.lat] } })),
       { type: 'Feature', properties: { kind: 'finish', icon: 'finish' }, geometry: { type: 'Point', coordinates: [FINISH.lon, FINISH.lat] } },
+      ...ALERTS.map(a => ({ type: 'Feature', properties: { kind: 'alert', aid: a.id, icon: 'alert' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
     ] } });
     const sym = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' };
     map.addLayer({ id: 'peaks', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'peak'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.addLayer({ id: 'finish', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'finish'], layout: sym });
+    map.addLayer({ id: 'alerts', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'alert'], layout: { ...sym, 'icon-anchor': 'bottom' } });
+    map.on('click', 'alerts', e => { const a = ALERTS.find(x => x.id === e.features[0].properties.aid); if (a) openAlert(a); });
     map.addLayer({ id: 'camps', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'camp'], layout: { ...sym, 'icon-size': 1 } });
     map.on('click', 'camps', e => { const c = camps.find(x => x.id === e.features[0].properties.cid); if (c) openCamp(c); });
     map.on('click', 'peaks', e => { const x = T.summits.find(q => q.sommet === e.features[0].properties.name); if (x) openSummit(x); });
-    ['camps', 'peaks'].forEach(l => {
+    ['camps', 'peaks', 'alerts'].forEach(l => {
       map.on('mouseenter', l, () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', l, () => { map.getCanvas().style.cursor = ''; });
     });
     setActive(activeCamp);
 
     map.on('click', 'trace', e => {
-      if (map.queryRenderedFeatures(e.point, { layers: ['camps', 'peaks'] }).length) return;
+      if (map.queryRenderedFeatures(e.point, { layers: ['camps', 'peaks', 'alerts'] }).length) return;
       const p = e.features[0].properties;
       new maplibregl.Popup({ closeButton: false, offset: 8 }).setLngLat(e.lngLat)
         .setDOMContent(el('div', null,
@@ -1130,6 +1188,16 @@
     g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(name, x0, H / 2 + .5); g.fillText(name, x0, H / 2 + .5);
     return g.getImageData(0, 0, W * S, H * S);
   }
+  function alertImage() {   // yellow and black warning triangle
+    const S = 2, W = 26, H = 24, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
+    g.beginPath(); g.moveTo(13, 2.2); g.lineTo(24, 21.5); g.lineTo(2, 21.5); g.closePath();
+    g.lineJoin = 'round'; g.fillStyle = '#ffd21f'; g.fill(); g.shadowColor = 'transparent';
+    g.lineWidth = 2.2; g.strokeStyle = '#111418'; g.stroke();
+    g.fillStyle = '#111418'; g.fillRect(11.9, 8.5, 2.2, 7.2); g.beginPath(); g.arc(13, 18.3, 1.3, 0, 2 * Math.PI); g.fill();
+    return g.getImageData(0, 0, W * S, H * S);
+  }
   function peakImage() {
     const S = 2, W = 24, H = 22, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
     const g = cv.getContext('2d'); g.scale(S, S);
@@ -1164,19 +1232,32 @@
   const fxLayer = document.body.appendChild(el('div', { class: 'fx-layer', 'aria-hidden': 'true' }));
   const bursts = [];
   let fxLoop = 0;
-  function burst(kind, lon, lat) {
+  function burst(kind, lon, lat, effect) {
     if (reduceMotion || !map) return;
-    const node = el('div', { class: `fx fx-${kind}` },
-      el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }),
-      Array.from({ length: 12 }, (_, i) => el('i', { class: 'fx-spark', style: `--a:${i * 30 + (i % 2 ? 9 : -6)}deg;--d:${(i % 3) * 40}ms;--r:${46 + (i % 4) * 9}px` })));
+    let node, life = 1800;
+    if (kind === 'warn') {
+      // warning: a triangle-shaped shockwave, then the "!" swells a little and shakes
+      const tri = () => { const s = sv('svg', { viewBox: '0 0 40 36' }); s.append(sv('path', { d: 'M20 2 38 34H2Z' })); return s; };
+      const bang = el('i', { class: 'fx-bang' }); bang.append(warnIcon());
+      node = el('div', { class: `fx fx-warn${effect ? ` fx-${effect}` : ''}` },
+        el('i', { class: 'fx-aura' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-tri' }, tri()), el('i', { class: 'fx-tri fx-tri2' }, tri()),
+        effect === 'eboulement' ? [el('i', { class: 'fx-dust' }),
+          ...Array.from({ length: 8 }, (_, i) => el('i', { class: 'fx-rock', style: `--x:${(i - 3.5) * 7 + (i % 2 ? 3 : -2)}px;--rot:${(i % 2 ? 1 : -1) * (120 + i * 40)}deg;--d:${180 + i * 70}ms;--s:${3 + (i % 3) * 1.5}px` }))] : null,
+        bang);
+      life = effect === 'eboulement' ? 2900 : 2400;
+    } else {
+      node = el('div', { class: `fx fx-${kind}` },
+        el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }),
+        Array.from({ length: 12 }, (_, i) => el('i', { class: 'fx-spark', style: `--a:${i * 30 + (i % 2 ? 9 : -6)}deg;--d:${(i % 3) * 40}ms;--r:${46 + (i % 4) * 9}px` })));
+    }
     fxLayer.append(node);
-    bursts.push({ node, lon, lat, dy: kind === 'peak' ? -9 : 0, t0: performance.now() });
+    bursts.push({ node, lon, lat, dy: kind === 'peak' ? -9 : kind === 'warn' ? -11 : 0, t0: performance.now(), life });
     if (!fxLoop) fxLoop = requestAnimationFrame(moveBursts);
   }
   function moveBursts(now) {
     for (let i = bursts.length - 1; i >= 0; i--) {
       const b = bursts[i];
-      if (now - b.t0 > 1800) { b.node.remove(); bursts.splice(i, 1); continue; }
+      if (now - b.t0 > b.life) { b.node.remove(); bursts.splice(i, 1); continue; }
       const pt = map.project([b.lon, b.lat]);
       b.node.style.transform = `translate(${pt.x.toFixed(1)}px, ${(pt.y + b.dy).toFixed(1)}px)`;
     }
@@ -1185,6 +1266,7 @@
   fireCheckpoint = (c, keepPopup) => {
     if (c.type === 'summit') { burst('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
     else if (c.type === 'finish') burst('finish', FINISH.lon, FINISH.lat);
+    else if (c.type === 'alert') burst('warn', c.a.lon, c.a.lat, c.a.effet);
     else burst('camp', c.c.lon, c.c.lat);
   };
 
