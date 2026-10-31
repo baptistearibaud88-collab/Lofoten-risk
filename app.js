@@ -615,14 +615,13 @@
             el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
               el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
             el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir')),
-          el('h3', { class: 'dp-sub' }, 'Mon profil'),
+          el('h2', { class: 'dp-sub' }, 'Mon profil'),
           el('div', { class: 'dp-tiles' },
             tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
             tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin'))),
           el('div', { class: 'dp-lists' },
             el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
-            gearList, foodList,
-            el('p', { class: 'dp-foot' }, 'Total par catégorie : ce qui est dans le sac, sans ce qui est porté. Poids et calories en partie estimés en attendant les pesées.')))));
+            gearList, foodList))));
     sheet.addEventListener('click', e => { if (e.target === sheet) close(); });
     document.addEventListener('keydown', onKey);
     document.body.append(sheet);
