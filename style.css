@@ -621,3 +621,22 @@ body.base-topo .warn-ink { color: #a07800 !important; }
   .controls { bottom: calc(var(--legend-h, 38px) + 24px + env(safe-area-inset-bottom, 0px)); }
   .legend { border-radius: 18px; }
 }
+
+/* larger rubric tabs, easier to tap */
+.seg { gap: 3px; padding: 3px; border-radius: 12px; }
+.seg button { padding: 9px 4px; font-size: 15px; border-radius: 9px; }
+/* turquoise photo badge, speech bubble for stories */
+.sw-photo { background: #3fd0c9; box-shadow: 0 0 0 1.5px #fff; }
+.sw-photo::after { background: #fff; }
+.sw-info { width: 15px; height: 11px; border-radius: 4px; background: #fff; box-shadow: 0 0 0 1px #111418; }
+.sw-info::after { content: "···"; font: 900 9px/1 var(--font); color: #1d3f8f; letter-spacing: -.5px; top: -2px; }
+/* rockfall, a bit more visible */
+.fx-rock { animation: fx-rock 1.5s cubic-bezier(.45, 0, .9, .6) var(--d) forwards; }
+@keyframes fx-rock {
+  0% { opacity: 1; transform: translate(0, -4px) rotate(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--x), var(--y, 70px)) rotate(var(--rot)); }
+}
+.fx-dust { width: 110px; height: 50px; margin: 30px 0 0 -55px; background: radial-gradient(ellipse at 50% 60%, rgba(214, 200, 180, .7), rgba(214, 200, 180, .25) 50%, transparent 72%); }
+.fx-dust2 { margin-top: 60px; animation-delay: 1s; }
+.fx-rock { margin-top: 8px; }

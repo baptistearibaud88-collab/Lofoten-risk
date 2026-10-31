@@ -146,6 +146,7 @@
     return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
+  const COL_PHOTO = '#3fd0c9';
   const kmTxt = a => `km ${nf(a.km, a.km % 1 ? 1 : 0)}`;
 
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
@@ -446,11 +447,11 @@
   }
 
   function badgeIcon(draw) { const s = sv('svg', { viewBox: '0 0 22 22', 'aria-hidden': 'true' }); draw(s); return s; }
-  const photoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, fill: '#fff', stroke: '#111418', 'stroke-width': 1.4 }),
-    sv('rect', { x: 5.2, y: 7.6, width: 11.6, height: 8.2, rx: 1.8, fill: '#111418' }), sv('rect', { x: 8.6, y: 6, width: 4.8, height: 2.4, rx: .8, fill: '#111418' }),
-    sv('circle', { cx: 11, cy: 11.7, r: 2.4, fill: '#fff' })));
-  const infoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, fill: '#fff', stroke: '#111418', 'stroke-width': 1.4 }),
-    sv('circle', { cx: 11, cy: 6.6, r: 1.5, fill: '#2f6fb0' }), sv('rect', { x: 9.7, y: 9.2, width: 2.6, height: 7.4, rx: 1.2, fill: '#2f6fb0' })));
+  const photoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, fill: COL_PHOTO, stroke: '#fff', 'stroke-width': 1.6 }),
+    sv('rect', { x: 5.2, y: 7.6, width: 11.6, height: 8.2, rx: 1.8, fill: '#fff' }), sv('rect', { x: 8.6, y: 6, width: 4.8, height: 2.4, rx: .8, fill: '#fff' }),
+    sv('circle', { cx: 11, cy: 11.7, r: 2.4, fill: COL_PHOTO })));
+  const infoIcon = () => badgeIcon(s => s.append(sv('path', { d: 'M5.5 3h11a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4h-6.5l-4.6 3.8 1-3.8H5.5a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z', fill: '#fff', stroke: '#111418', 'stroke-width': 1.2, 'stroke-linejoin': 'round' }),
+    ...[6.6, 11, 15.4].map(x => sv('circle', { cx: x, cy: 10, r: 1.5, fill: COL.camp }))));
 
   function openRoutePoint(kind, a) {
     resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(kind, true); unfoldPanel();
@@ -821,7 +822,7 @@
     });
 
     // 1. sleep: stacked phases, deep at the bottom, light in the middle, REM on top
-    const H1 = 94, T1 = 6, B1 = 15, maxH = 11 * 60;
+    const H1 = 86, T1 = 6, B1 = 15, maxH = 11 * 60;
     const y1 = m => T1 + (1 - m / maxH) * (H1 - T1 - B1);
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Durée de sommeil par nuit, découpée en phases' });
     grid(s1, y1, [0, 300, 600], m => `${m / 60} h`);
@@ -844,7 +845,7 @@
       avgItem('ph-rem', 'paradoxal', `${hm(rm)} · ${pct(rm)}`), avgItem(null, 'nuit moyenne', hm(tot)));
 
     // 2. resting heart rate (white dots, red ring and line) and HRV (dashed, right axis)
-    const H2 = 100, T2 = 6, B2 = 15;
+    const H2 = 94, T2 = 6, B2 = 15;
     const fc = S9.map(x => x.fc_repos), hv = S9.map(x => x.hrv_moy_ms);
     const fcMin = 40, fcMax = 55, hvMin = 20, hvMax = 70;
     const y2 = v => T2 + (1 - (v - fcMin) / (fcMax - fcMin)) * (H2 - T2 - B2);
@@ -863,7 +864,7 @@
       avgItem(null, 'FC la plus basse', `${nf(Math.min(...fc.filter(v => v != null)))} bpm`), avgItem(null, 'HRV la plus haute', `${nf(Math.max(...hv.filter(v => v != null)))} ms`));
 
     // 3. Body Battery of the following day: from its low to its high, with the night's recharge
-    const H3 = 94, T3 = 6, B3 = 15;
+    const H3 = 88, T3 = 6, B3 = 15;
     const y3 = v => T3 + (1 - v / 100) * (H3 - T3 - B3);
     const s3 = sv('svg', { viewBox: `0 0 ${W} ${H3}`, class: 'recap-chart', role: 'img', 'aria-label': 'Body Battery du lendemain, du minimum au maximum' });
     grid(s3, y3, [0, 25, 50, 75, 100], v => nf(v));
@@ -894,7 +895,7 @@
     const altOf = r => r.s.hauteur_officielle_m || r.s.alt_gps_m;
     const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), cold = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a);
     const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
-    const W = 340, L = 92, R = 70, rowH = 13.4, T0 = 2;
+    const W = 340, L = 92, R = 70, rowH = 12.6, T0 = 2;
     // 1. altitude of each summit, with the air temperature up there
     const H1 = T0 + rows.length * rowH + 4, aMax = 800;
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
@@ -1099,6 +1100,7 @@
       if (a !== anim || !a.running) return;
       const dt = Math.min(0.1, (now - a.last) / 1000); a.last = now;
       if (now < a.delayUntil) { a.orbitStart = now; requestAnimationFrame(step); return; }
+      if (a.holdUntil && now < a.holdUntil) { requestAnimationFrame(step); return; }   // the walker stops while the rocks fall
       state.km = Math.min(kmMax, state.km + dt / view.secPerKm * a.speed);
       render(state.km, false);
       if (map && a.cam !== 'fixed') {
@@ -1257,18 +1259,20 @@
     g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(name, x0, H / 2 + .5); g.fillText(name, x0, H / 2 + .5);
     return g.getImageData(0, 0, W * S, H * S);
   }
-  function badgeImage(kind) {   // round white badge with a camera or an "i", on a small stem
-    const S = 2, W = 26, H = 30, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+  function badgeImage(kind) {   // photo: turquoise badge with a camera; info: a speech bubble ("a story here")
+    const S = 2, W = 28, H = 30, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
     const g = cv.getContext('2d'); g.scale(S, S);
     g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
-    g.beginPath(); g.moveTo(13, 29); g.lineTo(9, 22); g.lineTo(17, 22); g.closePath(); g.fillStyle = '#fff'; g.fill();
-    g.beginPath(); g.arc(13, 12, 11, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill(); g.shadowColor = 'transparent';
-    g.lineWidth = 1.4; g.strokeStyle = '#111418'; g.stroke();
     if (kind === 'photo') {
-      g.fillStyle = '#111418'; roundRect(g, 6.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 10.3, 6.6, 5.4, 2.6, .8); g.fill();
-      g.beginPath(); g.arc(13, 12.9, 2.6, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill();
+      g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = '#fff'; g.fill();
+      g.beginPath(); g.arc(14, 12, 11.5, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill(); g.shadowColor = 'transparent';
+      g.beginPath(); g.arc(14, 12, 9.8, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
+      g.fillStyle = '#fff'; roundRect(g, 7.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); g.fill();
+      g.beginPath(); g.arc(14, 12.9, 2.7, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
     } else {
-      g.fillStyle = '#2f6fb0'; g.beginPath(); g.arc(13, 7.4, 1.6, 0, 2 * Math.PI); g.fill(); roundRect(g, 11.6, 10.2, 2.8, 8, 1.3); g.fill();
+      roundRect(g, 2.5, 3, 23, 17, 6); g.fillStyle = '#fff'; g.fill();
+      g.beginPath(); g.moveTo(8, 19); g.lineTo(6.5, 27); g.lineTo(14.5, 19.5); g.closePath(); g.fill(); g.shadowColor = 'transparent';
+      g.fillStyle = COL.camp; [8.6, 14, 19.4].forEach(x => { g.beginPath(); g.arc(x, 11.5, 1.9, 0, 2 * Math.PI); g.fill(); });
     }
     return g.getImageData(0, 0, W * S, H * S);
   }
@@ -1326,10 +1330,10 @@
       const bang = el('i', { class: 'fx-bang' }); bang.append(warnIcon());
       node = el('div', { class: `fx fx-warn${effect ? ` fx-${effect}` : ''}` },
         el('i', { class: 'fx-aura' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-tri' }, tri()), el('i', { class: 'fx-tri fx-tri2' }, tri()),
-        effect === 'eboulement' ? [el('i', { class: 'fx-dust' }),
-          ...Array.from({ length: 8 }, (_, i) => el('i', { class: 'fx-rock', style: `--x:${(i - 3.5) * 7 + (i % 2 ? 3 : -2)}px;--rot:${(i % 2 ? 1 : -1) * (120 + i * 40)}deg;--d:${180 + i * 70}ms;--s:${3 + (i % 3) * 1.5}px` }))] : null,
+        effect === 'eboulement' ? [el('i', { class: 'fx-dust' }), el('i', { class: 'fx-dust fx-dust2' }),
+          ...Array.from({ length: 16 }, (_, i) => el('i', { class: 'fx-rock', style: `--x:${((i * 37) % 16 - 7.5) * 6}px;--y:${70 + (i * 23) % 40}px;--rot:${(i % 2 ? 1 : -1) * (160 + i * 35)}deg;--d:${120 + i * 85}ms;--s:${4 + (i % 4) * 1.6}px` }))] : null,
         bang);
-      life = effect === 'eboulement' ? 2900 : 2400;
+      life = effect === 'eboulement' ? 3300 : 2400;
     } else {
       node = el('div', { class: `fx fx-${kind}` },
         el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }),
@@ -1351,7 +1355,11 @@
   fireCheckpoint = (c, keepPopup) => {
     if (c.type === 'summit') { burst('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
     else if (c.type === 'finish') burst('finish', FINISH.lon, FINISH.lat);
-    else if (c.type === 'alert') { if (alertsOn) burst('warn', c.a.lon, c.a.lat, c.a.effet); }
+    else if (c.type === 'alert') {
+      if (!alertsOn) return;
+      burst('warn', c.a.lon, c.a.lat, c.a.effet);
+      if (c.a.effet === 'eboulement' && anim) anim.holdUntil = performance.now() + 2600;
+    }
     else burst('camp', c.c.lon, c.c.lat);
   };
 
