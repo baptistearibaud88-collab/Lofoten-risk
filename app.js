@@ -455,19 +455,32 @@
     sv('circle', { cx: 11, cy: 6.6, r: 1.5, class: 'in-i' }), sv('rect', { x: 9.7, y: 9.2, width: 2.6, height: 7.4, rx: 1.2, class: 'in-i' })));
 
   /* where a photo looks: rings of a wedge (direction ± half the field), more transparent further away */
+  /* field of view of the open photo: a flat turquoise wedge drawn over the map (not draped on the
+     relief), from the photographer towards what the photo shows, fading with distance */
+  let fovPhoto = null, fovSvg = null;
   function setFov(a) {
-    if (!map || !map.getSource('fov')) return;
-    if (!a || a.direction_deg == null) { map.getSource('fov').setData({ type: 'FeatureCollection', features: [] }); return; }
-    const k = Math.cos(a.lat * Math.PI / 180) * 111320, m = 110540, half = (a.champ_deg || 60) / 2, R = a.portee_m || 800, bands = 6;
-    const at = (d, r) => { const t = (a.direction_deg + d) * Math.PI / 180; return [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / m]; };
-    const arc = r => Array.from({ length: 13 }, (_, i) => at(-half + i * (2 * half) / 12, r));
-    const feats = [];
-    for (let b = 0; b < bands; b++) {
-      const r0 = R * b / bands, r1 = R * (b + 1) / bands;
-      const ring = b === 0 ? [[a.lon, a.lat], ...arc(r1), [a.lon, a.lat]] : [...arc(r0), ...arc(r1).reverse(), arc(r0)[0]];
-      feats.push({ type: 'Feature', properties: { o: 0.42 * (1 - b / bands) }, geometry: { type: 'Polygon', coordinates: [ring] } });
+    fovPhoto = a && a.direction_deg != null ? a : null;
+    if (!fovSvg) {
+      fovSvg = sv('svg', { class: 'fov-layer', 'aria-hidden': 'true' });
+      const defs = sv('defs'), g = sv('linearGradient', { id: 'fov-grad', gradientUnits: 'userSpaceOnUse' });
+      g.append(sv('stop', { offset: '0', 'stop-color': COL_PHOTO, 'stop-opacity': '.62' }), sv('stop', { offset: '1', 'stop-color': COL_PHOTO, 'stop-opacity': '.14' }));
+      defs.append(g); fovSvg.append(defs, sv('path', { class: 'fov-fill', fill: 'url(#fov-grad)' }), sv('path', { class: 'fov-edge' }));
+      document.body.append(fovSvg);
     }
-    map.getSource('fov').setData({ type: 'FeatureCollection', features: feats });
+    drawFov();
+  }
+  function drawFov() {
+    if (!fovSvg) return;
+    if (!fovPhoto || !map) { fovSvg.style.display = 'none'; return; }
+    const a = fovPhoto, k = Math.cos(a.lat * Math.PI / 180) * 111320, m = 110540, half = (a.champ_deg || 60) / 2, R = a.portee_m || 800;
+    const at = d => { const t = (a.direction_deg + d) * Math.PI / 180; return map.project([a.lon + R * Math.sin(t) / k, a.lat + R * Math.cos(t) / m]); };
+    const o = map.project([a.lon, a.lat]), far = Array.from({ length: 9 }, (_, i) => at(-half + i * half / 4)), mid = at(0);
+    const xy = p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+    fovSvg.querySelector('.fov-fill').setAttribute('d', `M${xy(o)}L${far.map(xy).join('L')}Z`);
+    fovSvg.querySelector('.fov-edge').setAttribute('d', `M${xy(far[0])}L${xy(o)}L${xy(far[far.length - 1])}`);
+    const g = fovSvg.querySelector('#fov-grad');
+    g.setAttribute('x1', o.x); g.setAttribute('y1', o.y); g.setAttribute('x2', mid.x); g.setAttribute('y2', mid.y);
+    fovSvg.style.display = '';
   }
 
   function openRoutePoint(kind, a) {
@@ -478,8 +491,8 @@
       if (isPh && a.direction_deg != null) {
         // stand behind the photographer and look the same way
         setFov(a);
-        const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, r = (a.portee_m || 800) * 0.35;
-        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: 14, pitch: 62, bearing: a.direction_deg,
+        const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, r = (a.portee_m || 800) * 0.15;
+        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: 13.2, pitch: 52, bearing: a.direction_deg,
           duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
       } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
     }
@@ -1226,8 +1239,7 @@
     map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-image': 'photo-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
     map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
     // field of view of the open photo: a turquoise wedge that fades with distance
-    map.addSource('fov', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    map.addLayer({ id: 'fov', type: 'fill', source: 'fov', paint: { 'fill-color': COL_PHOTO, 'fill-opacity': ['get', 'o'] } }, 'trace-boat-casing');
+    map.on('move', drawFov);
     map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a); });
     map.on('click', 'infos', e => { const a = INFOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('infos', a); });
     updateLayers();
