@@ -298,8 +298,18 @@
   let fireCheckpoint = () => {};
   let alertsOn = true, photosOn = true, infosOn = true, replayMode = false;
   /* photos and infos stay off the map while a trace is replayed; each layer can be switched off */
+  /* an info at the same spot as a photo sits on top of the photo pin, without its own pointer,
+     but only while photos are shown; otherwise it stands on the ground like any other info */
+  let infoBase = 'sat';
+  function infoLayout() {
+    if (!map || !map.getLayer || !map.getLayer('infos')) return;
+    const stacked = photosOn ? ['get', 'stack'] : false;
+    map.setLayoutProperty('infos', 'icon-image', ['case', stacked, `info-stack-${infoBase}`, `info-${infoBase}`]);
+    map.setLayoutProperty('infos', 'icon-offset', ['case', stacked, ['literal', [0, -27]], ['literal', [0, -2]]]);
+  }
   function updateLayers() {
     if (!map || !map.getLayer || !map.getLayer('alerts')) return;
+    infoLayout();
     const vis = on => on ? 'visible' : 'none';
     map.setLayoutProperty('alerts', 'visibility', vis(alertsOn));
     map.setLayoutProperty('photos', 'visibility', vis(photosOn && !replayMode));
@@ -1335,6 +1345,7 @@
     ['sat', 'topo'].forEach(t => {
       ['photo', 'info'].forEach(k => map.addImage(`${k}-${t}`, badgeImage(k, t), { pixelRatio: 2 }));
       map.addImage(`photo-fav-${t}`, badgeImage('photo', t, true), { pixelRatio: 2 });
+      map.addImage(`info-stack-${t}`, badgeImage('info', t, false, true), { pixelRatio: 2 });   // no pointer, sits on a photo pin
     });
     VILLAGES.forEach(v => map.addImage(`village-${v.name}`, villageImage(v.name, v.beside), { pixelRatio: 2 }));
     map.addSource('villages', { type: 'geojson', data: { type: 'FeatureCollection', features: VILLAGES.map(v =>
@@ -1358,8 +1369,7 @@
     map.addLayer({ id: 'alerts', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'alert'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.on('click', 'alerts', e => { const a = ALERTS.find(x => x.id === e.features[0].properties.aid); if (a) openAlert(a); });
     map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-image': photoIconExpr('sat'), 'icon-anchor': 'bottom', 'icon-offset': [0, -2], 'symbol-sort-key': ['case', ['get', 'fav'], 1, 0], 'icon-size': ['case', ['get', 'fav'], 1.25, 1] } });
-    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom',
-      'icon-offset': ['case', ['get', 'stack'], ['literal', [0, -33]], ['literal', [0, -2]]] } });
+    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
     // field of view of the open photo: a turquoise wedge that fades with distance
     map.on('move', drawFov);
     map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a); });
@@ -1434,7 +1444,7 @@
   }
   /* photo: turquoise badge with a camera (black on the satellite map, white on the topo map);
      info: round badge with an "i" (dark on the satellite map, white on the topo map) */
-  function badgeImage(kind, theme, fav) {
+  function badgeImage(kind, theme, fav, noTail) {
     const S = 2, W = 28, H = 30, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
     const g = cv.getContext('2d'); g.scale(S, S);
     const sat = theme === 'sat';
@@ -1444,7 +1454,7 @@
       ring.addColorStop(0, '#fff1b8'); ring.addColorStop(.45, '#e9b93c'); ring.addColorStop(1, '#a8741a');
     }
     g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
-    g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = ring; g.fill();
+    if (!noTail) { g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = ring; g.fill(); }
     g.beginPath(); g.arc(14, 12, 11.5, 0, 2 * Math.PI); g.fillStyle = ring; g.fill(); g.shadowColor = 'transparent';
     if (kind === 'photo') {
       const cam = sat ? '#111418' : '#fff';
@@ -1597,7 +1607,7 @@
     document.body.classList.toggle('base-topo', base === 'topo');
     if (map.getLayer('villages')) map.setLayoutProperty('villages', 'visibility', base === 'sat' ? 'visible' : 'none');
     if (map.getLayer('photos')) map.setLayoutProperty('photos', 'icon-image', photoIconExpr(base));
-    if (map.getLayer('infos')) map.setLayoutProperty('infos', 'icon-image', `info-${base}`);
+    infoBase = base; infoLayout();
     // the trace keeps a white edge on the imagery and gets a black one on the pale topo map
     const edge = base === 'sat' ? COL.casing : '#0b1014';
     ['trace-casing', 'anim-casing'].forEach(l => map.getLayer(l) && map.setPaintProperty(l, 'line-color', edge));
