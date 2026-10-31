@@ -797,7 +797,9 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* start sheet (Fiche départ) */
-.pill-row { display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 8px; }   /* same space left, between and right */
+.pill-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 12px; }   /* same grid as the stats above */
+.pill-row #btn-trek { grid-column: 1 / span 8; justify-self: start; }   /* lined up with "Temps total" */
+.pill-row #btn-depart { grid-column: 9 / span 4; justify-self: start; }  /* lined up with "Trail running" */
 .pill-ghost { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .pill-ghost svg { fill: none; }
 .depart { position: fixed; inset: 0; z-index: 9; display: grid; place-items: stretch; box-sizing: border-box;
