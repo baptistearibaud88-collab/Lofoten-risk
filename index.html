@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#eef3f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141b1f" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=20261031-2000">
+<link rel="stylesheet" href="style.css?v=20261031-2025">
 </head>
 <body>
 <div id="map" aria-label="Carte 3D de la traversée"></div>
@@ -47,6 +47,24 @@
   <div class="panel-inner" id="panel-inner" aria-live="polite"></div>
 </aside>
 
+<button type="button" class="compass" id="compass" aria-label="Boussole : remettre le nord en haut" title="Remettre le nord en haut">
+  <svg viewBox="-50 -50 100 100" aria-hidden="true">
+    <g class="rose" id="compass-rose">
+      <circle r="47" class="c-disc"/>
+      <circle r="41" class="c-ring"/>
+      <g class="c-ticks" id="compass-ticks"></g>
+      <path d="M0-33 7.5 0 0 4-7.5 0Z" class="c-north"/>
+      <path d="M0 33 7.5 0 0-4-7.5 0Z" class="c-south"/>
+      <path d="M-24 0 0-5 24 0 0 5Z" class="c-cross"/>
+      <circle r="3.2" class="c-hub"/>
+      <text y="-34.5" class="c-n">N</text>
+      <text x="35" y="3.6" class="c-l">E</text>
+      <text y="41" class="c-l">S</text>
+      <text x="-35" y="3.6" class="c-l">O</text>
+    </g>
+  </svg>
+</button>
+
 <div class="controls" role="toolbar" aria-label="Affichage de la carte">
   <button type="button" id="btn-overview">Vue d'ensemble</button>
   <button type="button" id="btn-base">Satellite</button>
@@ -73,7 +91,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="data.js?v=20261031-2000"></script>
-<script src="app.js?v=20261031-2000"></script>
+<script src="data.js?v=20261031-2025"></script>
+<script src="app.js?v=20261031-2025"></script>
 </body>
 </html>

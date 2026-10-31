@@ -135,6 +135,11 @@
   /* alerts: a point on an étape or a summit outing, given by its km (data/raw/alertes.csv) */
   const routePoints = list => (list || []).map(a => {
     let ids, where, open, replay;
+    if (a.rubrique === 'bivouac') {   // a point at a camp (reference = camp number)
+      const c = camps.find(x => String(x.id) === String(a.reference)), n = c.nights[0];
+      return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: null, day: n.next_day - 1, where: `au bivouac ${c.name}`,
+        label: `Bivouac ${camps.indexOf(c) + 1} · ${c.name} · ${nightLabel(n.night, n.wake)}`, open: () => openCamp(c), replay: 'Voir le bivouac' };
+    }
     if (a.rubrique === 'etape') {
       const e = T.etapes.find(x => String(x.day) === String(a.reference));
       ids = e.acts; where = `de l’étape J${e.day} · ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Rejouer l’étape';
@@ -143,7 +148,8 @@
       ids = SUMMIT_OUTINGS[sm.activite] || [sm.activite]; where = `de la sortie ${sm.sommet}`; open = () => openSummit(sm); replay = 'Rejouer la sortie';
     }
     const seq = buildSeq(ids), i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
-    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay };
+    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay,
+      label: `J${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
   const COL_PHOTO = '#2bb3ac';
@@ -392,7 +398,7 @@
             el('span', { class: 'camp-num num-peak' }, isPh ? photoIcon() : infoIcon()),
             el('span', { class: 'stage-main' },
               el('span', { class: 'camp-name' }, a.titre),
-              el('span', { class: 'stage-meta' }, `J${a.day} · ${kmTxt(a)} ${a.where}`)))))));
+              el('span', { class: 'stage-meta' }, a.label)))))));
     } else if (rubric === 'alerts') {
       body.append(
         el('h2', null, 'Alertes'),
@@ -440,7 +446,7 @@
       backButton('Toutes les alertes', 'alerts'),
       el('p', { class: 'eyebrow-sm warn-ink' }, `Alerte · J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`),
       el('h2', null, a.titre),
-      el('p', { class: 'meta' }, `${nf(a.alt)} m · vers ${a.heure} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
       el('p', { class: 'empty' }, a.recit || 'Récit à venir.'),
       el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)));
     panel.scrollTop = 0;
@@ -529,9 +535,9 @@
     }
     panel.replaceChildren(...[
       backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
-      el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · J${a.day} · ${kmTxt(a)} ${a.where}`),
+      el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · ${a.label}`),
       el('h2', null, a.titre),
-      el('p', { class: 'meta' }, `${nf(a.alt)} m · vers ${a.heure} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
       isPh ? photoGallery(a) : null,
       isPh ? (a.legende ? el('p', { class: 'note' }, a.legende) : null) : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),
       el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`))].filter(Boolean));
@@ -1074,7 +1080,21 @@
     center: [13.15, 68.0], zoom: 8.6, pitch: 0, maxPitch: 80,
     attributionControl: { compact: true },
   });
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+  /* compass rose: turns with the map, leans with the tilt; a tap puts north back up */
+  {
+    const ticks = document.getElementById('compass-ticks');
+    for (let d = 0; d < 360; d += 15) {
+      if (d % 90 === 0) continue;
+      const r1 = d % 45 === 0 ? 34 : 37, t = d * Math.PI / 180;
+      ticks.append(sv('line', { x1: (r1 * Math.sin(t)).toFixed(2), y1: (-r1 * Math.cos(t)).toFixed(2), x2: (41 * Math.sin(t)).toFixed(2), y2: (-41 * Math.cos(t)).toFixed(2), class: d % 45 === 0 ? 'c-tick big' : 'c-tick' }));
+    }
+    const rose = document.getElementById('compass-rose'), btn = document.getElementById('compass');
+    const turn = () => { btn.style.setProperty('--tilt', `${(map.getPitch() * 0.55).toFixed(1)}deg`); rose.setAttribute('transform', `rotate(${(-map.getBearing()).toFixed(1)})`); };
+    map.on('move', turn); turn();
+    btn.addEventListener('click', () => { stopAnim(false); map.easeTo({ bearing: 0, duration: reduceMotion ? 0 : 900 }); });
+  }
 
   const bounds = new maplibregl.LngLatBounds();
   T.trace.features.forEach(f => f.geometry.coordinates.forEach(c => bounds.extend([c[0], c[1]])));
