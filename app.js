@@ -547,27 +547,20 @@
     show();
   }
 
-  /* every photo of the trek, full screen, as a mosaic grouped by day; a tap opens the viewer
-     on that photo and the arrows then run through all of them in order */
+  /* every photo of the trek as one full-screen mosaic, no text: 7 columns, as many rows as needed
+     to hold them all (28 photos = 7 x 4), stretched to fill the screen. A tap opens the viewer on
+     that photo; its arrows then run through all of them in order. */
   function openPhotoWall() {
     const items = [];
-    PHOTOS.forEach(a => photoFiles(a).forEach(f => items.push({ src: f, mini: f.replace('photos/', 'photos/mini/'), title: a.titre, sub: a.label, point: a, day: a.day })));
-    const days = [...new Set(items.map(x => x.day))];
+    PHOTOS.forEach(a => photoFiles(a).forEach(f => items.push({ src: f, mini: f.replace('photos/', 'photos/mini/'), title: a.titre, sub: a.label, point: a })));
+    const cols = innerWidth < 700 ? 4 : 7;
     const close = () => { wall.remove(); document.removeEventListener('keydown', onKey); };
-    const onKey = e => { if (e.key === 'Escape') close(); };
-    const wall = el('div', { class: 'photo-wall', role: 'dialog', 'aria-label': 'Toutes les photos' },
-      el('header', { class: 'pw-head' },
-        el('div', null, el('h2', null, 'Toutes les photos'), el('p', null, `${items.length} photos · ${PHOTOS.length} lieux · touche une photo pour l’ouvrir en grand`)),
-        el('button', { type: 'button', class: 'pw-close', 'aria-label': 'Fermer', onclick: close }, '×')),
-      el('div', { class: 'pw-body' }, days.map(d => {
-        const e = T.etapes.find(x => x.day === d);
-        return el('section', null,
-          el('h3', null, `Jour ${d}`, e ? el('span', null, ` · ${e.from} → ${e.to}`) : null),
-          el('div', { class: 'pw-grid' }, items.filter(x => x.day === d).map(it =>
-            el('button', { type: 'button', class: 'pw-tile', 'aria-label': `${it.title}, ouvrir en grand`, onclick: () => lightbox(items, items.indexOf(it)) },
-              el('img', { src: it.mini, alt: it.title, loading: 'lazy', decoding: 'async', onerror: function () { this.onerror = null; this.src = it.src; } }),
-              el('span', null, it.title)))));
-      })));
+    const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
+    const grid = el('div', { class: 'pw-grid', style: `grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${Math.ceil(items.length / cols)}, 1fr)` },
+      items.map((it, i) => el('button', { type: 'button', class: 'pw-tile', 'aria-label': `${it.title}, ouvrir en grand`, onclick: () => lightbox(items, i) },
+        el('img', { src: it.mini, alt: it.title, decoding: 'async', onerror: function () { this.onerror = null; this.src = it.src; } }))));
+    const wall = el('div', { class: 'photo-wall', role: 'dialog', 'aria-label': 'Toutes les photos' }, grid,
+      el('button', { type: 'button', class: 'pw-close', 'aria-label': 'Fermer', onclick: close }, '×'));
     document.addEventListener('keydown', onKey);
     document.body.append(wall);
   }
