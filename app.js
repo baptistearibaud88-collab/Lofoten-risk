@@ -475,43 +475,39 @@
     } };
   }
 
-  /* ---------- pace histogram: minutes per km, km by km (5 km bins for the whole traverse) ---------- */
-  function paceChart(all, bin, onSeekKm) {
+  /* ---------- speed histogram: km/h km by km (5 km bins for the whole traverse); the faster, the taller ---------- */
+  function speedChart(all, bin, onSeekKm) {
     // work on walking km only: the boat is left out
     const pts = all.filter(p => p.sac !== 2).map(p => ({ ...p, km: p.wk }));
     const onSeek = wk => { const i = all.findIndex(p => p.sac !== 2 && p.wk >= wk); onSeekKm(i < 0 ? all[all.length - 1].km : all[i].km); };
     const kmMax = pts[pts.length - 1].km;
+    const kmh = (k0, k1) => { const h = (movAt(pts, k1) - movAt(pts, k0)) / 3600; return h > 0 ? (k1 - k0) / h : NaN; };
     const bins = [];
     for (let k0 = 0; k0 < kmMax - 1e-6; k0 += bin) {
-      const k1 = Math.min(kmMax, k0 + bin), len = k1 - k0;
-      if (len < 0.15 * bin && bins.length) {   // a tiny last piece joins the previous bin
-        const b = bins[bins.length - 1];
-        b.k1 = k1; b.min = (movAt(pts, b.k1) - movAt(pts, b.k0)) / 60 / (b.k1 - b.k0);
-        continue;
-      }
-      const mid = pts[idxAt(pts, (k0 + k1) / 2)];
-      bins.push({ k0, k1, min: (movAt(pts, k1) - movAt(pts, k0)) / 60 / len, sac: mid.sac });
+      const k1 = Math.min(kmMax, k0 + bin);
+      if (k1 - k0 < 0.15 * bin && bins.length) { const b = bins[bins.length - 1]; b.k1 = k1; b.v = kmh(b.k0, b.k1); continue; }  // tiny last piece joins the previous bin
+      bins.push({ k0, k1, v: kmh(k0, k1), sac: pts[idxAt(pts, (k0 + k1) / 2)].sac });
     }
-    const vals = bins.map(b => b.min).filter(isFinite).sort((a, b) => a - b);
-    const p95 = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.95))] || 10;
-    const step = p95 > 40 ? 20 : p95 > 20 ? 10 : 5;
+    const vals = bins.map(b => b.v).filter(isFinite).sort((a, b) => a - b);
+    const p95 = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.95))] || 4;
+    const step = p95 > 8 ? 4 : p95 > 4 ? 2 : 1;
     const yMax = Math.max(step, Math.ceil(p95 * 1.08 / step) * step);
     const W = 340, H = 128, L = 30, R = 4, Tp = 6, B = 16;
     const bw = (W - L - R) / bins.length, gap = Math.min(2, bw * 0.18);
-    const y = v => Tp + (1 - Math.min(v, yMax) / yMax) * (H - Tp - B);
+    const y = v => Tp + (1 - Math.min(isFinite(v) ? v : 0, yMax) / yMax) * (H - Tp - B);
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pace', role: 'img',
-      'aria-label': `Allure par tranche de ${bin} km, de ${pace(vals[0])} à ${pace(vals[vals.length - 1])} par km` });
+      'aria-label': `Vitesse par tranche de ${bin} km, de ${nf(vals[0], 1)} à ${nf(vals[vals.length - 1], 1)} km/h` });
     [0, 0.5, 1].forEach(f => {
       svg.append(sv('line', { x1: L, x2: W - R, y1: y(f * yMax), y2: y(f * yMax), class: 'grid' }));
-      svg.append(svText({ x: L - 5, y: y(f * yMax) + 3, class: 'axis', 'text-anchor': 'end' }, `${nf(f * yMax)}′`));
+      svg.append(svText({ x: L - 5, y: y(f * yMax) + 3, class: 'axis', 'text-anchor': 'end' }, nf(f * yMax, (f * yMax) % 1 ? 1 : 0)));
     });
     const lab = bins.length <= 16 ? 1 : Math.ceil(bins.length / 8);
     const rects = bins.map((b, j) => {
-      const r = sv('rect', { x: (L + j * bw + gap / 2).toFixed(2), y: y(b.min).toFixed(1), width: Math.max(0.6, bw - gap).toFixed(2),
-        height: Math.max(0.5, H - B - y(b.min)).toFixed(1), rx: Math.min(2.5, bw / 4), class: `bar ${b.sac ? 'b-avec' : 'b-sans'} future` });
+      const r = sv('rect', { x: (L + j * bw + gap / 2).toFixed(2), y: y(b.v).toFixed(1), width: Math.max(0.6, bw - gap).toFixed(2),
+        height: Math.max(0.5, H - B - y(b.v)).toFixed(1), rx: Math.min(2.5, bw / 4), class: `bar ${b.sac ? 'b-avec' : 'b-sans'} future` });
       r.addEventListener('click', () => onSeek(b.k0 + 1e-3));
       svg.append(r);
-      if (b.min > yMax) svg.append(sv('rect', { x: (L + j * bw + gap / 2).toFixed(2), y: Tp + 3, width: Math.max(0.6, bw - gap).toFixed(2), height: 1.5, class: 'clip' }));
+      if (b.v > yMax) svg.append(sv('rect', { x: (L + j * bw + gap / 2).toFixed(2), y: Tp + 3, width: Math.max(0.6, bw - gap).toFixed(2), height: 1.5, class: 'clip' }));
       if (j % lab === 0 || j === bins.length - 1) svg.append(svText({ x: (L + (j + 0.5) * bw).toFixed(1), y: H - 3, class: 'axis', 'text-anchor': 'middle' }, nf(bin * (j + 1))));
       return r;
     });
@@ -525,16 +521,18 @@
       curBin = j;
       rects.forEach((r, k) => { r.classList.toggle('future', k > j); r.classList.toggle('now', k === j); });
       const b = bins[j];
-      caption.replaceChildren(`${bin === 1 ? `km ${j + 1}` : `km ${nf(b.k0)} à ${nf(b.k1)}`} · `, el('b', null, pace(b.min)), ' par km · ', b.sac ? 'avec le sac' : 'sans sac');
+      caption.replaceChildren(`${bin === 1 ? `km ${j + 1}` : `km ${nf(b.k0)} à ${nf(b.k1)}`} · `, el('b', null, `${nf(b.v, 1)} km/h`),
+        ` (${pace(60 / b.v)} par km) · `, b.sac ? 'avec le sac' : 'sans sac');
     }
     const key = el('div', { class: 'key' },
       bins.some(b => b.sac) ? el('span', null, el('i', { class: 'k-avec' }), 'avec le sac') : null,
       bins.some(b => !b.sac) ? el('span', null, el('i', { class: 'k-sans' }), 'sans sac') : null,
-      el('span', null, 'temps en mouvement · touche une barre pour y aller'));
+      el('span', null, 'km/h en mouvement · touche une barre pour y aller'));
     return { nodes: [svg, caption, key], move };
   }
 
-  /* ---------- player: buttons, live counters, profile in the title, pace in the panel ---------- */
+  /* ---------- player: buttons, live counters, profile and speed in the panel ---------- */
+  const kvItem = (label, value, unit) => el('div', null, el('dt', null, label), el('dd', null, value, unit ? el('small', null, ` ${unit}`) : null));
   const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
   const CAMS = [['drone', 'Drone'], ['orbit', 'Orbite'], ['fixed', 'Fixe']];
 
@@ -550,7 +548,7 @@
     const seek = km => { state.km = km; state.lastCk = km; render(km, true); };
     const cps = checkpoints(pts);
     const chart = profileChart(pts, opts.marks, seek);
-    const paces = paceChart(pts, opts.paceBin || 1, seek);
+    const paces = speedChart(pts, opts.paceBin || 1, seek);
 
     function render(km, full) {
       const i = idxAt(pts, km), p = pts[i];
@@ -586,11 +584,13 @@
       playBtn.textContent = '❚❚ Pause';
     });
 
-    setTitleActivity(opts.eyebrow, opts.name, [chart.svg, el('p', { class: 'profile-hint' }, 'Profil d’altitude (m) · touche-le pour te déplacer')]);
+    // fixed figures of the outing go to the title bubble; what moves stays in the panel
+    setTitleActivity(opts.eyebrow, opts.name, opts.summary || []);
     render(0, true);
     return {
       nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
-        el('h3', null, opts.paceBin > 1 ? `Allure par tranche de ${opts.paceBin} km` : 'Allure par kilomètre'), ...paces.nodes].filter(Boolean),
+        el('h3', null, 'Profil d’altitude'), chart.svg, el('p', { class: 'profile-hint' }, 'altitude en m · touche le profil pour te déplacer'),
+        el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre'), ...paces.nodes].filter(Boolean),
       start: () => playBtn.click(),
     };
   }
@@ -606,20 +606,15 @@
     const night = T.camps.find(n => n.next_day === e.day);
     const hrs = pts.map(p => p.hr).filter(v => v != null);
     const d = day(ACTS[e.acts[0]].date);
-    const pl = player(pts, { view: VIEW.etape, onEnd: () => fitPts(pts),
+    const summary = el('dl', { class: 'title-kv' },
+      kvItem('Distance', nf(last.wk, 1), 'km'), kvItem('Dénivelé +', nf(last.dplus), 'm'), kvItem('En mouvement', hms(last.mov)),
+      kvItem('FC moyenne', nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), 'bpm'), kvItem('Calories', nf(last.kcal), 'kcal'),
+      kvItem('Sac le matin', night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? 'kg' : null));
+    const pl = player(pts, { view: VIEW.etape, onEnd: () => fitPts(pts), summary: [summary],
       eyebrow: `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`, name: `${e.from} → ${e.to}` });
     panel.replaceChildren(
       backButton('Toutes les étapes', 'etapes'),
-      el('p', { class: 'eyebrow-sm' }, `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`),
-      el('h2', null, `${e.from} → ${e.to}`),
-      el('dl', { class: 'kv' },
-        el('div', null, el('dt', null, 'Distance à pied'), el('dd', null, nf(last.wk, 1), el('small', null, ' km'))),
-        el('div', null, el('dt', null, 'Dénivelé +'), el('dd', null, nf(last.dplus), el('small', null, ' m'))),
-        el('div', null, el('dt', null, 'En mouvement'), el('dd', null, hms(last.mov))),
-        el('div', null, el('dt', null, 'FC moyenne'), el('dd', null, nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), el('small', null, ' bpm'))),
-        el('div', null, el('dt', null, 'Calories'), el('dd', null, nf(last.kcal), el('small', null, ' kcal'))),
-        el('div', null, el('dt', null, 'Sac le matin'), el('dd', null, night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? el('small', null, ' kg') : null))),
-      el('h3', null, 'Rejouer l’étape'),
+      el('h3', { class: 'first' }, 'Rejouer l’étape'),
       ...pl.nodes,
       el('p', { class: 'foot' }, `Calories : estimation de la montre. Sac : ${T.bag_note}. Les passages non enregistrés (bateau, liaisons) sont sautés.`));
     panel.scrollTop = 0;
@@ -649,24 +644,19 @@
     const hrs = pts.map(p => p.hr).filter(v => v != null);
     const d = day(s.heure.slice(0, 10));
     const several = ids.length > 1;
-    const pl = player(pts, { view: VIEW.summit, keepPopup: true, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+    const summary = [
+      el('p', { class: 'title-meta' }, (s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m au GPS · ${nf(s.hauteur_officielle_m)} m officiels` : `${nf(s.alt_gps_m)} m au GPS`)
+        + (several ? ` · sortie depuis ${ACTS[ids[0]].name}` : '')),
+      el('dl', { class: 'title-kv' },
+        kvItem('Pied de la montée', nf(base.alt), 'm'), kvItem(tops.length > 1 ? `${s.sommet} à` : 'Au sommet à', s.heure.slice(11, 16)),
+        kvItem('Montée', hms(climbS)), kvItem('D+ de la montée', nf(climbM), 'm'),
+        kvItem('Vitesse verticale', nf(climbM / Math.max(1 / 60, climbS / 3600)), 'm/h'), kvItem('FC max', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'),
+        kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('D+ de la sortie', nf(last.dplus), 'm'), kvItem('Calories', nf(last.kcal), 'kcal'))];
+    const pl = player(pts, { view: VIEW.summit, keepPopup: true, summary, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
       eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
       backButton('Tous les sommets', 'summits'),
-      el('p', { class: 'eyebrow-sm' }, `Sommet · ${d.d} ${d.m} · sans sac`),
-      el('h2', null, s.sommet),
-      el('p', { class: 'meta' }, (s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m au GPS · ${nf(s.hauteur_officielle_m)} m officiels` : `${nf(s.alt_gps_m)} m au GPS`)
-        + (several ? ` · sortie depuis ${ACTS[ids[0]].name}` : '')),
-      el('dl', { class: 'kv' },
-        el('div', null, el('dt', null, 'Pied de la montée'), el('dd', null, nf(base.alt), el('small', null, ' m'))),
-        el('div', null, el('dt', null, 'Au sommet à'), el('dd', null, s.heure.slice(11, 16))),
-        el('div', null, el('dt', null, 'Montée'), el('dd', null, hms(climbS))),
-        el('div', null, el('dt', null, 'D+ de la montée'), el('dd', null, nf(climbM), el('small', null, ' m'))),
-        el('div', null, el('dt', null, 'Vitesse verticale'), el('dd', null, nf(climbM / Math.max(1 / 60, climbS / 3600)), el('small', null, ' m/h'))),
-        el('div', null, el('dt', null, 'FC max (lissée)'), el('dd', null, nf(hrs.length ? Math.max(...hrs) : null), el('small', null, ' bpm'))),
-        el('div', null, el('dt', null, several ? 'Sortie du jour' : 'Sortie complète'), el('dd', null, nf(last.wk, 1), el('small', null, ' km'))),
-        el('div', null, el('dt', null, 'Calories'), el('dd', null, nf(last.kcal), el('small', null, ' kcal')))),
-      el('h3', null, 'Rejouer la sortie'),
+      el('h3', { class: 'first' }, 'Rejouer la sortie'),
       ...pl.nodes);
     panel.scrollTop = 0;
   }
@@ -676,12 +666,14 @@
     stopAnim(true); setActive(null); highlight([]); setTabs(null, false); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(T.acts.map(a => a.id));
-    const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(),
-      eyebrow: '14 → 22 juin 2026 · 24 enregistrements', name: 'Toute la traversée' });
+    const summary = el('dl', { class: 'title-kv' },
+      kvItem('Distance', nf(S.km), 'km'), kvItem('Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'), kvItem('Jours', S.days),
+      kvItem('Bivouacs', S.camps), kvItem('Sommets', S.summits), kvItem('Avec le sac', nf(S.bag_hours, 1), 'h'));
+    const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(), summary: [summary],
+      eyebrow: '14 → 22 juin 2026 · Napp → Moskenes', name: 'Toute la traversée' });
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
-      el('h2', null, 'Toute la traversée'),
-      el('p', { class: 'note' }, `Les ${nf(pts[pts.length - 1].wk)} km à pied dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.`),
+      el('p', { class: 'note' }, 'Tout dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.'),
       ...pl.nodes);
     panel.scrollTop = 0;
     overview();
