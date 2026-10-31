@@ -1439,10 +1439,9 @@
     g.beginPath(); g.moveTo(14, 29); g.lineTo(10, 22); g.lineTo(18, 22); g.closePath(); g.fillStyle = ring; g.fill();
     g.beginPath(); g.arc(14, 12, 11.5, 0, 2 * Math.PI); g.fillStyle = ring; g.fill(); g.shadowColor = 'transparent';
     if (kind === 'photo') {
-      let cam = sat ? '#111418' : '#fff';
-      if (fav) { cam = g.createLinearGradient(8, 6, 20, 18); cam.addColorStop(0, '#fff1b8'); cam.addColorStop(.5, '#f0c043'); cam.addColorStop(1, '#c98f1e'); }
+      const cam = sat ? '#111418' : '#fff';
       g.beginPath(); g.arc(14, 12, fav ? 9.2 : 9.8, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
-      g.fillStyle = cam; g.strokeStyle = 'rgba(40,25,0,.55)'; g.lineWidth = .9; roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); if (fav) g.stroke(); g.fill(); roundRect(g, 7.6, 8.4, 12.8, 9, 2); if (fav) g.stroke(); g.fill();
+      g.fillStyle = cam; roundRect(g, 7.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 11.3, 6.6, 5.4, 2.6, .8); g.fill();
       g.beginPath(); g.arc(14, 12.9, 2.7, 0, 2 * Math.PI); g.fillStyle = COL_PHOTO; g.fill();
     } else {
       g.beginPath(); g.arc(14, 12, 10, 0, 2 * Math.PI); g.fillStyle = sat ? '#1b2328' : '#fff'; g.fill();
