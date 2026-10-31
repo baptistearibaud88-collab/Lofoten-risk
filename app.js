@@ -709,7 +709,7 @@
     const rows = [
       ['k-top', 'le plus haut', camps.reduce((a, b) => b.alt > a.alt ? b : a), c => `${nf(c.alt)} m`],
       ['k-best', 'la meilleure', pick(n => n.sleep && n.sleep.sleep_score, hi), x => `${nf(x.n.sleep.sleep_score)} / 100`],
-      ['k-cold', 'la plus froide', pick(n => n.weather && n.weather.temp_min_camp, lo), x => `${nf(x.n.weather.temp_min_camp, 1)} °C`],
+      ['k-cold', 'la plus froide', lived('plus_froide') || pick(n => n.weather && n.weather.temp_min_camp, lo), x => `${nf(x.n.weather.temp_min_camp, 1)} °C`],
       ['k-wind', 'la plus venteuse', lived('plus_venteuse') || pick(n => n.weather && n.weather.gust_max, hi), x => x.lived ? 'en plein vent' : `${nf(x.n.weather.gust_max)} km/h`],
       ['k-rain', 'la plus arrosée', lived('plus_arrosee') || pick(n => n.weather && n.weather.rain_mm, hi), x => x.lived ? 'sous la pluie' : `${nf(x.n.weather.rain_mm, 1)} mm`],
       ['k-short', 'la plus courte', pick(n => n.sleep && n.sleep.sommeil_min, lo), x => hm(x.n.sleep.sommeil_min)],
