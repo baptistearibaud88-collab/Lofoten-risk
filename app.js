@@ -26,6 +26,7 @@
     { name: 'Nesland', lat: 68.0032, lon: 13.2852 }, { name: 'Ramberg', lat: 68.0899, lon: 13.2299 },
     { name: 'Fredvang', lat: 68.0841, lon: 13.1667 }, { name: 'Reine', lat: 67.9328, lon: 13.0885 },
     { name: 'Sørvågen', lat: 67.8935, lon: 13.0240, beside: true }, { name: 'Å', lat: 67.8797, lon: 12.9825 },
+    { name: 'Moskenes', lat: 67.8996, lon: 13.0445, beside: true },
   ];
   /* arrival of the whole traverse: last point of the last activity */
   const LAST_ACT = T.acts[T.acts.length - 1];
@@ -243,7 +244,7 @@
   /* ---------- stats ---------- */
   const S = T.stats;
   const statItems = [
-    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus), 'm'], ['Jours', S.days],
+    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'], ['Jours', S.days],
     ['Bivouacs', S.camps], ['Sommets', S.summits], ['Avec le sac', nf(S.bag_hours, 1), 'h'],
   ];
   document.getElementById('stats').append(...statItems.map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
@@ -354,7 +355,7 @@
         })));
     }
     panel.replaceChildren(body,
-      el('p', { class: 'foot' }, 'Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Météo : réanalyse ERA5. Sommeil : Garmin Connect.'));
+      el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre (${nf(S.dplus)} m après lissage de l’altitude, 10 890 m selon Strava), hors recherches de bivouac non enregistrées. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
     panel.scrollTop = 0;
   }
 
