@@ -671,3 +671,16 @@ body.base-topo .sw-info::after { color: #2f6fb0; }
 .recap .avg-big span { white-space: normal; display: grid; gap: 1px; font-size: 13px; }
 .recap .avg-big b { font-family: var(--font-num); font-size: 19px; }
 .k-down { background: #fff; box-shadow: inset 0 0 0 2px #e0472f; }
+
+.recap .records { font-size: 13px; gap: 3px; }
+.recap .avg-big { padding: 10px 12px; gap: 8px 12px; }
+.recap .avg-big span { font-size: 12px; }
+.recap .avg-big b { font-size: 16.5px; }
+
+/* summit recap on one screen: the four averages on one row */
+.recap .avg-big { grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 9px 10px; gap: 6px; }
+.recap .avg-big span { font-size: 11px; }
+.recap .avg-big b { font-size: 15px; white-space: nowrap; }
+.recap .recap-chart .peak-label { font-size: 11.5px; }
+.recap .recap-chart .peak-val, .recap .recap-chart .peak-temp-t { font-size: 11px; }
+.recap h3 { margin: 12px 0 4px; }

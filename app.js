@@ -929,45 +929,45 @@
     const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), cold = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a);
     const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
     const hardest = rows.reduce((a, b) => b.gap > a.gap ? b : a);
-    const W = 340, L = 96, R = 72, rowH = 19, T0 = 2;
+    const W = 340, L = 96, R = 72, rowH = 15, T0 = 2;
     // 1. altitude of each summit, with the air temperature up there
     const H1 = T0 + rows.length * rowH + 4, aMax = 800;
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
     rows.forEach((r, j) => {
       const y = T0 + j * rowH, alt = r.s.hauteur_officielle_m || r.s.alt_gps_m, w = (W - L - R) * alt / aMax;
-      s1.append(svText({ x: L - 8, y: y + 13, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
-      s1.append(sv('rect', { x: L, y: y + 2.5, width: w.toFixed(1), height: 13, rx: 3.5, class: `peak-bar${r === high ? ' top' : ''}` }));
-      s1.append(svText({ x: L + w + 6, y: y + 13, class: 'axis peak-val' }, `${nf(alt)} m`));
-      if (r.s.temp_c != null) s1.append(svText({ x: W - 2, y: y + 13, class: `axis peak-temp-t${r === cold ? ' cold' : ''}`, 'text-anchor': 'end' }, `${nf(r.s.temp_c, 0)} °C`));
+      s1.append(svText({ x: L - 8, y: y + 11.5, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
+      s1.append(sv('rect', { x: L, y: y + 2.5, width: w.toFixed(1), height: 11, rx: 3, class: `peak-bar${r === high ? ' top' : ''}` }));
+      s1.append(svText({ x: L + w + 6, y: y + 11.5, class: 'axis peak-val' }, `${nf(alt)} m`));
+      if (r.s.temp_c != null) s1.append(svText({ x: W - 2, y: y + 11.5, class: `axis peak-temp-t${r === cold ? ' cold' : ''}`, 'text-anchor': 'end' }, `${nf(r.s.temp_c, 0)} °C`));
     });
     // 2. grade-adjusted pace of each climb (the longer the line, the faster)
     const sp = r => 60 / r.gap, vMax = Math.ceil(Math.max(...rows.map(sp)) / 2) * 2;
     const s2 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Allure ajustée à la pente de chaque montée' });
     rows.forEach((r, j) => {
       const y = T0 + j * rowH, w = (W - L - R) * sp(r) / vMax;
-      s2.append(svText({ x: L - 8, y: y + 13, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
-      s2.append(sv('line', { x1: L, x2: L + w, y1: y + 9, y2: y + 9, class: 'vv-stem' }));
-      s2.append(sv('circle', { cx: (L + w).toFixed(1), cy: y + 9, r: 4.6, class: `vv-dot${r === best ? ' top' : ''}${r === hardest ? ' hard' : ''}` }));
-      s2.append(svText({ x: L + w + 8, y: y + 13, class: 'axis peak-val' }, `${pace(r.gap)} /km`));
+      s2.append(svText({ x: L - 8, y: y + 11.5, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
+      s2.append(sv('line', { x1: L, x2: L + w, y1: y + 7.5, y2: y + 7.5, class: 'vv-stem' }));
+      s2.append(sv('circle', { cx: (L + w).toFixed(1), cy: y + 7.5, r: 4.2, class: `vv-dot${r === best ? ' top' : ''}${r === hardest ? ' hard' : ''}` }));
+      s2.append(svText({ x: L + w + 8, y: y + 11.5, class: 'axis peak-val' }, `${pace(r.gap)} /km`));
     });
     const it = (label, value) => el('span', null, label, el('b', null, value));
     const kv = el('div', { class: 'avg-line avg-big' },
-      it('D+ des montées', `${nf(rows.reduce((a, r) => a + r.climbM, 0))} m`), it('temps en montée', hms(rows.reduce((a, r) => a + r.climbS, 0))),
-      it('allure ajustée', `${pace(rows.reduce((a, r) => a + r.climbS, 0) / 60 / rows.reduce((a, r) => a + r.eqKm, 0))} /km`), it('vitesse verticale', `${nf(avg(rows.map(r => r.vv)))} m/h`),
-      it('D− des descentes', `${nf(rows.reduce((a, r) => a + r.downM, 0))} m`), it('température', `${nf(avg(rows.map(r => r.s.temp_c)), 0)} °C`));
+      it('D+ montées', `${nf(rows.reduce((a, r) => a + r.climbM, 0))} m`), it('temps montée', hms(rows.reduce((a, r) => a + r.climbS, 0))),
+      it('allure ajustée', `${pace(rows.reduce((a, r) => a + r.climbS, 0) / 60 / rows.reduce((a, r) => a + r.eqKm, 0))} /km`), it('vit. verticale', `${nf(avg(rows.map(r => r.vv)))} m/h`),
+    );
     const hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
     const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
     const superl = el('div', { class: 'avg-line records' },
       el('span', null, el('i', { class: 'k-top' }), 'le plus haut ', el('b', null, `${high.s.sommet} · ${nf(altOf(high))} m`)),
       el('span', null, el('i', { class: 'k-fast' }), 'la montée la plus rapide ', el('b', null, `${best.s.sommet} · ${pace(best.gap)} /km`)),
-      el('span', null, el('i', { class: 'k-hard' }), 'le plus dur (le plus lent) ', el('b', null, `${hard.s.sommet} · ${pace(hard.gap)} /km`)),
+      el('span', null, el('i', { class: 'k-hard' }), 'le plus lent ', el('b', null, `${hard.s.sommet} · ${pace(hard.gap)} /km`)),
       el('span', null, el('i', { class: 'k-down' }), 'la descente la plus rapide ', el('b', null, `${down.s.sommet} · ${pace(down.downS / 60 / down.downKm)} /km`)),
       el('span', null, el('i', { class: 'k-cold' }), 'le plus froid ', el('b', null, `${cold.s.sommet} · ${nf(cold.s.temp_c, 0)} °C`)));
     panel.replaceChildren(
       el('h2', { class: 'recap-title' }, 'Récap des sommets'),
       el('h3', null, 'Altitude et température au sommet'), s1,
       el('h3', { title: 'Chaque morceau de montée compte comme la distance à plat qui demande le même effort (Minetti et al., 2002).' }, 'Allure ajustée à la pente, du pied au sommet'), s2, superl,
-      el('h3', null, 'Total et moyennes'), kv,
+      el('h3', null, 'Total et moyennes des montées'), kv,
       el('p', { class: 'foot' }, 'Altitude officielle quand elle existe, sinon GPS. Température : réanalyse ERA5 à l’heure du passage, corrigée de l’altitude. Gylttinden : tenté, arrêt à mi-hauteur.'));
     panel.scrollTop = 0;
   }
