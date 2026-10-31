@@ -541,8 +541,9 @@
         let cam = null;
         if (!steep && map.calculateCameraOptionsFromTo) {
           const ground = a.alt * terrain.exaggeration;   // the relief is drawn 1.3 × higher
-          const from = along(-Math.min(400, 0.25 * R)), to = along(0.6 * R);
-          try { cam = map.calculateCameraOptionsFromTo(new maplibregl.LngLat(from[0], from[1]), ground + 160 + 0.08 * R, new maplibregl.LngLat(to[0], to[1]), ground * 0.5); } catch (e) { cam = null; }
+          const back = a.recul_camera || 1;   // per photo: step further back and higher (column recul_camera)
+          const from = along(-Math.min(400, 0.25 * R) * back), to = along(0.6 * R);
+          try { cam = map.calculateCameraOptionsFromTo(new maplibregl.LngLat(from[0], from[1]), ground + (160 + 0.08 * R) * back, new maplibregl.LngLat(to[0], to[1]), ground * 0.5); } catch (e) { cam = null; }
         }
         if (cam && isFinite(cam.zoom)) {
           map.flyTo({ center: cam.center, zoom: Math.min(16, cam.zoom), pitch: Math.min(76, cam.pitch), bearing: a.direction_deg,
