@@ -237,6 +237,13 @@
       pts.forEach((p, i) => { if (p.id !== a.act) return; const d = metres(p, a); if (d < bd) { bd = d; best = i; } });
       if (best >= 0) out.push({ km: pts[best].km, type: 'alert', a });
     });
+    // photos and infos on the route: a small card when passed, if their button is on
+    [['photo', PHOTOS], ['info', INFOS]].forEach(([type, list]) => list.forEach(a => {
+      if (!a.act) return;
+      let best = -1, bd = Infinity;
+      pts.forEach((p, i) => { if (p.id !== a.act) return; const d = metres(p, a); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0 && bd < 150) out.push({ km: pts[best].km, type, a });
+    }));
     const lastIdx = pts.map(p => p.id).lastIndexOf(LAST_ACT.id);
     if (lastIdx >= 0 && lastIdx === pts.length - 1) out.push({ km: pts[lastIdx].km, type: 'finish' });
     return out.sort((a, b) => a.km - b.km);
@@ -297,7 +304,7 @@
   let anim = null, lastLineDraw = 0, boatMarker = null;
   let fireCheckpoint = () => {};
   let alertsOn = false, photosOn = false, infosOn = false, replayMode = false;   // off when the site opens; their tab turns them on
-  /* photos and infos stay off the map while a trace is replayed; each layer can be switched off */
+  /* each layer (alerts, photos, infos) has its own button; a replay opens with photos and infos off */
   /* an info at the same spot as a photo sits on top of the photo pin, without its own pointer,
      but only while photos are shown; otherwise it stands on the ground like any other info */
   let infoBase = 'sat';
@@ -312,8 +319,8 @@
     infoLayout();
     const vis = on => on ? 'visible' : 'none';
     map.setLayoutProperty('alerts', 'visibility', vis(alertsOn));
-    map.setLayoutProperty('photos', 'visibility', vis(photosOn && !replayMode));
-    map.setLayoutProperty('infos', 'visibility', vis(infosOn && !replayMode));
+    map.setLayoutProperty('photos', 'visibility', vis(photosOn));
+    map.setLayoutProperty('infos', 'visibility', vis(infosOn));
   }
   const tracks = new WeakMap();
   const ease = (dt, tau) => 1 - Math.exp(-dt / tau);   // frame-rate independent smoothing
@@ -363,6 +370,9 @@
     document.getElementById('act-title').textContent = name;
     document.getElementById('act-profile').replaceChildren(...profileNodes);
     titleDefault.hidden = true; titleAct.hidden = false;
+    // a replay opens with photos and infos off (less clutter); their buttons bring them back, like the alerts
+    photosOn = infosOn = false;
+    ['btn-photos', 'btn-infos'].forEach(id => document.getElementById(id).setAttribute('aria-pressed', 'false'));
     replayMode = true; updateLayers();
   }
   function setTitleDefault() {
@@ -1614,7 +1624,7 @@
     /* camps and summits are drawn by the map itself (not HTML markers) so they stay
        glued to their coordinates on the 3D relief, exactly like the trace */
     map.addImage('peak', peakImage(), { pixelRatio: 2 });
-    camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1), i === 0 ? COL_START : undefined), { pixelRatio: 2 }));
+    camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1), undefined, i === 0 ? COL_START_FILL : undefined), { pixelRatio: 2 }));
     map.addImage('finish', finishImage(), { pixelRatio: 2 });
     map.addImage('alert', alertImage(), { pixelRatio: 2 });
     ['sat', 'topo'].forEach(t => {
@@ -1682,14 +1692,14 @@
   });
 
   /* icons drawn on a canvas for the map's symbol layers (no font server needed) */
-  const COL_START = '#3ccf6e';   // bivouac 1, where it all started: green ring instead of white
-  function campImage(label, ring = '#ffffff') {
+  const COL_START_FILL = '#22a559';   // bivouac 1: the whole badge green, like a start flag
+  function campImage(label, ring = '#ffffff', fill = COL.camp) {
     const S = 2, W = 30, cv = document.createElement('canvas'); cv.width = cv.height = W * S;
     const g = cv.getContext('2d'); g.scale(S, S);
     g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 5; g.shadowOffsetY = 1.5;
     g.beginPath(); g.arc(W / 2, W / 2, 12, 0, 2 * Math.PI); g.fillStyle = ring; g.fill();
     g.shadowColor = 'transparent';
-    g.beginPath(); g.arc(W / 2, W / 2, 10, 0, 2 * Math.PI); g.fillStyle = COL.camp; g.fill();
+    g.beginPath(); g.arc(W / 2, W / 2, 10, 0, 2 * Math.PI); g.fillStyle = fill; g.fill();
     g.fillStyle = '#fff'; g.font = '700 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, W / 2, W / 2 + 0.5);
     return g.getImageData(0, 0, W * S, W * S);
@@ -1788,11 +1798,11 @@
   }
   /* alert passed during a replay: a small discreet card with its title, above the warning sign */
   let alertPop = null, alertPopTimer = 0;
-  function alertPopup(a, ttl) {
+  function alertPopup(a, ttl, kind = 'alert') {
     if (!map) return;
     if (alertPop) alertPop.remove();
     clearTimeout(alertPopTimer);
-    const mine = alertPop = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 22, anchor: 'bottom', className: 'peak-pop alert-pop', maxWidth: '220px' })
+    const mine = alertPop = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 22, anchor: 'bottom', className: `peak-pop alert-pop pop-${kind}`, maxWidth: '220px' })
       .setLngLat([a.lon, a.lat])
       .setDOMContent(el('div', { class: 'alert-card' }, a.titre))
       .addTo(map);
@@ -1837,6 +1847,7 @@
   fireCheckpoint = (c, keepPopup) => {
     if (c.type === 'summit') { burst('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
     else if (c.type === 'finish') burst('finish', FINISH.lon, FINISH.lat);
+    else if (c.type === 'photo' || c.type === 'info') { if (c.type === 'photo' ? photosOn : infosOn) alertPopup(c.a, 4500, c.type); }
     else if (c.type === 'alert') {
       if (!alertsOn) return;
       burst('warn', c.a.lon, c.a.lat, c.a.effet);
