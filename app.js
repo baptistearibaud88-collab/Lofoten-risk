@@ -267,7 +267,7 @@
   const S = T.stats;
   /* first row: distance, D+, days, summits; second row: moving time, with the pack, trail running */
   const statItems = () => [
-    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'], ['Jours', S.days], ['Sommets', S.summits],
+    ['Distance', nf(S.strava_distance || S.km), 'km'], ['Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'], ['Jours', S.days], ['Sommets', S.summits],
     ['Temps total', hm(S.pack_min + S.trail_min)], ['Avec le sac', hm(S.pack_min)], ['Trail running', hm(S.trail_min)],
   ];
   document.getElementById('stats').append(...statItems().map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
@@ -418,7 +418,7 @@
         })));
     }
     panel.replaceChildren(body,
-      el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre (${nf(S.dplus)} m après lissage de l’altitude, 10 890 m selon Strava), hors recherches de bivouac non enregistrées. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
+      el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Distance totale : ${nf(S.strava_distance)} km selon Strava ; ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre (${nf(S.dplus)} m après lissage de l’altitude, ${nf(S.strava_denivele_positif)} m selon Strava). Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
     panel.scrollTop = 0;
   }
 
