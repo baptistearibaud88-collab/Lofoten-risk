@@ -533,27 +533,24 @@
     const isPh = kind === 'photos';
     if (map) {
       if (isPh && a.direction_deg != null) {
-        // stand just behind and above the photographer, looking where the photo looks
+        // frame the whole view from behind the photographer: the triangle, its tip and a stretch of
+        // ground behind it (the ridge you stand on), looking the same way as the photo
         setFov(a);
         const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, R = a.portee_m || 800;
-        const along = d => [a.lon + d * Math.sin(t) / k, a.lat + d * Math.cos(t) / 110540];
+        const at = (d, ang = 0) => { const u = (a.direction_deg + ang) * Math.PI / 180; return [a.lon + d * Math.sin(u) / k, a.lat + d * Math.cos(u) / 110540]; };
         const steep = a.inclinaison_camera_deg != null;   // a photo on a slope facing down asks for a view from above
+        const back = a.recul_camera || 1, up = a.hauteur_camera || 1;   // per photo, in photos.csv
+        const half = (a.champ_deg || 60) / 2;
+        const box = new maplibregl.LngLatBounds();
+        [at(-0.45 * R * back), at(-0.2 * R * back, -90), at(-0.2 * R * back, 90), at(R, -half), at(R, 0), at(R, half)].forEach(q => box.extend(q));
+        const pitch = steep ? a.inclinaison_camera_deg : Math.max(25, Math.min(66, 58 - 10 * (up - 1)));
         let cam = null;
-        if (!steep && map.calculateCameraOptionsFromTo) {
-          const ground = a.alt * terrain.exaggeration;   // the relief is drawn 1.3 × higher
-          // per photo (photos.csv): recul_camera = how far behind, hauteur_camera = how high above the ground
-          // (higher = looking more from above, less 3D)
-          const back = a.recul_camera || 1, up = a.hauteur_camera || 1;
-          // well back and high above the photographer, so the mountains facing it stand out in 3D
-          const from = along(-Math.min(1200, 0.6 * R) * back), to = along(0.6 * R);
-          try { cam = map.calculateCameraOptionsFromTo(new maplibregl.LngLat(from[0], from[1]), ground + (300 + 0.25 * R) * up, new maplibregl.LngLat(to[0], to[1]), ground * 0.5); } catch (e) { cam = null; }
-        }
+        try { cam = map.cameraForBounds(box, { bearing: a.direction_deg, padding: { top: 70, bottom: 30, left: 50, right: 50 } }); } catch (e) { cam = null; }
         if (cam && isFinite(cam.zoom)) {
-          map.flyTo({ center: cam.center, zoom: Math.min(15, cam.zoom), pitch: Math.min(70, cam.pitch), bearing: a.direction_deg,
-            duration: reduceMotion ? 0 : 2600, essential: true, padding: ZERO });
+          map.flyTo({ center: cam.center, zoom: Math.min(15, cam.zoom + 0.35), pitch, bearing: a.direction_deg,
+            duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
         } else {
-          const c = along(R * (steep ? 0.35 : 0.15));
-          map.flyTo({ center: c, zoom: (steep ? 13.6 : 13.2) - Math.max(0, Math.log2(R / 1000)) * 0.6, pitch: a.inclinaison_camera_deg ?? 52, bearing: a.direction_deg,
+          map.flyTo({ center: at(R * 0.3), zoom: 13 - Math.max(0, Math.log2(R / 1000)) * 0.8, pitch, bearing: a.direction_deg,
             duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
         }
       } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
