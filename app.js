@@ -140,7 +140,10 @@
       return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: null, day: n.next_day - 1, where: `au bivouac ${c.name}`,
         label: `Bivouac ${camps.indexOf(c) + 1} · ${c.name} · ${nightLabel(n.night, n.wake)}`, open: () => openCamp(c), replay: 'Voir le bivouac' };
     }
-    if (a.rubrique === 'etape') {
+    if (a.rubrique === 'activite') {   // an outing that is in no rubric (reference = activity id)
+      const act = ACTS[a.reference];
+      ids = [a.reference]; where = `de ${act.name}`; open = null; replay = null;
+    } else if (a.rubrique === 'etape') {
       const e = T.etapes.find(x => String(x.day) === String(a.reference));
       ids = e.acts; where = `de l’étape J${e.day} · ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Rejouer l’étape';
     } else {
@@ -600,7 +603,7 @@
       el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
       isPh ? photoGallery(a) : null,
       isPh ? (a.legende ? el('p', { class: 'note' }, a.legende) : null) : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),
-      el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`))].filter(Boolean));
+      a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
     panel.scrollTop = 0;
   }
 
@@ -1344,7 +1347,9 @@
       { type: 'Feature', properties: { kind: 'finish', icon: 'finish' }, geometry: { type: 'Point', coordinates: [FINISH.lon, FINISH.lat] } },
       ...ALERTS.map(a => ({ type: 'Feature', properties: { kind: 'alert', aid: a.id, icon: 'alert' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
       ...PHOTOS.map(a => ({ type: 'Feature', properties: { kind: 'photo', aid: a.id, fav: a.favori === 'oui' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
-      ...INFOS.map(a => ({ type: 'Feature', properties: { kind: 'info', aid: a.id }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
+      // an info at the same spot as a photo sits just above the photo pin
+      ...INFOS.map(a => ({ type: 'Feature', properties: { kind: 'info', aid: a.id,
+        stack: PHOTOS.some(p => Math.abs(p.lat - a.lat) < 0.0004 && Math.abs(p.lon - a.lon) < 0.001) }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
     ] } });
     const sym = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' };
     map.addLayer({ id: 'peaks', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'peak'], layout: { ...sym, 'icon-anchor': 'bottom' } });
@@ -1352,7 +1357,8 @@
     map.addLayer({ id: 'alerts', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'alert'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.on('click', 'alerts', e => { const a = ALERTS.find(x => x.id === e.features[0].properties.aid); if (a) openAlert(a); });
     map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-image': photoIconExpr('sat'), 'icon-anchor': 'bottom', 'icon-offset': [0, -2], 'symbol-sort-key': ['case', ['get', 'fav'], 1, 0], 'icon-size': ['case', ['get', 'fav'], 1.25, 1] } });
-    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
+    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom',
+      'icon-offset': ['case', ['get', 'stack'], ['literal', [0, -33]], ['literal', [0, -2]]] } });
     // field of view of the open photo: a turquoise wedge that fades with distance
     map.on('move', drawFov);
     map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a); });
