@@ -578,9 +578,8 @@
     const g = v => v == null ? '—' : v >= 1000 ? `${nf(v / 1000, 2)} kg` : `${nf(v)} g`;
     const tile = (label, value, unit, note) => el('div', { class: 'dp-tile' }, el('span', { class: 'dp-l' }, label),
       el('b', null, value, unit ? el('small', null, ` ${unit}`) : null), note ? el('span', { class: 'dp-n' }, note) : null);
-    const taken = D.equipement.filter(x => x.pris), kcal = D.nourriture.reduce((a, x) => a + (x.kcal || 0), 0);
+    const kcal = D.nourriture.reduce((a, x) => a + (x.kcal || 0), 0);
     const group = (rows, key) => { const m = new Map(); rows.forEach(r => { if (!m.has(r[key])) m.set(r[key], []); m.get(r[key]).push(r); }); return [...m]; };
-    const badge = m => m ? el('span', { class: `dp-m dp-${m === 'pesé' ? 'pese' : m}` }, m) : null;
     const gearList = el('div', { class: 'dp-list' }, group(D.equipement, 'categorie').map(([cat, rows]) => {
       const sum = rows.filter(r => r.pris && !r.porte).reduce((a, r) => a + (r.poids_g || 0), 0);
       return el('section', null, el('h4', null, cat, el('span', null, g(sum))),
@@ -588,7 +587,7 @@
           el('span', { class: 'dp-o' }, r.objet, r.marque ? el('small', null, ` · ${r.marque}`) : null,
             !r.pris ? el('small', { class: 'dp-tag' }, ' non emporté') : r.porte ? el('small', { class: 'dp-tag' }, ' porté') : null),
           el('span', { class: 'dp-q' }, !r.quantite || String(r.quantite) === '1' || String(r.quantite) === '0' ? '' : /^\d+$/.test(r.quantite) ? `×${r.quantite}` : r.quantite),
-          el('span', { class: 'dp-w' }, g(r.poids_g), badge(r.mesure))))));
+          el('span', { class: 'dp-w' }, g(r.poids_g))))));
     }));
     const foodList = el('div', { class: 'dp-list', hidden: '' }, group(D.nourriture, 'categorie').map(([cat, rows]) => {
       const k = rows.reduce((a, r) => a + (r.kcal || 0), 0);
@@ -598,29 +597,31 @@
           el('span', { class: 'dp-q' }, r.quantite == null ? '?' : r.unite === 'g' || r.unite === 'ml' ? `${nf(r.quantite)} ${r.unite}` : `×${nf(r.quantite)}`),
           el('span', { class: 'dp-w' }, r.kcal == null ? '—' : `${nf(r.kcal)} kcal`)))));
     }));
-    const tabG = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'true' }, `Équipement · ${taken.length}`);
+    const tabG = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'true' }, 'Équipement');
     const tabF = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'false' }, `Nourriture · ${nf(kcal)} kcal`);
     const pick = food => { tabG.setAttribute('aria-pressed', String(!food)); tabF.setAttribute('aria-pressed', String(food)); gearList.hidden = food; foodList.hidden = !food; };
     tabG.onclick = () => pick(false); tabF.onclick = () => pick(true);
     const close = () => { sheet.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
     const P = D.profil;
-    const sheet = el('div', { class: 'depart', role: 'dialog', 'aria-label': 'Fiche départ' },
+    // left: who left (profile) above the photo of all the gear; right: the two lists, full height
+    const sheet = el('div', { class: 'depart', role: 'dialog', 'aria-label': 'Inventaire' },
       el('div', { class: 'dp-card' },
-        el('header', { class: 'dp-head' },
-          el('div', null, el('p', { class: 'dp-eyebrow' }, 'Fiche départ · Napp, 14 juin 2026'), el('h2', null, 'Avant de partir')),
-          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
-        el('div', { class: 'dp-tiles' },
-          tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
-          tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin'),
-          tile('Nourriture', nf(kcal), 'kcal', `objectif ${nf(D.kcal_objectif)}`), tile('Objets', taken.length, null, 'dans le sac ou portés')),
         el('div', { class: 'dp-body' },
+          el('div', { class: 'dp-left' },
+          el('header', { class: 'dp-head' },
+            el('div', null, el('p', { class: 'dp-eyebrow' }, 'Départ de Napp · 14 juin 2026'), el('h2', null, 'Inventaire de départ'))),
+          el('div', { class: 'dp-tiles' },
+            tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
+            tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin')),
           el('figure', { class: 'dp-photo' },
             el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
               el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
-            el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir')),
-          el('div', { class: 'dp-lists' }, el('div', { class: 'dp-tabs' }, tabG, tabF), gearList, foodList,
-            el('p', { class: 'dp-foot' }, 'Poids : pesé, fiche produit ou estimé (valeur typique en attendant les pesées). Total par catégorie : ce qui est dans le sac, sans ce qui est porté. Calories : quantités emportées, fiches produits ou valeurs typiques.')))));
+            el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir'))),
+          el('div', { class: 'dp-lists' },
+            el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
+            gearList, foodList,
+            el('p', { class: 'dp-foot' }, 'Total par catégorie : ce qui est dans le sac, sans ce qui est porté. Poids et calories en partie estimés en attendant les pesées.')))));
     sheet.addEventListener('click', e => { if (e.target === sheet) close(); });
     document.addEventListener('keydown', onKey);
     document.body.append(sheet);
