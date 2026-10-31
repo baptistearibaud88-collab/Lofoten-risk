@@ -597,3 +597,27 @@ body.base-topo .warn-ink { color: #a07800 !important; }
 .recap h3 { font-size: 14px; }
 .recap h3 { margin: 10px 0 2px; }
 .recap .recap-title { margin-top: 0; }
+
+/* six rubrics: two rows of three */
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+/* photos and infos */
+.photo-frame {
+  display: grid; place-items: center; align-content: center; gap: 8px; margin: 10px 0 4px;
+  aspect-ratio: 4 / 3; border-radius: 14px; border: 1.5px dashed var(--hair);
+  background: var(--fill); color: var(--ink-3); font-size: 13px;
+}
+.photo-frame svg { width: 34px; height: 34px; opacity: .85; }
+.info-text { font-size: 16px; line-height: 1.5; margin-top: 10px !important; }
+.sw-photo, .sw-info { width: 13px; height: 13px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px #111418; position: relative; }
+.sw-photo::after { content: ""; position: absolute; left: 3px; top: 4px; width: 7px; height: 5px; border-radius: 1.5px; background: #111418; }
+.sw-info::after { content: "i"; position: absolute; inset: 0; display: grid; place-items: center; font: 800 10px/1 var(--font); color: #2f6fb0; }
+
+.seg button { padding: 5px 4px; }
+.panel-head { padding-bottom: 8px; }
+.panel h3 { margin: 13px 0 5px; }
+/* legend and map buttons never slide under the right panel */
+@media (min-width: 821px) {
+  .legend, .controls { max-width: calc(100vw - var(--panel-w) - 80px); }
+  .controls { bottom: calc(var(--legend-h, 38px) + 24px + env(safe-area-inset-bottom, 0px)); }
+  .legend { border-radius: 18px; }
+}

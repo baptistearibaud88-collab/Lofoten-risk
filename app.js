@@ -133,7 +133,7 @@
   }
   /* static boat arcs for the overview trace */
   /* alerts: a point on an étape or a summit outing, given by its km (data/raw/alertes.csv) */
-  const ALERTS = (T.alerts || []).map(a => {
+  const routePoints = list => (list || []).map(a => {
     let ids, where, open, replay;
     if (a.rubrique === 'etape') {
       const e = T.etapes.find(x => String(x.day) === String(a.reference));
@@ -145,6 +145,8 @@
     const seq = buildSeq(ids), i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
     return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay };
   });
+  const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
+  const kmTxt = a => `km ${nf(a.km, a.km % 1 ? 1 : 0)}`;
 
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
     const [x, y] = key.split('>'), A = ACTS[x].pts[ACTS[x].pts.length - 1], B = ACTS[y].pts[0];
@@ -277,7 +279,15 @@
   let map = null, popup = null, rubric = 'camps', inDetail = false;
   let anim = null, lastLineDraw = 0, boatMarker = null;
   let fireCheckpoint = () => {};
-  let alertsOn = true;
+  let alertsOn = true, photosOn = true, infosOn = true, replayMode = false;
+  /* photos and infos stay off the map while a trace is replayed; each layer can be switched off */
+  function updateLayers() {
+    if (!map || !map.getLayer || !map.getLayer('alerts')) return;
+    const vis = on => on ? 'visible' : 'none';
+    map.setLayoutProperty('alerts', 'visibility', vis(alertsOn));
+    map.setLayoutProperty('photos', 'visibility', vis(photosOn && !replayMode));
+    map.setLayoutProperty('infos', 'visibility', vis(infosOn && !replayMode));
+  }
   const tracks = new WeakMap();
   const ease = (dt, tau) => 1 - Math.exp(-dt / tau);   // frame-rate independent smoothing
 
@@ -298,6 +308,8 @@
     const root = document.documentElement.style;
     const pr = panelBox.getBoundingClientRect();
     root.setProperty('--panel-h', `${Math.round(pr.height)}px`);
+    const lg = document.querySelector('.legend');
+    if (lg) root.setProperty('--legend-h', `${Math.round(lg.getBoundingClientRect().height)}px`);
     root.setProperty('--ctrl-right', isPhone() ? '0px' : `${Math.round(window.innerWidth - pr.left)}px`);
   }
   if (window.ResizeObserver) new ResizeObserver(layoutChanged).observe(panelBox);
@@ -311,11 +323,15 @@
     document.getElementById('act-title').textContent = name;
     document.getElementById('act-profile').replaceChildren(...profileNodes);
     titleDefault.hidden = true; titleAct.hidden = false;
+    replayMode = true; updateLayers();
   }
-  function setTitleDefault() { titleDefault.hidden = false; titleAct.hidden = true; document.getElementById('act-profile').replaceChildren(); }
+  function setTitleDefault() {
+    titleDefault.hidden = false; titleAct.hidden = true; document.getElementById('act-profile').replaceChildren();
+    replayMode = false; updateLayers();
+  }
 
   /* ---------- panel head: the three rubrics, always visible ---------- */
-  const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Sommets'], ['etapes', 'Étapes'], ['alerts', 'Alertes']];
+  const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Sommets'], ['etapes', 'Étapes'], ['alerts', 'Alertes'], ['photos', 'Photos'], ['infos', 'Infos']];
   const tabBox = document.getElementById('rubric-tabs');
   const tabBtns = RUBRICS.map(([id, label]) => {
     const b = el('button', { type: 'button', role: 'tab', 'data-r': id }, label);
@@ -365,6 +381,17 @@
             el('span', { class: 'camp-num num-peak' }, peakIcon()),
             el('span', { class: 'camp-name' }, s.sommet),
             el('span', { class: 'camp-dates' }, `${nf(s.alt_gps_m)} m`))))));
+    } else if (rubric === 'photos' || rubric === 'infos') {
+      const isPh = rubric === 'photos', list = isPh ? PHOTOS : INFOS;
+      body.append(
+        el('h2', null, isPh ? 'Photos' : 'Infos'),
+        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises. Elles seront reliées au dossier Drive.' : 'Anecdotes et petites histoires, au bon endroit du parcours.'),
+        el('ul', { class: 'camp-list' }, list.map(a => el('li', null,
+          el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openRoutePoint(rubric, a) },
+            el('span', { class: 'camp-num num-peak' }, isPh ? photoIcon() : infoIcon()),
+            el('span', { class: 'stage-main' },
+              el('span', { class: 'camp-name' }, a.titre),
+              el('span', { class: 'stage-meta' }, `J${a.day} · ${kmTxt(a)} ${a.where}`)))))));
     } else if (rubric === 'alerts') {
       body.append(
         el('h2', null, 'Alertes'),
@@ -415,6 +442,29 @@
       el('p', { class: 'meta' }, `${nf(a.alt)} m · vers ${a.heure} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
       el('p', { class: 'empty' }, a.recit || 'Récit à venir.'),
       el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)));
+    panel.scrollTop = 0;
+  }
+
+  function badgeIcon(draw) { const s = sv('svg', { viewBox: '0 0 22 22', 'aria-hidden': 'true' }); draw(s); return s; }
+  const photoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, fill: '#fff', stroke: '#111418', 'stroke-width': 1.4 }),
+    sv('rect', { x: 5.2, y: 7.6, width: 11.6, height: 8.2, rx: 1.8, fill: '#111418' }), sv('rect', { x: 8.6, y: 6, width: 4.8, height: 2.4, rx: .8, fill: '#111418' }),
+    sv('circle', { cx: 11, cy: 11.7, r: 2.4, fill: '#fff' })));
+  const infoIcon = () => badgeIcon(s => s.append(sv('circle', { cx: 11, cy: 11, r: 10, fill: '#fff', stroke: '#111418', 'stroke-width': 1.4 }),
+    sv('circle', { cx: 11, cy: 6.6, r: 1.5, fill: '#2f6fb0' }), sv('rect', { x: 9.7, y: 9.2, width: 2.6, height: 7.4, rx: 1.2, fill: '#2f6fb0' })));
+
+  function openRoutePoint(kind, a) {
+    resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(kind, true); unfoldPanel();
+    if (popup) { popup.remove(); popup = null; }
+    if (map) map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
+    const isPh = kind === 'photos';
+    panel.replaceChildren(...[
+      backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
+      el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · J${a.day} · ${kmTxt(a)} ${a.where}`),
+      el('h2', null, a.titre),
+      el('p', { class: 'meta' }, `${nf(a.alt)} m · vers ${a.heure} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      isPh ? el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, a.fichier_drive ? 'Photo à charger' : 'Photo à relier depuis le Drive')) : null,
+      isPh ? (a.legende ? el('p', { class: 'note' }, a.legende) : null) : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),
+      el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`))].filter(Boolean));
     panel.scrollTop = 0;
   }
 
@@ -771,7 +821,7 @@
     });
 
     // 1. sleep: stacked phases, deep at the bottom, light in the middle, REM on top
-    const H1 = 100, T1 = 6, B1 = 15, maxH = 11 * 60;
+    const H1 = 94, T1 = 6, B1 = 15, maxH = 11 * 60;
     const y1 = m => T1 + (1 - m / maxH) * (H1 - T1 - B1);
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Durée de sommeil par nuit, découpée en phases' });
     grid(s1, y1, [0, 300, 600], m => `${m / 60} h`);
@@ -794,7 +844,7 @@
       avgItem('ph-rem', 'paradoxal', `${hm(rm)} · ${pct(rm)}`), avgItem(null, 'nuit moyenne', hm(tot)));
 
     // 2. resting heart rate (white dots, red ring and line) and HRV (dashed, right axis)
-    const H2 = 118, T2 = 6, B2 = 15;
+    const H2 = 100, T2 = 6, B2 = 15;
     const fc = S9.map(x => x.fc_repos), hv = S9.map(x => x.hrv_moy_ms);
     const fcMin = 40, fcMax = 55, hvMin = 20, hvMax = 70;
     const y2 = v => T2 + (1 - (v - fcMin) / (fcMax - fcMin)) * (H2 - T2 - B2);
@@ -813,7 +863,7 @@
       avgItem(null, 'FC la plus basse', `${nf(Math.min(...fc.filter(v => v != null)))} bpm`), avgItem(null, 'HRV la plus haute', `${nf(Math.max(...hv.filter(v => v != null)))} ms`));
 
     // 3. Body Battery of the following day: from its low to its high, with the night's recharge
-    const H3 = 104, T3 = 6, B3 = 15;
+    const H3 = 94, T3 = 6, B3 = 15;
     const y3 = v => T3 + (1 - v / 100) * (H3 - T3 - B3);
     const s3 = sv('svg', { viewBox: `0 0 ${W} ${H3}`, class: 'recap-chart', role: 'img', 'aria-label': 'Body Battery du lendemain, du minimum au maximum' });
     grid(s3, y3, [0, 25, 50, 75, 100], v => nf(v));
@@ -844,7 +894,7 @@
     const altOf = r => r.s.hauteur_officielle_m || r.s.alt_gps_m;
     const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), cold = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a);
     const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
-    const W = 340, L = 92, R = 70, rowH = 14.5, T0 = 2;
+    const W = 340, L = 92, R = 70, rowH = 13.4, T0 = 2;
     // 1. altitude of each summit, with the air temperature up there
     const H1 = T0 + rows.length * rowH + 4, aMax = 800;
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
@@ -1114,6 +1164,8 @@
     camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1)), { pixelRatio: 2 }));
     map.addImage('finish', finishImage(), { pixelRatio: 2 });
     map.addImage('alert', alertImage(), { pixelRatio: 2 });
+    map.addImage('photo', badgeImage('photo'), { pixelRatio: 2 });
+    map.addImage('info', badgeImage('info'), { pixelRatio: 2 });
     VILLAGES.forEach(v => map.addImage(`village-${v.name}`, villageImage(v.name, v.beside), { pixelRatio: 2 }));
     map.addSource('villages', { type: 'geojson', data: { type: 'FeatureCollection', features: VILLAGES.map(v =>
       ({ type: 'Feature', properties: { icon: `village-${v.name}` }, geometry: { type: 'Point', coordinates: [v.lon, v.lat] } })) } });
@@ -1125,23 +1177,30 @@
       ...T.summits.map(x => ({ type: 'Feature', properties: { kind: 'peak', name: x.sommet, icon: 'peak' }, geometry: { type: 'Point', coordinates: [x.lon, x.lat] } })),
       { type: 'Feature', properties: { kind: 'finish', icon: 'finish' }, geometry: { type: 'Point', coordinates: [FINISH.lon, FINISH.lat] } },
       ...ALERTS.map(a => ({ type: 'Feature', properties: { kind: 'alert', aid: a.id, icon: 'alert' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
+      ...PHOTOS.map(a => ({ type: 'Feature', properties: { kind: 'photo', aid: a.id, icon: 'photo' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
+      ...INFOS.map(a => ({ type: 'Feature', properties: { kind: 'info', aid: a.id, icon: 'info' }, geometry: { type: 'Point', coordinates: [a.lon, a.lat] } })),
     ] } });
     const sym = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' };
     map.addLayer({ id: 'peaks', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'peak'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.addLayer({ id: 'finish', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'finish'], layout: sym });
     map.addLayer({ id: 'alerts', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'alert'], layout: { ...sym, 'icon-anchor': 'bottom' } });
     map.on('click', 'alerts', e => { const a = ALERTS.find(x => x.id === e.features[0].properties.aid); if (a) openAlert(a); });
+    map.addLayer({ id: 'photos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'photo'], layout: { ...sym, 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
+    map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
+    map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a); });
+    map.on('click', 'infos', e => { const a = INFOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('infos', a); });
+    updateLayers();
     map.addLayer({ id: 'camps', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'camp'], layout: { ...sym, 'icon-size': 1 } });
     map.on('click', 'camps', e => { const c = camps.find(x => x.id === e.features[0].properties.cid); if (c) openCamp(c); });
     map.on('click', 'peaks', e => { const x = T.summits.find(q => q.sommet === e.features[0].properties.name); if (x) openSummit(x); });
-    ['camps', 'peaks', 'alerts'].forEach(l => {
+    ['camps', 'peaks', 'alerts', 'photos', 'infos'].forEach(l => {
       map.on('mouseenter', l, () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', l, () => { map.getCanvas().style.cursor = ''; });
     });
     setActive(activeCamp);
 
     map.on('click', 'trace', e => {
-      if (map.queryRenderedFeatures(e.point, { layers: ['camps', 'peaks', 'alerts'] }).length) return;
+      if (map.queryRenderedFeatures(e.point, { layers: ['camps', 'peaks', 'alerts', 'photos', 'infos'] }).length) return;
       const p = e.features[0].properties;
       new maplibregl.Popup({ closeButton: false, offset: 8 }).setLngLat(e.lngLat)
         .setDOMContent(el('div', null,
@@ -1198,6 +1257,22 @@
     g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(name, x0, H / 2 + .5); g.fillText(name, x0, H / 2 + .5);
     return g.getImageData(0, 0, W * S, H * S);
   }
+  function badgeImage(kind) {   // round white badge with a camera or an "i", on a small stem
+    const S = 2, W = 26, H = 30, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
+    g.beginPath(); g.moveTo(13, 29); g.lineTo(9, 22); g.lineTo(17, 22); g.closePath(); g.fillStyle = '#fff'; g.fill();
+    g.beginPath(); g.arc(13, 12, 11, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill(); g.shadowColor = 'transparent';
+    g.lineWidth = 1.4; g.strokeStyle = '#111418'; g.stroke();
+    if (kind === 'photo') {
+      g.fillStyle = '#111418'; roundRect(g, 6.6, 8.4, 12.8, 9, 2); g.fill(); roundRect(g, 10.3, 6.6, 5.4, 2.6, .8); g.fill();
+      g.beginPath(); g.arc(13, 12.9, 2.6, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill();
+    } else {
+      g.fillStyle = '#2f6fb0'; g.beginPath(); g.arc(13, 7.4, 1.6, 0, 2 * Math.PI); g.fill(); roundRect(g, 11.6, 10.2, 2.8, 8, 1.3); g.fill();
+    }
+    return g.getImageData(0, 0, W * S, H * S);
+  }
+  function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
   function alertImage() {   // yellow and black warning triangle
     const S = 2, W = 26, H = 24, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
     const g = cv.getContext('2d'); g.scale(S, S);
@@ -1300,12 +1375,13 @@
     btnRelief.setAttribute('aria-pressed', String(terrainOn));
     map.easeTo({ pitch: terrainOn ? 55 : 0, duration: reduceMotion ? 0 : 900 });
   });
-  const btnAlerts = document.getElementById('btn-alerts');
-  btnAlerts.addEventListener('click', () => {
-    alertsOn = !alertsOn;
-    btnAlerts.setAttribute('aria-pressed', String(alertsOn));
-    if (map.getLayer('alerts')) map.setLayoutProperty('alerts', 'visibility', alertsOn ? 'visible' : 'none');
-  });
+  const toggle = (id, get, set) => {
+    const b = document.getElementById(id);
+    b.addEventListener('click', () => { set(!get()); b.setAttribute('aria-pressed', String(get())); updateLayers(); });
+  };
+  toggle('btn-alerts', () => alertsOn, v => { alertsOn = v; });
+  toggle('btn-photos', () => photosOn, v => { photosOn = v; });
+  toggle('btn-infos', () => infosOn, v => { infosOn = v; });
   const btnBase = document.getElementById('btn-base');
   let base = 'sat';
   btnBase.addEventListener('click', () => {
