@@ -1492,6 +1492,18 @@
       .addTo(map);
     if (ttl) { const mine = popup; popupTimer = setTimeout(() => { if (popup === mine) { mine.remove(); popup = null; } }, ttl); }
   }
+  /* alert passed during a replay: a small discreet card with its title, above the warning sign */
+  let alertPop = null, alertPopTimer = 0;
+  function alertPopup(a, ttl) {
+    if (!map) return;
+    if (alertPop) alertPop.remove();
+    clearTimeout(alertPopTimer);
+    const mine = alertPop = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 22, anchor: 'bottom', className: 'peak-pop alert-pop', maxWidth: '220px' })
+      .setLngLat([a.lon, a.lat])
+      .setDOMContent(el('div', { class: 'alert-card' }, a.titre))
+      .addTo(map);
+    alertPopTimer = setTimeout(() => { if (alertPop === mine) { mine.remove(); alertPop = null; } }, ttl);
+  }
   /* checkpoint: one shockwave, a flash of light, an aura and a burst of sparks,
      like a chest opening in a video game. It follows its point on the map while it plays. */
   const fxLayer = document.body.appendChild(el('div', { class: 'fx-layer', 'aria-hidden': 'true' }));
@@ -1507,9 +1519,9 @@
       node = el('div', { class: `fx fx-warn${effect ? ` fx-${effect}` : ''}` },
         el('i', { class: 'fx-aura' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-tri' }, tri()), el('i', { class: 'fx-tri fx-tri2' }, tri()),
         effect === 'eboulement' ? [el('i', { class: 'fx-dust' }), el('i', { class: 'fx-dust fx-dust2' }),
-          ...Array.from({ length: 16 }, (_, i) => el('i', { class: 'fx-rock', style: `--x:${((i * 37) % 16 - 7.5) * 6}px;--y:${70 + (i * 23) % 40}px;--rot:${(i % 2 ? 1 : -1) * (160 + i * 35)}deg;--d:${120 + i * 85}ms;--s:${4 + (i % 4) * 1.6}px` }))] : null,
+          ...Array.from({ length: 16 }, (_, i) => el('i', { class: 'fx-rock', style: `--x:${((i * 37) % 16 - 7.5) * 6}px;--y:${125 + (i * 23) % 70}px;--rot:${(i % 2 ? 1 : -1) * (160 + i * 35)}deg;--d:${120 + i * 85}ms;--s:${4 + (i % 4) * 1.6}px` }))] : null,
         bang);
-      life = effect === 'eboulement' ? 3300 : 2400;
+      life = effect === 'eboulement' ? 3900 : 2400;
     } else {
       node = el('div', { class: `fx fx-${kind}` },
         el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }),
@@ -1534,7 +1546,8 @@
     else if (c.type === 'alert') {
       if (!alertsOn) return;
       burst('warn', c.a.lon, c.a.lat, c.a.effet);
-      if (c.a.effet === 'eboulement' && anim) anim.holdUntil = performance.now() + 2600;
+      if (c.a.effet === 'eboulement') { if (anim) anim.holdUntil = performance.now() + 3000; }   // the falling stones say it all
+      else alertPopup(c.a, 4500);
     }
     else burst('camp', c.c.lon, c.c.lat);
   };
