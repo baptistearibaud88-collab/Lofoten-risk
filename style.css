@@ -18,7 +18,7 @@
   --accent-soft: rgba(116, 227, 223, .20);
   --on-accent: #0a2a2c;
   --sun: #ffc65c;          /* midnight sun */
-  --pack: #3fd0c9;         /* walking with the pack: turquoise, like the map line */
+  --pack: #86a6f2;         /* UI marks only: map lines keep the deep blue */
   --trail: #ff6a50;
   --camp: #1d3f8f;
   --casing: #f4f7fa;
@@ -47,8 +47,9 @@ body.base-topo {
   --accent-soft: rgba(11, 122, 131, .14);
   --on-accent: #ffffff;
   --sun: #c97a12;
-  --pack: #16a9a1;
+  --pack: #1d3f8f;
   --trail: #e0472f;
+  --casing: #0b1014;
   --edge: rgba(255, 255, 255, .65);
   --tshadow: none;
   --shadow: 0 10px 34px rgba(8, 20, 26, .18), inset 0 1px 0 rgba(255, 255, 255, .6);
@@ -309,7 +310,7 @@ body.panel-folded .panel-inner { display: none; }
 }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
-.sw-avec { background: #3fd0c9; box-shadow: 0 0 0 1.5px var(--casing); }
+.sw-avec { background: #1d3f8f; box-shadow: 0 0 0 1.5px var(--casing); }
 .sw-sans { background: var(--trail); box-shadow: 0 0 0 1.5px var(--casing); }
 .sw-camp { width: 10px; height: 10px; border-radius: 50%; background: #1d3f8f; box-shadow: 0 0 0 1.5px var(--casing); }
 .sw-peak { width: 0; height: 0; border-radius: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid var(--trail); position: relative; }
@@ -398,7 +399,7 @@ body:not(.base-topo) .maplibregl-ctrl-group button + button { border-top-color: 
 .peak-name { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .86); }
 .peak-name svg { width: 11px; height: 10px; flex: none; }
 .peak-figs { display: flex; align-items: baseline; gap: 9px; margin-top: 1px; white-space: nowrap; }
-.peak-alt { font-family: var(--font-num); font-size: 19px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; }
+.peak-alt { font-family: var(--font-num); font-size: 19px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; color: rgba(255, 255, 255, .86); }
 .peak-alt small { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, .7); }
 .peak-temp { font-family: var(--font-num); font-size: 13px; font-weight: 600; color: #9fe6ff; }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px) scale(.96); } to { opacity: 1; transform: none; } }

@@ -7,7 +7,7 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  const COL = { pack: '#3fd0c9', camp: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff', finish: '#111418' };
+  const COL = { pack: '#1d3f8f', camp: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff', finish: '#111418' };
   const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   /* A summit's outing = the trail activities of that day that lead to it.
@@ -534,7 +534,7 @@
   }
 
   /* ---------- player: buttons, live counters, profile in the title, pace in the panel ---------- */
-  const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.5, 2, 2.5, 3];
+  const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
   const CAMS = [['drone', 'Drone'], ['orbit', 'Orbite'], ['fixed', 'Fixe']];
 
   function player(pts, opts) {
@@ -570,7 +570,7 @@
     const playBtn = el('button', { type: 'button', class: 'play' }, '▶ Lancer');
     const speedBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Vitesse' }, '×1');
     const speeds = opts.speeds || SPEEDS;
-    speedBtn.addEventListener('click', () => { state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length]; speedBtn.textContent = `×${nf(state.speed, state.speed % 1 ? 1 : 0)}`; if (anim) anim.speed = state.speed; });
+    speedBtn.addEventListener('click', () => { state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length]; speedBtn.textContent = `×${nf(state.speed, (state.speed * 10) % 1 ? 2 : state.speed % 1 ? 1 : 0)}`; if (anim) anim.speed = state.speed; });
     const camBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Mode de caméra' }, `Caméra : ${CAMS[0][1]}`);
     camBtn.addEventListener('click', () => {
       const i = (CAMS.findIndex(c => c[0] === state.cam) + 1) % CAMS.length;
@@ -965,9 +965,9 @@
     return g.getImageData(0, 0, W * S, W * S);
   }
   function villageImage(name, beside) {   // small dot + name, white with a dark halo
-    const S = 2, font = '600 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    const S = 2, font = '600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
     const probe = document.createElement('canvas').getContext('2d'); probe.font = font;
-    const x0 = beside ? 20 : 11, W = Math.ceil(x0 + probe.measureText(name).width + 6), H = 18;
+    const x0 = beside ? 20 : 11, W = Math.ceil(x0 + probe.measureText(name).width + 6), H = 20;
     const cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
     const g = cv.getContext('2d'); g.scale(S, S);
     g.font = font; g.textBaseline = 'middle';
@@ -1063,6 +1063,9 @@
     btnBase.textContent = base === 'sat' ? 'Satellite' : 'Carte topo';
     document.body.classList.toggle('base-topo', base === 'topo');
     if (map.getLayer('villages')) map.setLayoutProperty('villages', 'visibility', base === 'sat' ? 'visible' : 'none');
+    // the trace keeps a white edge on the imagery and gets a black one on the pale topo map
+    const edge = base === 'sat' ? COL.casing : '#0b1014';
+    ['trace-casing', 'anim-casing'].forEach(l => map.getLayer(l) && map.setPaintProperty(l, 'line-color', edge));
   });
 
   showHome();
