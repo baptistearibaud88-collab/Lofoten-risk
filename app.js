@@ -313,7 +313,9 @@
   }
 
   /* ---------- panel: home lists ---------- */
+  const resetPanel = () => panel.classList.remove('recap');
   function showHome(which) {
+    resetPanel();
     stopAnim(true);
     setActive(null);
     highlight(null);
@@ -326,6 +328,7 @@
       body.append(
         el('h2', null, 'Sept bivouacs, neuf nuits'),
         el('p', { class: 'note' }, 'Tente montée chaque soir, en autonomie complète. Choisis un bivouac pour voler jusqu’à lui et lire sa nuit.'),
+        recapRow('rem', 'Récap des nuits', `${T.camps.length} nuits`, openNightsRecap),
         el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
             el('span', { class: 'camp-num' }, String(i + 1)),
@@ -335,6 +338,7 @@
       body.append(
         el('h2', null, 'Neuf sommets'),
         el('p', { class: 'note' }, 'En trail, sans le sac. Choisis un sommet pour rejouer la sortie du jour.'),
+        recapRow('peak', 'Récap des sommets', `${T.summits.length} sommets`, openSummitsRecap),
         el('ul', { class: 'camp-list' }, T.summits.map(s => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openSummit(s) },
             el('span', { class: 'camp-num num-peak' }, peakIcon()),
@@ -357,6 +361,14 @@
     panel.replaceChildren(body,
       el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre (${nf(S.dplus)} m après lissage de l’altitude, 10 890 m selon Strava), hors recherches de bivouac non enregistrées. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
     panel.scrollTop = 0;
+  }
+
+  function recapRow(kind, label, meta, open) {
+    return el('ul', { class: 'camp-list recap-list' }, el('li', null,
+      el('button', { type: 'button', class: 'camp-row', onclick: open },
+        el('span', { class: `camp-num num-dot dot-${kind}` }),
+        el('span', { class: 'camp-name' }, label),
+        el('span', { class: 'camp-dates' }, meta))));
   }
 
   function backButton(label, to) {
@@ -391,20 +403,20 @@
     }
     kids.push(el('h3', null, 'Météo de la nuit'));
     kids.push(el('dl', { class: 'kv' },
-      el('div', null, el('dt', null, 'Minimum au camp'), el('dd', null, nf(w.temp_min_camp, 1), el('small', null, ' °C'))),
+      el('div', { title: `ERA5 ${nf(w.temp_min_era5, 1)} °C, corrigé de l’altitude du camp (−6,5 °C par 1 000 m)` }, el('dt', null, 'Minimum au camp'), el('dd', null, nf(w.temp_min_camp, 1), el('small', null, ' °C'))),
       el('div', null, el('dt', null, 'Pluie'), el('dd', null, nf(w.rain_mm, 1), el('small', null, ' mm'))),
       el('div', null, el('dt', null, 'Rafales max'), el('dd', null, nf(w.gust_max), el('small', null, ' km/h'))),
       el('div', null, el('dt', null, 'Nuages'), el('dd', null, nf(w.cloud_pct), el('small', null, ' %')))));
-    kids.push(el('p', { class: 'meta', style: 'margin-top:8px' }, `ERA5 ${nf(w.temp_min_era5, 1)} °C, corrigé de l’altitude du camp (−6,5 °C par 1 000 m).`));
     if (n.bag_next_morning_kg != null) {
       kids.push(el('h3', null, `Le lendemain matin · J${n.next_day}`));
-      kids.push(el('dl', { class: 'kv' }, el('div', null, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg')))));
-      kids.push(el('p', { class: 'meta', style: 'margin-top:8px' }, T.bag_note));
+      kids.push(el('dl', { class: 'kv' }, el('div', { title: T.bag_note }, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg'))),
+        el('div', null, el('dt', null, 'Estimation'), el('dd', { class: 'dd-note' }, 'à confirmer par les pesées'))));
     }
     return kids;
   }
 
   function openCamp(c, nightIdx = 0) {
+    resetPanel();
     stopAnim(true);
     highlight(null);
     setActive(c.id);
@@ -413,7 +425,7 @@
     unfoldPanel();
     flyToCamp(c);
     const body = el('div');
-    const render = i => body.replaceChildren(c.nights[i].note ? el('p', { class: 'note' }, c.nights[i].note) : null, ...nightBlock(c.nights[i]));
+    const render = i => body.replaceChildren(...nightBlock(c.nights[i]));
     const tabs = c.nights.length > 1 ? el('div', { class: 'tabs', role: 'tablist' }, c.nights.map((n, i) =>
       el('button', { type: 'button', role: 'tab', 'aria-selected': String(i === nightIdx), onclick: e => {
         tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', 'false'));
@@ -424,7 +436,7 @@
       backButton('Tous les bivouacs', 'camps'),
       el('h2', null, c.name),
       el('p', { class: 'meta' }, `${c.nights.length > 1 ? `${c.nights.length} nuits · ` : nightLabel(c.nights[0].night, c.nights[0].wake) + ' · '}${nf(c.alt)} m · ${c.lat.toFixed(4)} N, ${c.lon.toFixed(4)} E`),
-      tabs, body);
+      ...[tabs, body].filter(Boolean));
     render(nightIdx);
     panel.scrollTop = 0;
   }
@@ -597,6 +609,7 @@
 
   /* ---------- panel: one étape (camp to camp, with the pack) ---------- */
   function openEtape(e) {
+    resetPanel();
     stopAnim(true); setActive(null); setTabs('etapes', true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(e.acts);
@@ -621,13 +634,11 @@
   }
 
   /* ---------- panel: one summit (the whole trail outing of that day) ---------- */
-  function openSummit(s) {
-    stopAnim(true); setActive(null); setTabs('summits', true); unfoldPanel();
+  /* the outing that reaches a summit and the climb itself: from the lowest point since the
+     previous summit of the outing (or its start) up to this one */
+  function summitStats(s) {
     const ids = SUMMIT_OUTINGS[s.activite] || [s.activite];
     const pts = buildSeq(ids);
-    highlight(ids);
-    fitPts(pts, 13.2);
-    summitPopup(s);
     const tops = T.summits.filter(x => x.activite === s.activite).map(x => {
       let best = 0, bd = Infinity;
       pts.forEach((p, i) => { const dd = (p.lat - x.lat) ** 2 + ((p.lon - x.lon) * 0.37) ** 2; if (dd < bd) { bd = dd; best = i; } });
@@ -642,6 +653,16 @@
     const top = pts[me.i], base = pts[low], last = pts[pts.length - 1];
     const climbS = top.mov - base.mov, climbM = top.dplus - base.dplus;
     const hrs = pts.map(p => p.hr).filter(v => v != null);
+    return { ids, pts, tops, top, base, last, climbS, climbM, hrs, vv: climbM / Math.max(1 / 60, climbS / 3600) };
+  }
+
+  function openSummit(s) {
+    resetPanel();
+    stopAnim(true); setActive(null); setTabs('summits', true); unfoldPanel();
+    const { ids, pts, tops, base, last, climbS, climbM, hrs } = summitStats(s);
+    highlight(ids);
+    fitPts(pts, 13.2);
+    summitPopup(s);
     const d = day(s.heure.slice(0, 10));
     const several = ids.length > 1;
     const summary = [
@@ -661,8 +682,148 @@
     panel.scrollTop = 0;
   }
 
+  /* ---------- recaps: all the nights, all the summits ---------- */
+  const PH = { deep: '#2f5fc4', light: '#86aaf0', rem: '#b55ac8' };
+  const avg = a => { const v = a.filter(x => x != null && isFinite(x)); return v.length ? v.reduce((p, q) => p + q, 0) / v.length : null; };
+  const recapHead = (cls, eyebrow, title, note) => [el('p', { class: `eyebrow-sm ${cls}` }, eyebrow), el('h2', null, title), note ? el('p', { class: 'note' }, note) : null];
+  function openRecap(rub) {
+    stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(rub, true); unfoldPanel();
+    if (popup) { popup.remove(); popup = null; }
+    overview();
+  }
+  const nightTick = n => `${day(n.night).d}–${day(n.wake).d}`;
+
+  function openNightsRecap() {
+    openRecap('camps');
+    panel.classList.add('recap');
+    const N = T.camps, S9 = N.map(n => n.sleep || {});
+    const W = 340, L = 30, R = 30, x0 = L, bw = (W - L - R) / N.length, cx = j => x0 + (j + 0.5) * bw;
+    const xLabels = (svg, H) => N.forEach((n, j) => svg.append(svText({ x: cx(j).toFixed(1), y: H - 3, class: 'axis', 'text-anchor': 'middle' }, nightTick(n))));
+    const grid = (svg, y, vals, fmt, side = 'left') => vals.forEach(v => {
+      svg.append(sv('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'grid' }));
+      svg.append(svText({ x: side === 'left' ? L - 5 : W - R + 5, y: y(v) + 3, class: 'axis', 'text-anchor': side === 'left' ? 'end' : 'start' }, fmt(v)));
+    });
+
+    // 1. sleep: stacked phases, deep at the bottom, light in the middle, REM on top
+    const H1 = 112, T1 = 6, B1 = 15, maxH = 11 * 60;
+    const y1 = m => T1 + (1 - m / maxH) * (H1 - T1 - B1);
+    const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Durée de sommeil par nuit, découpée en phases' });
+    grid(s1, y1, [0, 300, 600], m => `${m / 60} h`);
+    N.forEach((n, j) => {
+      const sl = n.sleep; if (!sl || !sl.sommeil_min) return;
+      let acc = 0;
+      [['profond_min', PH.deep], ['leger_min', PH.light], ['paradoxal_min', PH.rem]].forEach(([k, col], q) => {
+        const v = sl[k] || 0; if (!v) return;
+        s1.append(sv('rect', { x: (cx(j) - bw * 0.32).toFixed(1), y: y1(acc + v).toFixed(1), width: (bw * 0.64).toFixed(1), height: (y1(acc) - y1(acc + v)).toFixed(1), fill: col, rx: q === 2 || (q === 1 && !sl.paradoxal_min) ? 2 : 0 }));
+        acc += v;
+      });
+    });
+    xLabels(s1, H1);
+    const tot = avg(S9.map(x => x.sommeil_min)), dp = avg(S9.map(x => x.profond_min)), lg = avg(S9.map(x => x.leger_min)), rm = avg(S9.map(x => x.paradoxal_min));
+    const pct = v => `${nf(100 * v / (dp + lg + rm))} %`;
+    // legend and averages on the same line, under each chart
+    const avgItem = (cls, label, value) => el('span', null, cls ? el('i', { class: cls }) : null, `${label} `, el('b', null, value));
+    const sleepKv = el('div', { class: 'avg-line' },
+      avgItem('ph-deep', 'profond', `${hm(dp)} · ${pct(dp)}`), avgItem('ph-light', 'léger', `${hm(lg)} · ${pct(lg)}`),
+      avgItem('ph-rem', 'paradoxal', `${hm(rm)} · ${pct(rm)}`), avgItem(null, 'nuit moyenne', hm(tot)));
+
+    // 2. resting heart rate (white dots, red ring and line) and HRV (dashed, right axis)
+    const H2 = 96, T2 = 6, B2 = 15;
+    const fc = S9.map(x => x.fc_repos), hv = S9.map(x => x.hrv_moy_ms);
+    const fcMin = 35, fcMax = 60, hvMin = 0, hvMax = 80;
+    const y2 = v => T2 + (1 - (v - fcMin) / (fcMax - fcMin)) * (H2 - T2 - B2);
+    const y2h = v => T2 + (1 - (v - hvMin) / (hvMax - hvMin)) * (H2 - T2 - B2);
+    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart', role: 'img', 'aria-label': 'FC au repos et HRV par nuit' });
+    grid(s2, y2, [40, 50, 60], v => nf(v));
+    [0, 40, 80].forEach(v => s2.append(svText({ x: W - R + 5, y: y2h(v) + 3, class: 'axis hrv-axis', 'text-anchor': 'start' }, nf(v))));
+    const path = (vals, y) => vals.map((v, j) => v == null ? '' : `${j && vals[j - 1] != null ? 'L' : 'M'}${cx(j).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    s2.append(sv('path', { d: path(hv, y2h), class: 'hrv-line' }));
+    hv.forEach((v, j) => v != null && s2.append(sv('circle', { cx: cx(j).toFixed(1), cy: y2h(v).toFixed(1), r: 2.6, class: 'hrv-dot' })));
+    s2.append(sv('path', { d: path(fc, y2), class: 'fc-line' }));
+    fc.forEach((v, j) => v != null && s2.append(sv('circle', { cx: cx(j).toFixed(1), cy: y2(v).toFixed(1), r: 3.6, class: 'fc-dot' })));
+    xLabels(s2, H2);
+    const fcKv = el('div', { class: 'avg-line' },
+      avgItem('k-fc', 'FC au repos (gauche)', `${nf(avg(fc))} bpm`), avgItem('k-hrv', 'HRV (droite)', `${nf(avg(hv))} ms`),
+      avgItem(null, 'FC la plus basse', `${nf(Math.min(...fc.filter(v => v != null)))} bpm`), avgItem(null, 'HRV la plus haute', `${nf(Math.max(...hv.filter(v => v != null)))} ms`));
+
+    // 3. Body Battery of the following day: from its low to its high, with the night's recharge
+    const H3 = 88, T3 = 6, B3 = 15;
+    const y3 = v => T3 + (1 - v / 100) * (H3 - T3 - B3);
+    const s3 = sv('svg', { viewBox: `0 0 ${W} ${H3}`, class: 'recap-chart', role: 'img', 'aria-label': 'Body Battery du lendemain, du minimum au maximum' });
+    grid(s3, y3, [0, 50, 100], v => nf(v));
+    N.forEach((n, j) => {
+      const b = n.body_battery_day; if (!b) return;
+      s3.append(sv('rect', { x: (cx(j) - bw * 0.2).toFixed(1), y: y3(b.max).toFixed(1), width: (bw * 0.4).toFixed(1), height: (y3(b.min) - y3(b.max)).toFixed(1), rx: 3, class: 'bb-bar' }));
+      s3.append(sv('circle', { cx: cx(j).toFixed(1), cy: y3(b.max).toFixed(1), r: 3.4, class: 'bb-top' }));
+    });
+    xLabels(s3, H3);
+    const BB = N.map(n => n.body_battery_day || {});
+    const bbKv = el('div', { class: 'avg-line' },
+      avgItem('k-bb', 'max', nf(avg(BB.map(b => b.max)))), avgItem(null, 'min', nf(avg(BB.map(b => b.min)))),
+      avgItem(null, 'recharge par nuit', `+${nf(avg(S9.map(x => x.body_battery_recharge)))}`));
+
+    panel.replaceChildren(
+      backButton('Tous les bivouacs', 'camps'),
+      ...recapHead('rem-ink', '13 → 22 juin · 9 nuits · moyennes sous chaque graphique', 'Récap des nuits').filter(Boolean),
+      el('h3', null, 'Durée et phases du sommeil'), s1, sleepKv,
+      el('h3', null, 'FC au repos et HRV'), s2, fcKv,
+      el('h3', null, 'Body Battery du lendemain (min → max)'), s3, bbKv,
+      el('p', { class: 'foot' }, 'Garmin Connect, nuit par nuit. Moyennes sur les 9 nuits, nuit courte de Bunes beach comprise.'));
+    panel.scrollTop = 0;
+  }
+
+  function openSummitsRecap() {
+    openRecap('summits');
+    panel.classList.add('recap');
+    const rows = T.summits.map(s => ({ s, ...summitStats(s) }));
+    const altOf = r => r.s.hauteur_officielle_m || r.s.alt_gps_m;
+    const best = rows.reduce((a, b) => b.vv > a.vv ? b : a), cold = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a);
+    const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
+    const W = 340, L = 92, R = 70, rowH = 15.5, T0 = 2;
+    // 1. altitude of each summit, with the air temperature up there
+    const H1 = T0 + rows.length * rowH + 4, aMax = 800;
+    const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
+    rows.forEach((r, j) => {
+      const y = T0 + j * rowH, alt = r.s.hauteur_officielle_m || r.s.alt_gps_m, w = (W - L - R) * alt / aMax;
+      s1.append(svText({ x: L - 8, y: y + 11, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
+      s1.append(sv('rect', { x: L, y: y + 2.5, width: w.toFixed(1), height: 10.5, rx: 3, class: `peak-bar${r === high ? ' top' : ''}` }));
+      s1.append(svText({ x: L + w + 6, y: y + 11, class: 'axis peak-val' }, `${nf(alt)} m`));
+      if (r.s.temp_c != null) s1.append(svText({ x: W - 2, y: y + 11, class: `axis peak-temp-t${r === cold ? ' cold' : ''}`, 'text-anchor': 'end' }, `${nf(r.s.temp_c, 0)} °C`));
+    });
+    // 2. climbing speed (m/h) of each summit
+    const vMax = Math.ceil(Math.max(...rows.map(r => r.vv)) / 200) * 200;
+    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Vitesse verticale de chaque montée' });
+    rows.forEach((r, j) => {
+      const y = T0 + j * rowH, w = (W - L - R) * r.vv / vMax;
+      s2.append(svText({ x: L - 8, y: y + 11, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
+      s2.append(sv('line', { x1: L, x2: L + w, y1: y + 7.5, y2: y + 7.5, class: 'vv-stem' }));
+      s2.append(sv('circle', { cx: (L + w).toFixed(1), cy: y + 7.5, r: 4, class: `vv-dot${r === best ? ' top' : ''}` }));
+      s2.append(svText({ x: L + w + 8, y: y + 11, class: 'axis peak-val' }, `${nf(r.vv)} m/h`));
+    });
+    const it = (label, value) => el('span', null, `${label} `, el('b', null, value));
+    const kv = el('div', { class: 'avg-line avg-big' },
+      it('D+ des montées', `${nf(rows.reduce((a, r) => a + r.climbM, 0))} m`), it('temps en montée', hms(rows.reduce((a, r) => a + r.climbS, 0))),
+      it('vitesse', `${nf(avg(rows.map(r => r.vv)))} m/h`), it('altitude', `${nf(avg(rows.map(altOf)))} m`),
+      it('température', `${nf(avg(rows.map(r => r.s.temp_c)), 0)} °C`), it('FC max', `${nf(avg(rows.map(r => r.hrs.length ? Math.max(...r.hrs) : null)))} bpm`));
+    const sameOne = high === best && best === cold;
+    const superl = sameOne ? el('div', { class: 'avg-line' }, el('span', { class: 'wrap' }, el('i', { class: 'k-top' }), el('b', null, high.s.sommet),
+      ` : le plus haut (${nf(altOf(high))} m), la montée la plus rapide (${nf(best.vv)} m/h) et le plus froid (${nf(cold.s.temp_c, 0)} °C)`)) : el('div', { class: 'avg-line' },
+      el('span', null, el('i', { class: 'k-top' }), 'le plus haut ', el('b', null, `${high.s.sommet} ${nf(altOf(high))} m`)),
+      el('span', null, el('i', { class: 'k-fast' }), 'montée la plus rapide ', el('b', null, `${best.s.sommet} ${nf(best.vv)} m/h`)),
+      el('span', null, el('i', { class: 'k-cold' }), 'le plus froid ', el('b', null, `${cold.s.sommet} ${nf(cold.s.temp_c, 0)} °C`)));
+    panel.replaceChildren(
+      backButton('Tous les sommets', 'summits'),
+      ...recapHead('peak-ink', '15 → 22 juin · en trail, sans sac', 'Récap des sommets').filter(Boolean),
+      el('h3', null, 'Altitude et température au sommet'), s1,
+      el('h3', null, 'Vitesse de montée, du pied au sommet'), s2, superl,
+      el('h3', null, 'Total et moyennes'), kv,
+      el('p', { class: 'foot' }, 'Altitude officielle quand elle existe, sinon GPS. Température : réanalyse ERA5 à l’heure du passage, corrigée de l’altitude. Gylttinden : tenté, arrêt à mi-hauteur.'));
+    panel.scrollTop = 0;
+  }
+
   /* ---------- panel: the whole traverse ---------- */
   function openTrek() {
+    resetPanel();
     stopAnim(true); setActive(null); highlight([]); setTabs(null, false); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(T.acts.map(a => a.id));
