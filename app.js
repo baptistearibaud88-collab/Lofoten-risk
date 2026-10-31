@@ -620,7 +620,7 @@
         el('div', { class: 'dp-body' },
           el('div', { class: 'dp-left' },
           el('header', { class: 'dp-head' },
-            el('div', null, el('p', { class: 'dp-eyebrow' }, 'Départ de Napp · 14 juin 2026'), el('h2', null, 'Inventaire de départ'))),
+            el('div', null, el('h2', null, 'Inventaire de départ'))),
           el('figure', { class: 'dp-photo' },
             el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
               el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
