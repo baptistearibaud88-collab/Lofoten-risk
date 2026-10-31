@@ -544,11 +544,12 @@
           // per photo (photos.csv): recul_camera = how far behind, hauteur_camera = how high above the ground
           // (higher = looking more from above, less 3D)
           const back = a.recul_camera || 1, up = a.hauteur_camera || 1;
-          const from = along(-Math.min(400, 0.25 * R) * back), to = along(0.6 * R);
-          try { cam = map.calculateCameraOptionsFromTo(new maplibregl.LngLat(from[0], from[1]), ground + (160 + 0.08 * R) * up, new maplibregl.LngLat(to[0], to[1]), ground * 0.5); } catch (e) { cam = null; }
+          // well back and high above the photographer, so the mountains facing it stand out in 3D
+          const from = along(-Math.min(1200, 0.6 * R) * back), to = along(0.6 * R);
+          try { cam = map.calculateCameraOptionsFromTo(new maplibregl.LngLat(from[0], from[1]), ground + (300 + 0.25 * R) * up, new maplibregl.LngLat(to[0], to[1]), ground * 0.5); } catch (e) { cam = null; }
         }
         if (cam && isFinite(cam.zoom)) {
-          map.flyTo({ center: cam.center, zoom: Math.min(16, cam.zoom), pitch: Math.min(76, cam.pitch), bearing: a.direction_deg,
+          map.flyTo({ center: cam.center, zoom: Math.min(15, cam.zoom), pitch: Math.min(70, cam.pitch), bearing: a.direction_deg,
             duration: reduceMotion ? 0 : 2600, essential: true, padding: ZERO });
         } else {
           const c = along(R * (steep ? 0.35 : 0.15));
