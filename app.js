@@ -147,9 +147,16 @@
       const sm = T.summits.find(x => x.sommet === a.reference);
       ids = SUMMIT_OUTINGS[sm.activite] || [sm.activite]; where = `de la sortie ${sm.sommet}`; open = () => openSummit(sm); replay = 'Rejouer la sortie';
     }
-    const seq = buildSeq(ids), i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
+    const seq = buildSeq(ids);
+    if (a.km == null && a.rubrique === 'sommet') {   // no km given: the summit itself
+      const sm = T.summits.find(x => x.sommet === a.reference);
+      let best = 0, bd = Infinity;
+      seq.forEach((q, j) => { const d = (q.lat - sm.lat) ** 2 + ((q.lon - sm.lon) * 0.37) ** 2; if (d < bd) { bd = d; best = j; } });
+      a = { ...a, km: Math.round(seq[best].wk * 10) / 10, atTop: true };
+    }
+    const i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
     return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay,
-      label: `J${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
+      label: a.atTop ? `J${p.day} · au sommet du ${a.reference}` : `J${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
   const COL_PHOTO = '#2bb3ac';
@@ -529,7 +536,7 @@
         // stand behind the photographer and look the same way
         setFov(a);
         const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, r = (a.portee_m || 800) * (a.inclinaison_camera_deg != null ? 0.35 : 0.15);   // looking from above: centre on the middle of the view
-        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: a.inclinaison_camera_deg != null ? 13.6 : 13.2, pitch: a.inclinaison_camera_deg ?? 52, bearing: a.direction_deg,
+        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: (a.inclinaison_camera_deg != null ? 13.6 : 13.2) - Math.max(0, Math.log2((a.portee_m || 800) / 1000)) * 0.6,   // a long view needs more room pitch: a.inclinaison_camera_deg ?? 52, bearing: a.direction_deg,
           duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
       } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
     }
