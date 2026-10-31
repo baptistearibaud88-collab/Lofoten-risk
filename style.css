@@ -820,6 +820,9 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .dp-close { position: static !important; flex: none; }
 .dp-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .dp-head { margin-bottom: 12px; }
+.dp-thanks { margin: auto 0 0 !important; padding: 10px 14px 11px; border-left: 3px solid #74e3df; border-radius: 4px 12px 12px 4px;
+  background: rgba(116, 227, 223, .08); font-size: 13.5px; line-height: 1.5; color: rgba(255, 255, 255, .82); }   /* at the very bottom of the left column */
+.dp-thanks b { color: #fff; }
 .depart .dp-sub { margin: 18px 0 10px; font-size: 24px; letter-spacing: -.02em; color: #fff; }   /* same as the sheet title */
 .dp-tile { display: flex; flex-direction: column; padding: 8px 11px 9px; border-radius: 12px; background: rgba(255, 255, 255, .07); min-width: 0; }
 .dp-l { font-size: 11.5px; color: rgba(255, 255, 255, .6); }

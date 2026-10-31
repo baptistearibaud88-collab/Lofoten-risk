@@ -630,7 +630,10 @@
           el('h2', { class: 'dp-sub' }, 'Mon profil'),
           el('div', { class: 'dp-tiles' },
             tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
-            tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin'))),
+            tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin')),
+          el('p', { class: 'dp-thanks' },
+            el('b', null, 'Merci à mon oncle, Cyrille Livet. '),
+            'Sans son aide, à la fois matérielle, par ses conseils et sur le terrain, et sans le goût de la montagne qu’il m’a transmis, ce projet n’aurait jamais vu le jour.')),
           el('div', { class: 'dp-lists' },
             el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
             gearList, foodList))));
