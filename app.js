@@ -465,7 +465,8 @@
                 el('span', { class: 'stage-meta' }, `${nf(last.wk, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}${seq.some(p => p.sac === 2) ? ' · bateau' : ''}`))));
         })));
     }
-    panel.replaceChildren(body,
+    // the sources footnote stays on the other rubrics, not under the bivouacs and the summits
+    panel.replaceChildren(body, rubric === 'camps' || rubric === 'summits' ? '' : 
       el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Distance totale : ${nf(S.strava_distance)} km selon Strava ; ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
     panel.scrollTop = 0;
   }
@@ -1170,9 +1171,25 @@
   }
   const nightTick = n => String(day(n.night).d);   // night of the 13th, 14th…
 
+  /* a recap fills the panel exactly: drawn once, measured, then drawn again with its charts
+     stretched (or squeezed on a small screen) so that its last line ends at the panel bottom */
+  function fitRecap(draw) {
+    draw(0);
+    panel.scrollTop = 0;
+    const last = panel.lastElementChild, svg = panel.querySelector('.recap-chart');
+    if (!last || !svg) return;
+    const pad = parseFloat(getComputedStyle(panel).paddingBottom) || 0;
+    const room = panel.getBoundingClientRect().bottom - pad - last.getBoundingClientRect().bottom;
+    if (Math.abs(room) < 3) return;
+    const k = 340 / Math.max(1, svg.getBoundingClientRect().width);   // screen px -> chart units
+    draw(Math.max(-60, room * k));
+    panel.scrollTop = 0;
+    curFit = () => fitRecap(draw);
+  }
   function openNightsRecap() {
     openRecap('camps');
     panel.classList.add('recap');
+    fitRecap(ex => {   // ex: extra height (chart units) shared by the three charts to end at the panel bottom
     const N = T.camps, S9 = N.map(n => n.sleep || {});
     const W = 340, L = 30, R = 30, x0 = L, bw = (W - L - R) / N.length, cx = j => x0 + (j + 0.5) * bw;
     const xLabels = (svg, H) => N.forEach((n, j) => svg.append(svText({ x: cx(j).toFixed(1), y: H - 3, class: 'axis', 'text-anchor': 'middle' }, nightTick(n))));
@@ -1182,7 +1199,7 @@
     });
 
     // 1. sleep: stacked phases, deep at the bottom, light in the middle, REM on top
-    const H1 = 112, T1 = 6, B1 = 17, maxH = 11 * 60;
+    const H1 = 112 + ex / 3, T1 = 6, B1 = 17, maxH = 11 * 60;
     const y1 = m => T1 + (1 - m / maxH) * (H1 - T1 - B1);
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Durée de sommeil par nuit, découpée en phases' });
     grid(s1, y1, [0, 300, 600], m => `${m / 60} h`);
@@ -1205,7 +1222,7 @@
       avgItem('ph-rem', 'paradoxal', `${hm(rm)} · ${pct(rm)}`), avgItem(null, 'nuit moyenne', hm(tot)));
 
     // 2. resting heart rate (white dots, red ring and line) and HRV (dashed, right axis)
-    const H2 = 124, T2 = 8, B2 = 17;
+    const H2 = 124 + ex / 3, T2 = 8, B2 = 17;
     const fc = S9.map(x => x.fc_repos), hv = S9.map(x => x.hrv_moy_ms);
     const fcMin = 40, fcMax = 55, hvMin = 20, hvMax = 70;
     const y2 = v => T2 + (1 - (v - fcMin) / (fcMax - fcMin)) * (H2 - T2 - B2);
@@ -1224,7 +1241,7 @@
       avgItem(null, 'FC la plus basse', `${nf(Math.min(...fc.filter(v => v != null)))} bpm`), avgItem(null, 'HRV la plus haute', `${nf(Math.max(...hv.filter(v => v != null)))} ms`));
 
     // 3. Body Battery of the following day: from its low to its high, with the night's recharge
-    const H3 = 112, T3 = 8, B3 = 17;
+    const H3 = 112 + ex / 3, T3 = 8, B3 = 17;
     const y3 = v => T3 + (1 - v / 100) * (H3 - T3 - B3);
     const s3 = sv('svg', { viewBox: `0 0 ${W} ${H3}`, class: 'recap-chart', role: 'img', 'aria-label': 'Body Battery du lendemain, du minimum au maximum' });
     grid(s3, y3, [0, 25, 50, 75, 100], v => nf(v));
@@ -1243,20 +1260,20 @@
       el('h2', { class: 'recap-title', title: 'Garmin Connect, nuit par nuit. Moyennes sur les 9 nuits, nuit courte de Bunes beach comprise.' }, 'Récap des nuits'),
       el('h3', null, 'Sommeil et phases · nuits du 13 au 21'), s1, sleepKv,
       el('h3', null, 'FC au repos et HRV'), s2, fcKv,
-      el('h3', null, 'Body Battery du lendemain (min → max)'), s3, bbKv,
-      el('p', { class: 'foot' }, 'Garmin Connect, nuit par nuit. Moyennes sur les 9 nuits, nuit courte de Bunes beach comprise.'));
-    panel.scrollTop = 0;
+      el('h3', null, 'Body Battery du lendemain (min → max)'), s3, bbKv);
+    });
   }
 
   function openSummitsRecap() {
     openRecap('summits');
     panel.classList.add('recap');
+    fitRecap(ex => {   // ex: extra height (chart units): 40 % more space between the altitude bars, 60 % for the pace lines
     const rows = T.summits.map(s => ({ s, ...summitStats(s) }));
     const altOf = r => r.s.hauteur_officielle_m || r.s.alt_gps_m;
     const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), cold = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a);
     const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
     const hardest = rows.reduce((a, b) => b.gap > a.gap ? b : a);
-    const W = 340, L = 96, R = 72, rowH = 15, T0 = 2;
+    const W = 340, L = 96, R = 72, T0 = 2, rowH = 15 + 0.4 * ex / T.summits.length;
     // 1. altitude of each summit, with the air temperature up there
     const H1 = T0 + rows.length * rowH + 4, aMax = 800;
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
@@ -1269,7 +1286,7 @@
     });
     // 2. grade-adjusted pace of each climb (the longer the line, the faster)
     const sp = r => 60 / r.gap, vMax = Math.ceil(Math.max(...rows.map(sp)) / 2) * 2;
-    const rowH2 = 20, H2 = T0 + rows.length * rowH2 + 4;   // the pace chart gets more room
+    const rowH2 = 20 + 0.6 * ex / rows.length, H2 = T0 + rows.length * rowH2 + 4;   // the pace chart gets more room
     const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart chart-big', role: 'img', 'aria-label': 'Allure ajustée à la pente de chaque montée' });
     rows.forEach((r, j) => {
       const y = T0 + j * rowH2, w = (W - L - R) * sp(r) / vMax;
@@ -1295,9 +1312,8 @@
       el('h2', { class: 'recap-title' }, 'Récap des sommets'),
       el('h3', null, 'Altitude et température au sommet'), s1,
       el('h3', { title: 'Chaque morceau de montée compte comme la distance à plat qui demande le même effort (Minetti et al., 2002).' }, 'Allure ajustée à la pente, du pied au sommet'), s2, superl,
-      el('h3', null, 'Total et moyennes des montées'), kv,
-      el('p', { class: 'foot' }, 'Altitude officielle quand elle existe, sinon GPS. Température : réanalyse ERA5 à l’heure du passage, corrigée de l’altitude. Gylttinden : tenté, arrêt à mi-hauteur.'));
-    panel.scrollTop = 0;
+      el('h3', null, 'Total et moyennes des montées'), kv);
+    });
   }
 
   /* ---------- panel: the whole traverse ---------- */
