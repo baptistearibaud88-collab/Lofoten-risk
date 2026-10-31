@@ -7,18 +7,21 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  const COL = { pack: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#2ec4c6' };
+  const COL = { pack: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff' };
   const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   /* A summit's outing = the trail activities of that day that lead to it.
      Reinebringen and Helvete: the whole day from Munkebu, not only from Reine. */
   const SUMMIT_OUTINGS = { reinebringen_helvete: ['munkebu_reine', 'reinebringen_helvete'] };
 
-  /* Boat crossings that the watch did not record, drawn as a circular arc over the sea
-     between the end of one activity and the start of the next.
-     side: which side of the straight line the arc bulges to (left / right of travel);
-     bulge: arc height as a share of the straight distance. */
-  const BOATS = { 'horseid_kirkefjord>vindstad_bunes': { side: 'left', bulge: 0.32, label: 'Bateau Kirkefjord → Vindstad' } };
+  /* Boat crossings that the watch did not record: a smooth curve over the sea between
+     the end of one activity and the start of the next, through a few points on the water
+     (here: down Kjerkfjorden, then west along the shore to Vindstad). */
+  const BOATS = { 'horseid_kirkefjord>vindstad_bunes': { label: 'Bateau Kirkefjord → Vindstad',
+    via: [[13.0206, 67.9869], [13.0249, 67.9788], [13.0290, 67.9706], [13.0297, 67.9636], [13.0225, 67.9601], [13.0120, 67.9589]] } };
+
+  /* camera direction when flying to a camp, where the default angle hides the tent */
+  const CAMP_BEARING = { 'Bunes beach': -125 };
 
 
   /* Camera per kind of replay. zoom/pitch: how far and how high the drone flies.
@@ -63,25 +66,27 @@
 
   /* A sequence = activities glued in order, with cumulative counters. Gaps between
      activities (boat, unrecorded links) are skipped: the line breaks there. */
-  function boatArc(A, B, side, bulge, n = 48) {
-    // circular arc in a local metric frame (x east, y north, metres)
+  /* smooth curve through the points (centripetal Catmull-Rom: no loops, no sharp peaks) */
+  function boatPath(A, B, via, perSeg = 14) {
     const k = Math.cos(A[1] * Math.PI / 180) * 111320, m = 110540;
-    const bx = (B[0] - A[0]) * k, by = (B[1] - A[1]) * m, c = Math.hypot(bx, by);
-    const h = Math.max(1, bulge * c), r = (c * c / 4 + h * h) / (2 * h);
-    const ux = bx / c, uy = by / c, nx = side === 'left' ? -uy : uy, ny = side === 'left' ? ux : -ux;
-    const mx = bx / 2, my = by / 2, cx = mx - nx * (r - h), cy = my - ny * (r - h);
-    let a0 = Math.atan2(-cy, -cx), a1 = Math.atan2(by - cy, bx - cx);
-    let sweep = a1 - a0;
-    const am = Math.atan2(my + ny * h - cy, mx + nx * h - cx);   // the arc must pass through the bulge point
-    const dm = ((am - a0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-    sweep = ((sweep % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    if (dm > sweep) sweep -= 2 * Math.PI;
+    const P = [A, ...via, B].map(q => [(q[0] - A[0]) * k, (q[1] - A[1]) * m]);
+    const ext = [[2 * P[0][0] - P[1][0], 2 * P[0][1] - P[1][1]], ...P, [2 * P[P.length - 1][0] - P[P.length - 2][0], 2 * P[P.length - 1][1] - P[P.length - 2][1]]];
     const out = [];
-    for (let i = 0; i <= n; i++) {
-      const t = a0 + sweep * i / n;
-      out.push([A[0] + (cx + r * Math.cos(t)) / k, A[1] + (cy + r * Math.sin(t)) / m]);
+    const tj = (a, b) => Math.pow(Math.hypot(b[0] - a[0], b[1] - a[1]), 0.5) || 1e-6;
+    for (let i = 1; i < ext.length - 2; i++) {
+      const p0 = ext[i - 1], p1 = ext[i], p2 = ext[i + 1], p3 = ext[i + 2];
+      const t1 = tj(p0, p1), t2 = t1 + tj(p1, p2), t3 = t2 + tj(p2, p3);
+      for (let j = 0; j < perSeg; j++) {
+        const t = t1 + (t2 - t1) * j / perSeg;
+        const L = (a, b, ta, tb) => [a[0] * (tb - t) / (tb - ta) + b[0] * (t - ta) / (tb - ta), a[1] * (tb - t) / (tb - ta) + b[1] * (t - ta) / (tb - ta)];
+        const A1 = L(p0, p1, 0, t1), A2 = L(p1, p2, t1, t2), A3 = L(p2, p3, t2, t3);
+        const B1 = L(A1, A2, 0, t2), B2 = L(A2, A3, t1, t3);
+        const C = L(B1, B2, t1, t2);
+        out.push([A[0] + C[0] / k, A[1] + C[1] / m]);
+      }
     }
-    out[0] = [A[0], A[1]]; out[n] = [B[0], B[1]];
+    out.push([B[0], B[1]]);
+    out[0] = [A[0], A[1]];
     return out;
   }
   const arcKm = arc => arc.reduce((d, q, i) => i ? d + Math.hypot((q[0] - arc[i - 1][0]) * Math.cos(q[1] * Math.PI / 180) * 111.32, (q[1] - arc[i - 1][1]) * 110.54) : 0, 0);
@@ -95,7 +100,7 @@
       const boat = j0 && BOATS[`${ids[j0 - 1]}>${id}`];
       if (boat) {
         const prev = pts[pts.length - 1], first = a.pts[0];
-        const arc = boatArc([prev.lon, prev.lat], [first[0], first[1]], boat.side, boat.bulge);
+        const arc = boatPath([prev.lon, prev.lat], [first[0], first[1]], boat.via);
         seg++;
         arc.forEach((q, i) => {
           if (i) km += Math.hypot((q[0] - arc[i - 1][0]) * Math.cos(q[1] * Math.PI / 180) * 111.32, (q[1] - arc[i - 1][1]) * 110.54);
@@ -117,7 +122,7 @@
   /* static boat arcs for the overview trace */
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
     const [x, y] = key.split('>'), A = ACTS[x].pts[ACTS[x].pts.length - 1], B = ACTS[y].pts[0];
-    const arc = boatArc([A[0], A[1]], [B[0], B[1]], b.side, b.bulge);
+    const arc = boatPath([A[0], A[1]], [B[0], B[1]], b.via);
     return { type: 'Feature', properties: { id: `boat:${key}`, sac: 'bateau', name: b.label, km: arcKm(arc) }, geometry: { type: 'LineString', coordinates: arc } };
   });
   function idxAt(pts, km) {          // last point at or before km
@@ -215,10 +220,9 @@
   const panel = document.getElementById('panel-inner');
   const panelBox = document.getElementById('panel');
   const titleBox = document.getElementById('title');
-  const markers = new Map();
+  let activeCamp = -1;
   let map = null, popup = null, rubric = 'camps', inDetail = false;
   let anim = null, lastLineDraw = 0, boatMarker = null;
-  const summitMarkers = new Map();
   let fireCheckpoint = () => {};
   const tracks = new WeakMap();
   const ease = (dt, tau) => 1 - Math.exp(-dt / tau);   // frame-rate independent smoothing
@@ -727,7 +731,7 @@
   }
   function flyToCamp(c) {
     if (!map) return;
-    map.flyTo({ center: [c.lon, c.lat], zoom: 13.2, pitch: 60, bearing: (c.id * 47) % 360 - 180, duration: reduceMotion ? 0 : 2800, essential: true, padding: centerPad() });
+    map.flyTo({ center: [c.lon, c.lat], zoom: 13.2, pitch: 60, bearing: CAMP_BEARING[c.name] ?? (c.id * 47) % 360 - 180, duration: reduceMotion ? 0 : 2800, essential: true, padding: centerPad() });
   }
 
   /* dim the whole trace while one sequence is on stage */
@@ -850,7 +854,33 @@
     map.addLayer({ id: 'head', type: 'circle', source: 'head',
       paint: { 'circle-radius': 7, 'circle-color': ['match', ['get', 'sac'], 1, COL.pack, COL.trail], 'circle-stroke-color': COL.casing, 'circle-stroke-width': 3 } });
 
+    /* camps and summits are drawn by the map itself (not HTML markers) so they stay
+       glued to their coordinates on the 3D relief, exactly like the trace */
+    map.addImage('peak', peakImage(), { pixelRatio: 2 });
+    camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1)), { pixelRatio: 2 }));
+    map.addSource('pois', { type: 'geojson', data: { type: 'FeatureCollection', features: [
+      ...camps.map(c => ({ type: 'Feature', properties: { kind: 'camp', cid: c.id, icon: `camp-${c.id}` }, geometry: { type: 'Point', coordinates: [c.lon, c.lat] } })),
+      ...T.summits.map(x => ({ type: 'Feature', properties: { kind: 'peak', name: x.sommet, icon: 'peak' }, geometry: { type: 'Point', coordinates: [x.lon, x.lat] } })),
+    ] } });
+    map.addSource('pings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    const ringPaint = { 'circle-radius': ['get', 'r'], 'circle-color': ['get', 'col'], 'circle-opacity': ['get', 'fo'],
+      'circle-stroke-color': ['get', 'col'], 'circle-stroke-width': 2.5, 'circle-stroke-opacity': ['get', 'o'], 'circle-pitch-alignment': 'viewport' };
+    map.addLayer({ id: 'pings-camp', type: 'circle', source: 'pings', filter: ['==', ['get', 'kind'], 'camp'], paint: ringPaint });
+    map.addLayer({ id: 'pings-peak', type: 'circle', source: 'pings', filter: ['==', ['get', 'kind'], 'peak'],
+      paint: { ...ringPaint, 'circle-translate': [0, -9], 'circle-translate-anchor': 'viewport' } });
+    const sym = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' };
+    map.addLayer({ id: 'peaks', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'peak'], layout: { ...sym, 'icon-anchor': 'bottom' } });
+    map.addLayer({ id: 'camps', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'camp'], layout: { ...sym, 'icon-size': 1 } });
+    map.on('click', 'camps', e => { const c = camps.find(x => x.id === e.features[0].properties.cid); if (c) openCamp(c); });
+    map.on('click', 'peaks', e => { const x = T.summits.find(q => q.sommet === e.features[0].properties.name); if (x) openSummit(x); });
+    ['camps', 'peaks'].forEach(l => {
+      map.on('mouseenter', l, () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', l, () => { map.getCanvas().style.cursor = ''; });
+    });
+    setActive(activeCamp);
+
     map.on('click', 'trace', e => {
+      if (map.queryRenderedFeatures(e.point, { layers: ['camps', 'peaks'] }).length) return;
       const p = e.features[0].properties;
       new maplibregl.Popup({ closeButton: false, offset: 8 }).setLngLat(e.lngLat)
         .setDOMContent(el('div', null,
@@ -871,14 +901,31 @@
     }
   });
 
-  /* markers */
-  camps.forEach((c, i) => {
-    const node = el('button', { type: 'button', class: 'marker m-camp', 'aria-label': `Bivouac ${c.name}` }, String(i + 1));
-    node.addEventListener('click', e => { e.stopPropagation(); openCamp(c); });
-    markers.set(c.id, node);
-    new maplibregl.Marker({ element: node }).setLngLat([c.lon, c.lat]).addTo(map);
-  });
-  function setActive(id) { markers.forEach((n, k) => n.classList.toggle('active', k === id)); }
+  /* icons drawn on a canvas for the map's symbol layers (no font server needed) */
+  function campImage(label) {
+    const S = 2, W = 30, cv = document.createElement('canvas'); cv.width = cv.height = W * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 5; g.shadowOffsetY = 1.5;
+    g.beginPath(); g.arc(W / 2, W / 2, 12, 0, 2 * Math.PI); g.fillStyle = '#ffffff'; g.fill();
+    g.shadowColor = 'transparent';
+    g.beginPath(); g.arc(W / 2, W / 2, 10, 0, 2 * Math.PI); g.fillStyle = COL.pack; g.fill();
+    g.fillStyle = '#fff'; g.font = '700 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, W / 2, W / 2 + 0.5);
+    return g.getImageData(0, 0, W * S, W * S);
+  }
+  function peakImage() {
+    const S = 2, W = 24, H = 22, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
+    g.beginPath(); g.moveTo(12, 2.5); g.lineTo(21.5, 19); g.lineTo(2.5, 19); g.closePath();
+    g.fillStyle = '#111418'; g.fill(); g.shadowColor = 'transparent';
+    g.lineJoin = 'round'; g.lineWidth = 2.4; g.strokeStyle = COL.trail; g.stroke();
+    return g.getImageData(0, 0, W * S, H * S);
+  }
+  function setActive(id) {
+    activeCamp = id == null ? -1 : id;
+    if (map && map.getLayer && map.getLayer('camps')) map.setLayoutProperty('camps', 'icon-size', ['case', ['==', ['get', 'cid'], activeCamp], 1.25, 1]);
+  }
   /* summit card: name, altitude, air temperature when he stood there */
   let popupTimer = null;
   function summitPopup(s, ttl) {
@@ -895,26 +942,34 @@
       .addTo(map);
     if (ttl) { const mine = popup; popupTimer = setTimeout(() => { if (popup === mine) { mine.remove(); popup = null; } }, ttl); }
   }
-  function ping(node) {
-    if (!node || reduceMotion) return;
-    node.classList.remove('ping');
-    void node.offsetWidth;            // restart the animation
-    node.classList.add('ping');
-    clearTimeout(node._pingT);
-    node._pingT = setTimeout(() => node.classList.remove('ping'), 2600);
+  /* checkpoint: two rings ripple out of the camp or summit (map circles, so they sit on the relief too) */
+  const pings = [];
+  let pingLoop = 0;
+  function ping(kind, lon, lat) {
+    if (reduceMotion || !map || !map.getSource('pings')) return;
+    pings.push({ kind, lon, lat, col: kind === 'peak' ? COL.trail : COL.pack, t0: performance.now() });
+    if (!pingLoop) pingLoop = requestAnimationFrame(drawPings);
+  }
+  function drawPings(now) {
+    const feats = [];
+    for (let i = pings.length - 1; i >= 0; i--) {
+      const q = pings[i], t = (now - q.t0) / 1000;
+      if (t > 2.9) { pings.splice(i, 1); continue; }
+      [0, 0.35].forEach(delay => {
+        const u = t - delay;
+        if (u < 0 || u > 2.5) return;
+        const k = (u % 1.25) / 1.25, e = 1 - Math.pow(1 - k, 3);
+        feats.push({ type: 'Feature', properties: { kind: q.kind, col: q.col, r: 9 + 36 * e, o: 0.95 * (1 - k), fo: 0.18 * (1 - k) },
+          geometry: { type: 'Point', coordinates: [q.lon, q.lat] } });
+      });
+    }
+    map.getSource('pings').setData({ type: 'FeatureCollection', features: feats });
+    pingLoop = pings.length ? requestAnimationFrame(drawPings) : 0;
   }
   fireCheckpoint = (c, keepPopup) => {
-    if (c.type === 'summit') { ping(summitMarkers.get(c.s.sommet)); summitPopup(c.s, keepPopup ? 0 : 5000); }
-    else ping(markers.get(c.c.id));
+    if (c.type === 'summit') { ping('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
+    else ping('camp', c.c.lon, c.c.lat);
   };
-  T.summits.forEach(s => {
-    const node = el('button', { type: 'button', class: 'marker m-peak', 'aria-label': `Sommet ${s.sommet}` });
-    const icon = peakIcon(); icon.setAttribute('width', '20'); icon.setAttribute('height', '18');
-    node.append(icon);
-    node.addEventListener('click', e => { e.stopPropagation(); openSummit(s); });
-    summitMarkers.set(s.sommet, node);
-    new maplibregl.Marker({ element: node, anchor: 'bottom' }).setLngLat([s.lon, s.lat]).addTo(map);
-  });
 
   /* boat head: a small boat that sails the arc */
   {
