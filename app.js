@@ -341,6 +341,9 @@
   }
   if (window.ResizeObserver) new ResizeObserver(layoutChanged).observe(panelBox);
   window.addEventListener('resize', layoutChanged);
+  // the open replay re-fits its charts when the screen size changes (rotation, Safari bars)
+  let curFit = null, fitTimer = 0;
+  window.addEventListener('resize', () => { clearTimeout(fitTimer); fitTimer = setTimeout(() => curFit && curFit(), 200); });
 
   /* ---------- title bubble: intro, or the activity and its profile ---------- */
   const titleDefault = document.getElementById('title-default');
@@ -385,7 +388,7 @@
   }
 
   /* ---------- panel: home lists ---------- */
-  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); };
+  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); curFit = null; };
   function showHome(which) {
     resetPanel();
     stopAnim(true);
@@ -761,8 +764,8 @@
   }
 
   /* ---------- elevation profile (shown in the title bubble) ---------- */
-  function profileChart(pts, marks, onSeek) {
-    const W = 380, H = 92, L = 30, R = 6, Tp = marks && marks.length ? 16 : 8, B = 16;
+  function profileChart(pts, marks, onSeek, H = 92) {
+    const W = 380, L = 30, R = 6, Tp = marks && marks.length ? 16 : 8, B = 16;
     const kmMax = pts[pts.length - 1].km || 1;
     const alts = pts.map(p => p.alt);
     const aMax = Math.max(100, Math.ceil(Math.max(...alts) / 100) * 100);
@@ -807,7 +810,7 @@
   }
 
   /* ---------- speed histogram: km/h km by km (5 km bins for the whole traverse); the faster, the taller ---------- */
-  function speedChart(all, bin, onSeekKm) {
+  function speedChart(all, bin, onSeekKm, H = 96) {
     // work on walking km only: the boat is left out
     const pts = all.filter(p => p.sac !== 2).map(p => ({ ...p, km: p.wk }));
     const onSeek = wk => { const i = all.findIndex(p => p.sac !== 2 && p.wk >= wk); onSeekKm(i < 0 ? all[all.length - 1].km : all[i].km); };
@@ -823,7 +826,7 @@
     const p95 = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.95))] || 4;
     const step = p95 > 8 ? 4 : p95 > 4 ? 2 : 1;
     const yMax = Math.max(step, Math.ceil(p95 * 1.08 / step) * step);
-    const W = 340, H = 96, L = 30, R = 4, Tp = 6, B = 16;
+    const W = 340, L = 30, R = 4, Tp = 6, B = 16;
     const bw = (W - L - R) / bins.length, gap = Math.min(2, bw * 0.18);
     const y = v => Tp + (1 - Math.min(isFinite(v) ? v : 0, yMax) / yMax) * (H - Tp - B);
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pace', role: 'img',
@@ -927,6 +930,40 @@
     } };
   }
 
+  /* ---------- live watch battery of a replay: Garmin level every 5 min ---------- */
+  const BATT = T.battery || [];
+  function batteryAt(p) {
+    if (!BATT.length || !/^\d\d:\d\d$/.test(p.heure || '')) return null;
+    const [h, m] = p.heure.split(':').map(Number), t = (p.day - 1) * 1440 + h * 60 + m;
+    let lo = 0, hi = BATT.length - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (BATT[mid][0] < t) lo = mid + 1; else hi = mid; }
+    const j = Math.abs(BATT[lo][0] - t) <= Math.abs((BATT[lo - 1] || BATT[lo])[0] - t) ? lo : lo - 1;
+    if (Math.abs(BATT[j][0] - t) > 12) return null;
+    let k = j; while (k > 0 && BATT[j][0] - BATT[k - 1][0] <= 65 && BATT[k - 1][1] >= BATT[j][1]) k--;   // last hour, same charge
+    const dt = (BATT[j][0] - BATT[k][0]) / 60;
+    return { level: BATT[j][1], drain: dt >= 0.4 ? (BATT[k][1] - BATT[j][1]) / dt : null };
+  }
+  function batteryBox() {
+    const fill = sv('rect', { x: 2.2, y: 2.2, height: 7.6, rx: 1.4, class: 'bt-fill' });
+    const icon = sv('svg', { viewBox: '0 0 26 12', class: 'bt-icon', 'aria-hidden': 'true' });
+    icon.append(sv('rect', { x: .7, y: .7, width: 21.6, height: 10.6, rx: 2.6, class: 'bt-shell' }), sv('rect', { x: 23, y: 3.8, width: 2.3, height: 4.4, rx: 1, class: 'bt-tip' }), fill);
+    const lvl = el('b'), rate = el('span', { class: 'bt-rate' });
+    const node = el('div', { class: 'batt' }, icon, el('span', { class: 'bt-l' }, 'Batterie de la montre'), lvl, rate);
+    let last = '';
+    return { node, move: p => {
+      const b = batteryAt(p);
+      node.classList.toggle('bt-none', !b);
+      if (!b) { lvl.textContent = '—'; rate.textContent = ''; last = ''; return; }
+      const key = `${b.level}|${b.drain == null ? '' : b.drain.toFixed(1)}`;
+      if (key === last) return;
+      last = key;
+      fill.setAttribute('width', (19.2 * b.level / 100).toFixed(2));
+      fill.classList.toggle('bt-low', b.level <= 20);
+      lvl.replaceChildren(String(b.level), el('small', null, ' %'));
+      rate.textContent = b.drain == null ? '' : `${b.drain > 0 ? '−' : ''}${nf(Math.abs(b.drain), 1)} % par heure`;
+    } };
+  }
+
   /* ---------- player: buttons, live counters, profile and speed in the panel ---------- */
   const kvItem = (label, value, unit) => el('div', null, el('dt', null, label), el('dd', null, value, unit ? el('small', null, ` ${unit}`) : null));
   const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
@@ -943,9 +980,10 @@
     const state = { km: 0, speed: 1, cam: 'drone' };
     const seek = km => { state.km = km; state.lastCk = km; render(km, true); };
     const cps = checkpoints(pts);
-    const chart = profileChart(pts, opts.marks, seek);
-    const paces = speedChart(pts, opts.paceBin || 1, seek);
-    const wx = opts.weather ? weatherBox() : null;
+    let chart = profileChart(pts, opts.marks, seek);
+    let paces = speedChart(pts, opts.paceBin || 1, seek);
+    const wx = opts.weather ? weatherBox() : null, batt = opts.weather ? batteryBox() : null;
+    const altBox = el('div', { class: 'chart-box' }, chart.svg), speedBox = el('div', { class: 'chart-box' }, ...paces.nodes);
 
     function render(km, full) {
       const i = idxAt(pts, km), p = pts[i];
@@ -960,6 +998,7 @@
       chart.move(km, p.alt);
       paces.move(km);
       if (wx) wx.move(p);
+      if (batt) batt.move(p);
       drawLine(pts, i, full);
       drawHead(headAt(pts, km, i));
     }
@@ -987,12 +1026,30 @@
     render(0, true);
     return {
       nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
-        el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), chart.svg,
-        el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre', el('span', { class: 'h3-hint' }, ' · km/h, touche une barre')), ...paces.nodes,
+        el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), altBox,
+        el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre', el('span', { class: 'h3-hint' }, ' · km/h, touche une barre')), speedBox,
         wx ? null : paces.key,
-        ...(wx ? [el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node,
+        ...(wx ? [batt.node, el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node,
           el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), heure par heure, zone la plus proche : nord, centre ou sud. Température ramenée à ton altitude (−6,5 °C par 1 000 m), ressenti = refroidissement par le vent. Vent et rafales à 10 m sur une maille d’environ 30 km : souvent plus fort sur les crêtes. Pluie : cumul de l’heure.')] : [])].filter(Boolean),
       start: () => playBtn.click(),
+      // once in the panel: grow the two charts so the weather sits right at the bottom of the
+      // panel (the grey note is then just below, by scrolling); altitude gets the larger share
+      fit: () => {
+        if (!wx || !panel.contains(wx.node)) return;
+        const build = (hA, hS) => {
+          chart = profileChart(pts, opts.marks, seek, hA); paces = speedChart(pts, opts.paceBin || 1, seek, hS);
+          altBox.replaceChildren(chart.svg); speedBox.replaceChildren(...paces.nodes);
+          const p = pts[idxAt(pts, state.km)]; chart.move(state.km, p.alt); paces.move(state.km);
+        };
+        build(92, 96);
+        const st = panel.scrollTop; panel.scrollTop = 0;
+        const room = panel.getBoundingClientRect().bottom - 12 - wx.node.getBoundingClientRect().bottom;   // the grey note starts just out of sight
+        panel.scrollTop = st;
+        if (Math.abs(room) <= 4) return;
+        // a short screen shrinks them instead (down to a readable minimum)
+        const kA = 380 / Math.max(1, chart.svg.getBoundingClientRect().width), kS = 340 / Math.max(1, paces.nodes[0].getBoundingClientRect().width);
+        build(Math.max(70, Math.round(92 + room * 0.6 * kA)), Math.max(74, Math.round(96 + room * 0.4 * kS)));
+      },
     };
   }
 
@@ -1019,6 +1076,7 @@
       ...pl.nodes,
       el('p', { class: 'foot' }, `Calories : estimation de la montre. Sac : ${T.bag_note}. Les passages non enregistrés (bateau, liaisons) sont sautés.`));
     panel.scrollTop = 0;
+    curFit = pl.fit; pl.fit();
   }
 
   /* ---------- panel: one summit (the whole trail outing of that day) ---------- */
@@ -1087,6 +1145,7 @@
       backButton('Tous les sommets', 'summits'),
       ...pl.nodes);
     panel.scrollTop = 0;
+    curFit = pl.fit; pl.fit();
   }
 
   /* ---------- recaps: all the nights, all the summits ---------- */

@@ -782,7 +782,7 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 .wx-feel .wx-u { margin-right: 3px; }
 .wx-v small { margin-left: 2px; }
 .h3-hint { font-weight: 450; font-size: 11.5px; color: var(--ink-3); letter-spacing: 0; text-transform: none; }
-.wx-note { margin: 6px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--ink-3); }
+.wx-note { margin: 18px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--ink-3); }
 .wi-sun { fill: #ffc65c; }
 .wi-ray { stroke: #ffc65c; stroke-width: 1.8; stroke-linecap: round; }
 .wi-cloud { fill: #eef3f6; stroke: rgba(20, 35, 43, .25); stroke-width: .6; }
@@ -849,3 +849,16 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   .dp-photo button { height: 220px; }
   .dp-list { overflow: visible; }
 }
+/* live watch battery, one line above the weather */
+.batt { display: flex; align-items: center; gap: 7px; margin: 10px 0 -2px; padding: 6px 10px; border-radius: 11px; background: var(--fill, rgba(255, 255, 255, .06)); font-size: 12.5px; color: var(--ink-2); }
+.batt b { font-family: var(--font-num); font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.batt b small { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+.bt-l { flex: 1; }
+.bt-rate { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.bt-icon { width: 26px; height: 12px; flex: none; }
+.bt-shell { fill: none; stroke: var(--ink-2); stroke-width: 1.3; }
+.bt-tip { fill: var(--ink-2); }
+.bt-fill { fill: #5fd38d; }
+.bt-fill.bt-low { fill: #ff6a50; }
+.bt-none { opacity: .45; }
+.chart-box svg { display: block; }
