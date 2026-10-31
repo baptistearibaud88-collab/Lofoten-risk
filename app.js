@@ -606,7 +606,7 @@
       return el('section', null, el('h4', null, cat, el('span', null, `${nf(k)} kcal`)),
         el('ul', null, rows.map(r => el('li', null,
           el('span', { class: 'dp-o' }, r.produit, r.marque ? el('small', null, ` · ${r.marque}`) : null),
-          el('span', { class: 'dp-q' }, r.quantite == null ? '?' : r.unite === 'g' || r.unite === 'ml' ? `${nf(r.quantite)} ${r.unite}` : `×${nf(r.quantite)}`),
+          el('span', { class: 'dp-q' }, r.quantite == null ? '?' : r.unite === 'ml' && r.quantite >= 1000 ? `${nf(r.quantite / 1000, r.quantite % 1000 ? 1 : 0)} L` : r.unite === 'g' || r.unite === 'ml' ? `${nf(r.quantite)} ${r.unite}` : `×${nf(r.quantite)}`),
           el('span', { class: 'dp-w' }, r.kcal == null ? '—' : `${nf(r.kcal)} kcal`)))));
     }));
     const tabG = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'true' }, 'Équipement');
