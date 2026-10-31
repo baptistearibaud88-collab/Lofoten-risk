@@ -601,8 +601,9 @@
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · ${a.label}`),
       el('h2', null, a.titre),
       el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
-      isPh ? photoGallery(a) : null,
-      isPh ? (a.legende ? el('p', { class: 'note' }, a.legende) : null) : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),
+      isPh ? null : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),   // an info: its story first, then its photo if any
+      isPh || photoFiles(a).length ? photoGallery(a) : null,
+      isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
       a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
     panel.scrollTop = 0;
   }
