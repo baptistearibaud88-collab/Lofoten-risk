@@ -604,20 +604,21 @@
     const close = () => { sheet.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
     const P = D.profil;
-    // left: who left (profile) above the photo of all the gear; right: the two lists, full height
+    // left: the photo of all the gear, then my profile below it; right: the two lists, full height
     const sheet = el('div', { class: 'depart', role: 'dialog', 'aria-label': 'Inventaire' },
       el('div', { class: 'dp-card' },
         el('div', { class: 'dp-body' },
           el('div', { class: 'dp-left' },
           el('header', { class: 'dp-head' },
             el('div', null, el('p', { class: 'dp-eyebrow' }, 'Départ de Napp · 14 juin 2026'), el('h2', null, 'Inventaire de départ'))),
-          el('div', { class: 'dp-tiles' },
-            tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
-            tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin')),
           el('figure', { class: 'dp-photo' },
             el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
               el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
-            el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir'))),
+            el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir')),
+          el('h3', { class: 'dp-sub' }, 'Mon profil'),
+          el('div', { class: 'dp-tiles' },
+            tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
+            tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin'))),
           el('div', { class: 'dp-lists' },
             el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
             gearList, foodList,
