@@ -522,8 +522,8 @@
       if (isPh && a.direction_deg != null) {
         // stand behind the photographer and look the same way
         setFov(a);
-        const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, r = (a.portee_m || 800) * 0.15;
-        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: 13.2, pitch: 52, bearing: a.direction_deg,
+        const k = Math.cos(a.lat * Math.PI / 180) * 111320, t = a.direction_deg * Math.PI / 180, r = (a.portee_m || 800) * (a.inclinaison_camera_deg != null ? 0.35 : 0.15);   // looking from above: centre on the middle of the view
+        map.flyTo({ center: [a.lon + r * Math.sin(t) / k, a.lat + r * Math.cos(t) / 110540], zoom: a.inclinaison_camera_deg != null ? 13.6 : 13.2, pitch: a.inclinaison_camera_deg ?? 52, bearing: a.direction_deg,
           duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
       } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
     }
