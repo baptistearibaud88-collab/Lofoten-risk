@@ -343,7 +343,7 @@ body.panel-folded .panel-inner { display: none; }
   -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   box-shadow: var(--shadow) !important; overflow: hidden;
 }
-.maplibregl-ctrl-top-right { right: calc(var(--ctrl-right, 0px) + 92px); top: calc(10px + env(safe-area-inset-top, 0px)); }   /* zoom buttons just left of the compass */
+.maplibregl-ctrl-top-right { right: calc(var(--ctrl-right, 0px) + 26.5px); top: calc(84px + env(safe-area-inset-top, 0px)); }   /* zoom buttons centred under the compass */
 .maplibregl-ctrl-attrib { background: var(--glass) !important; color: var(--ink-3); border-radius: 10px 0 0 0; }
 .maplibregl-ctrl-attrib a { color: var(--ink-2) !important; }
 
@@ -782,7 +782,7 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 .wx-feel .wx-u { margin-right: 3px; }
 .wx-v small { margin-left: 2px; }
 .h3-hint { font-weight: 450; font-size: 11.5px; color: var(--ink-3); letter-spacing: 0; text-transform: none; }
-.wx-note { margin: 18px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--ink-3); }
+.panel .wx-note { margin: 64px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--ink-3); }
 .wi-sun { fill: #ffc65c; }
 .wi-ray { stroke: #ffc65c; stroke-width: 1.8; stroke-linecap: round; }
 .wi-cloud { fill: #eef3f6; stroke: rgba(20, 35, 43, .25); stroke-width: .6; }
@@ -852,7 +852,7 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   .dp-list { overflow: visible; }
 }
 /* live watch battery, one line above the weather */
-.batt { display: flex; align-items: center; gap: 7px; margin: 10px 0 -2px; padding: 6px 10px; border-radius: 11px; background: var(--fill, rgba(255, 255, 255, .06)); font-size: 12.5px; color: var(--ink-2); }
+.batt { display: flex; align-items: center; gap: 7px; margin: 8px 0 0; padding: 6px 10px; border-radius: 11px; background: var(--fill, rgba(255, 255, 255, .06)); font-size: 12.5px; color: var(--ink-2); }
 .batt b { font-family: var(--font-num); font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .batt b small { font-size: 11px; color: var(--ink-3); font-weight: 500; }
 .bt-l { flex: 1; }

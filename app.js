@@ -1030,13 +1030,13 @@
         el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), altBox,
         el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre', el('span', { class: 'h3-hint' }, ' · km/h, touche une barre')), speedBox,
         wx ? null : paces.key,
-        ...(wx ? [batt.node, el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node,
+        ...(wx ? [el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node, batt.node,
           el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), heure par heure, zone la plus proche : nord, centre ou sud. Température ramenée à ton altitude (−6,5 °C par 1 000 m), ressenti = refroidissement par le vent. Vent et rafales à 10 m sur une maille d’environ 30 km : souvent plus fort sur les crêtes. Pluie : cumul de l’heure.')] : [])].filter(Boolean),
       start: () => playBtn.click(),
       // once in the panel: grow the two charts so the weather sits right at the bottom of the
       // panel (the grey note is then just below, by scrolling); altitude gets the larger share
       fit: () => {
-        if (!wx || !panel.contains(wx.node)) return;
+        if (!wx || !panel.contains(batt.node)) return;
         const build = (hA, hS) => {
           chart = profileChart(pts, opts.marks, seek, hA); paces = speedChart(pts, opts.paceBin || 1, seek, hS);
           altBox.replaceChildren(chart.svg); speedBox.replaceChildren(...paces.nodes);
@@ -1044,7 +1044,7 @@
         };
         build(92, 96);
         const st = panel.scrollTop; panel.scrollTop = 0;
-        const room = panel.getBoundingClientRect().bottom - 12 - wx.node.getBoundingClientRect().bottom;   // the grey note starts just out of sight
+        const room = panel.getBoundingClientRect().bottom - 12 - batt.node.getBoundingClientRect().bottom;   // the grey note starts just out of sight
         panel.scrollTop = st;
         if (Math.abs(room) <= 4) return;
         // a short screen shrinks them instead (down to a readable minimum)
