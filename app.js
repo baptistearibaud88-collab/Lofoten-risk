@@ -795,11 +795,14 @@
       a = i;
     }
     const gap = climbS / 60 / Math.max(0.01, eqKm);      // min per flat-equivalent km
-    // the way down: from the summit to the lowest point before the next summit (or the end of the outing)
-    const to = k + 1 < tops.length ? tops[k + 1].i : pts.length - 1;
-    let bottom = me.i;
-    for (let i = me.i; i <= to; i++) if (pts[i].alt < pts[bottom].alt) bottom = i;
-    const downKm = pts[bottom].wk - top.wk, downS = pts[bottom].mov - top.mov, downM = top.alt - pts[bottom].alt;
+    // the way down: from the last summit of the outing to its lowest point after it
+    // (Reinebringen and Helvete share one descent, from Helvete)
+    let downKm = 0, downS = 0, downM = 0;
+    if (k === tops.length - 1) {
+      let bottom = me.i;
+      for (let i = me.i; i < pts.length; i++) if (pts[i].alt < pts[bottom].alt) bottom = i;
+      downKm = pts[bottom].wk - top.wk; downS = pts[bottom].mov - top.mov; downM = top.alt - pts[bottom].alt;
+    }
     return { ids, pts, tops, top, base, last, climbS, climbM, hrs, vv: climbM / Math.max(1 / 60, climbS / 3600), gap, eqKm, downKm, downS, downM };
   }
 
@@ -951,13 +954,14 @@
     const kv = el('div', { class: 'avg-line avg-big' },
       it('D+ des montées', `${nf(rows.reduce((a, r) => a + r.climbM, 0))} m`), it('temps en montée', hms(rows.reduce((a, r) => a + r.climbS, 0))),
       it('allure ajustée', `${pace(rows.reduce((a, r) => a + r.climbS, 0) / 60 / rows.reduce((a, r) => a + r.eqKm, 0))} /km`), it('vitesse verticale', `${nf(avg(rows.map(r => r.vv)))} m/h`),
-      it('allure en descente', `${pace(rows.reduce((a, r) => a + r.downS, 0) / 60 / rows.reduce((a, r) => a + r.downKm, 0))} /km`),
       it('D− des descentes', `${nf(rows.reduce((a, r) => a + r.downM, 0))} m`), it('température', `${nf(avg(rows.map(r => r.s.temp_c)), 0)} °C`));
     const hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
+    const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
     const superl = el('div', { class: 'avg-line records' },
       el('span', null, el('i', { class: 'k-top' }), 'le plus haut ', el('b', null, `${high.s.sommet} · ${nf(altOf(high))} m`)),
       el('span', null, el('i', { class: 'k-fast' }), 'la montée la plus rapide ', el('b', null, `${best.s.sommet} · ${pace(best.gap)} /km`)),
       el('span', null, el('i', { class: 'k-hard' }), 'le plus dur (le plus lent) ', el('b', null, `${hard.s.sommet} · ${pace(hard.gap)} /km`)),
+      el('span', null, el('i', { class: 'k-down' }), 'la descente la plus rapide ', el('b', null, `${down.s.sommet} · ${pace(down.downS / 60 / down.downKm)} /km`)),
       el('span', null, el('i', { class: 'k-cold' }), 'le plus froid ', el('b', null, `${cold.s.sommet} · ${nf(cold.s.temp_c, 0)} °C`)));
     panel.replaceChildren(
       el('h2', { class: 'recap-title' }, 'Récap des sommets'),
