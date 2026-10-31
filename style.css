@@ -328,3 +328,14 @@ button:focus-visible, .marker:focus-visible, .camp-row:focus-visible {
 .profile .hit { cursor: crosshair; }
 .k-alt { background: var(--glacier); }
 .k-hr { background: var(--trail); }
+
+.title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.trek-btn {
+  font: 700 14px/1 var(--font-display); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--snow); background: var(--trail); border: 1px solid var(--trail); border-radius: 4px;
+  padding: 9px 12px; cursor: pointer; white-space: nowrap;
+}
+.trek-btn:hover { filter: brightness(1.1); }
+.where { margin: 10px 0 0; font: 600 16px/1.2 var(--font-display); letter-spacing: .03em; color: var(--sun); }
+.profile .mark { stroke: var(--snow); stroke-width: 1; opacity: .7; }
+.profile .mark-label { fill: var(--snow); font-size: 9px; }
