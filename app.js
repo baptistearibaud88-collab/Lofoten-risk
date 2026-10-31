@@ -432,7 +432,7 @@
         })));
     }
     panel.replaceChildren(body,
-      el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Distance totale : ${nf(S.strava_distance)} km selon Strava ; ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre (${nf(S.dplus)} m après lissage de l’altitude, ${nf(S.strava_denivele_positif)} m selon Strava). Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
+      el('p', { class: 'foot' }, `Positions, altitudes et fréquence cardiaque : montre GPS Garmin. Distance totale : ${nf(S.strava_distance)} km selon Strava ; ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé total : ${nf(S.dplus_watch)} m selon la montre. Météo : réanalyse ERA5. Sommeil : Garmin Connect.`));
     panel.scrollTop = 0;
   }
 
