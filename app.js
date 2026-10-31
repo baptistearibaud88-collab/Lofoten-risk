@@ -399,7 +399,8 @@
       const isPh = rubric === 'photos', list = isPh ? PHOTOS : INFOS;
       body.append(
         el('h2', null, isPh ? 'Photos' : 'Infos'),
-        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises. Elles seront reliées au dossier Drive.' : 'Anecdotes et petites histoires, au bon endroit du parcours.'),
+        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises. Choisis-en une pour voler jusqu’à l’endroit.' : 'Anecdotes et petites histoires, au bon endroit du parcours.'),
+        ...(isPh ? [recapRow('photo', 'Toutes les photos', `${PHOTOS.reduce((n, a) => n + photoFiles(a).length, 0)} photos`, openPhotoWall)] : []),
         el('ul', { class: 'camp-list' }, list.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openRoutePoint(rubric, a) },
             el('span', { class: 'camp-num num-peak' }, isPh ? photoIcon() : infoIcon()),
@@ -505,26 +506,70 @@
       el('button', { type: 'button', class: 'gallery-item', 'aria-label': `Agrandir la photo ${i + 1}`, onclick: () => lightbox(files, i) },
         el('img', { src: f, alt: `${a.titre}, photo ${i + 1}`, loading: 'lazy', decoding: 'async' }))));
   }
-  function lightbox(files, i) {
+  /* full-screen viewer. items: file paths, or { src, title, sub, point } to show a caption
+     and a way back to the map. Arrows, keyboard and swipe go from one photo to the next. */
+  function lightbox(items, i) {
+    items = items.map(x => typeof x === 'string' ? { src: x } : x);
     let k = i;
     const img = el('img', { alt: '' });
-    const show = () => { img.src = files[k]; count.textContent = `${k + 1} / ${files.length}`; };
     const count = el('span', { class: 'lb-count' });
-    const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
-    const go = d => { k = (k + d + files.length) % files.length; show(); };
-    const onKey = e => { if (e.key === 'Escape') close(); if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); };
+    const capT = el('strong'), capS = el('span');
+    const onMap = el('button', { type: 'button', class: 'lb-map' }, 'Voir sur la carte');
+    const cap = el('div', { class: 'lb-cap' }, el('div', null, capT, capS), onMap);
+    const show = () => {
+      const it = items[k];
+      img.src = it.src; img.alt = it.title || 'Photo';
+      count.textContent = `${k + 1} / ${items.length}`;
+      capT.textContent = it.title || ''; capS.textContent = it.sub || '';
+      cap.hidden = !it.title; onMap.hidden = !it.point;
+      [k - 1, k + 1].forEach(j => { const n = items[(j + items.length) % items.length]; if (n) new Image().src = n.src; });
+    };
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey, true); };
+    const go = d => { k = (k + d + items.length) % items.length; show(); };
+    const onKey = e => {
+      if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); }
+      if (e.key === 'ArrowRight') go(1);
+      if (e.key === 'ArrowLeft') go(-1);
+    };
+    onMap.onclick = e => { e.stopPropagation(); const it = items[k]; close(); document.querySelector('.photo-wall')?.remove(); openRoutePoint('photos', it.point); };
+    const many = items.length > 1;
     const box = el('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Photo en grand' },
-      img, count,
+      img, count, cap,
       el('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer', onclick: close }, '×'),
-      files.length > 1 ? el('button', { type: 'button', class: 'lb-prev', 'aria-label': 'Photo précédente', onclick: e => { e.stopPropagation(); go(-1); } }, '‹') : null,
-      files.length > 1 ? el('button', { type: 'button', class: 'lb-next', 'aria-label': 'Photo suivante', onclick: e => { e.stopPropagation(); go(1); } }, '›') : null);
+      many ? el('button', { type: 'button', class: 'lb-prev', 'aria-label': 'Photo précédente', onclick: e => { e.stopPropagation(); go(-1); } }, '‹') : null,
+      many ? el('button', { type: 'button', class: 'lb-next', 'aria-label': 'Photo suivante', onclick: e => { e.stopPropagation(); go(1); } }, '›') : null);
     box.addEventListener('click', e => { if (e.target === box) close(); });
     let x0 = null;
     box.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
     box.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); x0 = null; });
-    document.addEventListener('keydown', onKey);
+    document.addEventListener('keydown', onKey, true);
     document.body.append(box);
     show();
+  }
+
+  /* every photo of the trek, full screen, as a mosaic grouped by day; a tap opens the viewer
+     on that photo and the arrows then run through all of them in order */
+  function openPhotoWall() {
+    const items = [];
+    PHOTOS.forEach(a => photoFiles(a).forEach(f => items.push({ src: f, mini: f.replace('photos/', 'photos/mini/'), title: a.titre, sub: a.label, point: a, day: a.day })));
+    const days = [...new Set(items.map(x => x.day))];
+    const close = () => { wall.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    const wall = el('div', { class: 'photo-wall', role: 'dialog', 'aria-label': 'Toutes les photos' },
+      el('header', { class: 'pw-head' },
+        el('div', null, el('h2', null, 'Toutes les photos'), el('p', null, `${items.length} photos · ${PHOTOS.length} lieux · touche une photo pour l’ouvrir en grand`)),
+        el('button', { type: 'button', class: 'pw-close', 'aria-label': 'Fermer', onclick: close }, '×')),
+      el('div', { class: 'pw-body' }, days.map(d => {
+        const e = T.etapes.find(x => x.day === d);
+        return el('section', null,
+          el('h3', null, `Jour ${d}`, e ? el('span', null, ` · ${e.from} → ${e.to}`) : null),
+          el('div', { class: 'pw-grid' }, items.filter(x => x.day === d).map(it =>
+            el('button', { type: 'button', class: 'pw-tile', 'aria-label': `${it.title}, ouvrir en grand`, onclick: () => lightbox(items, items.indexOf(it)) },
+              el('img', { src: it.mini, alt: it.title, loading: 'lazy', decoding: 'async', onerror: function () { this.onerror = null; this.src = it.src; } }),
+              el('span', null, it.title)))));
+      })));
+    document.addEventListener('keydown', onKey);
+    document.body.append(wall);
   }
 
   function openRoutePoint(kind, a) {
