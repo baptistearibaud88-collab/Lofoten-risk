@@ -228,7 +228,7 @@ body.panel-folded .panel-inner { display: none; }
 }
 .kv div { min-width: 0; }
 .kv dd { font-size: 18px; }
-.counters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.counters { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-top: 8px !important; padding-bottom: 8px !important; row-gap: 6px !important; }
 .counters dd { font-size: 18px; }
 
 .phases { margin-top: 12px; }
@@ -759,3 +759,39 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 .lightbox .lb-map { position: static; width: auto; height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #2bb3ac; color: #06100f; white-space: nowrap; }
 .lightbox .lb-map[hidden] { display: none; }
 .lb-count { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+
+/* live weather in the replay panel */
+.wx { margin-top: 0; padding: 6px 10px 6px; border-radius: 13px; background: var(--accent-soft); }
+.wx[hidden] { display: none; }
+.wx-main { display: flex; align-items: center; gap: 8px; }
+.wx-tt { flex: 1; min-width: 0; }
+.wx-sky { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: rgba(255, 255, 255, .08); }
+.wi-big { width: 30px; height: 30px; overflow: visible; }
+.wx-t { display: block; font-family: var(--font-num); font-size: 20px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wx-t small { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.wx-sub { display: block; font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wx-feel { flex: none; display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+.wx-row { display: flex; justify-content: space-between; gap: 6px; margin-top: 5px; padding-top: 4px; border-top: 1px solid var(--hair); }
+.wx-c { display: flex; align-items: baseline; gap: 0; min-width: 0; white-space: nowrap; }
+.wx-c .wi-small { align-self: center; margin-right: 4px; }
+.wi-small { flex: none; width: 16px; height: 16px; overflow: visible; }
+.wx-v { font-family: var(--font-num); font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.wx-v small, .wx-c small { font-family: var(--font); font-size: 10.5px; font-weight: 500; color: var(--ink-3); }
+.wx-u { font-size: 11px; color: var(--ink-3); }
+.wx-c small { margin: 0 4px 0 2px; }
+.wx-feel .wx-u { margin-right: 3px; }
+.wx-v small { margin-left: 2px; }
+.h3-hint { font-weight: 450; font-size: 11.5px; color: var(--ink-3); letter-spacing: 0; text-transform: none; }
+.wx-note { margin: 6px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--ink-3); }
+.wi-sun { fill: #ffc65c; }
+.wi-ray { stroke: #ffc65c; stroke-width: 1.8; stroke-linecap: round; }
+.wi-cloud { fill: #eef3f6; stroke: rgba(20, 35, 43, .25); stroke-width: .6; }
+.wi-back { fill: #b9c4cb; }
+.wi-dark { fill: #a9b6bf; }
+.wi-drop { stroke: #6cc4ff; stroke-width: 1.7; stroke-linecap: round; }
+.wi-line { fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.wi-bolt { fill: none; stroke: #ffc65c; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.wi-dropfill { fill: #6cc4ff; }
+.wi-merc { fill: #ff6a50; }
+.wi-mercl { stroke: #ff6a50; stroke-width: 1.8; stroke-linecap: round; }
+body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }

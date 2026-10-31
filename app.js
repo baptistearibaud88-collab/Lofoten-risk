@@ -698,7 +698,7 @@
 
   /* ---------- elevation profile (shown in the title bubble) ---------- */
   function profileChart(pts, marks, onSeek) {
-    const W = 380, H = 118, L = 30, R = 6, Tp = marks && marks.length ? 16 : 8, B = 16;
+    const W = 380, H = 92, L = 30, R = 6, Tp = marks && marks.length ? 16 : 8, B = 16;
     const kmMax = pts[pts.length - 1].km || 1;
     const alts = pts.map(p => p.alt);
     const aMax = Math.max(100, Math.ceil(Math.max(...alts) / 100) * 100);
@@ -759,7 +759,7 @@
     const p95 = vals[Math.min(vals.length - 1, Math.floor(vals.length * 0.95))] || 4;
     const step = p95 > 8 ? 4 : p95 > 4 ? 2 : 1;
     const yMax = Math.max(step, Math.ceil(p95 * 1.08 / step) * step);
-    const W = 340, H = 128, L = 30, R = 4, Tp = 6, B = 16;
+    const W = 340, H = 96, L = 30, R = 4, Tp = 6, B = 16;
     const bw = (W - L - R) / bins.length, gap = Math.min(2, bw * 0.18);
     const y = v => Tp + (1 - Math.min(isFinite(v) ? v : 0, yMax) / yMax) * (H - Tp - B);
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pace', role: 'img',
@@ -795,7 +795,72 @@
       bins.some(b => b.sac) ? el('span', null, el('i', { class: 'k-avec' }), 'avec le sac') : null,
       bins.some(b => !b.sac) ? el('span', null, el('i', { class: 'k-sans' }), 'sans sac') : null,
       el('span', null, 'km/h en mouvement · touche une barre pour y aller'));
-    return { nodes: [svg, caption, key], move };
+    return { nodes: [svg, caption], key, move };
+  }
+
+  /* ---------- live weather of a replay: ERA5 hour by hour, nearest of the 3 zones,
+     temperature brought to the walker's altitude, wind chill as "ressenti" ---------- */
+  const WX = T.weather, WX_T0 = WX ? Date.parse(WX.start + 'Z') : 0;
+  const BEAUFORT = [[1, 'calme'], [6, 'très légère brise'], [12, 'légère brise'], [20, 'petite brise'], [29, 'jolie brise'],
+    [39, 'bonne brise'], [50, 'vent frais'], [62, 'grand frais'], [75, 'coup de vent'], [89, 'fort coup de vent'], [Infinity, 'tempête']];
+  const wxIcon = {   // 24 x 24 pictograms; the sun never sets in June up here
+    sun: () => [sv('circle', { cx: 12, cy: 12, r: 4.6, class: 'wi-sun' }),
+      ...Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return sv('line', { x1: 12 + 7 * Math.cos(a), y1: 12 + 7 * Math.sin(a), x2: 12 + 9.6 * Math.cos(a), y2: 12 + 9.6 * Math.sin(a), class: 'wi-ray' }); })],
+    cloud: (x = 0, y = 0, k = 'wi-cloud') => [sv('path', { d: `M${6.5 + x} ${18 + y}h11a3.6 3.6 0 0 0 .3-7.2 5.4 5.4 0 0 0-10.4-1.2A4 4 0 0 0 ${6.5 + x} ${18 + y}z`, class: k })],
+    drops: n => Array.from({ length: n }, (_, i) => sv('path', { d: `M${8.5 + i * 3.6} 19.6l-1.3 2.6`, class: 'wi-drop' })),
+    wind: () => [sv('path', { d: 'M3 9h11.5a2.6 2.6 0 1 0-2.6-2.6M3 13h15a2.8 2.8 0 1 1-2.8 2.8M3 17h7', class: 'wi-line' })],
+    gust: () => [sv('path', { d: 'M3 8h9.5a2.4 2.4 0 1 0-2.4-2.4M3 12h13M3 16h9.5a2.4 2.4 0 1 1-2.4 2.4', class: 'wi-line' }), sv('path', { d: 'M19.5 9.5l-2.2 4h3l-2.2 4', class: 'wi-bolt' })],
+    drop: () => [sv('path', { d: 'M12 3.5c3.2 4.4 5.2 7.4 5.2 10.2a5.2 5.2 0 0 1-10.4 0c0-2.8 2-5.8 5.2-10.2z', class: 'wi-dropfill' })],
+    therm: () => [sv('path', { d: 'M10 4.5a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z', class: 'wi-line' }), sv('circle', { cx: 12, cy: 16.8, r: 1.9, class: 'wi-merc' }), sv('path', { d: 'M12 15V9', class: 'wi-mercl' })],
+  };
+  const svgIcon = (parts, cls) => { const g = sv('svg', { viewBox: '0 0 24 24', class: cls, 'aria-hidden': 'true' }); g.append(...parts); return g; };
+  function skyIcon(cloud, rain) {
+    if (rain >= 0.3) return svgIcon([...wxIcon.cloud(0, -3, 'wi-cloud wi-dark'), ...wxIcon.drops(rain >= 2 ? 3 : 2)], 'wi-big');
+    if (cloud >= 85) return svgIcon([...wxIcon.cloud(-2, -4, 'wi-cloud wi-back'), ...wxIcon.cloud(1, 0)], 'wi-big');
+    if (cloud >= 40) { const g = sv('g', { transform: 'translate(-1.5 -2.5) scale(.78)' }); g.append(...wxIcon.sun()); return svgIcon([g, ...wxIcon.cloud(2, 1.5)], 'wi-big'); }
+    return svgIcon(wxIcon.sun(), 'wi-big');
+  }
+  const skyWord = (cloud, rain) => rain >= 2 ? 'pluie' : rain >= 0.3 ? 'averses' : cloud >= 85 ? 'couvert' : cloud >= 40 ? 'éclaircies' : 'soleil';
+  function weatherAt(p) {
+    if (!WX || !/^\d\d:\d\d$/.test(p.heure || '')) return null;
+    const [h, m] = p.heure.split(':').map(Number);
+    const t = (Date.UTC(2026, 5, 13 + p.day, h, m) - WX_T0) / 3.6e6;   // hours since the first ERA5 hour
+    const z = WX.zones.reduce((b, z) => { const d = (z.lat - p.lat) ** 2 + ((z.lon - p.lon) * 0.37) ** 2; return d < b.d ? { z, d } : b; }, { z: null, d: Infinity }).z;
+    const n = z.t.length, i0 = Math.max(0, Math.min(n - 1, Math.floor(t))), i1 = Math.min(n - 1, i0 + 1), f = Math.max(0, Math.min(1, t - i0));
+    const lerp = a => a[i0] + (a[i1] - a[i0]) * f;
+    const temp = lerp(z.t) - WX.lapse_c_per_m * (p.alt - z.elev), wind = lerp(z.wind);
+    const chill = temp <= 10 && wind > 4.8 ? 13.12 + 0.6215 * temp - 11.37 * wind ** 0.16 + 0.3965 * temp * wind ** 0.16 : temp;
+    return { temp, chill, wind, gust: lerp(z.gust), cloud: lerp(z.cloud), rain: z.rain[Math.min(n - 1, Math.ceil(t))], alt: p.alt };
+  }
+  function weatherBox() {
+    const big = el('span', { class: 'wx-sky' }), temp = el('b', { class: 'wx-t' }), sub = el('span', { class: 'wx-sub' });
+    // two short lines: the sky, the air temperature and how it feels; then wind, gusts and rain
+    const cell = (icon, label) => { const v = el('b', { class: 'wx-v' }), u = el('small'), node = el('span', { class: 'wx-c', title: label }, svgIcon(icon(), 'wi-small'), v, u, el('span', { class: 'wx-u' }, ` ${label.toLowerCase()}`)); return { node, v, u, label }; };
+    const c = { wind: cell(wxIcon.wind, 'Vent'), gust: cell(wxIcon.gust, 'Rafales'), rain: cell(wxIcon.drop, 'Pluie') };
+    const feelV = el('b', { class: 'wx-v' });
+    const feel = el('span', { class: 'wx-feel' }, svgIcon(wxIcon.therm(), 'wi-small'), el('span', { class: 'wx-u' }, 'ressenti '), feelV);
+    const node = el('div', { class: 'wx' },
+      el('div', { class: 'wx-main' }, big, el('div', { class: 'wx-tt' }, temp, sub), feel),
+      el('div', { class: 'wx-row' }, c.wind.node, c.gust.node, c.rain.node));
+    let last = '';
+    return { node, move: p => {
+      const w = weatherAt(p);
+      node.hidden = !w;
+      if (!w) return;
+      const key = [Math.round(w.temp * 2), Math.round(w.wind), Math.round(w.gust), w.rain, Math.round(w.cloud / 5), Math.round(w.chill)].join();
+      if (key === last) return;
+      last = key;
+      big.replaceChildren(skyIcon(w.cloud, w.rain));
+      temp.replaceChildren(`${nf(w.temp, 1)}`, el('small', null, ' °C'));
+      sub.textContent = `${skyWord(w.cloud, w.rain)} · nuages ${nf(w.cloud)} %`;
+      const force = v => BEAUFORT.findIndex(b => v < b[0]);
+      c.wind.v.textContent = nf(w.wind); c.wind.u.textContent = ' km/h';
+      c.wind.node.title = `Vent : ${nf(w.wind)} km/h, ${BEAUFORT[force(w.wind)][1]} (force ${force(w.wind)} Beaufort)`;
+      c.gust.v.textContent = nf(w.gust); c.gust.u.textContent = ' km/h';
+      c.gust.node.title = `Rafales : ${nf(w.gust)} km/h, ${BEAUFORT[force(w.gust)][1]} (force ${force(w.gust)} Beaufort)`;
+      c.rain.v.textContent = nf(w.rain, 1); c.rain.u.textContent = ' mm';
+      feelV.replaceChildren(nf(w.chill, 0), el('small', null, ' °C'));
+    } };
   }
 
   /* ---------- player: buttons, live counters, profile and speed in the panel ---------- */
@@ -816,6 +881,7 @@
     const cps = checkpoints(pts);
     const chart = profileChart(pts, opts.marks, seek);
     const paces = speedChart(pts, opts.paceBin || 1, seek);
+    const wx = opts.weather ? weatherBox() : null;
 
     function render(km, full) {
       const i = idxAt(pts, km), p = pts[i];
@@ -829,6 +895,7 @@
       }
       chart.move(km, p.alt);
       paces.move(km);
+      if (wx) wx.move(p);
       drawLine(pts, i, full);
       drawHead(headAt(pts, km, i));
     }
@@ -856,8 +923,11 @@
     render(0, true);
     return {
       nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
-        el('h3', null, 'Profil d’altitude'), chart.svg, el('p', { class: 'profile-hint' }, 'altitude en m · touche le profil pour te déplacer'),
-        el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre'), ...paces.nodes].filter(Boolean),
+        el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), chart.svg,
+        el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre', el('span', { class: 'h3-hint' }, ' · km/h, touche une barre')), ...paces.nodes,
+        wx ? null : paces.key,
+        ...(wx ? [el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node,
+          el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), heure par heure, zone la plus proche : nord, centre ou sud. Température ramenée à ton altitude (−6,5 °C par 1 000 m), ressenti = refroidissement par le vent. Vent et rafales à 10 m sur une maille d’environ 30 km : souvent plus fort sur les crêtes. Pluie : cumul de l’heure.')] : [])].filter(Boolean),
       start: () => playBtn.click(),
     };
   }
@@ -878,11 +948,10 @@
       kvItem('Distance', nf(last.wk, 1), 'km'), kvItem('Dénivelé +', nf(last.dplus), 'm'), kvItem('En mouvement', hms(last.mov)),
       kvItem('FC moyenne', nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), 'bpm'), kvItem('Calories', nf(last.kcal), 'kcal'),
       kvItem('Sac le matin', night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? 'kg' : null));
-    const pl = player(pts, { view: VIEW.etape, onEnd: () => fitPts(pts), summary: [summary],
+    const pl = player(pts, { view: VIEW.etape, weather: true, onEnd: () => fitPts(pts), summary: [summary],
       eyebrow: `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`, name: `${e.from} → ${e.to}` });
     panel.replaceChildren(
       backButton('Toutes les étapes', 'etapes'),
-      el('h3', { class: 'first' }, 'Rejouer l’étape'),
       ...pl.nodes,
       el('p', { class: 'foot' }, `Calories : estimation de la montre. Sac : ${T.bag_note}. Les passages non enregistrés (bateau, liaisons) sont sautés.`));
     panel.scrollTop = 0;
@@ -948,11 +1017,10 @@
         kvItem('FC max', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'), kvItem(tops.length > 1 ? `${s.sommet} à` : 'Au sommet à', s.heure.slice(11, 16)),
         kvItem('Montée', hms(climbS)), kvItem('D+ montée', nf(climbM), 'm'),
         kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('Calories', nf(last.kcal), 'kcal'))];
-    const pl = player(pts, { view: VIEW.summit, keepPopup: true, summary, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+    const pl = player(pts, { view: VIEW.summit, weather: true, keepPopup: true, summary, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
       eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
       backButton('Tous les sommets', 'summits'),
-      el('h3', { class: 'first' }, 'Rejouer la sortie'),
       ...pl.nodes);
     panel.scrollTop = 0;
   }
