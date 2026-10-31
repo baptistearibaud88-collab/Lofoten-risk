@@ -797,9 +797,11 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* start sheet (Fiche départ) */
-.pill-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 12px; }   /* same grid as the stats above */
-.pill-row #btn-trek { grid-column: 1 / span 8; justify-self: start; }   /* lined up with "Temps total" */
-.pill-row #btn-depart { grid-column: 9 / span 4; justify-self: start; }  /* lined up with "Trail running" */
+/* "Toute la traversée" lined up with "Temps total" on the left; "Inventaire" stays where the even
+   spacing put it (2 shares of free space before it, 1 after) */
+.pill-row { display: flex; align-items: center; }
+.pill-row .pill-gap { flex: 2 1 0; }
+.pill-row::after { content: ""; flex: 1 1 0; }
 .pill-ghost { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .pill-ghost svg { fill: none; }
 .depart { position: fixed; inset: 0; z-index: 9; display: grid; place-items: stretch; box-sizing: border-box;
