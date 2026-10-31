@@ -398,7 +398,7 @@
   }
 
   /* ---------- panel: home lists ---------- */
-  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); curFit = null; };
+  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); curFit = null; document.querySelector('.law-card')?.remove(); };
   function showHome(which) {
     resetPanel();
     stopAnim(true);
@@ -418,7 +418,10 @@
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
             el('span', { class: `camp-num${i === 0 ? ' camp-start' : ''}` }, String(i + 1)),
             el('span', { class: 'camp-name' }, c.name),
-            el('span', { class: 'camp-dates' }, c.nights.map(n => day(n.night).d).join(' + ') + ' ' + day(c.nights[0].night).m))))));
+            el('span', { class: 'camp-dates' }, c.nights.map(n => day(n.night).d).join(' + ') + ' ' + day(c.nights[0].night).m))))),
+        el('h3', { class: 'rec-title' }, 'Records des nuits'),
+        nightRecords(),
+        el('button', { type: 'button', class: 'law-link', onclick: openLaw }, 'Bivouaquer en Norvège : le droit d’accès ›'));
     } else if (rubric === 'summits') {
       body.append(
         el('h2', null, 'Neuf sommets'),
@@ -693,6 +696,47 @@
       isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
       a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
     panel.scrollTop = 0;
+  }
+
+  /* records of the nights, each one flies to its bivouac */
+  function nightRecords() {
+    const N = T.camps.map(n => ({ n, c: camps.find(c => c.id === n.camp_id) }));
+    const pick = (val, best) => N.filter(x => val(x.n) != null).reduce((a, b) => best(val(b.n), val(a.n)) ? b : a);
+    const hi = (a, b) => a > b, lo = (a, b) => a < b;
+    const rows = [
+      ['k-top', 'le plus haut', camps.reduce((a, b) => b.alt > a.alt ? b : a), c => `${nf(c.alt)} m`],
+      ['k-cold', 'la plus froide', pick(n => n.weather && n.weather.temp_min_camp, lo), x => `${nf(x.n.weather.temp_min_camp, 1)} °C`],
+      ['k-wind', 'la plus venteuse', pick(n => n.weather && n.weather.gust_max, hi), x => `${nf(x.n.weather.gust_max)} km/h`],
+      ['k-rain', 'la plus arrosée', pick(n => n.weather && n.weather.rain_mm, hi), x => `${nf(x.n.weather.rain_mm, 1)} mm`],
+      ['k-short', 'la plus courte', pick(n => n.sleep && n.sleep.sommeil_min, lo), x => hm(x.n.sleep.sommeil_min)],
+      ['k-best', 'la meilleure', pick(n => n.sleep && n.sleep.sleep_score, hi), x => `${nf(x.n.sleep.sleep_score)} / 100`],
+    ];
+    // small tiles, three per line: what, the figure, where and when
+    return el('div', { class: 'rec-grid' }, rows.map(([k, label, r, fmt]) => {
+      const c = r.c || r;
+      return el('button', { type: 'button', class: 'rec-tile', onclick: () => openCamp(c) },
+        el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label),
+        el('b', { class: 'rec-v' }, fmt(r)),
+        el('span', { class: 'rec-s' }, c.name),
+        el('span', { class: 'rec-s rec-d' }, r.n ? `nuit du ${day(r.n.night).d} ${day(r.n.night).m}` : `${nf(c.nights.length)} nuit${c.nights.length > 1 ? 's' : ''}`));
+    }));
+  }
+
+  /* Norway's right of access, in a small card over the map (bottom right, next to the panel) */
+  function openLaw() {
+    const old = document.querySelector('.law-card'); if (old) { old.remove(); return; }
+    const close = () => card.remove();
+    const card = el('aside', { class: 'law-card bubble', role: 'dialog', 'aria-label': 'Le droit d’accès en Norvège' },
+      el('button', { type: 'button', class: 'fold law-close', 'aria-label': 'Fermer', onclick: close }, '×'),
+      el('p', { class: 'eyebrow-sm' }, 'Allemannsretten'),
+      el('h3', null, 'Bivouaquer en Norvège'),
+      el('p', null, 'Le droit d’accès, inscrit dans la loi depuis 1957, permet de marcher et de planter sa tente presque partout hors des terres cultivées, gratuitement.'),
+      el('ul', null,
+        el('li', null, 'tente à au moins ', el('b', null, '150 m'), ' d’une maison ou d’un chalet habité ;'),
+        el('li', null, el('b', null, '2 nuits'), ' au même endroit au plus sans l’accord du propriétaire (plus en montagne, loin de tout) ;'),
+        el('li', null, 'pas de feu en forêt ou près d’une forêt du ', el('b', null, '15 avril au 15 septembre'), ' : réchaud seulement ;'),
+        el('li', null, 'on repart sans laisser de trace, déchets compris.')));
+    document.body.append(card);
   }
 
   function recapRow(kind, label, meta, open) {
