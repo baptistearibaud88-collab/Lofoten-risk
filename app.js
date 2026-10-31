@@ -919,7 +919,7 @@
   function openSummit(s) {
     resetPanel();
     stopAnim(true); setActive(null); setTabs('summits', true); unfoldPanel();
-    const { ids, pts, tops, base, last, climbS, climbM, hrs } = summitStats(s);
+    const { ids, pts, tops, last, climbS, climbM, hrs } = summitStats(s);
     highlight(ids);
     fitPts(pts, 13.2);
     summitPopup(s);
@@ -928,11 +928,12 @@
     const summary = [
       el('p', { class: 'title-meta' }, (s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m au GPS · ${nf(s.hauteur_officielle_m)} m officiels` : `${nf(s.alt_gps_m)} m au GPS`)
         + (several ? ` · sortie depuis ${ACTS[ids[0]].name}` : '')),
-      el('dl', { class: 'title-kv' },
-        kvItem('Pied de la montée', nf(base.alt), 'm'), kvItem(tops.length > 1 ? `${s.sommet} à` : 'Au sommet à', s.heure.slice(11, 16)),
-        kvItem('Montée', hms(climbS)), kvItem('D+ de la montée', nf(climbM), 'm'),
-        kvItem('Vitesse verticale', nf(climbM / Math.max(1 / 60, climbS / 3600)), 'm/h'), kvItem('FC max', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'),
-        kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('D+ de la sortie', nf(last.dplus), 'm'), kvItem('Calories', nf(last.kcal), 'kcal'))];
+      // two rows of four: the outing at a glance, then the climb itself
+      el('dl', { class: 'title-kv kv4' },
+        kvItem('D+ sortie', nf(last.dplus), 'm'), kvItem('Vit. verticale', nf(climbM / Math.max(1 / 60, climbS / 3600)), 'm/h'),
+        kvItem('FC max', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'), kvItem(tops.length > 1 ? `${s.sommet} à` : 'Au sommet à', s.heure.slice(11, 16)),
+        kvItem('Montée', hms(climbS)), kvItem('D+ montée', nf(climbM), 'm'),
+        kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('Calories', nf(last.kcal), 'kcal'))];
     const pl = player(pts, { view: VIEW.summit, keepPopup: true, summary, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
       eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
