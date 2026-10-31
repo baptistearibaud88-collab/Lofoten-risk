@@ -642,6 +642,7 @@ body.base-topo .warn-ink { color: #a07800 !important; }
 .fx-rock { margin-top: 8px; }
 /* photo and info icons: dark versions on the satellite map, light ones on the topo map */
 .ph-bg { fill: #2bb3ac; stroke: #fff; stroke-width: 1.6; }
+.fav .ph-bg { stroke: #e2ad35; stroke-width: 2.2; }
 .ph-cam { fill: #111418; }
 .ph-lens { fill: #2bb3ac; }
 .in-bg { fill: #1b2328; stroke: #e9eef0; stroke-width: 1.6; }
