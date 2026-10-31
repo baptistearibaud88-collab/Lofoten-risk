@@ -7,7 +7,7 @@
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  const COL = { pack: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff' };
+  const COL = { pack: '#3fd0c9', camp: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff', finish: '#111418' };
   const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   /* A summit's outing = the trail activities of that day that lead to it.
@@ -18,7 +18,18 @@
      the end of one activity and the start of the next, through a few points on the water
      (here: down Kjerkfjorden, then west along the shore to Vindstad). */
   const BOATS = { 'horseid_kirkefjord>vindstad_bunes': { label: 'Bateau Kirkefjord → Vindstad',
-    via: [[13.0206, 67.9869], [13.0249, 67.9788], [13.0290, 67.9706], [13.0297, 67.9636], [13.0225, 67.9601], [13.0120, 67.9589]] } };
+    via: [[13.0202, 67.9871], [13.0264, 67.9784], [13.0316, 67.9702], [13.0353, 67.9630], [13.0349, 67.9583], [13.0272, 67.9559], [13.0152, 67.9566]] } };
+
+  /* villages named on the satellite map (the topo map has its own labels) */
+  const VILLAGES = [
+    { name: 'Napp', lat: 68.1283, lon: 13.4382, beside: true }, { name: 'Nusfjord', lat: 68.0347, lon: 13.3495, beside: true },
+    { name: 'Nesland', lat: 68.0032, lon: 13.2852 }, { name: 'Ramberg', lat: 68.0899, lon: 13.2299 },
+    { name: 'Fredvang', lat: 68.0841, lon: 13.1667 }, { name: 'Reine', lat: 67.9328, lon: 13.0885 },
+    { name: 'Sørvågen', lat: 67.8935, lon: 13.0240, beside: true }, { name: 'Å', lat: 67.8797, lon: 12.9825 },
+  ];
+  /* arrival of the whole traverse: last point of the last activity */
+  const LAST_ACT = T.acts[T.acts.length - 1];
+  const FINISH = { lon: LAST_ACT.pts[LAST_ACT.pts.length - 1][0], lat: LAST_ACT.pts[LAST_ACT.pts.length - 1][1] };
 
   /* camera direction when flying to a camp, where the default angle hides the tent */
   const CAMP_BEARING = { 'Bunes beach': -125 };
@@ -123,8 +134,27 @@
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
     const [x, y] = key.split('>'), A = ACTS[x].pts[ACTS[x].pts.length - 1], B = ACTS[y].pts[0];
     const arc = boatPath([A[0], A[1]], [B[0], B[1]], b.via);
-    return { type: 'Feature', properties: { id: `boat:${key}`, sac: 'bateau', name: b.label, km: arcKm(arc) }, geometry: { type: 'LineString', coordinates: arc } };
+    return { type: 'Feature', properties: { id: `boat:${key}`, sac: 'bateau', name: b.label, km: arcKm(arc) }, geometry: { type: 'MultiLineString', coordinates: dashes(arc, 120, 85) } };
   });
+  /* cut a line into dashes (metres) so each dash can carry its own dark outline */
+  function dashes(line, dash, gap) {
+    const out = [];
+    let cur = [line[0]], left = dash, on = true;
+    for (let i = 1; i < line.length; i++) {
+      let a = line[i - 1];
+      const b = line[i];
+      let seg = Math.hypot((b[0] - a[0]) * Math.cos(a[1] * Math.PI / 180) * 111320, (b[1] - a[1]) * 110540);
+      while (seg > left) {
+        const f = left / seg, q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+        if (on) { cur.push(q); out.push(cur); } else cur = [q];
+        on = !on; seg -= left; left = on ? dash : gap; a = q;
+      }
+      left -= seg;
+      if (on) cur.push(b);
+    }
+    if (on && cur.length > 1) out.push(cur);
+    return out;
+  }
   function idxAt(pts, km) {          // last point at or before km
     let lo = 0, hi = pts.length - 1;
     while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (pts[mid].km <= km) lo = mid; else hi = mid - 1; }
@@ -168,6 +198,8 @@
       const last = avec.length ? avec[avec.length - 1] : acts[acts.length - 1], r = span.get(last.id);
       if (arr && r && (last.sac === 'avec' || near(last.pts[last.pts.length - 1], arr))) add(r.l, arr);
     }
+    const lastIdx = pts.map(p => p.id).lastIndexOf(LAST_ACT.id);
+    if (lastIdx >= 0 && lastIdx === pts.length - 1) out.push({ km: pts[lastIdx].km, type: 'finish' });
     return out.sort((a, b) => a.km - b.km);
   }
   function movAt(pts, km) {
@@ -502,7 +534,7 @@
   }
 
   /* ---------- player: buttons, live counters, profile in the title, pace in the panel ---------- */
-  const SPEEDS = [1, 2, 4, 8];
+  const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.5, 2, 2.5, 3];
   const CAMS = [['drone', 'Drone'], ['orbit', 'Orbite'], ['fixed', 'Fixe']];
 
   function player(pts, opts) {
@@ -537,7 +569,8 @@
 
     const playBtn = el('button', { type: 'button', class: 'play' }, '▶ Lancer');
     const speedBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Vitesse' }, '×1');
-    speedBtn.addEventListener('click', () => { state.speed = SPEEDS[(SPEEDS.indexOf(state.speed) + 1) % SPEEDS.length]; speedBtn.textContent = `×${state.speed}`; if (anim) anim.speed = state.speed; });
+    const speeds = opts.speeds || SPEEDS;
+    speedBtn.addEventListener('click', () => { state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length]; speedBtn.textContent = `×${nf(state.speed, state.speed % 1 ? 1 : 0)}`; if (anim) anim.speed = state.speed; });
     const camBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Mode de caméra' }, `Caméra : ${CAMS[0][1]}`);
     camBtn.addEventListener('click', () => {
       const i = (CAMS.findIndex(c => c[0] === state.cam) + 1) % CAMS.length;
@@ -642,7 +675,7 @@
     stopAnim(true); setActive(null); highlight([]); setTabs(null, false); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
     const pts = buildSeq(T.acts.map(a => a.id));
-    const pl = player(pts, { view: VIEW.trek, paceBin: 5, showWhere: true, marks: [], onEnd: () => overview(),
+    const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(),
       eyebrow: '14 → 22 juin 2026 · 24 enregistrements', name: 'Toute la traversée' });
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
@@ -838,8 +871,11 @@
 
     map.addSource('trace', { type: 'geojson', data: { type: 'FeatureCollection', features: T.trace.features.concat(BOAT_FEATURES) } });
     const notBoat = ['!=', ['get', 'sac'], 'bateau'];
-    map.addLayer({ id: 'trace-boat', type: 'line', source: 'trace', filter: ['==', ['get', 'sac'], 'bateau'], layout: { 'line-cap': 'round' },
-      paint: { 'line-color': COL.boat, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 4], 'line-dasharray': [1.2, 1.6], 'line-opacity': 0.9 } });
+    const isBoat = ['==', ['get', 'sac'], 'bateau'];
+    map.addLayer({ id: 'trace-boat-casing', type: 'line', source: 'trace', filter: isBoat, layout: { 'line-cap': 'round' },
+      paint: { 'line-color': '#0b1014', 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 4, 14, 7.5] } });
+    map.addLayer({ id: 'trace-boat', type: 'line', source: 'trace', filter: isBoat, layout: { 'line-cap': 'round' },
+      paint: { 'line-color': COL.boat, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 4.5] } });
     map.addLayer({ id: 'trace-casing', type: 'line', source: 'trace', filter: notBoat, layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': COL.casing, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 4.5, 14, 9], 'line-opacity': 0.85 } });
     map.addLayer({ id: 'trace', type: 'line', source: 'trace', filter: notBoat, layout: { 'line-join': 'round', 'line-cap': 'round' },
@@ -849,7 +885,7 @@
     map.addSource('head', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
     map.addLayer({ id: 'anim-casing', type: 'line', source: 'anim', filter: ['!=', ['get', 'sac'], 2], layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': COL.casing, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 6, 14, 11] } });
-    map.addLayer({ id: 'anim', type: 'line', source: 'anim', layout: { 'line-join': 'round', 'line-cap': 'round' },
+    map.addLayer({ id: 'anim', type: 'line', source: 'anim', filter: ['!=', ['get', 'sac'], 2], layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': ['match', ['get', 'sac'], 1, COL.pack, 2, COL.boat, COL.trail], 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 3.5, 14, 6.5] } });
     map.addLayer({ id: 'head', type: 'circle', source: 'head',
       paint: { 'circle-radius': 7, 'circle-color': ['match', ['get', 'sac'], 1, COL.pack, COL.trail], 'circle-stroke-color': COL.casing, 'circle-stroke-width': 3 } });
@@ -858,18 +894,21 @@
        glued to their coordinates on the 3D relief, exactly like the trace */
     map.addImage('peak', peakImage(), { pixelRatio: 2 });
     camps.forEach((c, i) => map.addImage(`camp-${c.id}`, campImage(String(i + 1)), { pixelRatio: 2 }));
+    map.addImage('finish', finishImage(), { pixelRatio: 2 });
+    VILLAGES.forEach(v => map.addImage(`village-${v.name}`, villageImage(v.name, v.beside), { pixelRatio: 2 }));
+    map.addSource('villages', { type: 'geojson', data: { type: 'FeatureCollection', features: VILLAGES.map(v =>
+      ({ type: 'Feature', properties: { icon: `village-${v.name}` }, geometry: { type: 'Point', coordinates: [v.lon, v.lat] } })) } });
+    map.addLayer({ id: 'villages', type: 'symbol', source: 'villages', minzoom: 9,
+      layout: { 'icon-image': ['get', 'icon'], 'icon-anchor': 'left', 'icon-offset': [-4, 0], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' },
+      paint: { 'icon-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0, 9.6, 0.9] } });
     map.addSource('pois', { type: 'geojson', data: { type: 'FeatureCollection', features: [
       ...camps.map(c => ({ type: 'Feature', properties: { kind: 'camp', cid: c.id, icon: `camp-${c.id}` }, geometry: { type: 'Point', coordinates: [c.lon, c.lat] } })),
       ...T.summits.map(x => ({ type: 'Feature', properties: { kind: 'peak', name: x.sommet, icon: 'peak' }, geometry: { type: 'Point', coordinates: [x.lon, x.lat] } })),
+      { type: 'Feature', properties: { kind: 'finish', icon: 'finish' }, geometry: { type: 'Point', coordinates: [FINISH.lon, FINISH.lat] } },
     ] } });
-    map.addSource('pings', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    const ringPaint = { 'circle-radius': ['get', 'r'], 'circle-color': ['get', 'col'], 'circle-opacity': ['get', 'fo'],
-      'circle-stroke-color': ['get', 'col'], 'circle-stroke-width': 2.5, 'circle-stroke-opacity': ['get', 'o'], 'circle-pitch-alignment': 'viewport' };
-    map.addLayer({ id: 'pings-camp', type: 'circle', source: 'pings', filter: ['==', ['get', 'kind'], 'camp'], paint: ringPaint });
-    map.addLayer({ id: 'pings-peak', type: 'circle', source: 'pings', filter: ['==', ['get', 'kind'], 'peak'],
-      paint: { ...ringPaint, 'circle-translate': [0, -9], 'circle-translate-anchor': 'viewport' } });
     const sym = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-pitch-alignment': 'viewport' };
     map.addLayer({ id: 'peaks', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'peak'], layout: { ...sym, 'icon-anchor': 'bottom' } });
+    map.addLayer({ id: 'finish', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'finish'], layout: sym });
     map.addLayer({ id: 'camps', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'camp'], layout: { ...sym, 'icon-size': 1 } });
     map.on('click', 'camps', e => { const c = camps.find(x => x.id === e.features[0].properties.cid); if (c) openCamp(c); });
     map.on('click', 'peaks', e => { const x = T.summits.find(q => q.sommet === e.features[0].properties.name); if (x) openSummit(x); });
@@ -908,10 +947,34 @@
     g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 5; g.shadowOffsetY = 1.5;
     g.beginPath(); g.arc(W / 2, W / 2, 12, 0, 2 * Math.PI); g.fillStyle = '#ffffff'; g.fill();
     g.shadowColor = 'transparent';
-    g.beginPath(); g.arc(W / 2, W / 2, 10, 0, 2 * Math.PI); g.fillStyle = COL.pack; g.fill();
+    g.beginPath(); g.arc(W / 2, W / 2, 10, 0, 2 * Math.PI); g.fillStyle = COL.camp; g.fill();
     g.fillStyle = '#fff'; g.font = '700 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, W / 2, W / 2 + 0.5);
     return g.getImageData(0, 0, W * S, W * S);
+  }
+  function finishImage() {   // round badge with a chequered flag
+    const S = 2, W = 32, cv = document.createElement('canvas'); cv.width = cv.height = W * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 5; g.shadowOffsetY = 1.5;
+    g.beginPath(); g.arc(16, 16, 13, 0, 2 * Math.PI); g.fillStyle = '#fff'; g.fill(); g.shadowColor = 'transparent';
+    g.beginPath(); g.arc(16, 16, 11, 0, 2 * Math.PI); g.fillStyle = COL.finish; g.fill();
+    g.fillStyle = '#fff'; g.fillRect(10, 8, 1.6, 16);                       // pole
+    const x0 = 11.6, y0 = 8.5, c = 2.6;                                       // 4 × 3 chequers
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? COL.finish : '#fff'; g.fillRect(x0 + i * c, y0 + j * c, c, c); }
+    g.strokeStyle = '#fff'; g.lineWidth = .8; g.strokeRect(x0, y0, 4 * c, 3 * c);
+    return g.getImageData(0, 0, W * S, W * S);
+  }
+  function villageImage(name, beside) {   // small dot + name, white with a dark halo
+    const S = 2, font = '600 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    const probe = document.createElement('canvas').getContext('2d'); probe.font = font;
+    const x0 = beside ? 20 : 11, W = Math.ceil(x0 + probe.measureText(name).width + 6), H = 18;
+    const cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+    const g = cv.getContext('2d'); g.scale(S, S);
+    g.font = font; g.textBaseline = 'middle';
+    g.shadowColor = 'rgba(0,0,0,.85)'; g.shadowBlur = 3;
+    if (!beside) { g.beginPath(); g.arc(4, H / 2, 2.4, 0, 2 * Math.PI); g.fillStyle = 'rgba(255,255,255,.95)'; g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(name, x0, H / 2 + .5); g.fillText(name, x0, H / 2 + .5);
+    return g.getImageData(0, 0, W * S, H * S);
   }
   function peakImage() {
     const S = 2, W = 24, H = 22, cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
@@ -942,33 +1005,33 @@
       .addTo(map);
     if (ttl) { const mine = popup; popupTimer = setTimeout(() => { if (popup === mine) { mine.remove(); popup = null; } }, ttl); }
   }
-  /* checkpoint: two rings ripple out of the camp or summit (map circles, so they sit on the relief too) */
-  const pings = [];
-  let pingLoop = 0;
-  function ping(kind, lon, lat) {
-    if (reduceMotion || !map || !map.getSource('pings')) return;
-    pings.push({ kind, lon, lat, col: kind === 'peak' ? COL.trail : COL.pack, t0: performance.now() });
-    if (!pingLoop) pingLoop = requestAnimationFrame(drawPings);
+  /* checkpoint: one shockwave, a flash of light, an aura and a burst of sparks,
+     like a chest opening in a video game. It follows its point on the map while it plays. */
+  const fxLayer = document.body.appendChild(el('div', { class: 'fx-layer', 'aria-hidden': 'true' }));
+  const bursts = [];
+  let fxLoop = 0;
+  function burst(kind, lon, lat) {
+    if (reduceMotion || !map) return;
+    const node = el('div', { class: `fx fx-${kind}` },
+      el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }),
+      Array.from({ length: 12 }, (_, i) => el('i', { class: 'fx-spark', style: `--a:${i * 30 + (i % 2 ? 9 : -6)}deg;--d:${(i % 3) * 40}ms;--r:${46 + (i % 4) * 9}px` })));
+    fxLayer.append(node);
+    bursts.push({ node, lon, lat, dy: kind === 'peak' ? -9 : 0, t0: performance.now() });
+    if (!fxLoop) fxLoop = requestAnimationFrame(moveBursts);
   }
-  function drawPings(now) {
-    const feats = [];
-    for (let i = pings.length - 1; i >= 0; i--) {
-      const q = pings[i], t = (now - q.t0) / 1000;
-      if (t > 2.9) { pings.splice(i, 1); continue; }
-      [0, 0.35].forEach(delay => {
-        const u = t - delay;
-        if (u < 0 || u > 2.5) return;
-        const k = (u % 1.25) / 1.25, e = 1 - Math.pow(1 - k, 3);
-        feats.push({ type: 'Feature', properties: { kind: q.kind, col: q.col, r: 9 + 36 * e, o: 0.95 * (1 - k), fo: 0.18 * (1 - k) },
-          geometry: { type: 'Point', coordinates: [q.lon, q.lat] } });
-      });
+  function moveBursts(now) {
+    for (let i = bursts.length - 1; i >= 0; i--) {
+      const b = bursts[i];
+      if (now - b.t0 > 1800) { b.node.remove(); bursts.splice(i, 1); continue; }
+      const pt = map.project([b.lon, b.lat]);
+      b.node.style.transform = `translate(${pt.x.toFixed(1)}px, ${(pt.y + b.dy).toFixed(1)}px)`;
     }
-    map.getSource('pings').setData({ type: 'FeatureCollection', features: feats });
-    pingLoop = pings.length ? requestAnimationFrame(drawPings) : 0;
+    fxLoop = bursts.length ? requestAnimationFrame(moveBursts) : 0;
   }
   fireCheckpoint = (c, keepPopup) => {
-    if (c.type === 'summit') { ping('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
-    else ping('camp', c.c.lon, c.c.lat);
+    if (c.type === 'summit') { burst('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
+    else if (c.type === 'finish') burst('finish', FINISH.lon, FINISH.lat);
+    else burst('camp', c.c.lon, c.c.lat);
   };
 
   /* boat head: a small boat that sails the arc */

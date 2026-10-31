@@ -18,7 +18,7 @@
   --accent-soft: rgba(116, 227, 223, .20);
   --on-accent: #0a2a2c;
   --sun: #ffc65c;          /* midnight sun */
-  --pack: #86a6f2;         /* UI marks only: map lines keep the deep blue */
+  --pack: #3fd0c9;         /* walking with the pack: turquoise, like the map line */
   --trail: #ff6a50;
   --camp: #1d3f8f;
   --casing: #f4f7fa;
@@ -47,7 +47,7 @@ body.base-topo {
   --accent-soft: rgba(11, 122, 131, .14);
   --on-accent: #ffffff;
   --sun: #c97a12;
-  --pack: #1d3f8f;
+  --pack: #16a9a1;
   --trail: #e0472f;
   --edge: rgba(255, 255, 255, .65);
   --tshadow: none;
@@ -202,10 +202,11 @@ body.panel-folded .panel-inner { display: none; }
 .camp-num {
   width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
   font-family: var(--font-num); font-size: 12px; font-weight: 700; color: #fff; background: var(--camp);
+  box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0, 0, 0, .35); text-shadow: none;
 }
-.num-peak { background: none; }
+.num-peak { background: none; box-shadow: none; }
 .num-peak svg { width: 18px; height: 16px; }
-.num-day { border-radius: 7px; width: 28px; background: var(--accent); color: var(--on-accent); text-shadow: none; }
+.num-day { border-radius: 7px; width: 28px; background: var(--accent); color: var(--on-accent); text-shadow: none; box-shadow: none; }
 .camp-name { font-weight: 600; font-size: 15.5px; letter-spacing: -.01em; min-width: 0; }
 .camp-dates { font-size: 13px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .stage-row { grid-template-columns: 28px minmax(0, 1fr) 10px; }
@@ -308,7 +309,7 @@ body.panel-folded .panel-inner { display: none; }
 }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { display: inline-block; width: 18px; height: 4px; border-radius: 2px; }
-.sw-avec { background: #1d3f8f; box-shadow: 0 0 0 1.5px var(--casing); }
+.sw-avec { background: #3fd0c9; box-shadow: 0 0 0 1.5px var(--casing); }
 .sw-sans { background: var(--trail); box-shadow: 0 0 0 1.5px var(--casing); }
 .sw-camp { width: 10px; height: 10px; border-radius: 50%; background: #1d3f8f; box-shadow: 0 0 0 1.5px var(--casing); }
 .sw-peak { width: 0; height: 0; border-radius: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid var(--trail); position: relative; }
@@ -409,8 +410,51 @@ body:not(.base-topo) .maplibregl-ctrl-group button + button { border-top-color: 
 }
 .m-boat[hidden] { display: none; }
 .m-boat svg { width: 18px; height: 18px; }
-.sw-boat { background: repeating-linear-gradient(90deg, #8fd3ff 0 5px, transparent 5px 8px); box-shadow: none; height: 3px; }
+.sw-boat { width: 20px; height: 4px; background: repeating-linear-gradient(90deg, #8fd3ff 0 6px, transparent 6px 9px); filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 .5px #000); }
+.sw-finish { width: 12px; height: 12px; border-radius: 50%; background: conic-gradient(#fff 0 25%, #111418 0 50%, #fff 0 75%, #111418 0) 50% / 6px 6px; box-shadow: 0 0 0 1.5px #111418, 0 0 0 3px #fff; }
 .pace .b-boat { fill: #8fd3ff; }
 @media (prefers-reduced-motion: reduce) {
   .peak-pop .maplibregl-popup-content { animation: none; }
+}
+
+/* ---------- checkpoint burst ---------- */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.fx { position: absolute; left: 0; top: 0; width: 0; height: 0; --c: #ff5a3c; --s: #ffd27a; }
+.fx-camp { --c: #3a6bff; --s: #bcd2ff; }
+.fx-finish { --c: #ffffff; --s: #ffe08a; }
+.fx > i { position: absolute; left: 0; top: 0; display: block; }
+.fx-aura {
+  width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 70%, transparent) 0, color-mix(in srgb, var(--c) 25%, transparent) 40%, transparent 68%);
+  animation: fx-aura 1.5s ease-out forwards;
+}
+.fx-flash {
+  width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 22%, var(--s) 38%, color-mix(in srgb, var(--c) 60%, transparent) 55%, transparent 72%);
+  animation: fx-flash .55s ease-out forwards; mix-blend-mode: screen;
+}
+.fx-wave {
+  width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; box-sizing: border-box;
+  border: 4px solid var(--c); box-shadow: 0 0 14px var(--c), inset 0 0 10px var(--c);
+  animation: fx-wave .95s cubic-bezier(.1, .75, .25, 1) forwards;
+}
+.fx-beam {
+  width: 16px; height: 120px; margin-left: -8px; margin-top: -120px; transform-origin: 50% 100%;
+  background: linear-gradient(to top, color-mix(in srgb, var(--c) 80%, transparent), rgba(255, 255, 255, .85) 35%, transparent);
+  border-radius: 8px; filter: blur(3px); opacity: 0;
+  animation: fx-beam 1.2s ease-out forwards;
+}
+.fx-spark {
+  width: 4px; height: 13px; margin: -6.5px 0 0 -2px; border-radius: 2px;
+  background: #fff; box-shadow: 0 0 6px var(--s), 0 0 12px var(--c); opacity: 0;
+  transform: rotate(var(--a)) translateY(-8px);
+  animation: fx-spark .8s cubic-bezier(.15, .7, .3, 1) var(--d) forwards;
+}
+@keyframes fx-aura { 0% { transform: scale(.3); opacity: 0; } 18% { opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+@keyframes fx-flash { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes fx-wave { 0% { transform: scale(.35); opacity: 1; border-width: 5px; } 100% { transform: scale(4.2); opacity: 0; border-width: 1px; } }
+@keyframes fx-beam { 0% { transform: scaleY(0); opacity: .95; } 25% { transform: scaleY(1); opacity: .9; } 100% { transform: scaleY(1.15); opacity: 0; } }
+@keyframes fx-spark {
+  0% { opacity: 1; transform: rotate(var(--a)) translateY(-8px) scaleY(1.2); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) scaleY(.35); }
 }
