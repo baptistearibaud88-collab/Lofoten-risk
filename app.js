@@ -137,7 +137,7 @@
     let ids, where, open, replay;
     if (a.rubrique === 'bivouac') {   // a point at a camp (reference = camp number)
       const c = camps.find(x => String(x.id) === String(a.reference)), n = c.nights[0];
-      return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: a.heure || null,   // a camp photo has no trace: its time comes from photos.csv
+      return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: a.heure ? String(a.heure).split(';')[0] : null, heures: a.heure || null,   // a camp photo has no trace: its times come from photos.csv
         day: n.next_day - 1, where: `au bivouac ${c.name}`,
         label: `Bivouac ${camps.indexOf(c) + 1} · ${c.name} · ${nightLabel(n.night, n.wake)}`, open: () => openCamp(c), replay: 'Voir le bivouac' };
     }
@@ -556,12 +556,17 @@
 
   /* photos of a point: stacked in the panel, a tap opens them full screen */
   const photoFiles = a => (a.fichier || '').split(';').map(x => x.trim()).filter(Boolean);
+  // time of each photo: one per file for the camp photos (photos.csv), else the passage on the trace
+  const photoTimes = a => { const f = photoFiles(a), t = a.heures ? String(a.heures).split(';') : [];
+    return f.map((_, i) => (t[i] || t[0] || a.heure || '').trim() || null); };
   function photoGallery(a) {
-    const files = photoFiles(a);
+    const files = photoFiles(a), times = photoTimes(a);
     if (!files.length) return el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, 'Photo à ajouter'));
+    const items = files.map((f, i) => ({ src: f, title: a.titre, sub: [`J${a.day}`, times[i]].filter(Boolean).join(' · ') }));
     return el('div', { class: 'gallery' }, files.map((f, i) =>
-      el('button', { type: 'button', class: 'gallery-item', 'aria-label': `Agrandir la photo ${i + 1}`, onclick: () => lightbox(files, i) },
-        el('img', { src: f, alt: `${a.titre}, photo ${i + 1}`, loading: 'lazy', decoding: 'async' }))));
+      el('button', { type: 'button', class: 'gallery-item', 'aria-label': `Agrandir la photo ${i + 1}`, onclick: () => lightbox(items, i) },
+        el('img', { src: f, alt: `${a.titre}, photo ${i + 1}`, loading: 'lazy', decoding: 'async' }),
+        times[i] ? el('span', { class: 'ph-time' }, times[i]) : null)));
   }
   /* full-screen viewer. items: file paths, or { src, title, sub, point } to show a caption
      and a way back to the map. Arrows, keyboard and swipe go from one photo to the next. */
@@ -684,7 +689,7 @@
      that photo; its arrows then run through all of them in order. */
   function openPhotoWall() {
     const items = [];
-    PHOTOS.forEach(a => photoFiles(a).forEach(f => items.push({ src: f, mini: f.replace('photos/', 'photos/mini/'), title: a.titre, sub: a.label, point: a })));
+    PHOTOS.forEach(a => { const t = photoTimes(a); photoFiles(a).forEach((f, i) => items.push({ src: f, mini: f.replace('photos/', 'photos/mini/'), title: a.titre, sub: [a.label, t[i]].filter(Boolean).join(' · '), point: a })); });
     const cols = innerWidth < 700 ? 4 : 7;
     const close = () => { wall.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
@@ -797,7 +802,7 @@
             `Poids du sac au départ : estimation de ${nf(T.depart ? T.depart.sac_kg : 0, 1)} kg sans eau, puis consommation jour après jour.`),
           sec('Récit et photos',
             'Alertes, infos, photos et leur direction de vue : placées et racontées par moi, à partir de la trace.',
-            'Photos : iPhone et GoPro, réduites et publiées sans métadonnées.'),
+            'Photos : iPhone et GoPro ; heure de prise de vue lue sur la trace GPS, ou relevée sur la photo pour les bivouacs.'),
           sec('Carte',
             'Satellite : Esri World Imagery (Maxar, Earthstar Geographics). Carte topo : OpenTopoMap, © contributeurs OpenStreetMap (CC-BY-SA).',
             'Relief 3D : Mapzen / AWS Terrain Tiles. Moteur : MapLibre GL ; site hébergé sur GitHub Pages.'))));
