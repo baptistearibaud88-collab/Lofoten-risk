@@ -779,7 +779,7 @@
         el('div', { class: 'src-body' },
           sec('Trace et effort',
             `Montre GPS Garmin Forerunner 255 Music : positions, altitude, fréquence cardiaque et calories, 24 activités enregistrées (fichiers .FIT bruts).`,
-            `Distance : ${nf(S.strava_distance)} km selon Strava, ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé : ${nf(S.dplus_watch)} m selon la montre (altimètre barométrique).`,
+            `Distance totale : ${nf(S.strava_distance)} km, dont ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé : ${nf(S.dplus_watch)} m selon la montre (altimètre barométrique).`,
             'Passages non enregistrés (ferry Kirkefjord → Vindstad, liaisons) : sautés dans les chiffres ; le ferry est dessiné en arc sur la carte.',
             'Allure ajustée à la pente : coût énergétique de la course en pente, Minetti et al. (2002).'),
           sec('Nuits et corps',
