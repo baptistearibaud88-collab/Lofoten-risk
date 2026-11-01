@@ -159,7 +159,9 @@
       a = { ...a, km: Math.round(seq[best].wk * 10) / 10, atTop: true };
     }
     const i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
-    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: p.heure, day: p.day, where, open, replay,
+    // a time given in photos.csv (one per file) wins over the passage on the trace
+    const given = a.heure ? String(a.heure).split(';').map(x => x.trim()) : null;
+    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: given ? given[0] : p.heure, heures: given ? a.heure : null, day: p.day, where, open, replay,
       label: a.atTop ? `J${p.day} · au sommet du ${a.reference}` : `J${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
