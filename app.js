@@ -361,8 +361,24 @@
     b.style.left = `${Math.round(r.right + 10)}px`;
     b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
   }
+  // "Soleil de minuit" at the right end of the title line, clear of the fold chevron:
+  // iPad / computer under the chevron, against the right edge; phone just left of the chevron
+  function placeSun() {
+    const b = document.getElementById('btn-sun'), h = document.querySelector('#title-default h1');
+    if (!b || !h || !b.offsetParent) return;
+    const r = document.createRange(); r.selectNodeContents(h);
+    const line = r.getClientRects()[0], box = b.offsetParent.getBoundingClientRect();
+    const fold = document.getElementById('btn-title-fold').getBoundingClientRect();
+    if (matchMedia('(max-width: 600px)').matches) {
+      b.style.right = `${Math.round(box.right - fold.left + 4)}px`;
+      b.style.top = `${Math.round(fold.top + fold.height / 2 - box.top - b.offsetHeight / 2)}px`;
+    } else {
+      b.style.right = '';
+      b.style.top = `${Math.round(Math.max(line.top - box.top + (line.height - b.offsetHeight) / 2, fold.bottom - box.top + 2))}px`;
+    }
+  }
   function layoutChanged() {
-    placeDepart(); placeSources();
+    placeDepart(); placeSources(); placeSun();
     const root = document.documentElement.style;
     const pr = panelBox.getBoundingClientRect();
     root.setProperty('--title-b', `${Math.round(document.getElementById('title').getBoundingClientRect().bottom)}px`);   // phone: compass hangs under the title
@@ -918,6 +934,148 @@
         el('li', null, 'pas de feu en forêt ou près d’une forêt du ', el('b', null, '15 avril au 15 septembre'), ' : réchaud seulement ;'),
         el('li', null, 'on repart sans laisser de trace, déchets compris.')));
     document.body.append(card);
+  }
+
+  /* the midnight sun: a short explanation and an animated panorama of the sun's path (T.soleil, src/soleil.py) */
+  function openSun() {
+    const S = T.soleil; if (!S) return;
+    const old = document.querySelector('.sun-modal'); if (old) { old.remove(); return; }
+    let raf = 0;
+    const close = () => { cancelAnimationFrame(raf); box.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    const dateFr = iso => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    const hFr = t => `${parseInt(t, 10)}\u00a0h\u00a0${t.slice(3)}`;      // 01:09 -> 1 h 09
+    const deg = (v, d = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${nf(Math.abs(v), d)}°`;
+    const dir = az => ['nord', 'nord-est', 'est', 'sud-est', 'sud', 'sud-ouest', 'ouest', 'nord-ouest'][Math.round(az / 45) % 8];
+
+    /* panorama: south (through west) on the left, north in the middle, south (through east) on the right */
+    const narrow = window.innerWidth <= 600;
+    const W = narrow ? 420 : 640, H = narrow ? 236 : 250, H0 = narrow ? 158 : 168, TOP = 30;
+    const A = (H0 - TOP) / Math.sqrt(46);                       // height grows with the square root of the angle: low sun readable
+    const yOf = e => H0 - A * Math.sqrt(Math.max(0, e));
+    const xOf = az => ((az - 180 + 360) % 360) / 360 * W;
+    const path = S.chemin.map(([t, az, e]) => ({ t, x: xOf(az), e }));
+    if (path[0].x > W / 2) path[0].x -= W;                      // solar noon sits on the seam
+    const sorted = [...path].sort((a, b) => a.x - b.x);
+    const pathEl = x => { let i = sorted.findIndex(p => p.x >= x); if (i <= 0) return sorted[Math.max(0, i)].e;
+      const a = sorted[i - 1], b = sorted[i]; return a.e + (b.e - a.e) * (x - a.x) / (b.x - a.x || 1); };
+    // Lofoten skyline: sharp peaks either side, open sea to the north; always under the sun's path
+    const peaks = (xs, hs) => xs.map((f, i) => { const x = f * W; return [x, Math.min(hs[i], pathEl(x) * 0.55 - 1)]; });
+    const far = peaks([0, .03, .07, .1, .14, .17, .2, .24, .27, .31, .345, .37],
+                      [9, 14, 8, 17, 10, 15, 7, 11, 5, 6, 2, 0]);
+    const farR = peaks([.62, .66, .69, .73, .76, .8, .83, .87, .9, .94, .97, 1],
+                       [0, 3, 7, 5, 12, 8, 16, 9, 18, 11, 15, 10]);
+    const nearL = peaks([0, .025, .05, .08, .1, .13, .155, .19, .22, .25], [24, 30, 18, 26, 14, 19, 9, 11, 3, 0]);
+    const nearR = peaks([.76, .79, .82, .845, .87, .9, .925, .95, .975, 1], [0, 4, 12, 8, 20, 15, 27, 19, 31, 22]);
+    const ridge = (pts, side) => {
+      const ys = pts.map(([x, e]) => `${x.toFixed(1)},${yOf(Math.max(0, e)).toFixed(1)}`);
+      return side === 'L' ? `M0,${H0} L${ys.join(' L')} L${pts[pts.length - 1][0].toFixed(1)},${H0} Z`
+                          : `M${pts[0][0].toFixed(1)},${H0} L${ys.join(' L')} L${W},${H0} Z`;
+    };
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'sun-fig', role: 'img',
+      'aria-label': `Course du soleil sur 24 heures vue de Reine le 18 juin : au plus haut ${nf(S.el_max, 1)}° plein sud, au plus bas ${nf(S.el_min[0], 1)}° plein nord, jamais sous l’horizon` });
+    const defs = sv('defs');
+    const sky = sv('linearGradient', { id: 'sun-sky', x1: 0, y1: 0, x2: 0, y2: 1 });
+    const st = [0, .62, 1].map(o => { const s = sv('stop', { offset: o }); sky.append(s); return s; });
+    const sea = sv('linearGradient', { id: 'sun-sea', x1: 0, y1: 0, x2: 0, y2: 1 });
+    const ss = [0, 1].map(o => { const s = sv('stop', { offset: o }); sea.append(s); return s; });
+    const glow = sv('radialGradient', { id: 'sun-glow' });
+    glow.append(sv('stop', { offset: 0, 'stop-color': '#ffd38a', 'stop-opacity': .75 }), sv('stop', { offset: 1, 'stop-color': '#ffd38a', 'stop-opacity': 0 }));
+    defs.append(sky, sea, glow);
+    svg.append(defs, sv('rect', { x: 0, y: 0, width: W, height: H0, fill: 'url(#sun-sky)' }),
+      sv('rect', { x: 0, y: H0, width: W, height: H - H0, fill: 'url(#sun-sea)' }));
+    for (const e of [5, 15, 30, 45]) {                          // elevation guides
+      svg.append(sv('line', { x1: 0, x2: W, y1: yOf(e), y2: yOf(e), class: 'sf-grid' }),
+        svText({ x: W - 6, y: yOf(e) - 4, class: 'sf-tick', 'text-anchor': 'end' }, `${e}°`));
+    }
+    svg.append(sv('path', { d: 'M' + sorted.map(p => `${p.x.toFixed(1)},${yOf(p.e).toFixed(1)}`).join(' L'), class: 'sf-path' }));
+    const halo = sv('circle', { r: 30, fill: 'url(#sun-glow)' });
+    const glint = sv('g', { class: 'sf-glint' });
+    for (let i = 0; i < 7; i++) glint.append(sv('rect', { x: -(12 - i * 1.4), y: H0 + 4 + i * 9, width: 2 * (12 - i * 1.4), height: 2.2, rx: 1.1 }));
+    const disc = sv('circle', { r: narrow ? 8 : 9, class: 'sf-sun' });
+    svg.append(halo, glint, disc);
+    const ridges = () => [sv('path', { d: ridge(far, 'L'), class: 'sf-far' }), sv('path', { d: ridge(farR, 'R'), class: 'sf-far' }),
+      sv('path', { d: ridge(nearL, 'L'), class: 'sf-near' }), sv('path', { d: ridge(nearR, 'R'), class: 'sf-near' })];
+    const mirror = sv('g', { class: 'sf-mirror', transform: `translate(0 ${2 * H0}) scale(1 -1)` }); mirror.append(...ridges());
+    svg.append(mirror, ...ridges());                            // the peaks and their reflection in the fjord
+    svg.append(sv('line', { x1: 0, x2: W, y1: H0, y2: H0, class: 'sf-hz' }));
+    // foreground beach and the tent
+    const bx = W / 2 - 20;
+    svg.append(sv('path', { d: `M0,${H} L0,${H - 10} Q${W * .3},${H - 30} ${W * .5},${H - 26} T${W},${H - 14} L${W},${H} Z`, class: 'sf-beach' }),
+      sv('path', { d: `M${bx - 11},${H - 24} L${bx},${H - 38} L${bx + 11},${H - 24} Z`, class: 'sf-tent' }));
+    for (const [x, l] of [[10, 'S'], [W / 4, 'O'], [W / 2, 'N'], [W * 3 / 4, 'E'], [W - 10, 'S']]) {
+      svg.append(svText({ x, y: H0 + 17, class: 'sf-card', 'text-anchor': 'middle' }, l));
+    }
+    // my moments on the path
+    for (const m of S.moments) svg.append(sv('circle', { cx: xOf(m.az), cy: yOf(m.el), r: 3.4, class: 'sf-mom' }));
+
+    const read = el('div', { class: 'sun-read' }, el('b'), el('span'));
+    const play = el('button', { type: 'button', class: 'sun-play', 'aria-label': 'Pause' });
+    play.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path class="i-pause" d="M5 3.5v9M11 3.5v9"/><path class="i-play" d="M5 3v10l8.5-5z"/></svg>';
+    const fig = el('div', { class: 'sun-figbox' }, svg, read, play);
+
+    /* sky colours follow the sun: warm and dim near the horizon, blue when high */
+    const mix = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
+    const n = path.length, MIN = 10, DAY = 18000;                // one day in 18 s
+    let u = Math.max(0, path.findIndex(p => p.t.startsWith('21:')));   // start in the evening, just before the low sun
+    let paused = matchMedia('(prefers-reduced-motion: reduce)').matches, last = 0;
+    if (paused) u = Math.max(0, path.findIndex(p => p.t === S.minuit_solaire));
+    const draw = () => {
+      const i = Math.floor(u) % n, j = (i + 1) % n, f = u - Math.floor(u);
+      const a = path[i], b = path[j];
+      const bxx = j === 0 ? b.x + W : b.x;
+      let x = a.x + (bxx - a.x) * f; if (x > W) x -= W; if (x < 0) x += W;
+      const e = a.e + (b.e - a.e) * f, y = yOf(e);
+      const t = Math.min(1, Math.max(0, e / 22)), s = t * t * (3 - 2 * t);
+      st[0].setAttribute('stop-color', mix([34, 40, 84], [58, 128, 196], s));
+      st[1].setAttribute('stop-color', mix([232, 128, 96], [146, 200, 230], s));
+      st[2].setAttribute('stop-color', mix([255, 186, 104], [196, 228, 238], s));
+      ss[0].setAttribute('stop-color', mix([120, 84, 92], [52, 110, 132], s));
+      ss[1].setAttribute('stop-color', mix([22, 30, 48], [16, 50, 66], s));
+      disc.setAttribute('cx', x); disc.setAttribute('cy', y); disc.setAttribute('fill', mix([255, 150, 70], [255, 240, 190], s));
+      halo.setAttribute('cx', x); halo.setAttribute('cy', y); halo.setAttribute('r', 26 + 22 * (1 - s));
+      glint.setAttribute('transform', `translate(${x.toFixed(1)} 0)`); glint.style.opacity = (0.85 * Math.max(0, 1 - e / 12)).toFixed(2);   // a path of light on the water only when the sun is low
+      const mins = (parseInt(a.t) * 60 + parseInt(a.t.slice(3)) + Math.round(f * MIN)) % 1440;
+      const az = (x / W * 360 + 180) % 360;
+      read.firstChild.textContent = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+      read.lastChild.textContent = `soleil à ${deg(e)}, ${dir(az)}`;
+    };
+    const tick = now => {
+      if (!last) last = now;
+      if (!paused) u = (u + (now - last) / DAY * n) % n;
+      last = now; draw(); raf = requestAnimationFrame(tick);
+    };
+    const setPlay = () => { play.classList.toggle('is-paused', paused); play.setAttribute('aria-label', paused ? 'Lecture' : 'Pause'); };
+    play.addEventListener('click', () => { paused = !paused; setPlay(); });
+    svg.addEventListener('click', () => { paused = !paused; setPlay(); });
+    setPlay(); draw(); raf = requestAnimationFrame(tick);
+
+    const moments = el('ul', { class: 'sun-moms' }, S.moments.map(m =>
+      el('li', null, el('b', null, hFr(m.heure)), el('span', null, el('em', null, `J${m.day}`), ' ', m.texte), el('i', null, deg(m.el)))));
+    const box = el('div', { class: 'sun-modal', role: 'dialog', 'aria-label': 'Le soleil de minuit' },
+      el('div', { class: 'src-card sun-card' },
+        el('header', null,
+          el('div', null, el('p', { class: 'eyebrow-sm' }, 'Au-dessus du cercle polaire'), el('h2', null, 'Soleil de minuit')),
+          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
+        el('div', { class: 'sun-scroll' },
+          fig,
+          el('p', { class: 'sun-cap' }, `Course du soleil sur 24 h, vue de Reine le 18 juin, au milieu de la traversée, horizon de mer dégagé. Points turquoise : mes heures de nuit, détaillées plus bas.`),
+          el('div', { class: 'sun-body' },
+            el('section', null,
+              el('h4', null, 'Pourquoi il ne se couche pas'),
+              el('p', null, `Les Lofoten sont entre ${nf(S.lat[0], 1)}° et ${nf(S.lat[1], 1)}° nord, à ${S.km_nord[0]}–${S.km_nord[1]} km au nord du cercle polaire (${nf(S.cercle_polaire, 2)}° N). L’axe de la Terre est incliné de ${nf(S.inclinaison, 1)}° : autour du solstice, le pôle Nord reste tourné vers le Soleil et, au nord du cercle, il ne passe plus sous l’horizon.`),
+              el('p', null, `À Reine, il ne se couche pas du `, el('b', null, `${dateFr(S.debut)} au ${dateFr(S.fin)}`), `, soit ${S.nuits} nuits. Ma traversée, du 13 au 23 juin, tombait en plein dedans, solstice du 21 juin compris.`),
+              el('p', null, `En 24 h, il fait le tour du ciel : au plus haut plein sud vers ${hFr(S.midi_solaire)} (${nf(S.el_max, 1)}°), au plus bas plein nord vers ${hFr(S.minuit_solaire)}, encore ${nf(S.el_min[0], 1)} à ${nf(S.el_min[1], 1)}° au-dessus de l’horizon. Le même jour à Paris : ${nf(S.paris.max, 1)}° à midi, mais ${nf(-S.paris.min, 1)}° sous l’horizon la nuit.`)),
+            el('section', null,
+              el('h4', null, 'Sur ma traversée'),
+              el('div', { class: 'sun-kpis' },
+                el('div', null, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
+                el('div', null, el('b', null, deg(S.plus_bas_en_marche.el)), el('span', null, `soleil le plus bas en marchant (J${S.plus_bas_en_marche.day}, ${hFr(S.plus_bas_en_marche.heure)})`))),
+              moments,
+              el('p', null, 'Pas de frontale dans le sac : la lumière ne fixait plus l’horaire. Le revers : sans nuit, je ne sentais plus la fatigue et je commençais à faire des fautes de pied.'))))));
+    box.addEventListener('click', e => { if (e.target === box) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.append(box);
   }
 
   function recapRow(kind, label, meta, open) {
@@ -1585,6 +1743,8 @@
   document.getElementById('btn-trek').addEventListener('click', openTrek);
   document.getElementById('btn-depart').addEventListener('click', openDepart);
   document.getElementById('btn-sources').addEventListener('click', openSources);
+  document.getElementById('btn-sun').addEventListener('click', openSun);
+  placeSun(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeSun);
   document.getElementById('btn-tools').addEventListener('click', () => document.body.classList.toggle('ph-tools'));
   placeSources();
   placeDepart(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeDepart);

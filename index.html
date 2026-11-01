@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#eef3f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#141b1f" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
-<link rel="stylesheet" href="style.css?v=20261101-1620">
+<link rel="stylesheet" href="style.css?v=20261101-1700">
 </head>
 <body>
 <div id="map" aria-label="Carte 3D de la traversée"></div>
@@ -21,6 +21,10 @@
   <div id="title-default">
     <p class="eyebrow foldable">Norvège · 13–23 juin 2026</p>
     <h1>Traversée des Lofoten</h1>
+    <button type="button" class="sun-btn foldable" id="btn-sun" aria-label="Le soleil de minuit">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="4.2" class="sb-disc"/><path d="M12 4.8v2M5.6 7.4l1.4 1.4M18.4 7.4 17 8.8M3.8 13.4h2M18.2 13.4h2" class="sb-rays"/><path d="M2.5 18.2h19" class="sb-hz"/></svg>
+      <span>Soleil<br>de minuit</span>
+    </button>
     <div class="foldable">
       <p class="lede">Neuf jours en bivouac 100 % autonome sous le soleil de minuit. Touche un point de la carte, une rubrique, ou lance toute la traversée.</p>
       <dl class="stats" id="stats"></dl>
@@ -104,7 +108,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
-<script src="data.js?v=20261101-1620"></script>
-<script src="app.js?v=20261101-1620"></script>
+<script src="data.js?v=20261101-1700"></script>
+<script src="app.js?v=20261101-1700"></script>
 </body>
 </html>
