@@ -1838,12 +1838,15 @@
         bang);
       life = effect === 'eboulement' ? 3900 : 2400;
     } else {
+      const star = kind === 'fav' ? el('i', { class: 'fx-star' }, (() => { const s = sv('svg', { viewBox: '0 0 40 40' });
+        s.append(sv('path', { d: 'M20 2.5 25.2 14l12.5 1.3-9.4 8.4 2.7 12.3L20 29.6 9 36l2.7-12.3-9.4-8.4L14.8 14Z' })); return s; })()) : null;
       node = el('div', { class: `fx fx-${kind}` },
-        el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }),
+        el('i', { class: 'fx-aura' }), el('i', { class: 'fx-beam' }), el('i', { class: 'fx-flash' }), el('i', { class: 'fx-wave' }), star,
         Array.from({ length: 12 }, (_, i) => el('i', { class: 'fx-spark', style: `--a:${i * 30 + (i % 2 ? 9 : -6)}deg;--d:${(i % 3) * 40}ms;--r:${46 + (i % 4) * 9}px` })));
     }
     fxLayer.append(node);
-    bursts.push({ node, lon, lat, dy: kind === 'peak' ? -9 : kind === 'warn' ? -11 : 0, t0: performance.now(), life });
+    if (kind === 'fav') life = 2600;
+    bursts.push({ node, lon, lat, dy: kind === 'peak' ? -9 : kind === 'warn' ? -11 : kind === 'fav' ? -18 : 0, t0: performance.now(), life });
     if (!fxLoop) fxLoop = requestAnimationFrame(moveBursts);
   }
   function moveBursts(now) {
@@ -1858,7 +1861,14 @@
   fireCheckpoint = (c, keepPopup) => {
     if (c.type === 'summit') { burst('peak', c.s.lon, c.s.lat); summitPopup(c.s, keepPopup ? 0 : 5000); }
     else if (c.type === 'finish') burst('finish', FINISH.lon, FINISH.lat);
-    else if (c.type === 'photo' || c.type === 'info') { if (c.type === 'photo' ? photosOn : infosOn) alertPopup(c.a, 4500, c.type); }
+    else if (c.type === 'info') { if (infosOn) alertPopup(c.a, 4500, 'info'); }
+    else if (c.type === 'photo') {
+      if (!photosOn) return;
+      if (c.a.favori === 'oui') {   // the favourite point: a golden star, a golden card, and the walker stops a moment
+        burst('fav', c.a.lon, c.a.lat); alertPopup(c.a, 5000, 'fav');
+        if (anim) anim.holdUntil = performance.now() + 2200;
+      } else if (c.a.nom_en_replay === 'oui') alertPopup(c.a, 4500, 'photo');   // only the photos whose name he wants shown
+    }
     else if (c.type === 'alert') {
       if (!alertsOn) return;
       burst('warn', c.a.lon, c.a.lat, c.a.effet);
