@@ -451,7 +451,9 @@
           el('button', { type: 'button', class: 'camp-row', onclick: () => openSummit(s) },
             el('span', { class: 'camp-num num-peak' }, peakIcon()),
             el('span', { class: 'camp-name' }, s.sommet),
-            el('span', { class: 'camp-dates' }, `${nf(s.alt_gps_m)} m`))))));
+            el('span', { class: 'camp-dates' }, `${nf(s.alt_gps_m)} m`))))),
+        el('h3', { class: 'rec-title' }, 'Records des sommets'),
+        summitRecords());
     } else if (rubric === 'photos' || rubric === 'infos') {
       const isPh = rubric === 'photos', list = isPh ? PHOTOS : INFOS;
       body.append(
@@ -741,6 +743,26 @@
       isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
       a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
     panel.scrollTop = 0;
+  }
+
+  /* records of the summits, under the list (same tiles as the nights); each one opens its summit */
+  function summitRecords() {
+    const rows = T.summits.map(s => ({ s, ...summitStats(s) }));
+    const altOf = r => r.s.hauteur_officielle_m || r.s.alt_gps_m;
+    const withT = rows.filter(r => r.s.temp_c != null);
+    const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
+    const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
+    const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
+    const cold = withT.reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a), warm = withT.reduce((a, b) => b.s.temp_c > a.s.temp_c ? b : a);
+    const recTile = (k, label, r, value) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openSummit(r.s) },
+      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value), el('span', { class: 'rec-s' }, r.s.sommet));
+    return el('div', { class: 'rec-grid' },
+      recTile('k-top', 'le plus haut', high, `${nf(altOf(high))} m`),
+      recTile('k-fast', 'montée rapide', best, `${pace(best.gap)} /km`),
+      recTile('k-hard', 'montée lente', hard, `${pace(hard.gap)} /km`),
+      recTile('k-down', 'descente rapide', down, `${pace(down.downS / 60 / down.downKm)} /km`),
+      recTile('k-cold', 'le plus froid', cold, `${nf(cold.s.temp_c, 0)} °C`),
+      recTile('k-warm', 'le plus chaud', warm, `${nf(warm.s.temp_c, 0)} °C`));
   }
 
   /* records of the nights, each one flies to its bivouac */
@@ -1255,14 +1277,14 @@
     const gap = climbS / 60 / Math.max(0.01, eqKm);      // min per flat-equivalent km
     // the way down: from the last summit of the outing to its lowest point after it
     // (Reinebringen and Helvete share one descent, from Helvete)
-    let downKm = 0, downS = 0, downM = 0;
+    let downKm = 0, downS = 0, downM = 0, downKcal = 0;
     if (k === tops.length - 1) {
       let bottom = me.i;
       for (let i = me.i; i < pts.length; i++) if (pts[i].alt < pts[bottom].alt) bottom = i;
-      downKm = pts[bottom].wk - top.wk; downS = pts[bottom].mov - top.mov; downM = top.alt - pts[bottom].alt;
+      downKm = pts[bottom].wk - top.wk; downS = pts[bottom].mov - top.mov; downM = top.alt - pts[bottom].alt; downKcal = pts[bottom].kcal - top.kcal;
     }
     return { ids, pts, tops, top, base, last, climbS, climbM, hrs, vv: climbM / Math.max(1 / 60, climbS / 3600), gap, eqKm, downKm, downS, downM,
-      climbKcal: top.kcal - base.kcal };   // calories of the climb alone (watch estimate)
+      climbKcal: top.kcal - base.kcal, climbKm: top.wk - base.wk, downKcal };   // calories of the climb alone (watch estimate)
   }
 
   function openSummit(s) {
@@ -1405,7 +1427,7 @@
     const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), cold = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a);
     const high = rows.reduce((a, b) => altOf(b) > altOf(a) ? b : a);
     const hardest = rows.reduce((a, b) => b.gap > a.gap ? b : a);
-    const W = 340, L = 96, R = 72, T0 = 2, rowH = 15 + 0.4 * ex / T.summits.length;
+    const W = 340, L = 100, R = 72, T0 = 2, rowH = 15 + 0.4 * ex / T.summits.length;
     // 1. altitude of each summit, with the air temperature up there
     const H1 = T0 + rows.length * rowH + 4, aMax = 800;
     const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
@@ -1427,31 +1449,31 @@
       s2.append(sv('circle', { cx: (L + w).toFixed(1), cy: y + 9.5, r: 5, class: `vv-dot${r === best ? ' top' : ''}${r === hardest ? ' hard' : ''}` }));
       s2.append(svText({ x: L + w + 9, y: y + 14, class: 'axis peak-val' }, `${pace(r.gap)} /km`));
     });
-    const it = (label, value) => el('span', null, label, el('b', null, value));
-    const kv = el('div', { class: 'avg-line avg-big' },
-      it('D+ montées', `${nf(rows.reduce((a, r) => a + r.climbM, 0))} m`), it('temps montée', hms(rows.reduce((a, r) => a + r.climbS, 0))),
-      it('allure ajustée', `${pace(rows.reduce((a, r) => a + r.climbS, 0) / 60 / rows.reduce((a, r) => a + r.eqKm, 0))} /km`), it('vit. verticale', `${nf(avg(rows.map(r => r.vv)))} m/h`),
-      it('calories', [nf(rows.reduce((a, r) => a + r.climbKcal, 0)), el('small', null, ' kcal')]),
-      it('par heure', [nf(rows.reduce((a, r) => a + r.climbKcal, 0) / (rows.reduce((a, r) => a + r.climbS, 0) / 3600)), el('small', null, ' kcal/h')]),
-    );
+    // totals: climbs, descents and the whole outings (each outing counted once)
+    const sum = f => rows.reduce((a, r) => a + (f(r) || 0), 0);
+    const outings = [...new Map(rows.map(r => [r.ids.join('+'), r])).values()];
+    const up = { m: sum(r => r.climbM), s: sum(r => r.climbS), km: sum(r => r.climbKm), kcal: sum(r => r.climbKcal) };
+    const dn = { m: sum(r => r.downM), s: sum(r => r.downS), km: sum(r => r.downKm), kcal: sum(r => r.downKcal) };
+    const all = { m: outings.reduce((a, r) => a + r.last.dplus, 0), s: outings.reduce((a, r) => a + r.last.mov, 0),
+      km: outings.reduce((a, r) => a + r.last.wk, 0), kcal: outings.reduce((a, r) => a + r.last.kcal, 0) };
+    const cell = (v, u) => el('td', null, v, u ? el('small', null, ` ${u}`) : null);
+    const line = (label, t, sign) => el('tr', null, el('th', null, label), cell(`${sign}${nf(t.m)}`, 'm'), cell(hms(t.s)), cell(nf(t.km, 1), 'km'), cell(nf(t.kcal), 'kcal'));
+    const kv = el('table', { class: 'tot-table' },
+      el('thead', null, el('tr', null, el('th'), el('th', null, 'dénivelé'), el('th', null, 'temps'), el('th', null, 'distance'), el('th', null, 'calories'))),
+      el('tbody', null,
+        line('Montées', up, '+'), line('Descentes', dn, '−'), line('Sorties', all, '+')));
+    const av = (label, value, unit) => el('div', null, el('span', null, label), el('b', null, value, el('small', null, ` ${unit}`)));
+    const avgs = el('div', { class: 'tot-avg' },
+      av('vit. verticale ↗', nf(up.m / (up.s / 3600)), 'm/h'), av('allure ajustée ↗', pace(up.s / 60 / sum(r => r.eqKm)), '/km'),
+      av('allure ↘', pace(dn.s / 60 / dn.km), '/km'), av('dépense ↗', nf(up.kcal / (up.s / 3600)), 'kcal/h'));
     const hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
     const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
-    const warm = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c > a.s.temp_c ? b : a);
-    // six record tiles, three per line, like the records of the nights; each one opens its summit
-    const recTile = (k, label, r, value) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openSummit(r.s) },
-      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value), el('span', { class: 'rec-s' }, r.s.sommet));
-    const superl = el('div', { class: 'rec-grid' },
-      recTile('k-top', 'le plus haut', high, `${nf(altOf(high))} m`),
-      recTile('k-fast', 'montée rapide', best, `${pace(best.gap)} /km`),
-      recTile('k-hard', 'montée lente', hard, `${pace(hard.gap)} /km`),
-      recTile('k-down', 'descente rapide', down, `${pace(down.downS / 60 / down.downKm)} /km`),
-      recTile('k-cold', 'le plus froid', cold, `${nf(cold.s.temp_c, 0)} °C`),
-      recTile('k-warm', 'le plus chaud', warm, `${nf(warm.s.temp_c, 0)} °C`));
+
     panel.replaceChildren(
       el('h2', { class: 'recap-title' }, 'Récap des sommets'),
       el('h3', null, 'Altitude et température au sommet'), s1,
-      el('h3', { title: 'Chaque morceau de montée compte comme la distance à plat qui demande le même effort (Minetti et al., 2002).' }, 'Allure ajustée à la pente, du pied au sommet'), s2, superl,
-      el('h3', null, 'Total et moyennes des montées'), kv);
+      el('h3', { title: 'Chaque morceau de montée compte comme la distance à plat qui demande le même effort (Minetti et al., 2002).' }, 'Allure ajustée à la pente, du pied au sommet'), s2,
+      el('h3', null, 'Totaux et moyennes'), kv, avgs);
     });
   }
 
