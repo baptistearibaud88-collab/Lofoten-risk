@@ -691,10 +691,14 @@ body.base-topo .sw-info::after { color: #2f6fb0; }
 .recap .records span { white-space: normal; }
 .k-hard { background: #7a1d10; box-shadow: inset 0 0 0 1.5px #ff6a50; }
 .recap-chart .vv-dot.hard { fill: #7a1d10; stroke: #ff6a50; }
-.recap .avg-big { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; padding: 12px 14px; border-radius: 14px; background: var(--fill); }
+.recap .avg-big { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; padding: 12px 14px; border-radius: 14px; background: var(--fill); }
 .recap .avg-big span { white-space: normal; display: grid; gap: 1px; font-size: 13px; }
 .recap .avg-big b { font-family: var(--font-num); font-size: 19px; }
 .k-down { background: #fff; box-shadow: inset 0 0 0 2px #e0472f; }
+.k-warm { background: #ffb347; }
+.recap .avg-line.avg-big { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.recap .avg-big b small { font-family: var(--font); font-size: 11px; font-weight: 500; color: var(--ink-3); }   /* 2 lines of 3 */
+.recap .rec-grid { margin-top: 8px; }
 
 .recap .records { font-size: 13px; gap: 3px; }
 .recap .avg-big { padding: 10px 12px; gap: 8px 12px; }

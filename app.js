@@ -1261,7 +1261,8 @@
       for (let i = me.i; i < pts.length; i++) if (pts[i].alt < pts[bottom].alt) bottom = i;
       downKm = pts[bottom].wk - top.wk; downS = pts[bottom].mov - top.mov; downM = top.alt - pts[bottom].alt;
     }
-    return { ids, pts, tops, top, base, last, climbS, climbM, hrs, vv: climbM / Math.max(1 / 60, climbS / 3600), gap, eqKm, downKm, downS, downM };
+    return { ids, pts, tops, top, base, last, climbS, climbM, hrs, vv: climbM / Math.max(1 / 60, climbS / 3600), gap, eqKm, downKm, downS, downM,
+      climbKcal: top.kcal - base.kcal };   // calories of the climb alone (watch estimate)
   }
 
   function openSummit(s) {
@@ -1430,15 +1431,22 @@
     const kv = el('div', { class: 'avg-line avg-big' },
       it('D+ montées', `${nf(rows.reduce((a, r) => a + r.climbM, 0))} m`), it('temps montée', hms(rows.reduce((a, r) => a + r.climbS, 0))),
       it('allure ajustée', `${pace(rows.reduce((a, r) => a + r.climbS, 0) / 60 / rows.reduce((a, r) => a + r.eqKm, 0))} /km`), it('vit. verticale', `${nf(avg(rows.map(r => r.vv)))} m/h`),
+      it('calories', [nf(rows.reduce((a, r) => a + r.climbKcal, 0)), el('small', null, ' kcal')]),
+      it('par heure', [nf(rows.reduce((a, r) => a + r.climbKcal, 0) / (rows.reduce((a, r) => a + r.climbS, 0) / 3600)), el('small', null, ' kcal/h')]),
     );
     const hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
     const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
-    const superl = el('div', { class: 'avg-line records' },
-      el('span', null, el('i', { class: 'k-top' }), 'le plus haut ', el('b', null, `${high.s.sommet} · ${nf(altOf(high))} m`)),
-      el('span', null, el('i', { class: 'k-fast' }), 'la montée la plus rapide ', el('b', null, `${best.s.sommet} · ${pace(best.gap)} /km`)),
-      el('span', null, el('i', { class: 'k-hard' }), 'le plus lent ', el('b', null, `${hard.s.sommet} · ${pace(hard.gap)} /km`)),
-      el('span', null, el('i', { class: 'k-down' }), 'la descente la plus rapide ', el('b', null, `${down.s.sommet} · ${pace(down.downS / 60 / down.downKm)} /km`)),
-      el('span', null, el('i', { class: 'k-cold' }), 'le plus froid ', el('b', null, `${cold.s.sommet} · ${nf(cold.s.temp_c, 0)} °C`)));
+    const warm = rows.filter(r => r.s.temp_c != null).reduce((a, b) => b.s.temp_c > a.s.temp_c ? b : a);
+    // six record tiles, three per line, like the records of the nights; each one opens its summit
+    const recTile = (k, label, r, value) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openSummit(r.s) },
+      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value), el('span', { class: 'rec-s' }, r.s.sommet));
+    const superl = el('div', { class: 'rec-grid' },
+      recTile('k-top', 'le plus haut', high, `${nf(altOf(high))} m`),
+      recTile('k-fast', 'montée rapide', best, `${pace(best.gap)} /km`),
+      recTile('k-hard', 'montée lente', hard, `${pace(hard.gap)} /km`),
+      recTile('k-down', 'descente rapide', down, `${pace(down.downS / 60 / down.downKm)} /km`),
+      recTile('k-cold', 'le plus froid', cold, `${nf(cold.s.temp_c, 0)} °C`),
+      recTile('k-warm', 'le plus chaud', warm, `${nf(warm.s.temp_c, 0)} °C`));
     panel.replaceChildren(
       el('h2', { class: 'recap-title' }, 'Récap des sommets'),
       el('h3', null, 'Altitude et température au sommet'), s1,
