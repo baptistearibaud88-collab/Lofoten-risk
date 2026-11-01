@@ -343,9 +343,24 @@
   // phone: open on the map, the panel folded down to its tabs (a tab unfolds it)
   if (matchMedia('(max-width: 600px)').matches) setFold('panel-folded', btnPanelFold, true, 'le panneau');
 
-  // the three title buttons sit on one line by CSS; nothing to place by hand any more
-  function placeDepart() {}
-  function placeSources() {}
+  // "Inventaire" centred under the last figure of the title stats (Trail running)
+  function placeDepart() {
+    const btn = document.getElementById('btn-depart'), dd = document.querySelector('#stats div:last-child dd');
+    if (!btn || !dd || !btn.offsetParent) return;
+    const r = document.createRange(); r.selectNodeContents(dd);   // the figure itself, not its whole column
+    const row = btn.parentElement.getBoundingClientRect(), d = r.getBoundingClientRect();
+    const x = d.left + d.width / 2 - row.left - btn.offsetWidth / 2;
+    btn.style.left = `${Math.max(0, Math.min(row.width - btn.offsetWidth, x))}px`;
+  }
+  // the sources button sits on the legend line, just after the legend
+  function placeSources() {
+    const b = document.getElementById('btn-sources'), lg = document.querySelector('.legend');
+    if (!b || !lg) return;
+    const r = lg.getBoundingClientRect();
+    if (!r.width || matchMedia('(max-width: 600px)').matches) { b.style.left = ''; b.style.bottom = ''; return; }   // phone: placed by CSS
+    b.style.left = `${Math.round(r.right + 10)}px`;
+    b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
+  }
   function layoutChanged() {
     placeDepart(); placeSources();
     const root = document.documentElement.style;

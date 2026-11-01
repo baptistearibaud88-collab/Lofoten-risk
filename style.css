@@ -830,14 +830,11 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* start sheet (Fiche départ) */
-/* one line: Toute la traversée, Inventaire, Sources */
-.pill-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-wrap: nowrap; }
-.pill-row .pill-round { width: 34px; height: 34px; padding: 0 !important; justify-content: center; flex: none; border-radius: 50%; }
-.pill-row .pill-round svg { width: 17px !important; height: 17px !important; }
-.pill-row .pill-btn { white-space: nowrap; font-size: 13.5px; padding: 7px 11px 7px 10px; gap: 6px; }
-.pill-row .pill-btn svg { width: 12px; height: 12px; }
-#btn-sources svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
-@media (max-width: 600px) { .pill-row { gap: 4px; } .pill-row .pill-btn { font-size: 12px; padding: 6px 8px 6px 7px; gap: 4px; } .pill-row .pill-btn svg { width: 11px; height: 11px; } }
+/* one line: "Toute la traversée" lined up with "Temps total" on the left; "Inventaire" centred
+   under the "Trail running" figure (placed by app.js) */
+.pill-row { position: relative; display: flex; align-items: center; flex-wrap: nowrap; }
+.pill-row #btn-depart { position: absolute; top: 0; left: 0; white-space: nowrap; }
+.pill-row .pill-btn { white-space: nowrap; }
 .pill-ghost { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .pill-ghost svg { fill: none; }
 .depart { position: fixed; inset: 0; z-index: 9; display: grid; place-items: stretch; box-sizing: border-box;
@@ -1031,7 +1028,6 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   .compass { top: calc(var(--title-b, 200px) + 10px) !important; bottom: auto !important; right: 14px; width: 52px; height: 52px; }
   body.ph-tools .compass { display: block !important; }
 }
-@media (max-width: 370px) { .pill-row .pill-btn { font-size: 11.5px; padding: 6px 7px 6px 6px; } }
 
 @media (max-width: 600px) {
   /* map buttons: 3 x 2, to the left of the toolbar button, bottoms lined up */
@@ -1055,7 +1051,19 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   .stats { gap: 6px 10px; margin: 8px 0 10px; }
   .stats dt { font-size: 11px; }
   .stats dd { font-size: 15px; }
-  .pill-row .pill-btn { font-size: 13px; padding: 6px 11px 6px 9px; }
-  .pill-row .pill-round { width: 30px; height: 30px; }
-  .pill-row .pill-round svg { width: 15px !important; height: 15px !important; }
+  .pill-btn { font-size: 13.5px; padding: 7px 13px 7px 11px; }
+}
+
+/* sources: round button on the legend line (iPad, computer); on a phone, above the toolbar button,
+   level with the first row of map buttons when they are open */
+@media (max-width: 600px) {
+  .src-btn { left: auto !important; right: 19px; bottom: calc(var(--panel-h) + 18px + 38px + 6px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.ph-tools .src-btn { display: grid !important; }
+}
+@media (max-width: 600px) {
+  /* the two round buttons line up with the two rows of map buttons */
+  .tools-btn, .src-btn { width: 34px !important; height: 34px !important; }
+  .tools-btn { bottom: calc(var(--panel-h) + 17px + env(safe-area-inset-bottom, 0px)) !important; right: 20px !important; }
+  .src-btn { bottom: calc(var(--panel-h) + 53px + env(safe-area-inset-bottom, 0px)) !important; right: 20px !important; }
+  body.ph-tools .controls { right: 62px !important; }
 }
