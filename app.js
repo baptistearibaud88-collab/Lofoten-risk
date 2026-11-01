@@ -494,7 +494,9 @@
               el('span', { class: 'stage-main' },
                 el('span', { class: 'camp-name' }, `${e.from} → ${e.to}`),
                 el('span', { class: 'stage-meta' }, `${nf(last.wk, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}${seq.some(p => p.sac === 2) ? ' · bateau' : ''}`))));
-        })));
+        })),
+        el('h3', { class: 'rec-title' }, 'Records des étapes'),
+        stageRecords());
     }
     panel.replaceChildren(body);   // no grey footnote under the lists
     panel.scrollTop = 0;
@@ -780,6 +782,34 @@
       isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
       a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
     panel.scrollTop = 0;
+  }
+
+  /* records of the stages, under the list (same tiles); one stage per record, each opens its stage */
+  function stageRecords() {
+    const rows = T.etapes.map(e => {
+      const seq = buildSeq(e.acts), walk = seq.filter(p => p.sac !== 2), last = seq[seq.length - 1];
+      const t = h => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; };
+      return { e, km: last.wk, dplus: last.dplus, kmh: last.wk / Math.max(0.01, last.mov / 3600), dep: walk[0].heure, arr: walk[walk.length - 1].heure, depM: t(walk[0].heure), arrM: t(walk[walk.length - 1].heure) };
+    });
+    const best = (f, hi = true) => rows.reduce((a, b) => (hi ? f(b) > f(a) : f(b) < f(a)) ? b : a);
+    const search = (T.recherche_bivouac || [])[0];
+    const tile = (k, label, r, value) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openEtape(r.e) },
+      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value),
+      el('span', { class: 'rec-s' }, `J${r.e.day} · ${r.e.to}`));
+    const tiles = [
+      tile('k-top', 'la plus longue', best(r => r.km), `${nf(best(r => r.km).km, 1)} km`),
+      tile('k-fast', 'le plus de D+', best(r => r.dplus), `${nf(best(r => r.dplus).dplus)} m`),
+      tile('k-hard', 'la plus lente', best(r => r.kmh, false), `${nf(best(r => r.kmh, false).kmh, 1)} km/h`),
+      tile('k-cold', 'départ matinal', best(r => r.depM, false), best(r => r.depM, false).dep.replace(/^0/, '').replace(':', ' h ')),
+      tile('k-rain', 'arrivée tardive', best(r => r.arrM), best(r => r.arrM).arr.replace(':', ' h ')),
+    ];
+    if (search) {
+      const r = rows.find(x => x.e.day === search.day), [a, b] = [search.debut, search.fin].map(h => { const [x, y] = h.split(':').map(Number); return x * 60 + y; });
+      if (r) tiles.push(el('button', { type: 'button', class: 'rec-tile', onclick: () => openEtape(r.e) },
+        el('span', { class: 'rec-l' }, el('i', { class: 'rec-dot k-best' }), 'recherche bivouac'), el('b', { class: 'rec-v' }, hm(b - a)),
+        el('span', { class: 'rec-s' }, `J${r.e.day} · ${search.camp}`)));
+    }
+    return el('div', { class: 'rec-grid' }, tiles);
   }
 
   /* records of the summits, under the list (same tiles as the nights); each one opens its summit */
