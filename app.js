@@ -361,14 +361,23 @@
     b.style.left = `${Math.round(r.right + 10)}px`;
     b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
   }
-  // "Soleil de minuit" at the right end of the title, just left of the fold chevron and centred on it
+  // "Soleil de minuit" at the right end of the title.
+  // Phone: just left of the fold chevron, centred on it. iPad / computer: on the line of the title itself,
+  // against the right edge, centred on the letters (the chevron sits a little higher there to leave room)
   function placeSun() {
     const b = document.getElementById('btn-sun');
     if (!b || !b.offsetParent) return;
     const box = b.offsetParent.getBoundingClientRect(), fold = document.getElementById('btn-title-fold').getBoundingClientRect();
-    b.style.right = `${Math.round(box.right - fold.left + 4)}px`;
-    const lift = matchMedia('(max-width: 600px)').matches ? 0 : 3;   // iPad / computer: a touch higher, clear of the big title
-    b.style.top = `${Math.round(fold.top + fold.height / 2 - box.top - b.offsetHeight / 2 - lift)}px`;
+    if (matchMedia('(max-width: 600px)').matches) {
+      b.style.right = `${Math.round(box.right - fold.left + 4)}px`;
+      b.style.top = `${Math.round(fold.top + fold.height / 2 - box.top - b.offsetHeight / 2)}px`;
+    } else {
+      const h = document.querySelector('#title-default h1'), r = document.createRange(); r.selectNodeContents(h);
+      const line = r.getClientRects()[0], fs = parseFloat(getComputedStyle(h).fontSize);
+      const mid = line.top + line.height / 2 + fs * 0.06;      // middle of the capitals, a hair under the line box middle
+      b.style.right = '';
+      b.style.top = `${Math.round(Math.max(mid - box.top - b.offsetHeight / 2, fold.bottom - box.top + 1))}px`;
+    }
   }
   function layoutChanged() {
     placeDepart(); placeSources(); placeSun();
@@ -1005,11 +1014,14 @@
       const dot = sv('circle', { cx: xOf(m.az), cy: yOf(m.el), r: 3.6, class: 'sf-mom' });
       svg.append(dot);
       const items = m.photo ? [{ src: `${m.photo}?v=${PHOTO_V}`, title: m.photo_titre, sub: `J${m.day}, ${hFr(m.heure)} : soleil à ${deg(m.el)}, ${dir(m.az)}` }] : null;
-      const row = el('li', { class: items ? 'is-link' : null, onclick: items ? () => lightbox(items, 0) : null },
-        el('b', null, hFr(m.heure)), el('span', null, el('em', null, `J${m.day}`), ' ', m.texte), el('i', null, deg(m.el)));
+      const row = el('button', { type: 'button', class: 'sun-chip', 'aria-label': `${m.texte}, J${m.day} à ${hFr(m.heure)}`, onclick: items ? () => lightbox(items, 0) : null },
+        el('em', null, `J${m.day}`), el('b', null, hFr(m.heure)), el('i', null, deg(m.el)));
+      const words = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
+      const cap = m.ecart_solstice != null ? el('p', { class: 'sun-pcap' },
+        `Au retardateur de la GoPro, au plus bas de la nuit, ${words[m.jours_avant_solstice] || m.jours_avant_solstice} jours avant le solstice : même hauteur, à ${nf(m.ecart_solstice, 2)}° près.`) : null;
       const shot = items ? el('button', { type: 'button', class: 'sun-photo', 'aria-label': `${m.texte}, ouvrir en grand`, onclick: () => lightbox(items, 0) },
         el('img', { src: items[0].src, alt: m.texte, loading: 'lazy' })) : null;
-      return { m, dot, row, shot, at: toMin(m.heure) };
+      return { m, dot, row, shot, cap, at: toMin(m.heure) };
     });
 
     const read = el('div', { class: 'sun-read' }, el('b'), el('span'));
@@ -1080,9 +1092,8 @@
               el('p', null, `À Reine, il ne se couche pas du `, el('b', null, `${dateFr(S.debut)} au ${dateFr(S.fin)}`), `, soit ${S.nuits} nuits. Ma traversée, du 13 au 23 juin, tombait en plein dedans, solstice du 21 juin compris.`),
               el('p', null, `En 24 h, il fait le tour du ciel : au plus haut plein sud vers ${hFr(S.midi_solaire)} (${nf(S.el_max, 1)}°), au plus bas plein nord vers ${hFr(S.minuit_solaire)}, encore ${nf(S.el_min[0], 1)} à ${nf(S.el_min[1], 1)}° au-dessus de l’horizon. Le même jour à Paris : ${nf(S.paris.max, 1)}° à midi, mais ${nf(-S.paris.min, 1)}° sous l’horizon la nuit.`)),
             el('section', null,
-              el('h4', null, 'Sur ma traversée'),
-              moms.map(o => o.shot),
-              el('ul', { class: 'sun-moms' }, moms.map(o => o.row))),
+              el('div', { class: 'sun-h' }, el('h4', null, 'Sur ma traversée'), moms.map(o => o.row)),
+              moms.flatMap(o => [o.shot, o.cap])),
             el('div', { class: 'sun-band' },                     // across both columns
               el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
               el('p', null, 'Pas de frontale dans le sac : la lumière ne fixait plus l’horaire. Le revers : sans nuit, je ne sentais plus la fatigue et je commençais à faire des fautes de pied.'))))));

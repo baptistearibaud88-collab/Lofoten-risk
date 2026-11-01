@@ -1080,7 +1080,8 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* midnight sun: the button on the title line, and its window */
 #title-default { position: relative; }
-.title-block .fold { z-index: 2; }   /* the chevron stays above the title content (to unfold it again) */
+.title-block .fold { z-index: 2; }
+@media (min-width: 601px) { body:not(.title-folded) .title-block .fold { top: 6px; } }   /* iPad / computer: chevron a bit higher, the sun button is on the title line */   /* the chevron stays above the title content (to unfold it again) */
 .sun-btn { position: absolute; right: -2px; top: 26px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px;
   border: 0; border-radius: 12px; background: transparent; color: var(--ink-2); cursor: pointer; font: inherit; text-shadow: none;
   box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--sun) 70%, transparent); }
@@ -1134,6 +1135,15 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .sun-photo { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: zoom-in; background: #0b1114;
   box-shadow: 0 0 0 1.5px transparent; transition: box-shadow .25s; }
 .sun-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sun-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 4px; }
+.sun-h h4 { margin: 0 !important; }
+.sun-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 3px 9px; border: 0; border-radius: 999px; background: transparent; color: rgba(255, 255, 255, .88);
+  font: inherit; font-size: 13px; cursor: zoom-in; transition: background-color .25s; }
+.sun-chip em { font-style: normal; font-weight: 700; color: #74e3df; }
+.sun-chip b { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: #fff; }
+.sun-chip i { font-style: normal; font-family: var(--font-num); font-weight: 650; color: #ffc65c; }
+.sun-chip:hover, .sun-chip.is-lit { background: rgba(116, 227, 223, .2); }
+.sun-pcap { margin: 6px 1px 0 !important; font-size: 12.5px !important; line-height: 1.38 !important; color: rgba(255, 255, 255, .72) !important; }
 .sun-photo.is-lit { box-shadow: 0 0 0 2px #74e3df; }
 .sun-moms { list-style: none; margin: 0 0 8px; padding: 0; }
 .sun-moms li { display: grid; grid-template-columns: 44px 1fr auto; align-items: baseline; gap: 8px; margin: 4px -8px 0; padding: 5px 8px; border-radius: 10px; font-size: 13px; color: rgba(255, 255, 255, .84); transition: background-color .25s; }
