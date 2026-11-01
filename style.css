@@ -1030,3 +1030,17 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   body.ph-tools .compass { display: block !important; }
 }
 @media (max-width: 370px) { .pill-row .pill-btn { font-size: 11.5px; padding: 6px 7px 6px 6px; } }
+
+@media (max-width: 600px) {
+  /* map buttons: 3 x 2, to the left of the toolbar button, bottoms lined up */
+  body.ph-tools .controls { left: 8px !important; right: 65px !important; bottom: calc(var(--panel-h) + 18px + env(safe-area-inset-bottom, 0px)) !important; }
+  /* inventory: photo, bag figures, the lists, then my profile and the thanks at the very bottom */
+  .dp-body { display: flex !important; flex-direction: column; flex: none; min-height: auto; }
+  .dp-body > *, .dp-left > * { flex-shrink: 0; }
+  .dp-left { display: contents; }
+  .dp-lists { order: 1; margin-top: 14px; display: block; }
+  .dp-lists .dp-list { flex: none; overflow: visible; min-height: auto; }
+  body.ph-tools .controls button { font-size: 12px; }
+  .dp-profile, .dp-thanks { order: 2; }
+  .depart .dp-sub.dp-profile { margin-top: 18px; }
+}
