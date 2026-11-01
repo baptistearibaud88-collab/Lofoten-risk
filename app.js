@@ -464,7 +464,7 @@
       const isPh = rubric === 'photos', list = isPh ? PHOTOS : INFOS;
       body.append(
         el('h2', null, isPh ? 'Photos' : 'Infos'),
-        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises.' : 'Anecdotes et petites histoires, au bon endroit du parcours.'),
+        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises.' : 'Anecdotes, au bon endroit du parcours.'),
         ...(isPh ? [recapRow('photo', 'Toutes les photos', `${PHOTOS.reduce((n, a) => n + photoFiles(a).length, 0)} photos`, openPhotoWall)] : []),
         el('ul', { class: 'camp-list' }, list.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openRoutePoint(rubric, a) },
