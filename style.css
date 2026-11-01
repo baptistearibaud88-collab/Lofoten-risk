@@ -1074,3 +1074,4 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   button, .bubble, .panel, .title-block { touch-action: manipulation; }
   #map, #map canvas { touch-action: none; }
 }
+@media (min-width: 601px) { .src-btn { color: var(--ink-2); } }   /* iPad and computer: white like the legend */
