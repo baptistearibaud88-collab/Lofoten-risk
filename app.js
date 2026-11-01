@@ -161,7 +161,7 @@
     const i = seq.findIndex(p => p.sac !== 2 && p.wk >= a.km), p = seq[i < 0 ? seq.length - 1 : i];
     // a time given in photos.csv (one per file) wins over the passage on the trace
     const given = a.heure ? String(a.heure).split(';').map(x => x.trim()) : null;
-    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: given ? given[0] : p.heure, heures: given ? a.heure : null, day: p.day, where, open, replay,
+    return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: (given && given[0]) || p.heure, heures: given ? given.map(t => t || p.heure).join(';') : null, day: p.day, where, open, replay,   // a blank time falls back on the trace
       label: a.atTop ? `J${p.day} · au sommet du ${a.reference}` : `J${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
