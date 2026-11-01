@@ -1465,7 +1465,7 @@
     const av = (label, value, unit) => el('div', null, el('span', null, label), el('b', null, value, el('small', null, ` ${unit}`)));
     const avgs = el('div', { class: 'tot-avg' },
       av('vit. verticale ↗', nf(up.m / (up.s / 3600)), 'm/h'), av('allure ajustée ↗', pace(up.s / 60 / sum(r => r.eqKm)), '/km'),
-      av('allure ↘', pace(dn.s / 60 / dn.km), '/km'), av('dépense ↗', nf(up.kcal / (up.s / 3600)), 'kcal/h'));
+      av('dépense ↗', nf(up.kcal / (up.s / 3600)), 'kcal/h'), av('dépense ↘', nf(dn.kcal / (dn.s / 3600)), 'kcal/h'));
     const hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
     const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
 
