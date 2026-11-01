@@ -375,7 +375,9 @@
       const h = document.querySelector('#title-default h1'), r = document.createRange(); r.selectNodeContents(h);
       const line = r.getClientRects()[0], fs = parseFloat(getComputedStyle(h).fontSize);
       const mid = line.top + line.height / 2 + fs * 0.06;      // middle of the capitals, a hair under the line box middle
-      b.style.right = '';
+      const bubble = document.getElementById('title').getBoundingClientRect();
+      const free = bubble.right - line.right, gap = Math.max(10, (free - b.offsetWidth) / 2);   // same space either side
+      b.style.right = `${Math.round(box.right - (line.right + gap + b.offsetWidth))}px`;
       b.style.top = `${Math.round(Math.max(mid - box.top - b.offsetHeight / 2, fold.bottom - box.top + 1))}px`;
     }
   }
@@ -1098,6 +1100,13 @@
               el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
               el('p', null, 'Pas de frontale dans le sac : la lumière ne fixait plus l’horaire. Le revers : sans nuit, je ne sentais plus la fatigue et je commençais à faire des fautes de pied.'))))));
     box.addEventListener('click', e => { if (e.target === box) close(); });
+    // Safari: only the text scrolls, up and down; nothing slides sideways and the page behind never moves
+    let tx0 = 0, ty0 = 0;
+    box.addEventListener('touchstart', e => { tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY; }, { passive: true });
+    box.addEventListener('touchmove', e => {
+      const t = e.touches[0], dx = Math.abs(t.clientX - tx0), dy = Math.abs(t.clientY - ty0);
+      if (e.touches.length > 1 || dx > dy || !e.target.closest('.sun-scroll')) e.preventDefault();
+    }, { passive: false });
     document.addEventListener('keydown', onKey);
     document.body.append(box);
   }
