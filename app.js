@@ -570,8 +570,8 @@
   // time of each photo: one per file for the camp photos (photos.csv), else the passage on the trace
   const photoTimes = a => { const f = photoFiles(a), t = a.heures ? String(a.heures).split(';') : [];
     return f.map((_, i) => (t[i] || t[0] || a.heure || '').trim() || null); };
-  function photoGallery(a) {
-    const files = photoFiles(a), times = photoTimes(a);
+  function photoGallery(a, withTimes = true) {
+    const files = photoFiles(a), times = withTimes ? photoTimes(a) : [];   // an info's photos were not taken at the info's spot: no time
     if (!files.length) return el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, 'Photo à ajouter'));
     const items = files.map((f, i) => ({ src: f, title: a.titre, sub: [`J${a.day}`, times[i]].filter(Boolean).join(' · ') }));
     return el('div', { class: 'gallery' }, files.map((f, i) =>
@@ -778,7 +778,7 @@
       el('h2', null, a.titre),
       el('p', { class: 'meta' }, `${nf(Math.max(0, a.alt))} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
       isPh ? null : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),   // an info: its story first, then its photo if any
-      isPh || photoFiles(a).length ? photoGallery(a) : null,
+      isPh || photoFiles(a).length ? photoGallery(a, isPh) : null,
       isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
       a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
     panel.scrollTop = 0;
