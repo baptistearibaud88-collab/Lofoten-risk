@@ -347,8 +347,17 @@
     const x = d.left + d.width / 2 - row.left - btn.offsetWidth / 2;
     btn.style.left = `${Math.max(0, Math.min(row.width - btn.offsetWidth, x))}px`;
   }
+  // the sources button sits on the legend line, just after the legend
+  function placeSources() {
+    const b = document.getElementById('btn-sources'), lg = document.querySelector('.legend');
+    if (!b || !lg) return;
+    const r = lg.getBoundingClientRect();
+    if (!r.width) { b.style.left = ''; b.style.bottom = ''; return; }
+    b.style.left = `${Math.round(r.right + 10)}px`;
+    b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
+  }
   function layoutChanged() {
-    placeDepart();
+    placeDepart(); placeSources();
     const root = document.documentElement.style;
     const pr = panelBox.getBoundingClientRect();
     root.setProperty('--panel-h', `${Math.round(pr.height)}px`);
@@ -754,6 +763,46 @@
         el('span', { class: 'rec-s' }, c.name),
         el('span', { class: 'rec-s rec-d' }, r.n ? `nuit du ${day(r.n.night).d} ${day(r.n.night).m}` : `${nf(c.nights.length)} nuit${c.nights.length > 1 ? 's' : ''}`));
     }));
+  }
+
+  /* where every number comes from: a window opened by the round button next to the legend */
+  function openSources() {
+    const old = document.querySelector('.sources'); if (old) { old.remove(); return; }
+    const S = T.stats;
+    const sec = (title, ...lines) => el('section', null, el('h4', null, title), el('ul', null, lines.map(l => el('li', null, l))));
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') close(); };
+    const box = el('div', { class: 'sources', role: 'dialog', 'aria-label': 'Sources des données' },
+      el('div', { class: 'src-card' },
+        el('header', null, el('h2', null, 'Sources des données'),
+          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
+        el('div', { class: 'src-body' },
+          sec('Trace et effort',
+            `Montre GPS Garmin Forerunner 255 Music : positions, altitude, fréquence cardiaque et calories, 24 activités enregistrées (fichiers .FIT bruts).`,
+            `Distance : ${nf(S.strava_distance)} km selon Strava, ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé : ${nf(S.dplus_watch)} m selon la montre (altimètre barométrique).`,
+            'Passages non enregistrés (ferry Kirkefjord → Vindstad, liaisons) : sautés dans les chiffres ; le ferry est dessiné en arc sur la carte.',
+            'Allure ajustée à la pente : coût énergétique de la course en pente, Minetti et al. (2002).'),
+          sec('Nuits et corps',
+            'Sommeil, phases, FC au repos, HRV, Body Battery, calories du jour : Garmin Connect, nuit par nuit.',
+            'Batterie de la montre : relevée par la montre toutes les 5 minutes.',
+            'Profil (âge, taille, poids au départ, VO2max) : déclaré ; VO2max estimée par Garmin.'),
+          sec('Météo',
+            'Réanalyse ERA5 (Copernicus / ECMWF), via Open-Meteo : heure par heure, sur 3 zones du parcours (nord, centre, sud), maille d’environ 30 km.',
+            'Température ramenée à l’altitude du point (−6,5 °C par 1 000 m) ; ressenti = refroidissement par le vent.',
+            'Records des nuits : ERA5, sauf trois nuits vécues autrement sur place (vent à Horseid, pluie à Sørvågen, froid aux hauteurs de Kvalvika), déclarées.'),
+          sec('Sac, équipement et nourriture',
+            'Équipement : pesées quand elles existent, sinon fiches produits ou valeurs typiques (pesées en cours).',
+            'Nourriture : quantités emportées ; calories des fiches produits ou valeurs typiques.',
+            `Poids du sac au départ : estimation de ${nf(T.depart ? T.depart.sac_kg : 0, 1)} kg sans eau, puis consommation jour après jour.`),
+          sec('Récit et photos',
+            'Alertes, infos, photos et leur direction de vue : placées et racontées par moi, à partir de la trace.',
+            'Photos : iPhone et GoPro, réduites et publiées sans métadonnées.'),
+          sec('Carte',
+            'Satellite : Esri World Imagery (Maxar, Earthstar Geographics). Carte topo : OpenTopoMap, © contributeurs OpenStreetMap (CC-BY-SA).',
+            'Relief 3D : Mapzen / AWS Terrain Tiles. Moteur : MapLibre GL ; site hébergé sur GitHub Pages.'))));
+    box.addEventListener('click', e => { if (e.target === box) close(); });
+    document.addEventListener('keydown', onKey);
+    document.body.append(box);
   }
 
   /* Norway's right of access, in a small card over the map (bottom right, next to the panel) */
@@ -1413,6 +1462,8 @@
   }
   document.getElementById('btn-trek').addEventListener('click', openTrek);
   document.getElementById('btn-depart').addEventListener('click', openDepart);
+  document.getElementById('btn-sources').addEventListener('click', openSources);
+  placeSources();
   placeDepart(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeDepart);
 
   /* ---------- map ---------- */
