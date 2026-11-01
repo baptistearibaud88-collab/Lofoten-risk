@@ -422,7 +422,7 @@
     if (rubric === 'camps') {
       body.append(
         el('h2', null, 'Sept bivouacs, neuf nuits'),
-        el('p', { class: 'note' }, 'Tente montée chaque soir, en autonomie complète. Choisis un bivouac pour voler jusqu’à lui et lire sa nuit.'),
+        el('p', { class: 'note' }, 'Choisis un bivouac pour lire les statistiques de la nuit.'),
         recapRow('rem', 'Récap des nuits', `${T.camps.length} nuits`, openNightsRecap),
         el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
