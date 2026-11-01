@@ -1006,8 +1006,18 @@
     for (const [x, l] of [[10, 'S'], [W / 4, 'O'], [W / 2, 'N'], [W * 3 / 4, 'E'], [W - 10, 'S']]) {
       svg.append(svText({ x, y: H0 + 17, class: 'sf-card', 'text-anchor': 'middle' }, l));
     }
-    // my moments on the path
-    for (const m of S.moments) svg.append(sv('circle', { cx: xOf(m.az), cy: yOf(m.el), r: 3.4, class: 'sf-mom' }));
+    // my moment(s) on the path: a dot, and its line below, both lit while the sun goes by
+    const toMin = t => parseInt(t, 10) * 60 + parseInt(t.slice(3), 10);
+    const moms = S.moments.map(m => {
+      const dot = sv('circle', { cx: xOf(m.az), cy: yOf(m.el), r: 3.6, class: 'sf-mom' });
+      svg.append(dot);
+      const items = m.photo ? [{ src: `${m.photo}?v=${PHOTO_V}`, title: m.photo_titre, sub: `J${m.day}, ${hFr(m.heure)} : soleil à ${deg(m.el)}, ${dir(m.az)}` }] : null;
+      const row = el('li', { class: items ? 'is-link' : null, onclick: items ? () => lightbox(items, 0) : null },
+        el('b', null, hFr(m.heure)), el('span', null, el('em', null, `J${m.day}`), ' ', m.texte), el('i', null, deg(m.el)));
+      const shot = items ? el('button', { type: 'button', class: 'sun-photo', 'aria-label': `${m.texte}, ouvrir en grand`, onclick: () => lightbox(items, 0) },
+        el('img', { src: items[0].src, alt: m.texte, loading: 'lazy' })) : null;
+      return { m, dot, row, shot, at: toMin(m.heure) };
+    });
 
     const read = el('div', { class: 'sun-read' }, el('b'), el('span'));
     const play = el('button', { type: 'button', class: 'sun-play', 'aria-label': 'Pause' });
@@ -1039,6 +1049,10 @@
       const az = (x / W * 360 + 180) % 360;
       read.firstChild.textContent = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
       read.lastChild.textContent = `soleil à ${deg(e)}, ${dir(az)}`;
+      for (const o of moms) {                                    // within 25 min of the moment: lit
+        const d = Math.abs(mins - o.at), lit = Math.min(d, 1440 - d) <= 25;
+        o.row.classList.toggle('is-lit', lit); o.dot.classList.toggle('is-lit', lit); if (o.shot) o.shot.classList.toggle('is-lit', lit);
+      }
     };
     const tick = now => {
       if (!last) last = now;
@@ -1050,8 +1064,6 @@
     svg.addEventListener('click', () => { paused = !paused; setPlay(); });
     setPlay(); draw(); raf = requestAnimationFrame(tick);
 
-    const moments = el('ul', { class: 'sun-moms' }, S.moments.map(m =>
-      el('li', null, el('b', null, hFr(m.heure)), el('span', null, el('em', null, `J${m.day}`), ' ', m.texte), el('i', null, deg(m.el)))));
     const box = el('div', { class: 'sun-modal', role: 'dialog', 'aria-label': 'Le soleil de minuit' },
       el('div', { class: 'src-card sun-card' },
         el('header', null,
@@ -1059,7 +1071,7 @@
           el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
         el('div', { class: 'sun-scroll' },
           fig,
-          el('p', { class: 'sun-cap' }, `Course du soleil sur 24 h, vue de Reine le 18 juin, au milieu de la traversée, horizon de mer dégagé. Points turquoise : mes heures de nuit, détaillées plus bas.`),
+          el('p', { class: 'sun-cap' }, `Course du soleil sur 24 h, vue de Reine le 18 juin, au milieu de la traversée, horizon de mer dégagé. Point turquoise : ma photo de 1\u00a0h du matin à Bunes beach.`),
           el('div', { class: 'sun-body' },
             el('section', null,
               el('h4', null, 'Pourquoi il ne se couche pas'),
@@ -1068,10 +1080,9 @@
               el('p', null, `En 24 h, il fait le tour du ciel : au plus haut plein sud vers ${hFr(S.midi_solaire)} (${nf(S.el_max, 1)}°), au plus bas plein nord vers ${hFr(S.minuit_solaire)}, encore ${nf(S.el_min[0], 1)} à ${nf(S.el_min[1], 1)}° au-dessus de l’horizon. Le même jour à Paris : ${nf(S.paris.max, 1)}° à midi, mais ${nf(-S.paris.min, 1)}° sous l’horizon la nuit.`)),
             el('section', null,
               el('h4', null, 'Sur ma traversée'),
-              el('div', { class: 'sun-kpis' },
-                el('div', null, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
-                el('div', null, el('b', null, deg(S.plus_bas_en_marche.el)), el('span', null, `soleil le plus bas en marchant (J${S.plus_bas_en_marche.day}, ${hFr(S.plus_bas_en_marche.heure)})`))),
-              moments,
+              el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
+              moms.map(o => o.shot),
+              el('ul', { class: 'sun-moms' }, moms.map(o => o.row)),
               el('p', null, 'Pas de frontale dans le sac : la lumière ne fixait plus l’horaire. Le revers : sans nuit, je ne sentais plus la fatigue et je commençais à faire des fautes de pied.'))))));
     box.addEventListener('click', e => { if (e.target === box) close(); });
     document.addEventListener('keydown', onKey);

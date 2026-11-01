@@ -1124,12 +1124,19 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .sun-body h4 { margin: 10px 0 4px; font-size: 12.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #74e3df; }
 .sun-body p { margin: 0 0 7px; font-size: 13px; line-height: 1.42; color: rgba(255, 255, 255, .84); }
 .sun-body p b { color: #ffc65c; font-weight: 700; }
-.sun-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 2px 0 8px; }
-.sun-kpis div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); }
-.sun-kpis b { font-family: var(--font-num); font-size: 20px; font-weight: 700; color: #ffc65c; font-variant-numeric: tabular-nums; }
-.sun-kpis span { font-size: 11.5px; line-height: 1.3; color: rgba(255, 255, 255, .7); }
+.sun-kpi { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 8px !important; }
+.sun-kpi b { font-family: var(--font-num); font-size: 22px; font-weight: 700; color: #ffc65c !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sun-kpi span { font-size: 13px; color: rgba(255, 255, 255, .78); }
+.sun-photo { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: zoom-in; background: #0b1114;
+  box-shadow: 0 0 0 1.5px transparent; transition: box-shadow .25s; }
+.sun-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.sun-photo.is-lit { box-shadow: 0 0 0 2px #74e3df; }
 .sun-moms { list-style: none; margin: 0 0 8px; padding: 0; }
-.sun-moms li { display: grid; grid-template-columns: 52px 1fr auto; align-items: baseline; gap: 8px; padding: 4px 0; font-size: 13px; color: rgba(255, 255, 255, .84); }
+.sun-moms li { display: grid; grid-template-columns: 44px 1fr auto; align-items: baseline; gap: 8px; margin: 4px -8px 0; padding: 5px 8px; border-radius: 10px; font-size: 13px; color: rgba(255, 255, 255, .84); transition: background-color .25s; }
+.sun-moms li.is-link { cursor: zoom-in; }
+.sun-moms li.is-link:hover, .sun-moms li.is-lit { background: rgba(116, 227, 223, .2); }
+.sf-mom { transition: r .25s; }
+.sf-mom.is-lit { r: 5.5px; fill: #fff; stroke: #74e3df; stroke-width: 2.2; }
 .sun-moms li + li { border-top: 1px solid rgba(255, 255, 255, .1); }
 .sun-moms b { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: #fff; }
 .sun-moms em { font-style: normal; font-weight: 700; color: #74e3df; }
