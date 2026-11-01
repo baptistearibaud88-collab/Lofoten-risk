@@ -1075,3 +1075,5 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   #map, #map canvas { touch-action: none; }
 }
 @media (min-width: 601px) { .src-btn { color: var(--ink-2); } }   /* iPad and computer: white like the legend */
+.rec-l-long { font-size: 10px; letter-spacing: -.02em; gap: 4px; }
+.rec-l-long .rec-dot { width: 7px; height: 7px; }

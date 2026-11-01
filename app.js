@@ -792,23 +792,21 @@
       return { e, km: last.wk, dplus: last.dplus, kmh: last.wk / Math.max(0.01, last.mov / 3600), dep: walk[0].heure, arr: walk[walk.length - 1].heure, depM: t(walk[0].heure), arrM: t(walk[walk.length - 1].heure) };
     });
     const best = (f, hi = true) => rows.reduce((a, b) => (hi ? f(b) > f(a) : f(b) < f(a)) ? b : a);
-    const search = (T.recherche_bivouac || [])[0];
-    const tile = (k, label, r, value) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openEtape(r.e) },
-      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value),
-      el('span', { class: 'rec-s' }, `J${r.e.day} · ${r.e.to}`));
+    const tile = (k, label, r, value, note) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openEtape(r.e) },
+      el('span', { class: `rec-l${label.length > 18 ? ' rec-l-long' : ''}` }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value),
+      el('span', { class: 'rec-s' }, `J${r.e.day} · ${r.e.to}`), note ? el('span', { class: 'rec-s rec-d' }, note) : null);
+    const RE = T.records_etapes || {};
+    const byDay = d => rows.find(x => x.e.day === d);
+    const slow = (RE.plus_lente && byDay(RE.plus_lente.day)) || best(r => r.kmh, false);   // chosen by him (records_etapes_declares.csv)
+    const hard = RE.conditions_difficiles && byDay(RE.conditions_difficiles.day);
     const tiles = [
       tile('k-top', 'la plus longue', best(r => r.km), `${nf(best(r => r.km).km, 1)} km`),
       tile('k-fast', 'le plus de D+', best(r => r.dplus), `${nf(best(r => r.dplus).dplus)} m`),
-      tile('k-hard', 'la plus lente', best(r => r.kmh, false), `${nf(best(r => r.kmh, false).kmh, 1)} km/h`),
+      tile('k-hard', 'la plus lente', slow, `${nf(slow.kmh, 1)} km/h`),
       tile('k-cold', 'départ matinal', best(r => r.depM, false), best(r => r.depM, false).dep.replace(/^0/, '').replace(':', ' h ')),
       tile('k-rain', 'arrivée tardive', best(r => r.arrM), best(r => r.arrM).arr.replace(':', ' h ')),
-    ];
-    if (search) {
-      const r = rows.find(x => x.e.day === search.day), [a, b] = [search.debut, search.fin].map(h => { const [x, y] = h.split(':').map(Number); return x * 60 + y; });
-      if (r) tiles.push(el('button', { type: 'button', class: 'rec-tile', onclick: () => openEtape(r.e) },
-        el('span', { class: 'rec-l' }, el('i', { class: 'rec-dot k-best' }), 'recherche bivouac'), el('b', { class: 'rec-v' }, hm(b - a)),
-        el('span', { class: 'rec-s' }, `J${r.e.day} · ${search.camp}`)));
-    }
+      hard ? tile('k-wind', 'conditions difficiles', hard, `${nf(RE.conditions_difficiles.valeur)} ${RE.conditions_difficiles.unite}`, 'rafales · pluie') : null,
+    ].filter(Boolean);
     return el('div', { class: 'rec-grid' }, tiles);
   }
 
