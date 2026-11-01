@@ -831,7 +831,9 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* start sheet (Fiche départ) */
 /* one line: Toute la traversée, Inventaire, Sources */
-.pill-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; }
+.pill-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-wrap: nowrap; }
+.pill-row .pill-round { width: 34px; height: 34px; padding: 0 !important; justify-content: center; flex: none; border-radius: 50%; }
+.pill-row .pill-round svg { width: 17px !important; height: 17px !important; }
 .pill-row .pill-btn { white-space: nowrap; font-size: 13.5px; padding: 7px 11px 7px 10px; gap: 6px; }
 .pill-row .pill-btn svg { width: 12px; height: 12px; }
 #btn-sources svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
@@ -1043,4 +1045,17 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   body.ph-tools .controls button { font-size: 12px; }
   .dp-profile, .dp-thanks { order: 2; }
   .depart .dp-sub.dp-profile { margin-top: 18px; }
+}
+
+@media (max-width: 600px) {
+  /* phone: a slightly smaller title bubble leaves more map */
+  .title-block { padding: 10px 13px 12px; }
+  .title-block .eyebrow { font-size: 11px; }
+  .title-block h1 { font-size: 20px; }
+  .stats { gap: 6px 10px; margin: 8px 0 10px; }
+  .stats dt { font-size: 11px; }
+  .stats dd { font-size: 15px; }
+  .pill-row .pill-btn { font-size: 13px; padding: 6px 11px 6px 9px; }
+  .pill-row .pill-round { width: 30px; height: 30px; }
+  .pill-row .pill-round svg { width: 15px !important; height: 15px !important; }
 }
