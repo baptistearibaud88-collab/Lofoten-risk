@@ -830,11 +830,12 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* start sheet (Fiche départ) */
-/* one line: "Toute la traversée" lined up with "Temps total" on the left; "Inventaire" centred
-   under the "Trail running" figure (placed by app.js) */
-.pill-row { position: relative; display: flex; align-items: center; flex-wrap: nowrap; }
-.pill-row #btn-depart { position: absolute; top: 0; left: 0; white-space: nowrap; }
-.pill-row .pill-btn { white-space: nowrap; }
+/* one line: Toute la traversée, Inventaire, Sources */
+.pill-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: nowrap; }
+.pill-row .pill-btn { white-space: nowrap; font-size: 13.5px; padding: 7px 11px 7px 10px; gap: 6px; }
+.pill-row .pill-btn svg { width: 12px; height: 12px; }
+#btn-sources svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+@media (max-width: 600px) { .pill-row { gap: 4px; } .pill-row .pill-btn { font-size: 12px; padding: 6px 8px 6px 7px; gap: 4px; } .pill-row .pill-btn svg { width: 11px; height: 11px; } }
 .pill-ghost { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .pill-ghost svg { fill: none; }
 .depart { position: fixed; inset: 0; z-index: 9; display: grid; place-items: stretch; box-sizing: border-box;
@@ -1023,3 +1024,9 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   body.ph-live .panel { max-height: 50vh; }
   body.ph-live .player { margin: 4px 0 8px; }
 }
+
+@media (max-width: 600px) {
+  .compass { top: calc(var(--title-b, 200px) + 10px) !important; bottom: auto !important; right: 14px; width: 52px; height: 52px; }
+  body.ph-tools .compass { display: block !important; }
+}
+@media (max-width: 370px) { .pill-row .pill-btn { font-size: 11.5px; padding: 6px 7px 6px 6px; } }

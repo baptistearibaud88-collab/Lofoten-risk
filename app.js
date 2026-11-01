@@ -343,34 +343,20 @@
   // phone: open on the map, the panel folded down to its tabs (a tab unfolds it)
   if (matchMedia('(max-width: 600px)').matches) setFold('panel-folded', btnPanelFold, true, 'le panneau');
 
-  // "Inventaire" centred under the last figure of the title stats (Trail running)
-  function placeDepart() {
-    const btn = document.getElementById('btn-depart'), dd = document.querySelector('#stats div:last-child dd');
-    if (!btn || !dd || !btn.offsetParent) return;
-    const r = document.createRange(); r.selectNodeContents(dd);   // the figure itself, not its whole column
-    const row = btn.parentElement.getBoundingClientRect(), d = r.getBoundingClientRect();
-    const x = d.left + d.width / 2 - row.left - btn.offsetWidth / 2;
-    btn.style.left = `${Math.max(0, Math.min(row.width - btn.offsetWidth, x))}px`;
-  }
-  // the sources button sits on the legend line, just after the legend
-  function placeSources() {
-    const b = document.getElementById('btn-sources'), lg = document.querySelector('.legend');
-    if (!b || !lg) return;
-    const r = lg.getBoundingClientRect();
-    if (!r.width || matchMedia('(max-width: 600px)').matches) { b.style.left = ''; b.style.bottom = ''; return; }   // phone: placed by CSS
-    b.style.left = `${Math.round(r.right + 10)}px`;
-    b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
-  }
+  // the three title buttons sit on one line by CSS; nothing to place by hand any more
+  function placeDepart() {}
+  function placeSources() {}
   function layoutChanged() {
     placeDepart(); placeSources();
     const root = document.documentElement.style;
     const pr = panelBox.getBoundingClientRect();
+    root.setProperty('--title-b', `${Math.round(document.getElementById('title').getBoundingClientRect().bottom)}px`);   // phone: compass hangs under the title
     root.setProperty('--panel-h', `${Math.round(pr.height)}px`);
     const lg = document.querySelector('.legend');
     if (lg) root.setProperty('--legend-h', `${Math.round(lg.getBoundingClientRect().height)}px`);
     root.setProperty('--ctrl-right', isPhone() ? '0px' : `${Math.round(window.innerWidth - pr.left)}px`);
   }
-  if (window.ResizeObserver) new ResizeObserver(layoutChanged).observe(panelBox);
+  if (window.ResizeObserver) { const ro = new ResizeObserver(layoutChanged); ro.observe(panelBox); ro.observe(document.getElementById('title')); }
   window.addEventListener('resize', layoutChanged);
   // the open replay re-fits its charts when the screen size changes (rotation, Safari bars)
   let curFit = null, fitTimer = 0;
@@ -1634,9 +1620,10 @@
   function overview(instant) {
     if (!map) return;
     const pad = isPhone() ? padding() : { top: 40, bottom: 40, left: 40, right: 40 };
-    const cam = map.cameraForBounds ? map.cameraForBounds(bounds, { padding: pad, bearing: -18 }) : null;
-    if (!cam) { map.fitBounds(bounds, { padding: pad, pitch: 48, bearing: -18, duration: instant || reduceMotion ? 0 : 2400, essential: true }); return; }
-    map.easeTo({ center: cam.center, zoom: cam.zoom + OVERVIEW_ZOOM_BONUS, pitch: 48, bearing: -18, padding: isPhone() ? pad : ZERO,
+    // north up, gentle 3D
+    const cam = map.cameraForBounds ? map.cameraForBounds(bounds, { padding: pad, bearing: 0 }) : null;
+    if (!cam) { map.fitBounds(bounds, { padding: pad, pitch: 30, bearing: 0, duration: instant || reduceMotion ? 0 : 2400, essential: true }); return; }
+    map.easeTo({ center: cam.center, zoom: cam.zoom + OVERVIEW_ZOOM_BONUS, pitch: 30, bearing: 0, padding: isPhone() ? pad : ZERO,
       duration: instant || reduceMotion ? 0 : 2400, essential: true });
   }
   function fitPts(pts, maxZoom = 13.6) {
