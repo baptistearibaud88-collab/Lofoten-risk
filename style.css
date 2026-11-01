@@ -756,7 +756,7 @@ body.base-topo .compass .c-cross { fill: rgba(20, 35, 43, .15); }
 .pw-tile:hover img, .pw-tile:focus-visible img { transform: scale(1.05); }
 .pw-close { position: absolute; top: calc(4px + env(safe-area-inset-top, 0px)); right: max(52px, env(safe-area-inset-right, 0px)); border: 0; border-radius: 50%; width: 44px; height: 44px;
   font-size: 28px; line-height: 1; color: #fff; background: rgba(0, 0, 0, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); cursor: pointer; }
-.lightbox img { max-width: calc(100vw - 140px); max-height: calc(100vh - 170px); margin-bottom: 60px; }
+.lightbox img { max-width: calc(100vw - 140px); max-height: calc(100vh - 170px); margin-bottom: 60px; object-fit: contain; }
 .lb-cap { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(44px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px;
   max-width: 86vw; padding: 8px 8px 8px 16px; border-radius: 999px; background: rgba(255, 255, 255, .1); color: #fff; }
 .lb-cap[hidden] { display: none; }

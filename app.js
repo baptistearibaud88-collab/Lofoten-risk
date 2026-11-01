@@ -563,15 +563,26 @@
     const capT = el('strong'), capS = el('span');
     const onMap = el('button', { type: 'button', class: 'lb-map' }, 'Voir sur la carte');
     const cap = el('div', { class: 'lb-cap' }, el('div', null, capT, capS), onMap);
+    // size the photo ourselves: as big as the screen allows, whatever its shape (Safari otherwise
+    // keeps some landscape photos small inside the centred grid)
+    const fit = () => {
+      if (!img.naturalWidth) return;
+      const W = innerWidth - 140, H = innerHeight - 170, sc = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+      img.style.width = `${Math.round(img.naturalWidth * sc)}px`; img.style.height = `${Math.round(img.naturalHeight * sc)}px`;
+    };
+    img.addEventListener('load', fit);
     const show = () => {
       const it = items[k];
+      img.style.width = img.style.height = '';
       img.src = it.src; img.alt = it.title || 'Photo';
+      if (img.complete) fit();
       count.textContent = `${k + 1} / ${items.length}`;
       capT.textContent = it.title || ''; capS.textContent = it.sub || '';
       cap.hidden = !it.title; onMap.hidden = !it.point;
       [k - 1, k + 1].forEach(j => { const n = items[(j + items.length) % items.length]; if (n) new Image().src = n.src; });
     };
-    const close = () => { box.remove(); document.removeEventListener('keydown', onKey, true); };
+    const close = () => { box.remove(); document.removeEventListener('keydown', onKey, true); removeEventListener('resize', fit); };
+    addEventListener('resize', fit);
     const go = d => { k = (k + d + items.length) % items.length; show(); };
     const onKey = e => {
       if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); }
