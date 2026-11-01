@@ -1003,10 +1003,8 @@
     const mirror = sv('g', { class: 'sf-mirror', transform: `translate(0 ${2 * H0}) scale(1 -1)` }); mirror.append(...ridges());
     svg.append(mirror, ...ridges());                            // the peaks and their reflection in the fjord
     svg.append(sv('line', { x1: 0, x2: W, y1: H0, y2: H0, class: 'sf-hz' }));
-    // foreground beach and the tent
-    const bx = W / 2 - 20;
-    svg.append(sv('path', { d: `M0,${H} L0,${H - 10} Q${W * .3},${H - 30} ${W * .5},${H - 26} T${W},${H - 14} L${W},${H} Z`, class: 'sf-beach' }),
-      sv('path', { d: `M${bx - 11},${H - 24} L${bx},${H - 38} L${bx + 11},${H - 24} Z`, class: 'sf-tent' }));
+    // foreground beach
+    svg.append(sv('path', { d: `M0,${H} L0,${H - 10} Q${W * .3},${H - 30} ${W * .5},${H - 26} T${W},${H - 14} L${W},${H} Z`, class: 'sf-beach' }));
     for (const [x, l] of [[10, 'S'], [W / 4, 'O'], [W / 2, 'N'], [W * 3 / 4, 'E'], [W - 10, 'S']]) {
       svg.append(svText({ x, y: H0 + 17, class: 'sf-card', 'text-anchor': 'middle' }, l));
     }

@@ -1110,7 +1110,6 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .sf-mirror { opacity: .28; }
 .sf-hz { stroke: rgba(255, 255, 255, .55); stroke-width: 1; }
 .sf-beach { fill: #2b2a26; }
-.sf-tent { fill: #74e3df; }
 .sf-card { font-size: 13px; font-weight: 700; fill: rgba(255, 255, 255, .7); }
 .sf-mom { fill: #74e3df; stroke: #0d1418; stroke-width: 1.4; }
 .sun-read { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; line-height: 1.15; white-space: nowrap; color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, .45); pointer-events: none; }
