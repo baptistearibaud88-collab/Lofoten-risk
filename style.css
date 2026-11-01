@@ -1067,3 +1067,10 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   .src-btn { bottom: calc(var(--panel-h) + 53px + env(safe-area-inset-bottom, 0px)) !important; right: 20px !important; }
   body.ph-tools .controls { right: 62px !important; }
 }
+
+@media (max-width: 600px) {
+  /* the page never zooms on a phone; the map and the photo viewer handle their own gestures */
+  html, body { touch-action: pan-x pan-y; -webkit-text-size-adjust: 100%; }
+  button, .bubble, .panel, .title-block { touch-action: manipulation; }
+  #map, #map canvas { touch-action: none; }
+}

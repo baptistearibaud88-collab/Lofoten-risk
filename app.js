@@ -2053,7 +2053,25 @@
   }
 
   /* controls */
-  document.getElementById('btn-overview').addEventListener('click', () => { showHome(); overview(); });
+  document.getElementById('btn-overview').addEventListener('click', () => {
+    // phone: back to the landing screen (title open, panel folded to its tabs, tools closed)
+    if (matchMedia('(max-width: 600px)').matches) {
+      phoneLive(false); stopAnim(true);
+      document.body.classList.remove('ph-tools');
+      if (document.body.classList.contains('title-folded')) setFold('title-folded', btnTitleFold, false, 'le titre');
+      showHome();
+      setFold('panel-folded', btnPanelFold, true, 'le panneau');
+      layoutChanged();
+      requestAnimationFrame(() => overview());
+      return;
+    }
+    showHome(); overview();
+  });
+  // phone: only the map zooms; the page itself never does (no pinch, no double-tap zoom)
+  if (matchMedia('(max-width: 600px)').matches) {
+    ['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => { if (!e.target.closest('#map')) e.preventDefault(); }, { passive: false }));
+    document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !e.target.closest('#map, .lightbox')) e.preventDefault(); }, { passive: false });
+  }
   const btnRelief = document.getElementById('btn-relief');
   btnRelief.addEventListener('click', () => {
     terrainOn = !terrainOn;
