@@ -951,6 +951,7 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .src-body ul { margin: 0; padding-left: 15px; }
 .src-body li { margin: 3px 0; font-size: 13px; line-height: 1.42; color: rgba(255, 255, 255, .82); }
 @media (max-width: 820px) { .src-btn { display: none; } .src-body { columns: 1; } }
+@media (max-width: 600px) { .src-btn { display: grid; left: auto !important; right: 76px; bottom: calc(var(--panel-h) + 18px + 82px + 8px + env(safe-area-inset-bottom, 0px)) !important; } }   /* phone: sources next to the compass */
 
 /* summit recap: totals of climbs, descents and outings */
 .tot-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; background: var(--fill); border-radius: 14px; overflow: hidden; }
@@ -976,4 +977,25 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
     bottom: calc(var(--panel-h) + 18px + env(safe-area-inset-bottom, 0px)) !important; }
   .controls button { padding: 7px 2px; font-size: 13px; letter-spacing: -.01em; text-align: center; white-space: nowrap; }
   .compass { width: 52px; height: 52px; bottom: calc(var(--panel-h) + 18px + 82px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ---------- phone only (the iPad and computer layouts above are untouched) ---------- */
+@media (max-width: 600px) {
+  /* photo viewer: photo full width, caption as a plain card under it, arrows and counter at the bottom */
+  .lightbox img { max-width: calc(100vw - 16px); max-height: calc(100vh - 210px); margin-bottom: 120px; border-radius: 8px; }
+  .lb-cap { left: 12px; right: 12px; transform: none; max-width: none; bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    border-radius: 14px; padding: 9px 9px 9px 14px; justify-content: space-between; }
+  .lb-cap > div { min-width: 0; }
+  .lightbox .lb-prev, .lightbox .lb-next { top: auto; transform: none; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: 48px; height: 48px; }
+  .lb-count { bottom: calc(32px + env(safe-area-inset-bottom, 0px)); }
+  .lb-close { top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; }
+  /* inventory: profile and bag tiles two by two, a close button that stays on screen */
+  .dp-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .depart .dp-close { position: fixed !important; top: calc(18px + env(safe-area-inset-top, 0px)); right: 18px; z-index: 2; background: rgba(0, 0, 0, .6); }
+  .dp-head h2, .depart .dp-sub { font-size: 21px; }
+  .dp-tabs { flex-wrap: wrap; padding-right: 0; }
+  /* intros may wrap on a narrow screen */
+  .panel .note-1 { white-space: normal; }
+  /* right-of-access card: at the top of the screen, scrollable if needed */
+  .law-card { top: calc(12px + env(safe-area-inset-top, 0px)); bottom: auto; left: 12px; right: 12px; max-height: 60vh; overflow-y: auto; }
 }

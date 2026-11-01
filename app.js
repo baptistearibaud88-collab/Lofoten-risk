@@ -355,7 +355,7 @@
     const b = document.getElementById('btn-sources'), lg = document.querySelector('.legend');
     if (!b || !lg) return;
     const r = lg.getBoundingClientRect();
-    if (!r.width) { b.style.left = ''; b.style.bottom = ''; return; }
+    if (!r.width || matchMedia('(max-width: 600px)').matches) { b.style.left = ''; b.style.bottom = ''; return; }   // phone: placed by CSS
     b.style.left = `${Math.round(r.right + 10)}px`;
     b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
   }
@@ -587,7 +587,8 @@
     // keeps some landscape photos small inside the centred grid)
     const fit = () => {
       if (!img.naturalWidth) return;
-      const W = innerWidth - 140, H = innerHeight - 170, sc = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+      const ph = matchMedia('(max-width: 600px)').matches;   // phone: the photo takes the full width, controls below it
+      const W = innerWidth - (ph ? 16 : 140), H = innerHeight - (ph ? 210 : 170), sc = Math.min(W / img.naturalWidth, H / img.naturalHeight);
       img.style.width = `${Math.round(img.naturalWidth * sc)}px`; img.style.height = `${Math.round(img.naturalHeight * sc)}px`;
     };
     img.addEventListener('load', fit);
@@ -957,8 +958,8 @@
       backButton('Tous les bivouacs', 'camps'),
       el('h2', null, c.name),
       el('p', { class: 'meta' }, `${c.nights.length > 1 ? `${c.nights.length} nuits · ` : nightLabel(c.nights[0].night, c.nights[0].wake) + ' · '}${nf(c.alt)} m · ${c.lat.toFixed(4)} N, ${c.lon.toFixed(4)} E`),
-      (T.camp_recits || {})[c.id] ? el('p', { class: 'info-text camp-recit' }, T.camp_recits[c.id]) : null,   // the bivouac's story
-      ...[tabs, body].filter(Boolean));
+      ...[(T.camp_recits || {})[c.id] ? el('p', { class: 'info-text camp-recit' }, T.camp_recits[c.id]) : null,   // the bivouac's story
+        tabs, body].filter(Boolean));
     render(nightIdx);
     panel.scrollTop = 0;
   }
