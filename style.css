@@ -732,8 +732,13 @@ body.base-topo .sw-info::after { color: #2f6fb0; }
 .lightbox { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(6, 10, 12, .92); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .lightbox img { max-width: 94vw; max-height: 88vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
 .lightbox button { position: absolute; border: 0; border-radius: 50%; width: 44px; height: 44px; font-size: 28px; line-height: 1; color: #fff; background: rgba(255, 255, 255, .16); cursor: pointer; }
+.lightbox { touch-action: none; -webkit-user-select: none; user-select: none; }
+.lightbox img { transition: transform .12s ease-out; transform-origin: center center; -webkit-user-drag: none; }
+.lightbox.zoomed img { cursor: grab; }
+.lightbox.zoomed .lb-cap, .lightbox.zoomed .lb-count { opacity: .25; }
 .lb-close { top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; }
 .lb-prev { left: 16px; top: 50%; transform: translateY(-50%); }
+.lightbox .lb-prev, .lightbox .lb-next { width: 52px; height: 52px; font-size: 32px; background: rgba(0, 0, 0, .55); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .45); z-index: 2; }
 .lb-next { right: 16px; top: 50%; transform: translateY(-50%); }
 .lb-count { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); color: rgba(255, 255, 255, .8); font-size: 14px; font-variant-numeric: tabular-nums; }
 

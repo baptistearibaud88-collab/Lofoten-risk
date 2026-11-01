@@ -591,8 +591,10 @@
       img.style.width = `${Math.round(img.naturalWidth * sc)}px`; img.style.height = `${Math.round(img.naturalHeight * sc)}px`;
     };
     img.addEventListener('load', fit);
+    let resetZoom = () => {};
     const show = () => {
       const it = items[k];
+      resetZoom();
       img.style.width = img.style.height = '';
       img.src = it.src; img.alt = it.title || 'Photo';
       if (img.complete) fit();
@@ -616,10 +618,37 @@
       el('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer', onclick: close }, '×'),
       many ? el('button', { type: 'button', class: 'lb-prev', 'aria-label': 'Photo précédente', onclick: e => { e.stopPropagation(); go(-1); } }, '‹') : null,
       many ? el('button', { type: 'button', class: 'lb-next', 'aria-label': 'Photo suivante', onclick: e => { e.stopPropagation(); go(1); } }, '›') : null);
-    box.addEventListener('click', e => { if (e.target === box) close(); });
-    let x0 = null;
-    box.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
-    box.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); x0 = null; });
+    box.addEventListener('click', e => { if (e.target === box && z === 1) close(); });
+    // pinch to zoom the photo itself (never the page), drag to look around, double tap to zoom in or out;
+    // changing photo is only done with the two round arrows, so a zoom never jumps to another photo
+    let z = 1, tx = 0, ty = 0, g = null, lastTap = 0;
+    const apply = () => {
+      const r = img.getBoundingClientRect(), w = r.width / z, h = r.height / z;
+      const mx = Math.max(0, (w * z - w) / 2), my = Math.max(0, (h * z - h) / 2);
+      tx = Math.max(-mx, Math.min(mx, tx)); ty = Math.max(-my, Math.min(my, ty));
+      img.style.transform = z === 1 ? '' : `translate(${tx}px, ${ty}px) scale(${z})`;
+      box.classList.toggle('zoomed', z > 1);
+    };
+    resetZoom = () => { z = 1; tx = ty = 0; apply(); };
+    const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    box.addEventListener('touchstart', e => {
+      if (e.target.closest('button')) return;
+      if (e.touches.length === 2) g = { d: dist(e.touches), z, tx, ty };
+      else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTap < 300) { z = z > 1 ? 1 : 2.5; tx = ty = 0; apply(); lastTap = 0; g = null; return; }
+        lastTap = now;
+        g = { x: e.touches[0].clientX, y: e.touches[0].clientY, tx, ty };
+      }
+    }, { passive: true });
+    box.addEventListener('touchmove', e => {
+      if (!g) return;
+      e.preventDefault();
+      if (e.touches.length === 2 && g.d) { z = Math.max(1, Math.min(5, g.z * dist(e.touches) / g.d)); apply(); }
+      else if (e.touches.length === 1 && z > 1 && g.x != null) { tx = g.tx + e.touches[0].clientX - g.x; ty = g.ty + e.touches[0].clientY - g.y; apply(); }
+    }, { passive: false });
+    box.addEventListener('touchend', e => { if (!e.touches.length) { g = null; if (z < 1.05) resetZoom(); } });
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => box.addEventListener(t, e => e.preventDefault()));   // Safari: no page zoom
     document.addEventListener('keydown', onKey, true);
     document.body.append(box);
     show();
