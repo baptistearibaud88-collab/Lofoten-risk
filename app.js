@@ -445,7 +445,7 @@
     } else if (rubric === 'summits') {
       body.append(
         el('h2', null, 'Neuf sommets'),
-        el('p', { class: 'note' }, 'En trail, sans le sac. Choisis un sommet pour rejouer la sortie du jour.'),
+        el('p', { class: 'note' }, 'Choisis un sommet pour rejouer la sortie du jour.'),
         recapRow('peak', 'Récap des sommets', `${T.summits.length} sommets`, openSummitsRecap),
         el('ul', { class: 'camp-list' }, T.summits.map(s => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openSummit(s) },
@@ -754,15 +754,17 @@
     const best = rows.reduce((a, b) => b.gap < a.gap ? b : a), hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
     const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
     const cold = withT.reduce((a, b) => b.s.temp_c < a.s.temp_c ? b : a), warm = withT.reduce((a, b) => b.s.temp_c > a.s.temp_c ? b : a);
-    const recTile = (k, label, r, value) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openSummit(r.s) },
-      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value), el('span', { class: 'rec-s' }, r.s.sommet));
+    const recTile = (k, label, r, value, extra) => el('button', { type: 'button', class: 'rec-tile', onclick: () => openSummit(r.s) },
+      el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value), el('span', { class: 'rec-s' }, r.s.sommet),
+      extra ? el('span', { class: 'rec-s rec-d rec-wrap' }, extra) : null);
     return el('div', { class: 'rec-grid' },
       recTile('k-top', 'le plus haut', high, `${nf(altOf(high))} m`),
       recTile('k-fast', 'montée rapide', best, `${pace(best.gap)} /km`),
       recTile('k-hard', 'montée lente', hard, `${pace(hard.gap)} /km`),
       recTile('k-down', 'descente rapide', down, `${pace(down.downS / 60 / down.downKm)} /km`),
       recTile('k-cold', 'le plus froid', cold, `${nf(cold.s.temp_c, 0)} °C`),
-      recTile('k-warm', 'le plus chaud', warm, `${nf(warm.s.temp_c, 0)} °C`));
+      recTile('k-warm', 'le plus chaud', warm, `${nf(warm.s.temp_c, 0)} °C`,
+        (T.ressentis || {})[warm.s.sommet] ? `ressenti ${T.ressentis[warm.s.sommet].pied} °C au pied` : null));
   }
 
   /* records of the nights, each one flies to its bivouac */
@@ -1890,7 +1892,8 @@
         el('div', { class: 'peak-name' }, peakIcon(), s.sommet),
         el('div', { class: 'peak-figs' },
           el('span', { class: 'peak-alt' }, nf(s.hauteur_officielle_m || s.alt_gps_m), el('small', null, ' m')),
-          s.temp_c != null ? el('span', { class: 'peak-temp' }, `${nf(s.temp_c, 0)} °C`) : null)))
+          s.temp_c != null ? el('span', { class: 'peak-temp' }, `${nf(s.temp_c, 0)} °C`) : null,
+          (T.ressentis || {})[s.sommet] ? el('span', { class: 'peak-feel' }, `ressenti ${T.ressentis[s.sommet].sommet} °C`) : null)))
       .addTo(map);
     if (ttl) { const mine = popup; popupTimer = setTimeout(() => { if (popup === mine) { mine.remove(); popup = null; } }, ttl); }
   }

@@ -403,6 +403,7 @@ body:not(.base-topo) .maplibregl-ctrl-group button + button { border-top-color: 
 .peak-alt { font-family: var(--font-num); font-size: 19px; font-weight: 700; letter-spacing: -.02em; line-height: 1.05; color: rgba(255, 255, 255, .86); }
 .peak-alt small { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, .7); }
 .peak-temp { font-family: var(--font-num); font-size: 13px; font-weight: 600; color: #9fe6ff; }
+.peak-feel { font-size: 11.5px; font-weight: 600; color: #ffc65c; }
 .alert-pop .maplibregl-popup-content { padding: 4px 9px 5px !important; border-radius: 10px !important; border-top: 2px solid #f4d35e; }
 .pop-photo .maplibregl-popup-content { border-top-color: #2bb3ac; }
 .pop-info .maplibregl-popup-content { border-top-color: #9fd0ff; }
@@ -912,6 +913,7 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .rec-v { font-family: var(--font-num); font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rec-s { max-width: 100%; font-size: 10.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rec-d { color: var(--ink-3); }
+.rec-s.rec-wrap { white-space: normal; line-height: 1.2; color: #ffc65c; }
 .rec-s:not(.rec-d) { white-space: normal; line-height: 1.2; }   /* long camp names go on two lines */
 .k-top { background: #e0472f; } .k-cold { background: #6cc4ff; } .k-wind { background: #74e3df; }
 .k-rain { background: #2f6fb0; } .k-short { background: #b55ac8; } .k-best { background: #5fd38d; }
