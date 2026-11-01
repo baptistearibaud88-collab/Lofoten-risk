@@ -340,6 +340,8 @@
   btnTitleFold.addEventListener('click', () => { setFold('title-folded', btnTitleFold, !document.body.classList.contains('title-folded'), 'le titre'); placeDepart(); });
   btnPanelFold.addEventListener('click', () => setFold('panel-folded', btnPanelFold, !document.body.classList.contains('panel-folded'), 'le panneau'));
   const unfoldPanel = () => { if (document.body.classList.contains('panel-folded')) setFold('panel-folded', btnPanelFold, false, 'le panneau'); };
+  // phone: open on the map, the panel folded down to its tabs (a tab unfolds it)
+  if (matchMedia('(max-width: 600px)').matches) setFold('panel-folded', btnPanelFold, true, 'le panneau');
 
   // "Inventaire" centred under the last figure of the title stats (Trail running)
   function placeDepart() {
@@ -421,7 +423,7 @@
   }
 
   /* ---------- panel: home lists ---------- */
-  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); curFit = null; document.querySelector('.law-card')?.remove(); phoneLive(false); };
+  const resetPanel = () => { phoneLive(false); panel.classList.remove('recap'); setFov(null); curFit = null; curLive = null; document.querySelector('.law-card')?.remove(); };
   function showHome(which) {
     resetPanel();
     stopAnim(true);
@@ -1171,6 +1173,7 @@
   const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
   const CAMS = [['drone', 'Drone'], ['orbit', 'Orbite'], ['fixed', 'Fixe']];
 
+  const live = { saved: null };
   function player(pts, opts) {
     const counters = {};
     const cnt = (key, label, unit) => el('div', null, el('dt', null, label),
@@ -1186,6 +1189,13 @@
     let paces = speedChart(pts, opts.paceBin || 1, seek);
     const wx = opts.weather ? weatherBox() : null, batt = opts.weather ? batteryBox() : null;
     const altBox = el('div', { class: 'chart-box' }, chart.svg), speedBox = el('div', { class: 'chart-box' }, ...paces.nodes);
+    let hA = 92, hS = 96;   // chart heights (chart units), changed by fit() and by the phone live mode
+    const build = (a, b) => {
+      hA = a; hS = b;
+      chart = profileChart(pts, opts.marks, seek, a); paces = speedChart(pts, opts.paceBin || 1, seek, b);
+      altBox.replaceChildren(chart.svg); speedBox.replaceChildren(...paces.nodes);
+      const p = pts[idxAt(pts, state.km)]; chart.move(state.km, p.alt); paces.move(state.km);
+    };
 
     function render(km, full) {
       const i = idxAt(pts, km), p = pts[i];
@@ -1209,7 +1219,7 @@
     const speedBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Vitesse' }, '×1');
     const speeds = opts.speeds || SPEEDS;
     speedBtn.addEventListener('click', () => { state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length]; speedBtn.textContent = `×${nf(state.speed, (state.speed * 10) % 1 ? 2 : state.speed % 1 ? 1 : 0)}`; if (anim) anim.speed = state.speed; });
-    const camBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Mode de caméra' }, `Caméra : ${CAMS[0][1]}`);
+    const camBtn = el('button', { type: 'button', class: 'ghost cam-btn', 'aria-label': 'Mode de caméra' }, `Caméra : ${CAMS[0][1]}`);
     camBtn.addEventListener('click', () => {
       const i = (CAMS.findIndex(c => c[0] === state.cam) + 1) % CAMS.length;
       state.cam = CAMS[i][0]; camBtn.textContent = `Caméra : ${CAMS[i][1]}`;
@@ -1235,15 +1245,21 @@
         ...(wx ? [el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node, batt.node,
           el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), heure par heure, zone la plus proche : nord, centre ou sud. Température ramenée à ton altitude (−6,5 °C par 1 000 m), ressenti = refroidissement par le vent. Vent et rafales à 10 m sur une maille d’environ 30 km : souvent plus fort sur les crêtes. Pluie : cumul de l’heure.')] : [])].filter(Boolean),
       start: () => playBtn.click(),
+      // phone live mode: the two charts a little taller; back to their size afterwards
+      live: on => {
+        if (!on) { if (live.saved) { build(...live.saved); live.saved = null; } return; }
+        live.saved = [hA, hS];
+        requestAnimationFrame(() => {   // a little taller, but never more than the panel can show
+          const k = 380 / Math.max(1, chart.svg.getBoundingClientRect().width);
+          const room = (innerHeight * 0.5 - panelBox.getBoundingClientRect().height + panel.clientHeight - panel.scrollHeight) * k;   // up to half the screen
+          const grow = Math.max(-20, Math.min(38, room));
+          build(Math.max(70, hA + grow * 0.6), Math.max(70, hS + grow * 0.4));
+        });
+      },
       // once in the panel: grow the two charts so the weather sits right at the bottom of the
       // panel (the grey note is then just below, by scrolling); altitude gets the larger share
       fit: () => {
         if (!wx || !panel.contains(batt.node) || document.body.classList.contains('ph-live')) return;
-        const build = (hA, hS) => {
-          chart = profileChart(pts, opts.marks, seek, hA); paces = speedChart(pts, opts.paceBin || 1, seek, hS);
-          altBox.replaceChildren(chart.svg); speedBox.replaceChildren(...paces.nodes);
-          const p = pts[idxAt(pts, state.km)]; chart.move(state.km, p.alt); paces.move(state.km);
-        };
         build(92, 96);
         const st = panel.scrollTop; panel.scrollTop = 0;
         const room = panel.getBoundingClientRect().bottom - 12 - batt.node.getBoundingClientRect().bottom;   // the grey note starts just out of sight
@@ -1278,7 +1294,7 @@
       backButton('Toutes les étapes', 'etapes'),
       ...pl.nodes);
     panel.scrollTop = 0;
-    curFit = pl.fit; pl.fit();
+    curFit = pl.fit; curLive = pl.live; pl.fit();
   }
 
   /* ---------- panel: one summit (the whole trail outing of that day) ---------- */
@@ -1348,7 +1364,7 @@
       backButton('Tous les sommets', 'summits'),
       ...pl.nodes);
     panel.scrollTop = 0;
-    curFit = pl.fit; pl.fit();
+    curFit = pl.fit; curLive = pl.live; pl.fit();
   }
 
   /* ---------- recaps: all the nights, all the summits ---------- */
@@ -1527,9 +1543,10 @@
       eyebrow: '14 → 22 juin 2026 · Napp → Moskenes', name: 'Toute la traversée' });
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
-      el('p', { class: 'note' }, 'Tout dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.'),
+      el('p', { class: 'note trek-note' }, 'Tout dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.'),
       ...pl.nodes);
     panel.scrollTop = 0;
+    curLive = pl.live;
     overview();
     setTimeout(pl.start, reduceMotion ? 0 : 2500);
   }
@@ -1725,13 +1742,17 @@
   }
   /* phone only: while an activity plays, the screen goes to the map and the moving figures —
      title folded, map buttons tucked behind one button under the compass, no tabs, no headings */
-  let liveTitleWasOpen = false;
+  let liveTitleWasOpen = false, curLive = null;
   function phoneLive(on) {
     on = on && matchMedia('(max-width: 600px)').matches;
     const was = document.body.classList.contains('ph-live');
     if (on === was) return;
     document.body.classList.toggle('ph-live', on);
     document.body.classList.remove('ph-tools');
+    // back, stop and speed on one line; the back button goes home again afterwards
+    const back = document.querySelector('#panel-inner .back'), row = document.querySelector('#panel-inner .player');
+    if (back && row) { if (on) row.prepend(back); else panel.prepend(back); }
+    if (curLive) curLive(on);
     if (on) { liveTitleWasOpen = !document.body.classList.contains('title-folded'); if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, true, 'le titre'); }
     else if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, false, 'le titre');
     layoutChanged();

@@ -1000,22 +1000,26 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
   .law-card { top: calc(12px + env(safe-area-inset-top, 0px)); bottom: auto; left: 12px; right: 12px; max-height: 60vh; overflow-y: auto; }
 }
 
-/* phone, while an activity plays: map first, only the moving figures in the panel */
+/* phone: map buttons tucked behind one button under the compass (always); while an activity
+   plays, only the moving figures in the panel */
 .tools-btn { display: none; }
 @media (max-width: 600px) {
-  .tools-btn { position: fixed; z-index: 3; right: 19px; width: 38px; height: 38px; padding: 0; border-radius: 50%; place-items: center; cursor: pointer; color: var(--accent);
+  .tools-btn { display: grid; position: fixed; z-index: 3; right: 19px; width: 38px; height: 38px; padding: 0; border-radius: 50%; place-items: center; cursor: pointer; color: var(--accent);
     bottom: calc(var(--panel-h) + 18px + env(safe-area-inset-bottom, 0px)); }
   .tools-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
-  body.ph-live .tools-btn { display: grid; }
-  body.ph-live .controls { display: none; }
-  body.ph-live.ph-tools .controls { display: grid; bottom: calc(var(--panel-h) + 18px + 46px + env(safe-area-inset-bottom, 0px)) !important; }
-  body.ph-live .compass { bottom: calc(var(--panel-h) + 18px + 46px + env(safe-area-inset-bottom, 0px)); }
-  body.ph-live .src-btn { bottom: calc(var(--panel-h) + 18px + 46px + 60px + env(safe-area-inset-bottom, 0px)) !important; }
-  body.ph-live.ph-tools .compass, body.ph-live.ph-tools .src-btn { display: none; }
+  body.ph-tools .tools-btn { background: var(--accent-soft); }
+  .controls { display: none !important; }
+  body.ph-tools .controls { display: grid !important; bottom: calc(var(--panel-h) + 18px + 46px + env(safe-area-inset-bottom, 0px)) !important; }
+  .compass { bottom: calc(var(--panel-h) + 18px + 46px + env(safe-area-inset-bottom, 0px)); }
+  .src-btn { bottom: calc(var(--panel-h) + 18px + 46px + 60px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.ph-tools .compass, body.ph-tools .src-btn { display: none !important; }
   body.ph-live .panel-head { display: none; }
   body.ph-live .panel h3, body.ph-live .profile-hint, body.ph-live .pace-now, body.ph-live .key,
   body.ph-live .wx, body.ph-live .batt, body.ph-live .wx-note, body.ph-live .where,
-  body.ph-live .player .ghost { display: none !important; }
+  body.ph-live .player .cam-btn, body.ph-live .trek-note { display: none !important; }
+  body.ph-live .player { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+  body.ph-live .player .back { margin: 0 auto 0 0; padding: 0; white-space: nowrap; }
   body.ph-live .panel-inner { padding-top: 10px; }
+  body.ph-live .panel { max-height: 50vh; }
   body.ph-live .player { margin: 4px 0 8px; }
 }
