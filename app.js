@@ -137,7 +137,8 @@
     let ids, where, open, replay;
     if (a.rubrique === 'bivouac') {   // a point at a camp (reference = camp number)
       const c = camps.find(x => String(x.id) === String(a.reference)), n = c.nights[0];
-      return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: null, day: n.next_day - 1, where: `au bivouac ${c.name}`,
+      return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: a.heure || null,   // a camp photo has no trace: its time comes from photos.csv
+        day: n.next_day - 1, where: `au bivouac ${c.name}`,
         label: `Bivouac ${camps.indexOf(c) + 1} · ${c.name} · ${nightLabel(n.night, n.wake)}`, open: () => openCamp(c), replay: 'Voir le bivouac' };
     }
     if (a.rubrique === 'activite') {   // an outing that is in no rubric (reference = activity id)
@@ -729,7 +730,7 @@
       backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · ${a.label}`),
       el('h2', null, a.titre),
-      el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      el('p', { class: 'meta' }, `${nf(Math.max(0, a.alt))} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
       isPh ? null : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),   // an info: its story first, then its photo if any
       isPh || photoFiles(a).length ? photoGallery(a) : null,
       isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
