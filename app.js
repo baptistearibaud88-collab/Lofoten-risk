@@ -464,7 +464,7 @@
       const isPh = rubric === 'photos', list = isPh ? PHOTOS : INFOS;
       body.append(
         el('h2', null, isPh ? 'Photos' : 'Infos'),
-        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises. Choisis-en une pour voler jusqu’à l’endroit.' : 'Anecdotes et petites histoires, au bon endroit du parcours.'),
+        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises.' : 'Anecdotes et petites histoires, au bon endroit du parcours.'),
         ...(isPh ? [recapRow('photo', 'Toutes les photos', `${PHOTOS.reduce((n, a) => n + photoFiles(a).length, 0)} photos`, openPhotoWall)] : []),
         el('ul', { class: 'camp-list' }, list.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openRoutePoint(rubric, a) },
@@ -475,7 +475,7 @@
     } else if (rubric === 'alerts') {
       body.append(
         el('h2', null, 'Alertes'),
-        el('p', { class: 'note' }, 'Les moments où ça a coincé sur le parcours. Le récit viendra compléter chaque alerte.'),
+        el('p', { class: 'note' }, 'Les moments où le parcours a mis au défi.'),
         el('ul', { class: 'camp-list' }, ALERTS.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openAlert(a) },
             el('span', { class: 'camp-num num-peak' }, warnIcon()),
@@ -485,7 +485,7 @@
     } else {
       body.append(
         el('h2', null, 'Sept étapes avec le sac'),
-        el('p', { class: 'note' }, 'De bivouac en bivouac, avec le gros sac. Les J6 et J8 se passent sans sac : ils sont dans les sommets.'),
+        el('p', { class: 'note' }, 'De bivouac en bivouac, avec le sac de rando.'),
         el('ul', { class: 'camp-list' }, T.etapes.map(e => {
           const seq = buildSeq(e.acts), last = seq[seq.length - 1];
           return el('li', null,
