@@ -383,8 +383,9 @@
     document.getElementById('act-profile').replaceChildren(...profileNodes);
     titleDefault.hidden = true; titleAct.hidden = false;
     // a replay opens with photos and infos off (less clutter); their buttons bring them back, like the alerts
-    photosOn = infosOn = false;
+    photosOn = infosOn = false; alertsOn = true;
     ['btn-photos', 'btn-infos'].forEach(id => document.getElementById(id).setAttribute('aria-pressed', 'false'));
+    document.getElementById('btn-alerts').setAttribute('aria-pressed', 'true');
     replayMode = true; updateLayers();
   }
   function setTitleDefault() {
@@ -420,7 +421,7 @@
   }
 
   /* ---------- panel: home lists ---------- */
-  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); curFit = null; document.querySelector('.law-card')?.remove(); };
+  const resetPanel = () => { panel.classList.remove('recap'); setFov(null); curFit = null; document.querySelector('.law-card')?.remove(); phoneLive(false); };
   function showHome(which) {
     resetPanel();
     stopAnim(true);
@@ -1215,11 +1216,12 @@
       if (anim) { anim.cam = state.cam; anim.orbitStart = performance.now(); anim.orbitBase = map ? map.getBearing() : 0; anim.bearing = map ? map.getBearing() : anim.bearing; }
     });
     playBtn.addEventListener('click', () => {
-      if (anim && anim.running) { anim.running = false; playBtn.textContent = '▶ Reprendre'; return; }
+      if (anim && anim.running) { anim.running = false; playBtn.textContent = '▶ Reprendre'; phoneLive(false); return; }
       if (state.km >= pts[pts.length - 1].km) state.km = 0;
       state.lastCk = state.km === 0 ? -1 : state.km;
-      startAnim(pts, state, opts.view, render, () => { playBtn.textContent = '↺ Rejouer'; opts.onEnd && opts.onEnd(); });
-      playBtn.textContent = '❚❚ Pause';
+      startAnim(pts, state, opts.view, render, () => { playBtn.textContent = '↺ Rejouer'; phoneLive(false); opts.onEnd && opts.onEnd(); });
+      phoneLive(true);
+      playBtn.textContent = document.body.classList.contains('ph-live') ? '■ Stop' : '❚❚ Pause';
     });
 
     // fixed figures of the outing go to the title bubble; what moves stays in the panel
@@ -1236,7 +1238,7 @@
       // once in the panel: grow the two charts so the weather sits right at the bottom of the
       // panel (the grey note is then just below, by scrolling); altitude gets the larger share
       fit: () => {
-        if (!wx || !panel.contains(batt.node)) return;
+        if (!wx || !panel.contains(batt.node) || document.body.classList.contains('ph-live')) return;
         const build = (hA, hS) => {
           chart = profileChart(pts, opts.marks, seek, hA); paces = speedChart(pts, opts.paceBin || 1, seek, hS);
           altBox.replaceChildren(chart.svg); speedBox.replaceChildren(...paces.nodes);
@@ -1534,6 +1536,7 @@
   document.getElementById('btn-trek').addEventListener('click', openTrek);
   document.getElementById('btn-depart').addEventListener('click', openDepart);
   document.getElementById('btn-sources').addEventListener('click', openSources);
+  document.getElementById('btn-tools').addEventListener('click', () => document.body.classList.toggle('ph-tools'));
   placeSources();
   placeDepart(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeDepart);
 
@@ -1719,6 +1722,19 @@
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
+  }
+  /* phone only: while an activity plays, the screen goes to the map and the moving figures —
+     title folded, map buttons tucked behind one button under the compass, no tabs, no headings */
+  let liveTitleWasOpen = false;
+  function phoneLive(on) {
+    on = on && matchMedia('(max-width: 600px)').matches;
+    const was = document.body.classList.contains('ph-live');
+    if (on === was) return;
+    document.body.classList.toggle('ph-live', on);
+    document.body.classList.remove('ph-tools');
+    if (on) { liveTitleWasOpen = !document.body.classList.contains('title-folded'); if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, true, 'le titre'); }
+    else if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, false, 'le titre');
+    layoutChanged();
   }
   function stopAnim(clear) {
     if (anim) anim.running = false;
@@ -1995,8 +2011,8 @@
     else if (c.type === 'alert') {
       if (!alertsOn) return;
       burst('warn', c.a.lon, c.a.lat, c.a.effet);
-      if (c.a.effet === 'eboulement') { if (anim) anim.holdUntil = performance.now() + 3000; }   // the falling stones say it all
-      else alertPopup(c.a, 4500);
+      if (c.a.pause_s && anim) anim.holdUntil = performance.now() + c.a.pause_s * 1000;   // the walker stops (alertes.csv, pause_s)
+      if (c.a.effet !== 'eboulement') alertPopup(c.a, 4500);   // the falling stones say it all
     }
     else burst('camp', c.c.lon, c.c.lat);
   };
