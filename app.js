@@ -376,7 +376,7 @@
       const line = r.getClientRects()[0], fs = parseFloat(getComputedStyle(h).fontSize);
       const mid = line.top + line.height / 2 + fs * 0.06;      // middle of the capitals, a hair under the line box middle
       const bubble = document.getElementById('title').getBoundingClientRect();
-      const free = bubble.right - line.right, gap = Math.max(10, (free - b.offsetWidth) / 2);   // same space either side
+      const free = bubble.right - line.right, gap = Math.max(10, (free - b.offsetWidth) / 2 - 4);   // about the same space either side, a touch nearer the title
       b.style.right = `${Math.round(box.right - (line.right + gap + b.offsetWidth))}px`;
       b.style.top = `${Math.round(Math.max(mid - box.top - b.offsetHeight / 2, fold.bottom - box.top + 1))}px`;
     }
