@@ -557,7 +557,8 @@
   }
 
   /* photos of a point: stacked in the panel, a tap opens them full screen */
-  const photoFiles = a => (a.fichier || '').split(';').map(x => x.trim()).filter(Boolean);
+  const PHOTO_V = '2400';   // bump when the published photos are regenerated, so Safari reloads them
+  const photoFiles = a => (a.fichier || '').split(';').map(x => x.trim()).filter(Boolean).map(f => `${f}?v=${PHOTO_V}`);
   // time of each photo: one per file for the camp photos (photos.csv), else the passage on the trace
   const photoTimes = a => { const f = photoFiles(a), t = a.heures ? String(a.heures).split(';') : [];
     return f.map((_, i) => (t[i] || t[0] || a.heure || '').trim() || null); };
