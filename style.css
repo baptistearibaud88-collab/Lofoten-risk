@@ -968,3 +968,12 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .tot-avg b { font-family: var(--font-num); font-size: 14.5px; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tot-avg b small { font-family: var(--font); font-size: 10px; font-weight: 500; color: var(--ink-3); }
 .panel .note-1 { font-size: 13px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one-line intro */
+
+/* phone only: the six map buttons in a tidy grid of 3 x 2, full width, the compass just above it */
+@media (max-width: 600px) {
+  .controls { left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px));
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-width: none !important;
+    bottom: calc(var(--panel-h) + 18px + env(safe-area-inset-bottom, 0px)) !important; }
+  .controls button { padding: 7px 2px; font-size: 13px; letter-spacing: -.01em; text-align: center; white-space: nowrap; }
+  .compass { width: 52px; height: 52px; bottom: calc(var(--panel-h) + 18px + 82px + env(safe-area-inset-bottom, 0px)); }
+}
