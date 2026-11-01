@@ -361,21 +361,14 @@
     b.style.left = `${Math.round(r.right + 10)}px`;
     b.style.bottom = `${Math.round(innerHeight - r.bottom + (r.height - b.offsetHeight) / 2)}px`;
   }
-  // "Soleil de minuit" at the right end of the title line, clear of the fold chevron:
-  // iPad / computer under the chevron, against the right edge; phone just left of the chevron
+  // "Soleil de minuit" at the right end of the title, just left of the fold chevron and centred on it
   function placeSun() {
-    const b = document.getElementById('btn-sun'), h = document.querySelector('#title-default h1');
-    if (!b || !h || !b.offsetParent) return;
-    const r = document.createRange(); r.selectNodeContents(h);
-    const line = r.getClientRects()[0], box = b.offsetParent.getBoundingClientRect();
-    const fold = document.getElementById('btn-title-fold').getBoundingClientRect();
-    if (matchMedia('(max-width: 600px)').matches) {
-      b.style.right = `${Math.round(box.right - fold.left + 4)}px`;
-      b.style.top = `${Math.round(fold.top + fold.height / 2 - box.top - b.offsetHeight / 2)}px`;
-    } else {
-      b.style.right = '';
-      b.style.top = `${Math.round(Math.max(line.top - box.top + (line.height - b.offsetHeight) / 2, fold.bottom - box.top + 2))}px`;
-    }
+    const b = document.getElementById('btn-sun');
+    if (!b || !b.offsetParent) return;
+    const box = b.offsetParent.getBoundingClientRect(), fold = document.getElementById('btn-title-fold').getBoundingClientRect();
+    b.style.right = `${Math.round(box.right - fold.left + 4)}px`;
+    const lift = matchMedia('(max-width: 600px)').matches ? 0 : 3;   // iPad / computer: a touch higher, clear of the big title
+    b.style.top = `${Math.round(fold.top + fold.height / 2 - box.top - b.offsetHeight / 2 - lift)}px`;
   }
   function layoutChanged() {
     placeDepart(); placeSources(); placeSun();
@@ -1054,9 +1047,17 @@
         o.row.classList.toggle('is-lit', lit); o.dot.classList.toggle('is-lit', lit); if (o.shot) o.shot.classList.toggle('is-lit', lit);
       }
     };
+    // the sun stops a moment on the photo (2.5 s), then goes on
+    const HOLD = 2500, uOf = t => { const m0 = toMin(path[0].t); return (((toMin(t) - m0) % 1440 + 1440) % 1440) / MIN; };
+    const stops = moms.map(o => uOf(o.m.heure));
+    let holdUntil = 0;
     const tick = now => {
       if (!last) last = now;
-      if (!paused) u = (u + (now - last) / DAY * n) % n;
+      if (!paused && now >= holdUntil) {
+        const nu = (u + (now - last) / DAY * n) % n;
+        const hit = stops.find(sx => (u < sx && nu >= sx) || (nu < u && (sx > u || sx <= nu)));
+        if (hit != null) { u = hit; holdUntil = now + HOLD; } else u = nu;
+      }
       last = now; draw(); raf = requestAnimationFrame(tick);
     };
     const setPlay = () => { play.classList.toggle('is-paused', paused); play.setAttribute('aria-label', paused ? 'Lecture' : 'Pause'); };
@@ -1080,9 +1081,10 @@
               el('p', null, `En 24 h, il fait le tour du ciel : au plus haut plein sud vers ${hFr(S.midi_solaire)} (${nf(S.el_max, 1)}°), au plus bas plein nord vers ${hFr(S.minuit_solaire)}, encore ${nf(S.el_min[0], 1)} à ${nf(S.el_min[1], 1)}° au-dessus de l’horizon. Le même jour à Paris : ${nf(S.paris.max, 1)}° à midi, mais ${nf(-S.paris.min, 1)}° sous l’horizon la nuit.`)),
             el('section', null,
               el('h4', null, 'Sur ma traversée'),
-              el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
               moms.map(o => o.shot),
-              el('ul', { class: 'sun-moms' }, moms.map(o => o.row)),
+              el('ul', { class: 'sun-moms' }, moms.map(o => o.row))),
+            el('div', { class: 'sun-band' },                     // across both columns
+              el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
               el('p', null, 'Pas de frontale dans le sac : la lumière ne fixait plus l’horaire. Le revers : sans nuit, je ne sentais plus la fatigue et je commençais à faire des fautes de pied.'))))));
     box.addEventListener('click', e => { if (e.target === box) close(); });
     document.addEventListener('keydown', onKey);

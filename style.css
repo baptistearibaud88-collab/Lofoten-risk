@@ -1080,6 +1080,7 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 
 /* midnight sun: the button on the title line, and its window */
 #title-default { position: relative; }
+.title-block .fold { z-index: 2; }   /* the chevron stays above the title content (to unfold it again) */
 .sun-btn { position: absolute; right: -2px; top: 26px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 4px;
   border: 0; border-radius: 12px; background: transparent; color: var(--ink-2); cursor: pointer; font: inherit; text-shadow: none;
   box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--sun) 70%, transparent); }
@@ -1124,7 +1125,10 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .sun-body h4 { margin: 10px 0 4px; font-size: 12.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #74e3df; }
 .sun-body p { margin: 0 0 7px; font-size: 13px; line-height: 1.42; color: rgba(255, 255, 255, .84); }
 .sun-body p b { color: #ffc65c; font-weight: 700; }
-.sun-kpi { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 8px !important; }
+.sun-band { grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; margin-top: 10px; padding: 9px 14px; border-radius: 12px; background: rgba(255, 255, 255, .07); }
+.sun-band p { margin: 0 !important; }
+.sun-kpi { display: flex; flex-direction: column; flex: none; gap: 0; }
+.sun-kpi span { font-size: 11.5px !important; line-height: 1.25; }
 .sun-kpi b { font-family: var(--font-num); font-size: 22px; font-weight: 700; color: #ffc65c !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sun-kpi span { font-size: 13px; color: rgba(255, 255, 255, .78); }
 .sun-photo { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: zoom-in; background: #0b1114;
@@ -1141,11 +1145,14 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .sun-moms b { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: #fff; }
 .sun-moms em { font-style: normal; font-weight: 700; color: #74e3df; }
 .sun-moms i { font-style: normal; font-family: var(--font-num); font-weight: 650; color: #ffc65c; font-variant-numeric: tabular-nums; }
-@media (max-width: 700px) { .sun-body { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .sun-body { grid-template-columns: 1fr; } .sun-band { gap: 12px; padding: 9px 12px; } }
 @media (max-width: 600px) {
   .sun-modal { padding: 10px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
   .sun-card { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px)); padding: 14px 14px 12px; }
   .sun-read b { font-size: 19px; } .sun-read span { font-size: 11.5px; }
+  .sun-band { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .sun-kpi { flex-direction: row; align-items: baseline; gap: 8px; }
+  .sun-kpi span { font-size: 13px !important; }
   .sun-btn { gap: 3px; padding: 2px 6px 2px 3px; border-radius: 10px; }
   .sun-btn svg { width: 16px; height: 16px; }
   .sun-btn span { font-size: 10px; }
