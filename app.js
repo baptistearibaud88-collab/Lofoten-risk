@@ -432,7 +432,7 @@
     if (rubric === 'camps') {
       body.append(
         el('h2', null, 'Sept bivouacs, neuf nuits'),
-        el('p', { class: 'note' }, 'Choisis un bivouac pour lire les statistiques de la nuit.'),
+        el('p', { class: 'note note-1' }, 'Choisis un bivouac pour lire les statistiques de la nuit.'),
         recapRow('rem', 'Récap des nuits', `${T.camps.length} nuits`, openNightsRecap),
         el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
@@ -445,7 +445,7 @@
     } else if (rubric === 'summits') {
       body.append(
         el('h2', null, 'Neuf sommets'),
-        el('p', { class: 'note' }, 'Choisis un sommet pour rejouer la sortie du jour.'),
+        el('p', { class: 'note note-1' }, 'Choisis un sommet pour rejouer la sortie du jour.'),
         recapRow('peak', 'Récap des sommets', `${T.summits.length} sommets`, openSummitsRecap),
         el('ul', { class: 'camp-list' }, T.summits.map(s => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openSummit(s) },

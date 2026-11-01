@@ -961,3 +961,4 @@ body.base-topo .wx-sky { background: rgba(20, 35, 43, .06); }
 .tot-avg div { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12px; white-space: nowrap; color: var(--ink-3); }
 .tot-avg b { font-family: var(--font-num); font-size: 14.5px; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tot-avg b small { font-family: var(--font); font-size: 10px; font-weight: 500; color: var(--ink-3); }
+.panel .note-1 { font-size: 13px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* one-line intro */
