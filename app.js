@@ -1635,10 +1635,11 @@
   function overview(instant) {
     if (!map) return;
     const pad = isPhone() ? padding() : { top: 40, bottom: 40, left: 40, right: 40 };
-    // north up, gentle 3D
-    const cam = map.cameraForBounds ? map.cameraForBounds(bounds, { padding: pad, bearing: 0 }) : null;
-    if (!cam) { map.fitBounds(bounds, { padding: pad, pitch: 30, bearing: 0, duration: instant || reduceMotion ? 0 : 2400, essential: true }); return; }
-    map.easeTo({ center: cam.center, zoom: cam.zoom + OVERVIEW_ZOOM_BONUS, pitch: 30, bearing: 0, padding: isPhone() ? pad : ZERO,
+    // phone: north up with gentle 3D; iPad and computer keep the original oblique view
+    const ph = matchMedia('(max-width: 600px)').matches, bearing = ph ? 0 : -18, pitch = ph ? 30 : 48;
+    const cam = map.cameraForBounds ? map.cameraForBounds(bounds, { padding: pad, bearing }) : null;
+    if (!cam) { map.fitBounds(bounds, { padding: pad, pitch, bearing, duration: instant || reduceMotion ? 0 : 2400, essential: true }); return; }
+    map.easeTo({ center: cam.center, zoom: cam.zoom + OVERVIEW_ZOOM_BONUS, pitch, bearing, padding: isPhone() ? pad : ZERO,
       duration: instant || reduceMotion ? 0 : 2400, essential: true });
   }
   function fitPts(pts, maxZoom = 13.6) {
