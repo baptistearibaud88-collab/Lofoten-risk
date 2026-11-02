@@ -306,7 +306,7 @@
   let map = null, popup = null, rubric = 'camps', inDetail = false;
   let anim = null, lastLineDraw = 0, boatMarker = null;
   let fireCheckpoint = () => {};
-  let alertsOn = false, photosOn = false, infosOn = false, replayMode = false;   // off when the site opens; their tab turns them on
+  let alertsOn = false, photosOn = false, infosOn = false, replayMode = false, curReplay = null;   // off when the site opens; their tab turns them on
   /* each layer (alerts, photos, infos) has its own button; a replay opens with photos and infos off */
   /* an info at the same spot as a photo sits on top of the photo pin, without its own pointer,
      but only while photos are shown; otherwise it stands on the ground like any other info */
@@ -400,14 +400,16 @@
   /* ---------- title bubble: intro, or the activity and its profile ---------- */
   const titleDefault = document.getElementById('title-default');
   const titleAct = document.getElementById('title-activity');
-  function setTitleActivity(eyebrow, name, profileNodes) {
+  function setTitleActivity(eyebrow, name, profileNodes, withPhotos) {
     document.getElementById('act-eyebrow').textContent = eyebrow;
     document.getElementById('act-title').textContent = name;
     document.getElementById('act-profile').replaceChildren(...profileNodes);
     titleDefault.hidden = true; titleAct.hidden = false;
-    // a replay opens with photos and infos off (less clutter); their buttons bring them back, like the alerts
-    photosOn = infosOn = false; alertsOn = true;
-    ['btn-photos', 'btn-infos'].forEach(id => document.getElementById(id).setAttribute('aria-pressed', 'false'));
+    // a replay opens with the alerts on, infos off; photos on for a stage or a summit, off for the whole
+    // traverse (less clutter); their buttons switch them
+    infosOn = false; alertsOn = true; photosOn = !!withPhotos;
+    document.getElementById('btn-infos').setAttribute('aria-pressed', 'false');
+    document.getElementById('btn-photos').setAttribute('aria-pressed', String(photosOn));
     document.getElementById('btn-alerts').setAttribute('aria-pressed', 'true');
     replayMode = true; updateLayers();
   }
@@ -763,7 +765,7 @@
     document.body.append(wall);
   }
 
-  function openRoutePoint(kind, a) {
+  function openRoutePoint(kind, a, back) {
     showLayerOf(kind);
     resetPanel(); stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(kind, true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
@@ -793,7 +795,8 @@
       } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
     }
     panel.replaceChildren(...[
-      backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
+      back ? el('button', { type: 'button', class: 'back back-resume', onclick: back.go }, `‹ Reprendre ${back.label}`)
+           : backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · ${a.label}`),
       el('h2', null, a.titre),
       el('p', { class: 'meta' }, `${nf(Math.max(0, a.alt))} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
@@ -1456,8 +1459,10 @@
     });
 
     // fixed figures of the outing go to the title bubble; what moves stays in the panel
-    setTitleActivity(opts.eyebrow, opts.name, opts.summary || []);
+    setTitleActivity(opts.eyebrow, opts.name, opts.summary || [], opts.photos);
     render(0, true);
+    // the replay can be left for a photo or an info, then taken up again where it was
+    curReplay = opts.reopen ? { label: opts.resumeLabel, reopen: opts.reopen, state } : null;
     return {
       nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
         el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), altBox,
@@ -1466,6 +1471,12 @@
         ...(wx ? [el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node, batt.node,
           el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), heure par heure, zone la plus proche : nord, centre ou sud. Température ramenée à ton altitude (−6,5 °C par 1 000 m), ressenti = refroidissement par le vent. Vent et rafales à 10 m sur une maille d’environ 30 km : souvent plus fort sur les crêtes. Pluie : cumul de l’heure.')] : [])].filter(Boolean),
       start: () => playBtn.click(),
+      // back from a photo or an info: same place, same speed, and on it goes
+      resume: (km, speed) => {
+        if (speed && speeds.includes(speed)) { state.speed = speed; speedBtn.textContent = `×${nf(speed, (speed * 10) % 1 ? 2 : speed % 1 ? 1 : 0)}`; }
+        seek(km);
+        setTimeout(() => { if (!anim || !anim.running) playBtn.click(); }, reduceMotion ? 0 : 700);
+      },
       // phone live mode: the two charts a little taller; back to their size afterwards
       live: on => {
         if (!on) { if (live.saved) { build(...live.saved); live.saved = null; } return; }
@@ -1494,7 +1505,7 @@
   }
 
   /* ---------- panel: one étape (camp to camp, with the pack) ---------- */
-  function openEtape(e) {
+  function openEtape(e, resumeAt) {
     resetPanel();
     stopAnim(true); setActive(null); setTabs('etapes', true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
@@ -1509,13 +1520,15 @@
       kvItem('Distance', nf(last.wk, 1), 'km'), kvItem('Dénivelé +', nf(last.dplus), 'm'), kvItem('En mouvement', hms(last.mov)),
       kvItem('FC moyenne', nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), 'bpm'), kvItem('Calories', nf(last.kcal), 'kcal'),
       kvItem('Sac le matin', night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? 'kg' : null));
-    const pl = player(pts, { view: VIEW.etape, weather: true, onEnd: () => fitPts(pts), summary: [summary],
+    const pl = player(pts, { view: VIEW.etape, weather: true, onEnd: () => fitPts(pts), summary: [summary], photos: true,
+      reopen: r => openEtape(e, r), resumeLabel: `l’étape J${e.day}`,
       eyebrow: `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`, name: `${e.from} → ${e.to}` });
     panel.replaceChildren(
       backButton('Toutes les étapes', 'etapes'),
       ...pl.nodes);
     panel.scrollTop = 0;
     curFit = pl.fit; curLive = pl.live; pl.fit();
+    if (resumeAt) pl.resume(resumeAt.km, resumeAt.speed);
   }
 
   /* ---------- panel: one summit (the whole trail outing of that day) ---------- */
@@ -1561,7 +1574,7 @@
       climbKcal: top.kcal - base.kcal, climbKm: top.wk - base.wk, downKcal };   // calories of the climb alone (watch estimate)
   }
 
-  function openSummit(s) {
+  function openSummit(s, resumeAt) {
     resetPanel();
     stopAnim(true); setActive(null); setTabs('summits', true); unfoldPanel();
     const { ids, pts, tops, last, climbS, climbM, hrs } = summitStats(s);
@@ -1579,13 +1592,15 @@
         kvItem('FC max', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'), kvItem(tops.length > 1 ? `${s.sommet} à` : 'Au sommet à', s.heure.slice(11, 16)),
         kvItem('Montée', hms(climbS)), kvItem('D+ montée', nf(climbM), 'm'),
         kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('Calories', nf(last.kcal), 'kcal'))];
-    const pl = player(pts, { view: VIEW.summit, weather: true, keepPopup: true, summary, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+    const pl = player(pts, { view: VIEW.summit, weather: true, keepPopup: true, summary, photos: true,
+      reopen: r => openSummit(s, r), resumeLabel: `la sortie ${tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet}`, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
       eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
       backButton('Tous les sommets', 'summits'),
       ...pl.nodes);
     panel.scrollTop = 0;
     curFit = pl.fit; curLive = pl.live; pl.fit();
+    if (resumeAt) pl.resume(resumeAt.km, resumeAt.speed);
   }
 
   /* ---------- recaps: all the nights, all the summits ---------- */
@@ -1752,7 +1767,8 @@
   }
 
   /* ---------- panel: the whole traverse ---------- */
-  function openTrek() {
+  function openTrek(resumeAt) {
+    if (resumeAt instanceof Event) resumeAt = null;   // called by the button
     resetPanel();
     stopAnim(true); setActive(null); highlight([]); setTabs(null, false); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }
@@ -1761,6 +1777,7 @@
       ...statItems().map(([k, v, u]) => kvItem(k, v, u)));
     summary.classList.add('stats-grid');
     const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(), summary: [summary],
+      reopen: r => openTrek(r), resumeLabel: 'la traversée',
       eyebrow: '14 → 22 juin 2026 · Napp → Moskenes', name: 'Toute la traversée' });
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
@@ -1768,6 +1785,7 @@
       ...pl.nodes);
     panel.scrollTop = 0;
     curLive = pl.live;
+    if (resumeAt) { pl.resume(resumeAt.km, resumeAt.speed); return; }
     overview();
     setTimeout(pl.start, reduceMotion ? 0 : 2500);
   }
@@ -2052,8 +2070,14 @@
     map.addLayer({ id: 'infos', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'info'], layout: { ...sym, 'icon-image': 'info-sat', 'icon-anchor': 'bottom', 'icon-offset': [0, -2] } });
     // field of view of the open photo: a turquoise wedge that fades with distance
     map.on('move', drawFov);
-    map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a); });
-    map.on('click', 'infos', e => { const a = INFOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('infos', a); });
+    // during a replay, a photo or an info keeps the way back: "Reprendre l'étape" picks it up where it was
+    const backToReplay = () => {
+      if (!replayMode || !curReplay) return null;
+      const r = curReplay, at = { km: r.state.km, speed: r.state.speed };
+      return { label: r.label, go: () => r.reopen(at) };
+    };
+    map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a, backToReplay()); });
+    map.on('click', 'infos', e => { const a = INFOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('infos', a, backToReplay()); });
     updateLayers();
     map.addLayer({ id: 'camps', type: 'symbol', source: 'pois', filter: ['==', ['get', 'kind'], 'camp'], layout: { ...sym, 'icon-size': 1 } });
     map.on('click', 'camps', e => { const c = camps.find(x => x.id === e.features[0].properties.cid); if (c) openCamp(c); });
