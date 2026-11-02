@@ -795,7 +795,9 @@
       } else map.flyTo({ center: [a.lon, a.lat], zoom: 13.6, pitch: 60, bearing: -15, duration: reduceMotion ? 0 : 2600, essential: true, padding: centerPad() });
     }
     panel.replaceChildren(...[
-      back ? el('button', { type: 'button', class: 'back back-resume', onclick: back.go }, `‹ Reprendre ${back.label}`)
+      // from a replay: the list link on the left, a big "Reprendre" like the Lancer / Pause button on the right
+      back ? el('div', { class: 'resume-row' }, backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
+               el('div', { class: 'player' }, el('button', { type: 'button', class: 'play back-resume', 'aria-label': `Reprendre ${back.label}`, onclick: back.go }, `▶ ${back.short}`)))
            : backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · ${a.label}`),
       el('h2', null, a.titre),
@@ -1462,7 +1464,7 @@
     setTitleActivity(opts.eyebrow, opts.name, opts.summary || [], opts.photos);
     render(0, true);
     // the replay can be left for a photo or an info, then taken up again where it was
-    curReplay = opts.reopen ? { label: opts.resumeLabel, reopen: opts.reopen, state } : null;
+    curReplay = opts.reopen ? { label: opts.resumeLabel, short: opts.resumeShort || 'Reprendre', reopen: opts.reopen, state } : null;
     return {
       nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
         el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), altBox,
@@ -1521,7 +1523,7 @@
       kvItem('FC moyenne', nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), 'bpm'), kvItem('Calories', nf(last.kcal), 'kcal'),
       kvItem('Sac le matin', night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? 'kg' : null));
     const pl = player(pts, { view: VIEW.etape, weather: true, onEnd: () => fitPts(pts), summary: [summary], photos: true,
-      reopen: r => openEtape(e, r), resumeLabel: `l’étape J${e.day}`,
+      reopen: r => openEtape(e, r), resumeLabel: `l’étape J${e.day}`, resumeShort: 'Reprendre l’étape',
       eyebrow: `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`, name: `${e.from} → ${e.to}` });
     panel.replaceChildren(
       backButton('Toutes les étapes', 'etapes'),
@@ -1593,7 +1595,7 @@
         kvItem('Montée', hms(climbS)), kvItem('D+ montée', nf(climbM), 'm'),
         kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('Calories', nf(last.kcal), 'kcal'))];
     const pl = player(pts, { view: VIEW.summit, weather: true, keepPopup: true, summary, photos: true,
-      reopen: r => openSummit(s, r), resumeLabel: `la sortie ${tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet}`, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+      reopen: r => openSummit(s, r), resumeShort: 'Reprendre la sortie', resumeLabel: `la sortie ${tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet}`, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
       eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
       backButton('Tous les sommets', 'summits'),
@@ -1777,7 +1779,7 @@
       ...statItems().map(([k, v, u]) => kvItem(k, v, u)));
     summary.classList.add('stats-grid');
     const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(), summary: [summary],
-      reopen: r => openTrek(r), resumeLabel: 'la traversée',
+      reopen: r => openTrek(r), resumeLabel: 'la traversée', resumeShort: 'Reprendre',
       eyebrow: '14 → 22 juin 2026 · Napp → Moskenes', name: 'Toute la traversée' });
     panel.replaceChildren(
       backButton('Retour aux rubriques'),
@@ -2074,7 +2076,7 @@
     const backToReplay = () => {
       if (!replayMode || !curReplay) return null;
       const r = curReplay, at = { km: r.state.km, speed: r.state.speed };
-      return { label: r.label, go: () => r.reopen(at) };
+      return { label: r.label, short: r.short, go: () => r.reopen(at) };
     };
     map.on('click', 'photos', e => { const a = PHOTOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('photos', a, backToReplay()); });
     map.on('click', 'infos', e => { const a = INFOS.find(x => x.id === e.features[0].properties.aid); if (a) openRoutePoint('infos', a, backToReplay()); });
