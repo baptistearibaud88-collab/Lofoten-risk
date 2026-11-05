@@ -11,7 +11,7 @@
 <meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#141b1f">
-<link rel="stylesheet" href="risque.css?v=20261105-1">
+<link rel="stylesheet" href="risque.css?v=20261105-2">
 </head>
 <body>
 <div class="viz-root">
@@ -22,8 +22,9 @@
 </nav>
 
 <header class="hero">
-  <p class="eyebrow">Analyse de risque · Traversée des Lofoten · 14–22 juin 2026</p>
-  <h1>Le danger n’était pas là où je l’attendais</h1>
+  <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.1 · 05/11/2026</span><span>Période : 14–22 juin 2026</span></div>
+  <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
+  <p class="sub">Allure, terrain, météo et récupération sur 9 jours : distribution des écarts, dispersion glissante, sensibilités et simulation Monte Carlo.</p>
   <p class="problem"><span>Problématique</span>Seul, en autonomie, sous le soleil de minuit : où le risque s’est-il réellement concentré pendant la traversée, et mon plan l’avait-il anticipé ?</p>
   <div class="kpis" id="kpis"></div>
   <p class="hero-note" id="hero-note"></p>
@@ -40,7 +41,7 @@
     <a href="#s7"><b>07</b>La réserve physique</a>
     <a href="#s8"><b>08</b>La météo</a>
     <a href="#s9"><b>09</b>L’indice de danger</a>
-    <a href="#s10"><b>10</b>5 000 traversées</a>
+    <a href="#s10"><b>10</b>Monte Carlo</a>
     <a href="#s11"><b>11</b>Vitesse et irrégularité</a>
     <a href="#s12"><b>12</b>Plan contre réel</a>
     <a href="#s13"><b>13</b>Conclusion</a>
@@ -140,13 +141,19 @@
 
   <section id="s10">
     <p class="num">10</p>
-    <h2>5 000 traversées simulées</h2>
-    <p class="lede">La traversée est rejouée 5 000 fois sur le même parcours, de deux façons. <b>Modèle normal</b> : chaque tronçon tire son écart au hasard, indépendamment, selon une loi normale. <b>Modèle par blocs</b> : on tire des séquences réelles de 2 km, qui gardent les queues épaisses et les grappes. Les deux modèles ont la même moyenne ; seule l’incertitude change.</p>
-    <figure><figcaption>Écart au scénario central, en heures de marche cumulées</figcaption><div class="chart" id="c-fan" data-h="320"></div><div class="legend-row" id="l-fan"></div></figure>
-    <div class="grid-2 g-4060">
-      <figure><figcaption>Temps total de marche, 5 000 simulations</figcaption><div class="chart" id="c-mchist" data-h="250"></div></figure>
-      <figure><figcaption>Journée par journée : seuils de temps de marche</figcaption><div class="table-wrap"><table class="data" id="mc-table"></table></div></figure>
+    <h2>Simulation Monte Carlo : 5 000 traversées</h2>
+    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent les queues épaisses et les grappes. Les deux modèles ont le même centre ; seule la dispersion change.</p>
+    <div class="mc-bar">
+      <div class="segctl" role="group" aria-label="Hypothèse de tirage">
+        <button type="button" data-m="blocs" aria-pressed="true">Rééchantillonnage par blocs</button>
+        <button type="button" data-m="normal" aria-pressed="false">Loi normale</button>
+      </div>
+      <span class="mc-counter"><b id="mc-n">0</b> / 5 000 simulations</span>
+      <button type="button" class="mc-replay" id="mc-replay">↻ Relancer</button>
     </div>
+    <figure><figcaption>Écart cumulé au scénario central (heures de marche) et distribution à l’arrivée</figcaption><div class="chart" id="c-mc" data-h="440"></div><div class="legend-row" id="l-mc"></div></figure>
+    <div class="stat-strip" id="mc-stats"></div>
+    <figure class="mt"><figcaption>Journée par journée : seuils de temps de marche</figcaption><div class="table-wrap"><table class="data" id="mc-table"></table></div></figure>
     <p class="take"><b>À retenir</b><span id="t-mc"></span></p>
   </section>
 
@@ -216,7 +223,7 @@
 <div class="tip" id="tip" role="tooltip" hidden></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="risque_data.js?v=20261105-1"></script>
-<script src="risque.js?v=20261105-1"></script>
+<script src="risque_data.js?v=20261105-2"></script>
+<script src="risque.js?v=20261105-2"></script>
 </body>
 </html>

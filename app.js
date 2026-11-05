@@ -539,7 +539,7 @@
     const fig = (v, t) => el('span', { class: 'rk-fig' }, el('b', null, v), el('span', null, t));
     return el('a', { class: 'risk-card', href: 'risque.html', 'aria-label': 'Ouvrir l’analyse de risque complète' },
       el('span', { class: 'rk-eyebrow' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
-      el('span', { class: 'rk-title' }, 'Le danger n’était pas là où je l’attendais'),
+      el('span', { class: 'rk-title' }, 'Rapport : allure, terrain, météo et simulation Monte Carlo'),
       el('span', { class: 'rk-spark-wrap', title: 'Irrégularité de l’allure sur les 159 km ; triangles : alertes' }, s),
       el('span', { class: 'rk-figs' },
         fig(`×${nf(K.tails, 1)}`, 'écarts extrêmes vs loi normale'),

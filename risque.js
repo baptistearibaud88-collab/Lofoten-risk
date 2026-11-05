@@ -427,71 +427,100 @@
     legend('l-index', [['', C('--div-pos'), 'facteur au-dessus de la moyenne'], ['', C('--div-neg'), 'en dessous'], ['', C('--accent'), 'indice (écart à la moyenne des sorties)'], ['', C('--warning'), 'alerte vécue']]);
     const logi = R.rows.filter(x => x.alert.length && !physIds.includes(x.id)).map(x => x.rank).sort((a, b) => a - b);
     const noAlertTop = rows.filter(x => !x.alert.length).slice(0, 2);
-    $('t-index').textContent = `Les quatre alertes de terrain sortent aux rangs ${physRanks.join(', ')} sur ${R.rows.length} (test de Mann-Whitney sur les six alertes : p = ${F('.3f')(R.idx.mw_p).replace('.', ',')}). Les deux alertes logistiques (flasque perdue, bivouac impossible) restent au milieu (rangs ${logi.join(' et ')}) : l’indice mesure le danger physique, pas les imprévus d’organisation. Deux sorties ressortent sans alerte : ${noAlertTop.map(x => `${x.name} (${x.rank}e)`).join(' et ')}.`;
+    $('t-index').textContent = `Les quatre alertes de terrain sortent aux rangs ${physRanks.join(', ')} sur ${R.rows.length} (test de Mann-Whitney sur les cinq alertes : p = ${F('.3f')(R.idx.mw_p).replace('.', ',')}). L’alerte logistique (bivouac impossible) reste au milieu (rang ${logi.join(', ')}) : l’indice mesure le danger physique, pas les imprévus d’organisation. Deux sorties ressortent sans alerte : ${noAlertTop.map(x => `${x.name} (${x.rank}e)`).join(' et ')}.`;
   }
 
   /* ---------- 10 · Monte Carlo ---------- */
-  function drawMc() {
-    const days = [0, ...MC.days];
-    const base = [0, ...MC.blocs.fan['50']];
-    const pad = a => [0, ...a];
-    const dev = a => pad(a).map((v, i) => v - base[i]);
-    const B5 = dev(MC.blocs.fan['5']), B25 = dev(MC.blocs.fan['25']), B75 = dev(MC.blocs.fan['75']), B95 = dev(MC.blocs.fan['95']);
-    const N5 = dev(MC.normal.fan['5']), N95 = dev(MC.normal.fan['95']), REAL = dev(MC.real);
-    const m = { t: 16, r: $('c-fan').clientWidth < 560 ? 12 : 130, b: 32, l: 46 };
-    const f = frame('c-fan', m);
-    const x = d3.scaleLinear().domain([0, 9]).range([0, f.w]);
-    const ext = d3.max([...B95, ...REAL.map(Math.abs), ...B5.map(Math.abs)]) * 1.15;
-    const y = d3.scaleLinear().domain([-ext, ext]).nice().range([f.h, 0]);
-    yGrid(f.g, y, f.w, 6, v => `${v > 0 ? '+' : ''}${f1(v)} h`);
-    xAxis(f.g, x, f.h, 9, v => v ? dayLbl(v) : 'départ');
-    f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
-    const fc = clip(f);
-    const band = (lo, hi) => d3.area().x((v, i) => x(days[i])).y0((v, i) => y(lo[i])).y1((v, i) => y(hi[i])).curve(d3.curveMonotoneX)(lo);
-    fc.append('path').attr('d', band(B5, B95)).attr('fill', C('--series-3')).attr('opacity', .16);
-    fc.append('path').attr('d', band(B25, B75)).attr('fill', C('--series-3')).attr('opacity', .3);
-    MC.blocs.paths.forEach(p => fc.append('path').attr('d', d3.line().x((v, i) => x(days[i])).y((v, i) => y(v - base[i])).curve(d3.curveMonotoneX)(pad(p))).attr('fill', 'none').attr('stroke', C('--series-3')).attr('stroke-width', .7).attr('opacity', .35));
-    const ln = a => d3.line().x((v, i) => x(days[i])).y(v => y(v)).curve(d3.curveMonotoneX)(a);
-    [N5, N95].forEach(a => f.g.append('path').attr('d', ln(a)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4'));
-    f.g.append('path').attr('d', ln(REAL)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 2.4);
-    f.g.selectAll('.rp').data(REAL).join('circle').attr('cx', (v, i) => x(days[i])).attr('cy', v => y(v)).attr('r', 3.5).attr('fill', C('--text-primary')).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
-    if (!f.narrow) {
-      const e = days.length - 1, lx = x(9) + 8;
-      [[B95[e], `blocs 95 % : +${f1(B95[e])} h`, 'lbl-strong'], [N95[e], `normal 95 % : +${f1(N95[e])} h`, 'lbl'], [N5[e], `normal 5 % : ${f1(N5[e])} h`, 'lbl'], [B5[e], `blocs 5 % : ${f1(B5[e])} h`, 'lbl-strong']]
-        .forEach(([v, t, c]) => f.g.append('text').attr('class', c).attr('x', lx).attr('y', y(v)).attr('dy', '.35em').text(t));
-    }
+  let mcModel = 'blocs', mcPlayed = false, mcTimer = null;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function drawMc(animate = false) {
+    const K = MC.seg_km, other = mcModel === 'blocs' ? 'normal' : 'blocs';
+    const M = MC[mcModel].seg, O = MC[other].seg;
+    const el = $('c-mc'), narrow = el.clientWidth < 560;
+    const histW = narrow ? 64 : 150;
+    const m = { t: 22, r: histW + (narrow ? 34 : 118), b: 34, l: 48 };
+    const f = frame('c-mc', m);
+    const x = d3.scaleLinear().domain([0, K[K.length - 1]]).range([0, f.w]);
+    const lim = Math.ceil(Math.max(M.term[6], -M.term[0], O.term[6], -O.term[0]) + .6);
+    const y = d3.scaleLinear().domain([-lim, lim]).range([f.h, 0]);
+    dayBands(f.g, x, f.h);
+    yGrid(f.g, y, f.w, 6, v => `${v > 0 ? '+' : ''}${v} h`);
+    xAxis(f.g, x, f.h, 8, v => `${v}`);
+    axTitle(f.g, 'km parcourus', f.w, f.h + 30, 'end');
+    f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w + histW + 8).attr('y1', y(0)).attr('y2', y(0));
+    const col = d3.scaleLinear().domain([-lim * .7, 0, lim * .7]).range([C('--div-neg'), C('--text-muted'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
+    // reveal clip: the paths run left to right like a live simulation
+    const cid = `mcclip${Math.random().toString(36).slice(2, 7)}`;
+    const cr = f.svg.append('defs').append('clipPath').attr('id', cid).append('rect').attr('x', -2).attr('y', -m.t).attr('height', f.h + m.t + 4).attr('width', animate ? 0 : f.w + 4);
+    const pg = f.g.append('g').attr('clip-path', `url(#${cid})`);
+    const band = (lo, hi) => d3.area().x((v, i) => x(K[i])).y0((v, i) => y(lo[i])).y1((v, i) => y(hi[i])).curve(d3.curveMonotoneX)(lo);
+    pg.append('path').attr('d', band(M.bands['5'], M.bands['95'])).attr('fill', C('--accent')).attr('opacity', .1);
+    pg.append('path').attr('d', band(M.bands['25'], M.bands['75'])).attr('fill', C('--accent')).attr('opacity', .14);
+    const line = a => d3.line().x((v, i) => x(K[i])).y(v => y(Math.max(-lim, Math.min(lim, v))))(a);
+    M.paths.forEach(p => pg.append('path').attr('d', line(p)).attr('fill', 'none').attr('stroke', col(p[p.length - 1])).attr('stroke-width', .8).attr('opacity', .42));
+    [['5', 1.6], ['95', 1.6], ['1', 1], ['99', 1]].forEach(([k, w]) => pg.append('path').attr('d', line(M.bands[k])).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', w).attr('opacity', k === '1' || k === '99' ? .45 : .9));
+    [O.bands['5'], O.bands['95']].forEach(a => pg.append('path').attr('d', line(a)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.3).attr('stroke-dasharray', '5 4').attr('opacity', .9));
+    const realP = pg.append('path').attr('d', line(MC.real_dev)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 2.6);
+    // right margin: distribution of the arrival, rotated
+    const hx = f.w + 10, H = M.hist, E = M.edges;
+    const xh = d3.scaleLinear().domain([0, d3.max([...M.hist, ...O.hist])]).range([0, histW]);
+    const hg = f.g.append('g').attr('transform', `translate(${hx},0)`);
+    const bars = hg.selectAll('.mh').data(H.map((n, i) => ({ n, a: E[i], b: E[i + 1] })).filter(d => d.b > -lim && d.a < lim)).join('rect')
+      .attr('y', d => y(Math.min(lim, d.b)) + .5).attr('height', d => Math.max(.5, y(Math.max(-lim, d.a)) - y(Math.min(lim, d.b)) - 1)).attr('x', 0).attr('rx', 1.5)
+      .attr('width', d => animate ? 0 : xh(d.n)).attr('fill', d => col((d.a + d.b) / 2)).attr('opacity', .9);
+    hg.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(d => xh(d.n)).y(d => y(d.a))(O.hist.map((n, i) => ({ n, a: E[i] })).filter(d => d.a >= -lim && d.a < lim)))
+      .attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.2).attr('stroke-dasharray', '4 3').attr('opacity', .9);
+    const tags = [[M.term[5], `P95 ${F('+.1f')(M.term[5])} h`, 'lbl-ink'], [M.es95, `5 % pires ${F('+.1f')(M.es95)} h`, 'lbl-strong'], [M.term[1], `P5 ${F('+.1f')(M.term[1])} h`, 'lbl-ink']];
+    if (!narrow) tags.forEach(([v, t, c], i) => {
+      hg.append('line').attr('x1', 0).attr('x2', histW + 6).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', C('--text-primary')).attr('stroke-width', 1).attr('opacity', i === 1 ? .5 : .9);
+      hg.append('text').attr('class', `${c} mc-tag`).attr('x', histW + 10).attr('y', y(v) + (i === 1 ? -4 : 4)).text(t);
+    });
+    hg.append('text').attr('class', 'lbl').attr('x', 0).attr('y', -10).text(narrow ? 'arrivée' : 'distribution à l’arrivée');
+    const lastR = MC.real_dev[MC.real_dev.length - 1];
+    f.g.append('text').attr('class', 'lbl-ink').attr('x', x(K[d3.minIndex(MC.real_dev)])).attr('y', y(d3.min(MC.real_dev)) + 18).attr('text-anchor', 'middle').text(`réel : ${F('+.1f')(d3.min(MC.real_dev))} h`);
+    // crosshair
     const ch = f.g.append('line').attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-muted')).style('display', 'none');
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
       .on('pointermove', ev => {
-        const i = Math.max(0, Math.min(9, Math.round(x.invert(d3.pointer(ev)[0])))); ch.style('display', null).attr('x1', x(i)).attr('x2', x(i));
-        if (!i) return hideTip();
-        showTip(ev, `<b>fin du ${dayLbl(i)} · cumul central ${hm(base[i])}</b>${row('réel', `${hm(MC.real[i - 1])}`)}${row('modèle normal, 90 %', `${hm(MC.normal.fan['5'][i - 1])} – ${hm(MC.normal.fan['95'][i - 1])}`)}${row('modèle par blocs, 90 %', `${hm(MC.blocs.fan['5'][i - 1])} – ${hm(MC.blocs.fan['95'][i - 1])}`)}`);
+        const i = d3.minIndex(K, k => Math.abs(k - x.invert(d3.pointer(ev)[0])));
+        ch.style('display', null).attr('x1', x(K[i])).attr('x2', x(K[i]));
+        const b = k => F('+.2f')(M.bands[k][i]);
+        showTip(ev, `<b>km ${f1(K[i])} · ${dayLbl(MC.seg_day[i])}</b>${row('P95 / P5', `${b('95')} / ${b('5')} h`)}${row('P75 / P25', `${b('75')} / ${b('25')} h`)}${row(other === 'normal' ? 'loi normale P95' : 'blocs P95', `${F('+.2f')(O.bands['95'][i])} h`)}${row('réel', `${F('+.2f')(MC.real_dev[i])} h`)}`);
       }).on('pointerleave', () => { ch.style('display', 'none'); hideTip(); });
-    legend('l-fan', [['', C('--series-3') + ';opacity:.45', 'modèle par blocs : 50 % et 90 % des simulations'], ['ln', C('--series-3'), '40 traversées tirées au hasard'], ['dash', '', 'modèle normal : 90 %'], ['ln', C('--text-primary'), 'traversée réelle']]);
-
-    // totals
-    const hm2 = frame('c-mchist', { t: 10, r: 10, b: 34, l: 40 });
-    const E = MC.hist_edges;
-    const xh = d3.scaleLinear().domain([E[0] + 4, E[E.length - 1] - 6]).range([0, hm2.w]);
-    const yh = d3.scaleLinear().domain([0, d3.max([...MC.normal.hist, ...MC.blocs.hist]) * 1.08]).range([hm2.h, 0]);
-    yGrid(hm2.g, yh, hm2.w, 4);
-    xAxis(hm2.g, xh, hm2.h, 6, v => `${v} h`);
-    axTitle(hm2.g, 'heures de marche au total', hm2.w, hm2.h + 30, 'end');
-    const bins = MC.blocs.hist.map((n, i) => ({ n, a: E[i], b: E[i + 1], nn: MC.normal.hist[i] })).filter(d => d.a >= xh.domain()[0] && d.b <= xh.domain()[1]);
-    hm2.g.selectAll('.mb').data(bins).join('path').attr('d', d => barPath(xh(d.a) + 1, yh(0), Math.max(1, xh(d.b) - xh(d.a) - 2), yh(d.n), 3)).attr('fill', C('--series-3')).attr('opacity', .75);
-    hm2.g.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(d => xh(d.a)).y(d => yh(d.nn))(bins)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4');
-    const tot = MC.real[MC.real.length - 1];
-    hm2.g.append('line').attr('x1', xh(tot)).attr('x2', xh(tot)).attr('y1', 0).attr('y2', hm2.h).attr('stroke', C('--text-primary')).attr('stroke-width', 2);
-    hm2.g.append('text').attr('class', 'lbl-ink').attr('x', xh(tot) + 6).attr('y', 12).text(`réel ${hm(tot)}`);
-    hover(hm2.g.selectAll('.mh').data(bins).join('rect').attr('class', 'hit').attr('x', d => xh(d.a)).attr('width', d => xh(d.b) - xh(d.a)).attr('y', 0).attr('height', hm2.h),
-      d => `<b>${f1(d.a)} à ${f1(d.b)} h</b>${row('modèle par blocs', `${d.n} simulations`)}${row('modèle normal', `${d.nn} simulations`)}`);
-
-    $('mc-table').innerHTML = `<thead><tr><th>Jour</th><th class="n">Réel</th><th class="n">95 % normal</th><th class="n">95 % blocs</th><th class="n">5 % pires</th><th class="n">&gt; 10 h</th></tr></thead><tbody>${MC.days.map((d, i) => `<tr${d === 3 ? ' style="font-weight:650"' : ''}><td>${dayLbl(d)}</td><td class="n">${hm(MC.real_day[i])}</td><td class="n">${hm(MC.normal.day_p95[i])}</td><td class="n">${hm(MC.blocs.day_p95[i])}</td><td class="n">${hm(MC.blocs.es95[i])}</td><td class="n">${MC.blocs.p_over10[i] ? `${f1(MC.normal.p_over10[i])} → ${f1(MC.blocs.p_over10[i])} %` : '–'}</td></tr>`).join('')}</tbody>`;
-    const [n5, , n95] = MC.normal.tot_p, [b5, , b95] = MC.blocs.tot_p;
-    const wider = ((b95 - b5) / (n95 - n5) - 1) * 100;
-    const r3 = MC.blocs.day_p95[j3] / MC.blocs.day_p50[j3] - 1;
-    const lowI = d3.minIndex(REAL), low = REAL[lowI];
-    $('t-mc').textContent = `La traversée réelle a pris jusqu’à ${hm(-low)} d’avance sur le scénario central (fin du ${dayLbl(days[lowI])}), puis les J7 à J9, sous la pluie, l’ont toute reprise. Sur l’ensemble de la traversée, le modèle normal donne 90 % des cas entre ${hm(n5)} et ${hm(n95)} de marche ; le modèle par blocs, entre ${hm(b5)} et ${hm(b95)}, soit un intervalle ${f0(wider)} % plus large. Pour la journée la plus longue (J3), le risque de dépasser 10 h de marche passe de ${f1(pN)} % à ${f1(pB)} % : le modèle normal le sous-estime d’un facteur ${f0(pB / pN)}. Le seuil à 95 % de cette journée est ${hm(MC.blocs.day_p95[j3] - MC.blocs.day_p50[j3])} au-dessus du scénario central : c’est cette marge qu’il faut prévoir, pas la moyenne.`;
+    legend('l-mc', [['ln', C('--div-neg'), 'trajectoire en avance'], ['ln', C('--div-pos'), 'trajectoire en retard'], ['', C('--accent') + ';opacity:.4', 'P5–P95 et P25–P75'],
+      ['ln', C('--text-primary'), 'trajectoire réelle'], ['dash', '', `P5–P95 ${other === 'normal' ? 'loi normale' : 'blocs'} (comparaison)`]]);
+    document.querySelector('#l-mc .dash').style.borderTopColor = C('--warning');
+    // animation: paths run (2.4 s), counter ticks to 5 000, then the histogram fills
+    clearInterval(mcTimer);
+    const cnt = $('mc-n');
+    if (animate && !reduce) {
+      const T0 = performance.now(), dur = 2400;
+      cr.transition().duration(dur).ease(d3.easeCubicInOut).attr('width', f.w + 4);
+      bars.transition().delay(dur - 300).duration(700).ease(d3.easeCubicOut).attr('width', d => xh(d.n));
+      setTimeout(() => { cr.interrupt().attr('width', f.w + 4); bars.interrupt().attr('width', d => xh(d.n)); }, dur + 900);   // never left half-drawn
+      mcTimer = setInterval(() => { const k = Math.min(1, (performance.now() - T0) / dur); cnt.textContent = f0(Math.round(d3.easeCubicInOut(k) * MC.ns)); if (k >= 1) clearInterval(mcTimer); }, 40);
+    } else { cr.attr('width', f.w + 4); bars.attr('width', d => xh(d.n)); cnt.textContent = f0(MC.ns); }
+    // stats, table and text (both models side by side)
+    const N_ = MC.normal.seg, B_ = MC.blocs.seg;
+    $('mc-stats').innerHTML = [
+      [`${hm(N_.term_sd)} → ${hm(B_.term_sd)}`, `écart-type à l’arrivée, loi normale → blocs (${fs0((B_.term_sd / N_.term_sd - 1) * 100)} %)`],
+      [`${F('+.1f')(N_.term[5])} → ${F('+.1f')(B_.term[5])} h`, 'seuil à 95 % du retard à l’arrivée'],
+      [`${F('+.1f')(N_.es95)} → ${F('+.1f')(B_.es95)} h`, 'retard moyen des 5 % pires scénarios'],
+      [`${f1(pN)} → ${f1(pB)} %`, 'probabilité que le J3 dépasse 10 h de marche'],
+    ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+    $('mc-table').innerHTML = `<thead><tr><th>Jour</th><th class="n">Réel</th><th class="n">P95 normale</th><th class="n">P95 blocs</th><th class="n">Moy. 5 % pires</th><th class="n">P(&gt; 10 h)</th></tr></thead><tbody>${MC.days.map((d, i) => `<tr${d === 3 ? ' style="font-weight:650"' : ''}><td>${dayLbl(d)}</td><td class="n">${hm(MC.real_day[i])}</td><td class="n">${hm(MC.normal.day_p95[i])}</td><td class="n">${hm(MC.blocs.day_p95[i])}</td><td class="n">${hm(MC.blocs.es95[i])}</td><td class="n">${MC.blocs.p_over10[i] ? `${f1(MC.normal.p_over10[i])} → ${f1(MC.blocs.p_over10[i])} %` : '–'}</td></tr>`).join('')}</tbody>`;
+    const lowI = d3.minIndex(MC.real_dev);
+    $('t-mc').textContent = `Le rééchantillonnage par blocs donne une dispersion à l’arrivée ${f0((B_.term_sd / N_.term_sd - 1) * 100)} % plus large que la loi normale, et un retard de ${F('+.1f')(B_.es95)} h dans les 5 % pires scénarios, contre ${F('+.1f')(N_.es95)} h. Sur la plus longue journée (J3), le risque de dépasser 10 h de marche passe de ${f1(pN)} % à ${f1(pB)} %, soit ${f0(pB / pN)} fois plus. La trajectoire réelle a compté jusqu’à ${hm(-MC.real_dev[lowI])} d’avance (km ${f0(K[lowI])}, ${dayLbl(MC.seg_day[lowI])}) avant que les J7 à J9, sous la pluie, la ramènent au centre : une marge calculée sur la moyenne aurait été consommée sans être vue.`;
+  }
+  function initMc() {
+    document.querySelectorAll('.segctl button').forEach(b => b.addEventListener('click', () => {
+      mcModel = b.dataset.m;
+      document.querySelectorAll('.segctl button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      drawMc(true);
+    }));
+    $('mc-replay').addEventListener('click', () => drawMc(true));
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting) && !mcPlayed) { mcPlayed = true; drawMc(true); io.disconnect(); } }, { threshold: .35 });
+    io.observe($('c-mc'));
   }
 
   /* ---------- 11 · speed vs irregularity ---------- */
@@ -565,9 +594,9 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawCandles, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawIndex, drawMc, drawScatter];
+  const charts = [drawCandles, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawIndex, () => drawMc(false), drawScatter];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
-  drawTail(); drawPlan(); drawConcl(); drawTerrain(); drawAll();
+  drawTail(); drawPlan(); drawConcl(); drawTerrain(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
   addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) < 8) return; lastW = innerWidth; clearTimeout(t); t = setTimeout(drawAll, 150); });
   matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', drawAll);
