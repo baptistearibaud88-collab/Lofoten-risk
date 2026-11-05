@@ -11,7 +11,7 @@
 <meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261105-5">
+<link rel="stylesheet" href="risque.css?v=20261105-6">
 </head>
 <body>
 <div class="viz-root">
@@ -297,9 +297,22 @@
   <section id="s14">
     <header class="sh"><span class="num">14</span><h2>Chance ou décision : esquisse contrefactuelle</h2><span class="draft">Esquisse</span></header>
     <p class="lede">Un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Cette partie sépare ce qui dépendait de moi (les décisions) de ce qui n’en dépendait pas (l’ordre de la météo, l’aléa d’allure), en rejouant la traversée dans des mondes où seul l’un des deux change.</p>
-    <div class="grid-2">
+    <div class="stat-strip cf-bilan" id="cf-bilan"></div>
+    <div class="grid-2 g-6040 mt">
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Et si la météo était tombée dans un autre ordre ?</span><span class="pc-r mono" id="r-cfw"></span></div>
+        <div class="pc-head"><span class="pc-t">La même traversée, 30 étés · 14–22 juin, 1996–2025</span><span class="pc-r mono" id="r-cfy"></span></div>
+        <div class="chart" id="c-cfy" data-h="280"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-cfy"></span><span class="src">ERA5 · point centre (68,01° N)</span></div>
+      </div>
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">1 200 départs possibles · 1er juin–10 juillet × 30 ans</span><span class="pc-r mono" id="r-cfs"></span></div>
+        <div class="chart" id="c-cfs" data-h="280"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-cfs"></span></div>
+      </div>
+    </div>
+    <div class="grid-2 mt">
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Et si la météo du séjour était tombée dans un autre ordre ?</span><span class="pc-r mono" id="r-cfw"></span></div>
         <div class="chart" id="c-cfw" data-h="260"></div>
         <div class="pc-foot"><span class="legend-row" id="l-cfw"></span><span class="src">9! = 362 880 ordres</span></div>
       </div>
@@ -313,6 +326,11 @@
       <div class="pc-head"><span class="pc-t">Aléa d’allure · rang de chaque journée réelle parmi 5 000 journées simulées</span><span class="pc-r mono" id="r-cfp"></span></div>
       <div class="chart" id="c-cfp" data-h="230"></div>
       <div class="pc-foot"><span class="legend-row" id="l-cfp"></span><span class="src">Modèle par blocs (partie 11)</span></div>
+    </div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Les 21 facteurs déclarés · subis ou choisis</span><span class="pc-r mono" id="r-cff"></span></div>
+      <div class="chart" id="c-cff" data-h="170"></div>
+      <div class="pc-foot"><span class="legend-row" id="l-cff"></span><span class="src">facteurs_risque_declares.csv · classement provisoire</span></div>
     </div>
     <div class="grid-2 g-6040 mt">
       <div class="pc">
@@ -329,8 +347,8 @@
       <div class="table-wrap flat"><table class="data" id="dec-table"></table></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>En haut, l’itinéraire et les décisions sont figés ; seule la météo change de place. Si la barre réelle est à gauche de la distribution, l’ordre des jours m’a été favorable. Dans la matrice, la diagonale est « méritée » ; en haut à gauche, un bon résultat obtenu avec une décision risquée relève de la chance.</p></div>
-      <div><h4>Méthode</h4><p>Exposition = km de terrain exigeant ou expert parcourus un jour de pluie (≥ 1 mm). Qualité ex ante : drapeaux connus au moment de décider (nuit courte, météo, cote, heure, visibilité), selon que la décision est prudente ou engagée. Chance = écart entre le résultat et celui qu’annonce la qualité (droite ajustée).</p></div>
+      <div><h4>Comment lire</h4><p>En haut, l’itinéraire et les décisions sont figés ; seule la météo change : un autre été, une autre date de départ, ou les mêmes jours dans un autre ordre. Si la barre réelle est à gauche de la distribution, l’ordre des jours m’a été favorable. Dans la matrice, la diagonale est « méritée » ; en haut à gauche, un bon résultat obtenu avec une décision risquée relève de la chance.</p></div>
+      <div><h4>Méthode</h4><p>Exposition = km de terrain exigeant ou expert parcourus un jour de pluie (≥ 1 mm), sur le même point ERA5 que la climatologie. Qualité ex ante : drapeaux connus au moment de décider (nuit courte, météo, cote, heure, visibilité), selon que la décision est prudente ou engagée. Chance = écart entre le résultat et celui qu’annonce la qualité (droite ajustée).</p></div>
       <div class="key"><h4>À retenir (provisoire)</h4><p id="t-cf"></p></div>
     </div>
     <div class="pc mt todo">
@@ -394,7 +412,7 @@
 <div class="tip" id="tip" role="tooltip" hidden></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="risque_data.js?v=20261105-5"></script>
-<script src="risque.js?v=20261105-5"></script>
+<script src="risque_data.js?v=20261105-6"></script>
+<script src="risque.js?v=20261105-6"></script>
 </body>
 </html>

@@ -278,3 +278,6 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 .qd-q { font: 700 10.5px var(--mono); letter-spacing: .06em; }
 .flag { display: inline-block; font: 600 10.5px var(--mono); padding: 1px 6px; border-radius: 3px; margin: 1px 3px 1px 0; background: color-mix(in srgb, var(--down) 16%, transparent); color: var(--down); white-space: nowrap; }
 @media (max-width: 900px) { .hero-top { grid-template-columns: 1fr; gap: 16px; } .map-card { max-width: 420px; } .map-thumb { height: 120px; } }
+
+.cf-bilan .kl { display: block; font: 600 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+.cf-bilan b { font-size: 22px; }
