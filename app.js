@@ -6,6 +6,7 @@
   const T = window.TREK;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
+  let riskEl = null;   // home bubble to the risk report (buildRiskHome)
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   const COL = { pack: '#1d3f8f', camp: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff', finish: '#111418' };
   const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -382,7 +383,7 @@
     }
   }
   function layoutChanged() {
-    placeDepart(); placeSources(); placeSun();
+    placeDepart(); placeSources(); placeSun(); placeRisk();
     const root = document.documentElement.style;
     const pr = panelBox.getBoundingClientRect();
     root.setProperty('--title-b', `${Math.round(document.getElementById('title').getBoundingClientRect().bottom)}px`);   // phone: compass hangs under the title
@@ -446,9 +447,9 @@
   }
 
   /* ---------- panel: home lists ---------- */
-  const resetPanel = () => { phoneLive(false); panel.classList.remove('recap'); setFov(null); curFit = null; curLive = null; document.querySelector('.law-card')?.remove(); };
+  const resetPanel = () => { riskHome(false); phoneLive(false); panel.classList.remove('recap'); setFov(null); curFit = null; curLive = null; document.querySelector('.law-card')?.remove(); };
   function showHome(which) {
-    resetPanel();
+    resetPanel(); riskHome(true);
     stopAnim(true);
     setActive(null);
     highlight(null);
@@ -538,14 +539,68 @@
     K.alerts.forEach(([km]) => s.append(sv('path', { d: `M${(X(km) - 3.5).toFixed(1)},0.5H${(X(km) + 3.5).toFixed(1)}L${X(km).toFixed(1)},6.5Z`, class: 'rk-tri' })));
     const fig = (v, t) => el('span', { class: 'rk-fig' }, el('b', null, v), el('span', null, t));
     return el('a', { class: 'risk-card', href: 'risque.html', 'aria-label': 'Ouvrir l’analyse de risque complète' },
-      el('span', { class: 'rk-eyebrow' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
-      el('span', { class: 'rk-title' }, 'Rapport : allure, terrain, météo et simulation Monte Carlo'),
+      el('span', { class: 'rk-title' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
       el('span', { class: 'rk-spark-wrap', title: 'Irrégularité de l’allure sur les 159 km ; triangles : alertes' }, s),
       el('span', { class: 'rk-figs' },
         fig(`×${nf(K.tails, 1)}`, 'écarts extrêmes vs loi normale'),
         fig(`+${K.sac} %`, 'de temps avec le sac'),
         fig(`${K.phys_top}/${K.phys_n}`, 'alertes terrain dans le tiers exposé')),
-      el('span', { class: 'rk-cta' }, 'Lire l’analyse complète', el('span', { 'aria-hidden': 'true' }, ' ›')));
+      el('span', { class: 'rk-cta' }, 'Rapport complet', el('span', { 'aria-hidden': 'true' }, ' ›')));
+  }
+
+  /* home bubble: direct access to the risk report, with a stylised Monte Carlo fan.
+     Shown on the home screen (opening, "Vue d'ensemble", back to a list); hidden as soon as
+     something is opened, a replay starts or the map is moved by hand. */
+  function buildRiskHome() {
+    const K = window.RISK_CARD && window.RISK_CARD.mc_mini;
+    if (!K) return;
+    const W = 220, H = 70, n = K.p5.length, lim = 3.8;
+    const X = i => i / (n - 1) * W, Y = v => H / 2 - Math.max(-lim, Math.min(lim, v)) / lim * (H / 2 - 3);
+    const line = a => a.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+    const mix = (a, b, t) => `rgb(${a.map((c, i) => Math.round(c + (b[i] - c) * t)).join(',')})`;
+    const col = v => { const t = Math.max(-1, Math.min(1, v / 2.6)); return t < 0 ? mix([150, 165, 172], [70, 145, 235], -t) : mix([150, 165, 172], [235, 100, 100], t); };
+    const s = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'rh-chart', preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+    s.append(sv('path', { d: `${line(K.p95)}L${K.p5.map((v, i) => `${X(n - 1 - i).toFixed(1)},${Y(K.p5[n - 1 - i]).toFixed(1)}`).join('L')}Z`, class: 'rh-band' }),
+      sv('line', { x1: 0, x2: W, y1: H / 2, y2: H / 2, class: 'rh-zero' }));
+    K.paths.forEach((p, k) => {
+      const e = sv('path', { d: line(p), class: 'rh-p', pathLength: 1, stroke: col(p[p.length - 1]) });
+      e.style.animationDelay = `${(Math.pow(k / K.paths.length, .55) * 1.5).toFixed(2)}s`;
+      e.style.animationDuration = `${(0.55 - 0.4 * k / K.paths.length).toFixed(2)}s`;
+      s.append(e);
+    });
+    s.append(sv('path', { d: line(K.p95), class: 'rh-q' }), sv('path', { d: line(K.p5), class: 'rh-q' }), sv('path', { d: line(K.real), class: 'rh-real', pathLength: 1 }));
+    riskEl = el('a', { class: 'risk-home bubble', href: 'risque.html', 'aria-label': 'Analyse de risque : ouvrir le rapport complet' },
+      el('span', { class: 'rh-head' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
+      s,
+      el('span', { class: 'rh-foot' }, el('span', { class: 'rh-cta' }, 'Rapport complet ›'), el('span', { class: 'rh-meta' }, '5 000 sim.')));
+    document.body.append(riskEl);
+    placeRisk(); riskHome(true);
+  }
+  function placeRisk() {
+    if (!riskEl) return;
+    const pr = panelBox.getBoundingClientRect(), lg = document.querySelector('.legend');
+    if (isPhone() || innerWidth <= 820) {   // bottom sheet: on the left, just above the sheet
+      riskEl.style.right = ''; riskEl.style.left = '10px';
+      riskEl.style.bottom = `${Math.round(innerHeight - pr.top + 10)}px`;
+    } else {                                // right, against the panel, just above the legend line
+      const lr = lg && lg.getBoundingClientRect();
+      riskEl.style.left = '';
+      riskEl.style.right = `${Math.round(innerWidth - pr.left + 12)}px`;
+      let bottom = lr && lr.height ? innerHeight - lr.top + 10 : 62;
+      // on the bivouacs home, line it up with the bottom of the night records
+      const rg = panelBox.querySelector('.rec-grid'), rb = rg && rg.getBoundingClientRect();
+      if (rb && rb.height && rb.bottom < innerHeight - bottom) bottom = innerHeight - rb.bottom;
+      riskEl.style.bottom = `${Math.round(bottom)}px`;
+    }
+  }
+  function riskHome(on) {
+    if (!riskEl) return;
+    const was = !riskEl.classList.contains('rh-off');
+    riskEl.classList.toggle('rh-off', !on);
+    if (on) requestAnimationFrame(placeRisk);
+    if (on && !was || on && !riskEl.classList.contains('play')) {   // replay the fan each time it comes back
+      riskEl.classList.remove('play'); void riskEl.offsetWidth; riskEl.classList.add('play');
+    }
   }
 
   function warnIcon() {
@@ -1822,6 +1877,7 @@
   placeSun(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeSun);
   document.getElementById('btn-tools').addEventListener('click', () => document.body.classList.toggle('ph-tools'));
   placeSources();
+  buildRiskHome();
   placeDepart(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeDepart);
 
   /* ---------- map ---------- */
@@ -2035,6 +2091,8 @@
   let terrainOn = true;
   const terrain = { source: 'dem', exaggeration: 1.3 };
 
+  // moving the map by hand puts the risk bubble away
+  ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(t => map.on(t, e => { if (e && e.originalEvent) riskHome(false); }));
   map.on('load', () => {
     try { map.setTerrain(terrain); } catch (e) { terrainOn = false; }
     try { if (map.setSky) map.setSky({ 'sky-color': '#9cc7d8', 'horizon-color': '#f4d6a0', 'fog-color': '#cfe0e4', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.9 }); } catch (e) { /* sky optional */ }
