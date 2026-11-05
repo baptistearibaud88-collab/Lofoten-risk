@@ -503,7 +503,8 @@
             el('span', { class: 'camp-num num-peak' }, warnIcon()),
             el('span', { class: 'stage-main' },
               el('span', { class: 'camp-name' }, a.titre),
-              el('span', { class: 'stage-meta' }, `J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`)))))));
+              el('span', { class: 'stage-meta' }, `J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`)))))),
+        riskCard());
     } else {
       body.append(
         el('h2', null, 'Sept étapes avec le sac'),
@@ -522,6 +523,29 @@
     }
     panel.replaceChildren(body);   // no grey footnote under the lists
     panel.scrollTop = 0;
+  }
+
+  /* under the alerts: the risk analysis in a nutshell, opens the full page (risque.html) */
+  function riskCard() {
+    const K = window.RISK_CARD;
+    if (!K) return null;
+    const W = 300, H = 46, maxKm = K.spark[K.spark.length - 1][0], maxV = Math.max(...K.spark.map(p => p[1]));
+    const X = km => km / maxKm * W, Y = v => H - 4 - v / maxV * (H - 10);
+    const s = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'rk-spark', preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+    const d = K.spark.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join('');
+    s.append(sv('path', { d: `${d}L${W},${H}L0,${H}Z`, class: 'rk-area' }), sv('path', { d, class: 'rk-line' }),
+      sv('line', { x1: 0, x2: W, y1: Y(K.long_sd), y2: Y(K.long_sd), class: 'rk-mean' }));
+    K.alerts.forEach(([km]) => s.append(sv('path', { d: `M${(X(km) - 3.5).toFixed(1)},0.5H${(X(km) + 3.5).toFixed(1)}L${X(km).toFixed(1)},6.5Z`, class: 'rk-tri' })));
+    const fig = (v, t) => el('span', { class: 'rk-fig' }, el('b', null, v), el('span', null, t));
+    return el('a', { class: 'risk-card', href: 'risque.html', 'aria-label': 'Ouvrir l’analyse de risque complète' },
+      el('span', { class: 'rk-eyebrow' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
+      el('span', { class: 'rk-title' }, 'Le danger n’était pas là où je l’attendais'),
+      el('span', { class: 'rk-spark-wrap', title: 'Irrégularité de l’allure sur les 159 km ; triangles : alertes' }, s),
+      el('span', { class: 'rk-figs' },
+        fig(`×${nf(K.tails, 1)}`, 'écarts extrêmes vs loi normale'),
+        fig(`+${K.sac} %`, 'de temps avec le sac'),
+        fig(`${K.phys_top}/${K.phys_n}`, 'alertes terrain dans le tiers exposé')),
+      el('span', { class: 'rk-cta' }, 'Lire l’analyse complète', el('span', { 'aria-hidden': 'true' }, ' ›')));
   }
 
   function warnIcon() {

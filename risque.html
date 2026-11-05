@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Analyse de risque · Lofoten</title>
+<meta name="description" content="Analyse de risque de la traversée des Lofoten (14–22 juin 2026) : écarts d’allure, queues de distribution, irrégularité glissante, météo, fatigue et 5 000 traversées simulées.">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Analyse de risque · Traversée des Lofoten">
+<meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo : où le risque s’est réellement concentré pendant la traversée.">
+<meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
+<meta name="theme-color" content="#141b1f">
+<link rel="stylesheet" href="risque.css?v=20261105-1">
+</head>
+<body>
+<div class="viz-root">
+<nav class="topbar">
+  <a class="back" href="index.html">‹ La carte</a>
+  <span class="topbar-title">Analyse de risque</span>
+  <a class="topbar-link" href="#methodes">Méthodes</a>
+</nav>
+
+<header class="hero">
+  <p class="eyebrow">Analyse de risque · Traversée des Lofoten · 14–22 juin 2026</p>
+  <h1>Le danger n’était pas là où je l’attendais</h1>
+  <p class="problem"><span>Problématique</span>Seul, en autonomie, sous le soleil de minuit : où le risque s’est-il réellement concentré pendant la traversée, et mon plan l’avait-il anticipé ?</p>
+  <div class="kpis" id="kpis"></div>
+  <p class="hero-note" id="hero-note"></p>
+</header>
+
+<main>
+  <nav class="toc" aria-label="Sommaire">
+    <a href="#s1"><b>01</b>Le relief du jour</a>
+    <a href="#s2"><b>02</b>L’écart à l’allure</a>
+    <a href="#s3"><b>03</b>Les queues</a>
+    <a href="#s4"><b>04</b>L’irrégularité</a>
+    <a href="#s5"><b>05</b>Les grappes</a>
+    <a href="#s6"><b>06</b>Ce qui ralentit</a>
+    <a href="#s7"><b>07</b>La réserve physique</a>
+    <a href="#s8"><b>08</b>La météo</a>
+    <a href="#s9"><b>09</b>L’indice de danger</a>
+    <a href="#s10"><b>10</b>5 000 traversées</a>
+    <a href="#s11"><b>11</b>Vitesse et irrégularité</a>
+    <a href="#s12"><b>12</b>Plan contre réel</a>
+    <a href="#s13"><b>13</b>Conclusion</a>
+  </nav>
+
+  <section id="s1">
+    <p class="num">01</p>
+    <h2>Le relief du jour</h2>
+    <p class="lede">Chaque jour tient en quatre altitudes : celle du départ, celle de l’arrivée, le point le plus haut et le point le plus bas. La barre dessous donne le dénivelé positif du jour, en distinguant ce qui a été monté avec le sac et en trail.</p>
+    <div class="chart" id="c-candles" data-h="300"></div>
+    <div class="chart" id="c-volume" data-h="150"></div>
+    <div class="legend-row" id="l-candles"></div>
+    <p class="take"><b>À retenir</b><span id="t-candles"></span></p>
+  </section>
+
+  <section id="s2">
+    <p class="num">02</p>
+    <h2>L’écart à l’allure attendue</h2>
+    <p class="lede">La trace est découpée en <b id="n-seg"></b> tronçons de 250 m. Pour chacun, la règle de Tobler donne un temps attendu à partir de la pente. L’écart étudié est <i>ln(temps réel / temps attendu)</i>, une fois retiré mon rythme moyen avec et sans sac : 0 signifie « dans mon allure », +0,4 signifie environ 1,5 fois plus lent.</p>
+    <div class="grid-2">
+      <figure><figcaption>Répartition des écarts et loi normale ajustée</figcaption><div class="chart" id="c-hist" data-h="300"></div><div class="legend-row" id="l-hist"></div></figure>
+      <figure><figcaption>Quantiles observés contre quantiles de la loi normale</figcaption><div class="chart" id="c-qq" data-h="300"></div></figure>
+    </div>
+    <div class="stat-strip" id="dist-stats"></div>
+    <p class="take"><b>À retenir</b><span id="t-dist"></span></p>
+  </section>
+
+  <section id="s3">
+    <p class="num">03</p>
+    <h2>Les queues : les 12 tronçons les plus lents</h2>
+    <p class="lede">Le risque se lit dans les extrêmes, pas dans la moyenne. Voici les tronçons les plus éloignés de mon allure, en nombre d’écarts-types (z).</p>
+    <div class="table-wrap"><table class="data" id="tail-table"></table></div>
+    <p class="take"><b>À retenir</b><span id="t-tail"></span></p>
+  </section>
+
+  <section id="s4">
+    <p class="num">04</p>
+    <h2>L’irrégularité de l’allure, kilomètre après kilomètre</h2>
+    <p class="lede">En haut, chaque point est un tronçon, avec sa moyenne glissante sur 2 km et une bande de ±2 écarts-types. Les points hors de la bande sont des ruptures. En bas, l’écart-type glissant sur 2 km mesure l’irrégularité : plus il monte, moins le terrain se laisse prévoir.</p>
+    <div class="chart" id="c-bands" data-h="250"></div>
+    <div class="chart" id="c-roll" data-h="210"></div>
+    <div class="legend-row" id="l-roll"></div>
+    <p class="take"><b>À retenir</b><span id="t-roll"></span></p>
+  </section>
+
+  <section id="s5">
+    <p class="num">05</p>
+    <h2>Les moments difficiles arrivent en grappes</h2>
+    <p class="lede">Si chaque tronçon était indépendant du précédent, les barres resteraient dans la zone grise (le hasard, à 95 %). La corrélation d’un tronçon avec les suivants dit si un passage difficile en annonce un autre.</p>
+    <div class="grid-2">
+      <figure><figcaption>Corrélation de l’écart avec les tronçons suivants</figcaption><div class="chart" id="c-acf1" data-h="220"></div></figure>
+      <figure><figcaption>Corrélation de l’ampleur de l’écart (|écart|)</figcaption><div class="chart" id="c-acf2" data-h="220"></div></figure>
+    </div>
+    <p class="take"><b>À retenir</b><span id="t-acf"></span></p>
+  </section>
+
+  <section id="s6">
+    <p class="num">06</p>
+    <h2>Ce qui ralentit, et ce qui ne ralentit pas</h2>
+    <p class="lede">Une régression sur les 605 tronçons isole l’effet de chaque facteur, toutes choses égales par ailleurs. Chaque barre donne la variation du temps, avec son intervalle de confiance à 95 %.</p>
+    <div class="grid-2 g-6040">
+      <figure><figcaption>Effet sur le temps d’un tronçon</figcaption><div class="chart" id="c-sens" data-h="290"></div></figure>
+      <figure><figcaption>Corrélations entre facteurs, par sortie (Spearman)</figcaption><div class="chart" id="c-corr" data-h="400"></div></figure>
+    </div>
+    <p class="take"><b>À retenir</b><span id="t-sens"></span></p>
+  </section>
+
+  <section id="s7">
+    <p class="num">07</p>
+    <h2>La réserve physique</h2>
+    <p class="lede">La variabilité de la fréquence cardiaque (VFC) mesurée la nuit reflète la récupération. Le graphique montre de combien elle a reculé par rapport à son meilleur niveau du séjour. Dessous, la durée de chaque nuit.</p>
+    <div class="chart" id="c-hrv" data-h="250"></div>
+    <div class="chart" id="c-sleep" data-h="150"></div>
+    <p class="take"><b>À retenir</b><span id="t-hrv"></span></p>
+  </section>
+
+  <section id="s8">
+    <p class="num">08</p>
+    <h2>La météo face à la normale</h2>
+    <p class="lede">La météo vécue (ERA5, heure par heure, sur la zone de chaque jour) est comparée à la moyenne de 30 ans (1996–2025) sur les mêmes dates, du 14 au 22 juin.</p>
+    <div class="grid-2">
+      <figure><figcaption>Pluie cumulée : vécue contre normale</figcaption><div class="chart" id="c-rain" data-h="250"></div><div class="legend-row" id="l-rain"></div></figure>
+      <figure><figcaption>Rafale maximale du jour</figcaption><div class="chart" id="c-gust" data-h="250"></div></figure>
+    </div>
+    <div class="stat-strip" id="wx-stats"></div>
+    <p class="take"><b>À retenir</b><span id="t-wx"></span></p>
+  </section>
+
+  <section id="s9">
+    <p class="num">09</p>
+    <h2>L’indice de danger, sortie par sortie</h2>
+    <p class="lede">Cinq facteurs, ramenés sur la même échelle puis pondérés : difficulté du terrain (30 %), pente des passages raides (15 %), irrégularité de l’allure (20 %), météo pendant la sortie (20 %) et fatigue de la nuit précédente (15 %). L’indice est construit <i>sans</i> regarder les alertes, puis on vérifie où elles tombent.</p>
+    <div class="chart" id="c-index" data-h="640"></div>
+    <div class="legend-row" id="l-index"></div>
+    <p class="take"><b>À retenir</b><span id="t-index"></span></p>
+  </section>
+
+  <section id="s10">
+    <p class="num">10</p>
+    <h2>5 000 traversées simulées</h2>
+    <p class="lede">La traversée est rejouée 5 000 fois sur le même parcours, de deux façons. <b>Modèle normal</b> : chaque tronçon tire son écart au hasard, indépendamment, selon une loi normale. <b>Modèle par blocs</b> : on tire des séquences réelles de 2 km, qui gardent les queues épaisses et les grappes. Les deux modèles ont la même moyenne ; seule l’incertitude change.</p>
+    <figure><figcaption>Écart au scénario central, en heures de marche cumulées</figcaption><div class="chart" id="c-fan" data-h="320"></div><div class="legend-row" id="l-fan"></div></figure>
+    <div class="grid-2 g-4060">
+      <figure><figcaption>Temps total de marche, 5 000 simulations</figcaption><div class="chart" id="c-mchist" data-h="250"></div></figure>
+      <figure><figcaption>Journée par journée : seuils de temps de marche</figcaption><div class="table-wrap"><table class="data" id="mc-table"></table></div></figure>
+    </div>
+    <p class="take"><b>À retenir</b><span id="t-mc"></span></p>
+  </section>
+
+  <section id="s11">
+    <p class="num">11</p>
+    <h2>Vitesse contre irrégularité</h2>
+    <p class="lede">Chaque bulle est une sortie : en abscisse son irrégularité, en ordonnée sa vitesse d’effort (km-effort par heure, où 100 m de D+ comptent pour 1 km), et sa taille selon le D+. La ligne relie les sorties qui offrent la meilleure vitesse pour un niveau d’irrégularité donné.</p>
+    <div class="chart" id="c-scatter" data-h="380"></div>
+    <div class="legend-row" id="l-scatter"></div>
+    <p class="take"><b>À retenir</b><span id="t-scatter"></span></p>
+  </section>
+
+  <section id="s12">
+    <p class="num">12</p>
+    <h2>Plan contre réel</h2>
+    <p class="lede">La feuille de route d’origine, confrontée à ce qui s’est passé, jour par jour.</p>
+    <div class="plan" id="plan"></div>
+    <p class="take"><b>À retenir</b><span>La trame tient : 7 étapes, retour au bateau à l’heure. L’avance prise les J2 et J3 est absorbée par l’horaire du bateau (J4), puis par la nuit de 2 h (J5). Les trois renoncements suivent tous de la fatigue ou du temps perdu juste avant : le premier jour avec le sac, la recherche du bivouac, la nuit la plus courte.</span></p>
+  </section>
+
+  <section id="s13" class="concl">
+    <p class="num">13</p>
+    <h2>Conclusion</h2>
+    <ol class="lessons" id="lessons"></ol>
+    <h3>Ce que je changerais la prochaine fois</h3>
+    <ul class="rules" id="rules"></ul>
+  </section>
+
+  <section id="methodes" class="methods">
+    <h2>Méthodes et sources</h2>
+    <div class="grid-2 g-top">
+      <div>
+        <h3>Données</h3>
+        <ul>
+          <li><b>Trace et effort</b> : montre GPS, 7 184 points avec altitude, temps en mouvement, fréquence cardiaque et calories, regroupés en 605 tronçons de 250 m.</li>
+          <li><b>Sommeil et récupération</b> : 9 nuits (durée, phases, VFC, recharge d’énergie).</li>
+          <li><b>Météo</b> : réanalyse ERA5 (Copernicus), heure par heure sur trois zones (nord, centre, sud), et climatologie 1996–2025 sur les mêmes dates.</li>
+          <li><b>Terrain</b> : échelle DNT à quatre niveaux (facile, modéré, exigeant, expert) et échelle CAS de T1 à T6, à partir des guides cités ci-contre. Quand aucun guide ne couvre la portion, le niveau est estimé à partir des critères DNT et du récit.</li>
+        </ul>
+        <h3>Calculs</h3>
+        <ul>
+          <li><b>Allure attendue</b> : fonction de Tobler, v = 6·e<sup>−3,5·|pente+0,05|</sup> km/h.</li>
+          <li><b>Écart</b> : ln(temps réel / temps attendu), centré séparément avec et sans sac.</li>
+          <li><b>Loi</b> : test de Jarque-Bera, loi de Student ajustée par maximum de vraisemblance.</li>
+          <li><b>Grappes</b> : autocorrélation et test de Ljung-Box sur 10 tronçons.</li>
+          <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler).</li>
+          <li><b>Simulation</b> : 5 000 tirages par modèle. Les blocs font 8 tronçons (2 km). Les deux modèles sont centrés sur le temps réel.</li>
+          <li><b>Indice</b> : facteurs centrés-réduits. Pour les sorties courtes, l’irrégularité et la pente sont rapprochées de la moyenne, pour qu’une sortie de 7 tronçons ne pèse pas autant qu’une de 50.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Difficulté du terrain retenue</h3>
+        <div class="table-wrap"><table class="data compact" id="terrain-table"></table></div>
+        <h3>Sources</h3>
+        <ul class="src">
+          <li><a href="https://www.dnt.no/om-dnt/english/need-to-know-about-norwegian-outdoor-life/grading-of-trails/">DNT, Grading of trails</a></li>
+          <li><a href="https://www.68north.com/?p=3657">68north, Volandstind</a> · <a href="https://www.68north.com/?p=5071">Andstabben</a> · <a href="https://www.68north.com/?p=1009">Helvetestind</a> · <a href="https://www.68north.com/?p=1030">Hermannsdalstind</a></li>
+          <li><a href="https://www.horizonrando.fr/en/norway/helvete/">Horizon Rando, Helvete</a> · <a href="https://www.horizonrando.fr/en/norway/munken/">Munken</a> · <a href="https://www.horizonrando.fr/en/norway/ryten/">Ryten</a> · <a href="https://www.horizonrando.fr/en/norway/nesland-to-nusfjord/">Nesland → Nusfjord</a> · <a href="https://www.horizonrando.fr/en/norway/tonsasheia/">Tønsåsheia</a></li>
+          <li><a href="https://huntingforbliss.com/horseid-beach-lofoten">Hunting for Bliss, Horseid</a></li>
+          <li>Tobler, W. (1993), <i>Three presentations on geographical analysis and modeling</i>, NCGIA.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot">Analyse du 5 novembre 2026, calculée par <code>analyse_risque.py</code> à partir des mêmes données que la carte.</p>
+  </section>
+</main>
+<div class="tip" id="tip" role="tooltip" hidden></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="risque_data.js?v=20261105-1"></script>
+<script src="risque.js?v=20261105-1"></script>
+</body>
+</html>
