@@ -696,7 +696,7 @@
       ['La fatigue ne ralentit pas : elle fait renoncer', 'Aucun effet mesurable sur l’allure, mais les trois renoncements suivent tous de la fatigue ou du temps perdu juste avant. La fatigue se voit dans les décisions, pas sur la montre.'],
       ['Le risque s’est concentré à la fin', `${f1(lateRain / W_.total_rain * 100)} % de la pluie est tombée du J7 au J9, quand la réserve physique était au plus bas. Les trois incidents graves tombent dans cette fenêtre.`],
       ['Le terrain coté explique où tombent les alertes', `Les sorties exigeantes ou expertes concentrent toutes les alertes analysées. La cote DNT est le premier filtre de risque, avant la météo et la fatigue.`],
-      ['Une pluie subie, une adaptation partielle', R.cf.clim ? `L’été 2026 a été plus arrosé que ${f0(R.cf.clim.pct_rain)} % des étés : la chance a joué contre moi. Le camp fixe, décidé avec les prévisions, a protégé le matériel, mais j’ai continué à aller en terrain exigeant sous la pluie. Les résultats tiennent d’abord aux décisions (R² ${f2(R.cf.dec.r2)} dans la grille provisoire).` : ''],
+      ['La marge a transformé la pluie en simple attente', R.cf.margin ? `L’été 2026 a été plus arrosé que ${f0(R.cf.clim.pct_rain)} % des étés, mais la pluie est tombée une fois la traversée finie. Ce moment « gratuit » tient aussi à l’avance prise les J2–J3 : elle fait passer de ${f0(R.cf.margin.scen[0].free)} % à ${f0(R.cf.margin.scen[2].free)} % les mondes météo où la pluie ne coûte rien.` : ''],
       ['Planifier sur la moyenne, c’est sous-estimer la marge', `La loi normale sous-estime d’un facteur ${f0(pB / pN)} le risque d’une journée de plus de 10 h. Avec des écarts en grappes, la marge se calcule sur le seuil à 95 %.`],
     ];
     $('lessons').innerHTML = L.map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
@@ -705,6 +705,7 @@
       '<b>Après une nuit de moins de 4 h, pas de sommet exposé</b> le lendemain : la décision se dégrade avant les jambes.',
       '<b>Sous la pluie, rester sous la cote « exigeant »</b> : roche mouillée, pierriers et barres rocheuses concentrent les queues.',
       '<b>Au premier passage hors de la bande, réévaluer</b> plutôt que forcer : le suivant a de bonnes chances d’être difficile aussi.',
+      '<b>Prendre de l’avance tant qu’il fait beau</b> : chaque jour gagné tôt transforme une future pluie en simple attente au lieu d’une étape forcée avec le sac.',
     ].map((x, i) => `<li data-k="R${i + 1}"><span>${x}</span></li>`).join('');
   }
 
@@ -827,23 +828,32 @@
       legend('l-cfw', [['', C('--up'), 'placement plus prudent'], ['', C('--down'), 'placement plus exposé'], ['ln', C('--warning'), 'mon placement réel'], ['dash', '', 'placement au hasard (moyenne)']]);
       readout('r-cfw', `mieux que <b>${f0(CW.km.rank.above)} %</b> du hasard · moy. <b>${f1(CW.km.mean)} km</b>`);
     }
-    // (b) the 7 possible calendars for a 3-day wet spell
-    {
-      const B = CW.blocks;
-      const f = frame('c-cfb', { t: 18, r: 50, b: 30, l: 8 });
-      const x = d3.scaleBand().domain(B.map(b => b.start)).range([0, f.w]).padding(.35);
-      const y = d3.scaleLinear().domain([0, d3.max(B, b => b.km) * 1.15]).nice().range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => `${v} km`);
-      xAxis(f.g, x, f.h, null, s => `J${s}–J${s + 2}`);
-      const real = B[B.length - 1];
-      f.g.selectAll('.bb').data(B).join('path').attr('d', b => barPath(x(b.start), y(0), x.bandwidth(), y(b.km), 2))
-        .attr('fill', b => b === real ? C('--warning') : b.km > real.km ? C('--down') : C('--up')).attr('fill-opacity', b => b === real ? 1 : .6);
-      f.g.selectAll('.bt').data(B).join('text').attr('class', 'lbl tagt').attr('x', b => x(b.start) + x.bandwidth() / 2).attr('y', b => y(b.km) - 5).attr('text-anchor', 'middle').text(b => f1(b.km));
-      hover(f.g.selectAll('.bh').data(B).join('rect').attr('class', 'hit').attr('x', b => x(b.start)).attr('width', x.bandwidth()).attr('y', 0).attr('height', f.h),
-        b => `<b>Pluie du J${b.start} au J${b.start + 2}${b === real ? ' (réel)' : ''}</b>${row('km exigeants sous la pluie', f1(b.km))}${row('mm × km', f0(b.mmkm))}${row('écart au réel', `${fs0((b.km / real.km - 1) * 100)} %`)}`);
-      legend('l-cfb', [['', C('--warning'), 'calendrier réel (J7–J9)'], ['', C('--down'), 'plus exposé'], ['', C('--up'), 'moins exposé'], ['', C('--text-muted'), 'hypothèse : programme non adapté']]);
-      const worst = B.reduce((a, b) => b.km > a.km ? b : a);
-      readout('r-cfb', `pire <b>J${worst.start}–J${worst.start + 2}</b> · <b class="d">${fs0((worst.km / real.km - 1) * 100)} %</b>`);
+    // (b) the margin: share of the 1 200 weather worlds where rain costs nothing, by margin level
+    const MG = R.cf.margin;
+    if (MG) {
+      const Sc = MG.scen;
+      const f = frame('c-cfb', { t: 26, r: 16, b: 30, l: $('c-cfb').clientWidth < 520 ? 108 : 150 });
+      const narrowM = f.w < 420, barW = narrowM ? f.w - 40 : f.w * .5;
+      const y = d3.scaleBand().domain(Sc.map(d => d.key)).range([0, f.h]).padding(narrowM ? .5 : .38);
+      const x1 = d3.scaleLinear().domain([0, 100]).range([0, barW]);
+      f.g.append('text').attr('class', 'ax-title').attr('y', -12).text(f.w < 300 ? 'mondes où la pluie ne coûte rien' : 'part des 1 200 mondes où la pluie ne coûte rien');
+      f.g.append('g').attr('class', 'gridl').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x1).ticks(4).tickSize(-f.h).tickFormat('')).lower();
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x1).ticks(4).tickSize(0).tickPadding(8).tickFormat(v => `${v} %`));
+      const lbl = { plan: f.m.l > 120 ? 'Marge du plan · 1 j' : 'Plan · 1 j', sans_avance: f.m.l > 120 ? 'Sans l’avance · 2 j' : 'Sans avance · 2 j', reel: f.m.l > 120 ? 'Réel, avance · 3 j' : 'Réel · 3 j' };
+      f.g.selectAll('.ml').data(Sc).join('text').attr('class', d => d.key === 'reel' ? 'lbl-ink' : 'lbl-strong').attr('x', -10).attr('y', d => y(d.key) + y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(d => lbl[d.key]);
+      const colS = d => d.key === 'reel' ? C('--up') : d.key === 'plan' ? C('--down') : C('--text-muted');
+      f.g.selectAll('.b1').data(Sc).join('rect').attr('x', 0).attr('y', d => y(d.key)).attr('height', y.bandwidth()).attr('width', d => x1(d.free)).attr('rx', 2).attr('fill', colS).attr('fill-opacity', .75);
+      f.g.selectAll('.t1').data(Sc).join('text').attr('class', 'lbl-ink tagt').attr('x', d => x1(d.free) + 6).attr('y', d => y(d.key) + y.bandwidth() / 2).attr('dy', '.35em').text(d => `${f0(d.free)} %`);
+      const tx = narrowM ? 0 : barW + 58;
+      const ty = d => narrowM ? y(d.key) + y.bandwidth() + 12 : y(d.key) + y.bandwidth() / 2 - 6;
+      const t26 = d => d.r2026.wet_moves ? `2026 : ${d.r2026.wet_moves} étape${d.r2026.wet_moves > 1 ? 's' : ''} mouillée${d.r2026.wet_moves > 1 ? 's' : ''}` : '2026 : aucune étape mouillée';
+      f.g.selectAll('.t2').data(Sc).join('text').attr('class', 'lbl tagt').attr('x', tx).attr('y', ty).attr('dy', '.35em').text(d => f.w < 300 ? `${f1(d.mean_forced)} km · 2026 : ${d.r2026.wet_moves || 'aucune'} mouillée${d.r2026.wet_moves > 1 ? 's' : ''}` : `${f1(d.mean_forced)} km forcés en moy.${narrowM ? ` · ${t26(d)}` : ''}`);
+      if (!narrowM) f.g.selectAll('.t3').data(Sc).join('text').attr('class', d => d.r2026.wet_moves ? 'lbl tagt' : 'lbl-ink tagt').attr('x', tx).attr('y', d => ty(d) + 15).attr('dy', '.35em').style('fill', d => d.r2026.wet_moves ? C('--down') : C('--up')).text(t26);
+      hover(f.g.selectAll('.mh').data(Sc).join('rect').attr('class', 'hit').attr('x', -f.m.l).attr('width', f.w + f.m.l).attr('y', d => y(d.key) - 4).attr('height', y.bandwidth() + 16),
+        d => `<b>${d.label}</b>${row('étapes avec le sac', `${d.n_moves} en 9 jours`)}${row('mondes sans étape mouillée', `${f1(d.free)} %`)}${row('mondes avec terrain exigeant mouillé', `${f1(d.any_hard)} %`)}${row('km exigeants forcés (moy. · P90)', `${f1(d.mean_forced)} · ${f1(d.p90_forced)}`)}${row('2026', d.r2026.wet_moves ? `${d.r2026.wet_moves} étape(s), ${f1(d.r2026.forced)} km` : 'aucune')}`);
+      legend('l-cfb', [['', C('--down'), 'marge du plan'], ['', C('--text-muted'), 'sans l’avance des J2–J3'], ['', C('--up'), 'réel, avance prise']]);
+      const P = Sc.find(d => d.key === 'plan'), Rl = Sc.find(d => d.key === 'reel');
+      readout('r-cfb', `pluie gratuite <b>${f0(P.free)} → ${f0(Rl.free)} %</b> · 1 200 mondes`);
     }
     // (c) pace luck: each real day inside its simulated range
     {
@@ -917,11 +927,12 @@
       ['Chance · pluie', `P${f0(CL.pct_rain)}`, `été 2026 plus arrosé que ${f0(CL.pct_rain)} % des 30 étés : défavorable`],
       ['Chance · jours de pluie', `P${f0(CL.pct_wet)}`, `${CL.real.wet} jours, comme un été normal : pluie concentrée`],
       ['Chance · aléa d’allure', `${fav} / 9`, 'journées plus rapides que la médiane simulée'],
-      ['Décision · placement', `${f0(CW.km.rank.above)} %`, 'des placements au hasard auraient exposé davantage'],
+      ['Décision · marge', MG ? `${f0(MG.scen[0].free)} → ${f0(MG.scen[2].free)} %` : '–', 'mondes où la pluie ne coûte rien, de la marge du plan à l’avance prise'],
       ['Décision · grille', `R² ${f2(CD.r2)}`, 'part des résultats expliquée par la qualité ex ante'],
     ].map(([k, b, t]) => `<div><span class="kl">${k}</span><b>${b}</b><span>${t}</span></div>`).join('');
-    $('t-cf').textContent = CL
-      ? `La chance a plutôt joué contre moi : l’été 2026 a été plus arrosé que ${f0(CL.pct_rain)} % des 30 étés (P${f0(CL.starts_rain.pct)} sur 1 200 départs), avec un nombre de jours de pluie normal, donc une pluie concentrée. Face à elle, l’adaptation a été réelle mais partielle. Le camp fixe, décidé avec les prévisions, a protégé le matériel et raccourci les sorties. Mais j’ai continué à monter en terrain exigeant ou expert sous la pluie (Andstabben, Støvla, Gylttinden) : mon placement des sorties exposées n’est meilleur que ${f0(CW.km.rank.above)} % des placements au hasard. Dans la grille, la qualité ex ante explique environ ${f0(CD.r2 * 100)} % des résultats. La plus grosse part de chance est l’arête de Reinebringen dans le brouillard (${fs2(lucky.luck)}). La Støvla tombe dans « conséquence » : décision risquée, mauvais résultat.`
+    const MP = MG && MG.scen[0], MR = MG && MG.scen[2];
+    $('t-cf').textContent = CL && MG
+      ? `La chance a joué deux fois. Contre moi : l’été 2026 a été plus arrosé que ${f0(CL.pct_rain)} % des 30 étés. Pour moi : la pluie est arrivée une fois la traversée finie, quand fixer le camp à Sørvågen ne coûtait rien. Plus tôt, à Bunes ou à Horseid, attendre aurait voulu dire perdre une étape avec un seul jour de marge, ou marcher sous la pluie avec le sac. Mais ce moment « gratuit » doit aussi beaucoup à une décision : l’avance prise les J2–J3. Sur 1 200 mondes météo réels, la pluie ne coûte rien dans ${f0(MP.free)} % des cas avec la marge du plan, et dans ${f0(MR.free)} % avec l’avance prise ; le terrain exigeant parcouru sous la pluie avec le sac passe de ${f1(MP.mean_forced)} à ${f1(MR.mean_forced)} km en moyenne. En 2026, la marge du plan aurait forcé ${MP.r2026.wet_moves} étapes sous la pluie. Ensuite, sur place, l’adaptation est restée partielle : les sommets exigeants ont continué sous la pluie. Dans la grille, la qualité ex ante explique environ ${f0(CD.r2 * 100)} % des résultats. La Støvla tombe dans « conséquence ».`
       : '';
     $('cf-next').innerHTML = [
       '<b>Trois points ERA5 au lieu d’un</b> : rejouer chaque jour sur la zone de ses sorties (nord, centre, sud), et passer de la pluie journalière à la pluie pendant les heures de marche.',

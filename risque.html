@@ -317,8 +317,8 @@
         <div class="pc-foot"><span class="legend-row" id="l-cfw"></span><span class="src">9! = 362 880 ordres</span></div>
       </div>
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Sensibilité · si l’épisode pluvieux était arrivé ailleurs (programme réel figé)</span><span class="pc-r mono" id="r-cfb"></span></div>
-        <div class="chart" id="c-cfb" data-h="260"></div>
+        <div class="pc-head"><span class="pc-t">Décision · la marge transforme la pluie en simple attente</span><span class="pc-r mono" id="r-cfb"></span></div>
+        <div class="chart" id="c-cfb" data-h="270"></div>
         <div class="pc-foot"><span class="legend-row" id="l-cfb"></span></div>
       </div>
     </div>
@@ -347,8 +347,8 @@
       <div class="table-wrap flat"><table class="data" id="dec-table"></table></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Les deux premiers graphiques ne regardent que la météo, ce qui est subi. Le troisième compare ma façon réelle de placer les sorties exposées face à la pluie à tous les placements possibles : c’est une mesure de décision, pas de chance. Le quatrième est une sensibilité : il suppose, à tort, que je n’aurais pas réagi. Si la barre réelle est à gauche de la distribution, l’ordre des jours m’a été favorable. Dans la matrice, la diagonale est « méritée » ; en haut à gauche, un bon résultat obtenu avec une décision risquée relève de la chance.</p></div>
-      <div><h4>Méthode</h4><p>Chance : rang de la pluie 2026 parmi 30 étés et 1 200 départs (ERA5, point centre). Adaptation : km de terrain exigeant ou expert parcourus un jour de pluie (≥ 1 mm), comparés aux 9! appariements possibles entre programmes et météo des 9 jours. La référence non adaptée (plan initial sous la même météo) viendra avec le GPX. Qualité ex ante : drapeaux connus au moment de décider (nuit courte, météo, cote, heure, visibilité), selon que la décision est prudente ou engagée. Chance = écart entre le résultat et celui qu’annonce la qualité (droite ajustée).</p></div>
+      <div><h4>Comment lire</h4><p>Les deux premiers graphiques ne regardent que la météo, ce qui est subi. Le troisième compare ma façon réelle de placer les sorties exposées face à la pluie à tous les placements possibles : c’est une mesure de décision, pas de chance. Le quatrième rejoue 1 200 mondes météo avec une stratégie prudente (attendre un jour de pluie si la marge le permet) : plus la marge est grande, plus la pluie devient une simple attente. Si la barre réelle est à gauche de la distribution, l’ordre des jours m’a été favorable. Dans la matrice, la diagonale est « méritée » ; en haut à gauche, un bon résultat obtenu avec une décision risquée relève de la chance.</p></div>
+      <div><h4>Méthode</h4><p>Chance : rang de la pluie 2026 parmi 30 étés et 1 200 départs (ERA5, point centre). Adaptation : km de terrain exigeant ou expert parcourus un jour de pluie (≥ 1 mm), comparés aux 9! appariements possibles entre programmes et météo des 9 jours. Marge : 6 étapes avec le sac en 9 jours (réel), 7 sans l’avance des J2–J3, 8 avec la marge du plan ; on attend un jour de pluie seulement si l’on peut encore arriver à temps, sinon on marche sous la pluie. La référence fine (plan initial) viendra avec le GPX. Qualité ex ante : drapeaux connus au moment de décider (nuit courte, météo, cote, heure, visibilité), selon que la décision est prudente ou engagée. Chance = écart entre le résultat et celui qu’annonce la qualité (droite ajustée).</p></div>
       <div class="key"><h4>À retenir (provisoire)</h4><p id="t-cf"></p></div>
     </div>
     <div class="pc mt todo">
@@ -412,7 +412,7 @@
 <div class="tip" id="tip" role="tooltip" hidden></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="risque_data.js?v=20261105-7"></script>
-<script src="risque.js?v=20261105-7"></script>
+<script src="risque_data.js?v=20261105-8"></script>
+<script src="risque.js?v=20261105-11"></script>
 </body>
 </html>
