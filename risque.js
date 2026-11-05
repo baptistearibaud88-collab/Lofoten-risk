@@ -431,7 +431,7 @@
   }
 
   /* ---------- 10 · Monte Carlo ---------- */
-  let mcModel = 'blocs', mcPlayed = false, mcTimer = null;
+  let mcModel = 'blocs', mcPlayed = false, mcRaf = 0;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function drawMc(animate = false) {
     const K = MC.seg_km, other = mcModel === 'blocs' ? 'normal' : 'blocs';
@@ -449,17 +449,17 @@
     axTitle(f.g, 'km parcourus', f.w, f.h + 30, 'end');
     f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w + histW + 8).attr('y1', y(0)).attr('y2', y(0));
     const col = d3.scaleLinear().domain([-lim * .7, 0, lim * .7]).range([C('--div-neg'), C('--text-muted'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
-    // reveal clip: the paths run left to right like a live simulation
-    const cid = `mcclip${Math.random().toString(36).slice(2, 7)}`;
-    const cr = f.svg.append('defs').append('clipPath').attr('id', cid).append('rect').attr('x', -2).attr('y', -m.t).attr('height', f.h + m.t + 4).attr('width', animate ? 0 : f.w + 4);
-    const pg = f.g.append('g').attr('clip-path', `url(#${cid})`);
+    const pg = f.g.append('g');
     const band = (lo, hi) => d3.area().x((v, i) => x(K[i])).y0((v, i) => y(lo[i])).y1((v, i) => y(hi[i])).curve(d3.curveMonotoneX)(lo);
-    pg.append('path').attr('d', band(M.bands['5'], M.bands['95'])).attr('fill', C('--accent')).attr('opacity', .1);
-    pg.append('path').attr('d', band(M.bands['25'], M.bands['75'])).attr('fill', C('--accent')).attr('opacity', .14);
+    const bandG = pg.append('g');   // percentile bands: they appear once the simulations are in
+    bandG.append('path').attr('d', band(M.bands['5'], M.bands['95'])).attr('fill', C('--accent')).attr('opacity', .1);
+    bandG.append('path').attr('d', band(M.bands['25'], M.bands['75'])).attr('fill', C('--accent')).attr('opacity', .14);
     const line = a => d3.line().x((v, i) => x(K[i])).y(v => y(Math.max(-lim, Math.min(lim, v))))(a);
-    M.paths.forEach(p => pg.append('path').attr('d', line(p)).attr('fill', 'none').attr('stroke', col(p[p.length - 1])).attr('stroke-width', .8).attr('opacity', .42));
-    [['5', 1.6], ['95', 1.6], ['1', 1], ['99', 1]].forEach(([k, w]) => pg.append('path').attr('d', line(M.bands[k])).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', w).attr('opacity', k === '1' || k === '99' ? .45 : .9));
-    [O.bands['5'], O.bands['95']].forEach(a => pg.append('path').attr('d', line(a)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.3).attr('stroke-dasharray', '5 4').attr('opacity', .9));
+    const pathG = pg.append('g');
+    const simP = M.paths.map(p => pathG.append('path').attr('d', line(p)).attr('fill', 'none').attr('stroke', col(p[p.length - 1])).attr('stroke-width', .8).attr('opacity', .42));
+    const lineG = pg.append('g');
+    [['5', 1.6], ['95', 1.6], ['1', 1], ['99', 1]].forEach(([k, w]) => lineG.append('path').attr('d', line(M.bands[k])).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', w).attr('opacity', k === '1' || k === '99' ? .45 : .9));
+    [O.bands['5'], O.bands['95']].forEach(a => lineG.append('path').attr('d', line(a)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.3).attr('stroke-dasharray', '5 4').attr('opacity', .9));
     const realP = pg.append('path').attr('d', line(MC.real_dev)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 2.6);
     // right margin: distribution of the arrival, rotated
     const hx = f.w + 10, H = M.hist, E = M.edges;
@@ -468,16 +468,17 @@
     const bars = hg.selectAll('.mh').data(H.map((n, i) => ({ n, a: E[i], b: E[i + 1] })).filter(d => d.b > -lim && d.a < lim)).join('rect')
       .attr('y', d => y(Math.min(lim, d.b)) + .5).attr('height', d => Math.max(.5, y(Math.max(-lim, d.a)) - y(Math.min(lim, d.b)) - 1)).attr('x', 0).attr('rx', 1.5)
       .attr('width', d => animate ? 0 : xh(d.n)).attr('fill', d => col((d.a + d.b) / 2)).attr('opacity', .9);
-    hg.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(d => xh(d.n)).y(d => y(d.a))(O.hist.map((n, i) => ({ n, a: E[i] })).filter(d => d.a >= -lim && d.a < lim)))
+    const cmpH = hg.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(d => xh(d.n)).y(d => y(d.a))(O.hist.map((n, i) => ({ n, a: E[i] })).filter(d => d.a >= -lim && d.a < lim)))
       .attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.2).attr('stroke-dasharray', '4 3').attr('opacity', .9);
     const tags = [[M.term[5], `P95 ${F('+.1f')(M.term[5])} h`, 'lbl-ink'], [M.es95, `5 % pires ${F('+.1f')(M.es95)} h`, 'lbl-strong'], [M.term[1], `P5 ${F('+.1f')(M.term[1])} h`, 'lbl-ink']];
+    const tagG = hg.append('g');
     if (!narrow) tags.forEach(([v, t, c], i) => {
-      hg.append('line').attr('x1', 0).attr('x2', histW + 6).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', C('--text-primary')).attr('stroke-width', 1).attr('opacity', i === 1 ? .5 : .9);
-      hg.append('text').attr('class', `${c} mc-tag`).attr('x', histW + 10).attr('y', y(v) + (i === 1 ? -4 : 4)).text(t);
+      tagG.append('line').attr('x1', 0).attr('x2', histW + 6).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', C('--text-primary')).attr('stroke-width', 1).attr('opacity', i === 1 ? .5 : .9);
+      tagG.append('text').attr('class', `${c} mc-tag`).attr('x', histW + 10).attr('y', y(v) + (i === 1 ? -4 : 4)).text(t);
     });
     hg.append('text').attr('class', 'lbl').attr('x', 0).attr('y', -10).text(narrow ? 'arrivée' : 'distribution à l’arrivée');
     const lastR = MC.real_dev[MC.real_dev.length - 1];
-    f.g.append('text').attr('class', 'lbl-ink').attr('x', x(K[d3.minIndex(MC.real_dev)])).attr('y', y(d3.min(MC.real_dev)) + 18).attr('text-anchor', 'middle').text(`réel : ${F('+.1f')(d3.min(MC.real_dev))} h`);
+    const realL = f.g.append('text').attr('class', 'lbl-ink').attr('x', x(K[d3.minIndex(MC.real_dev)])).attr('y', y(d3.min(MC.real_dev)) + 18).attr('text-anchor', 'middle').text(`réel : ${F('+.1f')(d3.min(MC.real_dev))} h`);
     // crosshair
     const ch = f.g.append('line').attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-muted')).style('display', 'none');
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
@@ -490,16 +491,40 @@
     legend('l-mc', [['ln', C('--div-neg'), 'trajectoire en avance'], ['ln', C('--div-pos'), 'trajectoire en retard'], ['', C('--accent') + ';opacity:.4', 'P5–P95 et P25–P75'],
       ['ln', C('--text-primary'), 'trajectoire réelle'], ['dash', '', `P5–P95 ${other === 'normal' ? 'loi normale' : 'blocs'} (comparaison)`]]);
     document.querySelector('#l-mc .dash').style.borderTopColor = C('--warning');
-    // animation: paths run (2.4 s), counter ticks to 5 000, then the histogram fills
-    clearInterval(mcTimer);
-    const cnt = $('mc-n');
+    // animation: the simulations arrive one by one, faster and faster; each one runs the 159 km,
+    // the counter and the arrival histogram fill as they land; then the percentiles and the real path
+    cancelAnimationFrame(mcRaf);
+    const cnt = $('mc-n'), fades = [bandG, lineG, cmpH, tagG, realL];
+    const fullBars = () => bars.attr('width', d => xh(d.n));
     if (animate && !reduce) {
-      const T0 = performance.now(), dur = 2400;
-      cr.transition().duration(dur).ease(d3.easeCubicInOut).attr('width', f.w + 4);
-      bars.transition().delay(dur - 300).duration(700).ease(d3.easeCubicOut).attr('width', d => xh(d.n));
-      setTimeout(() => { cr.interrupt().attr('width', f.w + 4); bars.interrupt().attr('width', d => xh(d.n)); }, dur + 900);   // never left half-drawn
-      mcTimer = setInterval(() => { const k = Math.min(1, (performance.now() - T0) / dur); cnt.textContent = f0(Math.round(d3.easeCubicInOut(k) * MC.ns)); if (k >= 1) clearInterval(mcTimer); }, 40);
-    } else { cr.attr('width', f.w + 4); bars.attr('width', d => xh(d.n)); cnt.textContent = f0(MC.ns); }
+      const n = simP.length, T = 3800, len = simP.map(p => p.node().getTotalLength());
+      const t0 = k => T * Math.pow(k / n, .55);          // gaps shrink: the run accelerates
+      const run = k => 700 - 560 * (k / n);              // and each simulation crosses faster
+      simP.forEach((p, k) => p.attr('stroke-dasharray', `${len[k]} ${len[k]}`).attr('stroke-dashoffset', len[k]).attr('opacity', 0));
+      fades.forEach(g => g.attr('opacity', 0));
+      const rl = realP.node().getTotalLength();
+      realP.attr('stroke-dasharray', `${rl} ${rl}`).attr('stroke-dashoffset', rl);
+      bars.attr('width', 0);
+      const done = new Uint8Array(n), T0 = performance.now();
+      const frame = now => {
+        const t = now - T0; let landed = 0;
+        for (let k = 0; k < n; k++) {
+          if (done[k]) { landed++; continue; }
+          const u = (t - t0(k)) / run(k);
+          if (u < 0) continue;
+          if (u >= 1) { done[k] = 1; landed++; simP[k].attr('stroke-dashoffset', 0).attr('stroke-dasharray', null).attr('opacity', .42).attr('stroke-width', .8); continue; }
+          simP[k].attr('stroke-dashoffset', len[k] * (1 - d3.easeCubicOut(u))).attr('opacity', .95).attr('stroke-width', 1.4);
+        }
+        const frac = landed / n;
+        cnt.textContent = f0(Math.round(frac * MC.ns));
+        bars.attr('width', d => xh(d.n * frac));
+        if (landed < n) { mcRaf = requestAnimationFrame(frame); return; }
+        fullBars(); cnt.textContent = f0(MC.ns);
+        fades.forEach((g, i) => g.transition().delay(i * 120).duration(500).attr('opacity', 1));
+        realP.transition().delay(350).duration(1100).ease(d3.easeCubicInOut).attr('stroke-dashoffset', 0).on('end', () => realP.attr('stroke-dasharray', null));
+      };
+      mcRaf = requestAnimationFrame(frame);
+    } else { fullBars(); cnt.textContent = f0(MC.ns); }
     // stats, table and text (both models side by side)
     const N_ = MC.normal.seg, B_ = MC.blocs.seg;
     $('mc-stats').innerHTML = [
