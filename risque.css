@@ -261,3 +261,20 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
   .ticker div { flex: 0 0 50%; }
 }
 @media print { .topbar, .toc { display: none; } }
+
+/* hero: title + map card */
+.hero-top { display: grid; grid-template-columns: 1fr 270px; gap: 28px; align-items: start; margin-bottom: 18px; }
+.map-card { display: block; text-decoration: none; color: var(--text-primary); background: var(--surface-1); border: 1px solid var(--hair); border-radius: 16px; padding: 14px 14px 12px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, .28); transition: border-color .2s ease, transform .2s ease; }
+.map-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.mc-k { display: block; font: 700 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.map-thumb { display: block; width: 100%; height: 150px; margin: 9px 0 10px; border-radius: 10px; background: radial-gradient(120% 90% at 30% 20%, #17303a 0%, #0f1c22 55%, #0a1216 100%); }
+@media (prefers-color-scheme: light) { :root:where(:not([data-theme="dark"])) .map-thumb { background: radial-gradient(120% 90% at 30% 20%, #e3f0f0 0%, #d7e6e7 60%, #cddcde 100%); } }
+.mc-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 8px; }
+.mc-go { font-size: 14.5px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.mc-meta { font: 11px var(--mono); color: var(--text-muted); white-space: nowrap; }
+.draft { margin-left: auto; font: 700 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--warning); border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent); border-radius: 4px; padding: 2px 7px; align-self: center; }
+.pc.todo { border-style: dashed; }
+.qd-q { font: 700 10.5px var(--mono); letter-spacing: .06em; }
+.flag { display: inline-block; font: 600 10.5px var(--mono); padding: 1px 6px; border-radius: 3px; margin: 1px 3px 1px 0; background: color-mix(in srgb, var(--down) 16%, transparent); color: var(--down); white-space: nowrap; }
+@media (max-width: 900px) { .hero-top { grid-template-columns: 1fr; gap: 16px; } .map-card { max-width: 420px; } .map-thumb { height: 120px; } }

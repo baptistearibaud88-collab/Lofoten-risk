@@ -11,7 +11,7 @@
 <meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261105-4">
+<link rel="stylesheet" href="risque.css?v=20261105-5">
 </head>
 <body>
 <div class="viz-root">
@@ -22,9 +22,18 @@
 </nav>
 
 <header class="hero">
-  <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.2 · 05/11/2026</span><span>Période : 14–22 juin 2026</span></div>
-  <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
-  <p class="sub">Allure, terrain, météo et récupération sur 9 jours : distribution des écarts, dispersion glissante, sensibilités et simulation Monte Carlo.</p>
+  <div class="hero-top">
+    <div>
+      <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.3 · 05/11/2026</span><span>Période : 14–22 juin 2026</span></div>
+      <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
+      <p class="sub">Allure, terrain, météo et récupération sur 9 jours : distribution des écarts, dispersion glissante, sensibilités, simulation Monte Carlo et part de chance.</p>
+    </div>
+    <a class="map-card" href="index.html" aria-label="Revenir à la carte 3D">
+      <span class="mc-k">Carte 3D</span>
+      <svg id="map-thumb" class="map-thumb" aria-hidden="true"></svg>
+      <span class="mc-foot"><span class="mc-go">‹ Revenir à la carte</span><span class="mc-meta">159 km · 9 jours</span></span>
+    </a>
+  </div>
   <div class="ticker" id="ticker" aria-label="Indicateurs clés"></div>
   <div class="hero-grid">
     <div class="problem"><span>Problématique</span>Seul, en autonomie, sous le soleil de minuit : où le risque s’est-il réellement concentré pendant la traversée, et le plan l’avait-il anticipé ?</div>
@@ -51,7 +60,8 @@
     <a href="#s11"><b>11</b>Monte Carlo</a>
     <a href="#s12"><b>12</b>Vitesse / irrégularité</a>
     <a href="#s13"><b>13</b>Plan contre réel</a>
-    <a href="#s14"><b>14</b>Conclusion</a>
+    <a href="#s14"><b>14</b>Chance ou décision</a>
+    <a href="#s15"><b>15</b>Conclusion</a>
   </nav>
 
   <section id="s1">
@@ -284,8 +294,53 @@
     </div>
   </section>
 
-  <section id="s14" class="concl">
-    <header class="sh"><span class="num">14</span><h2>Conclusion</h2></header>
+  <section id="s14">
+    <header class="sh"><span class="num">14</span><h2>Chance ou décision : esquisse contrefactuelle</h2><span class="draft">Esquisse</span></header>
+    <p class="lede">Un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Cette partie sépare ce qui dépendait de moi (les décisions) de ce qui n’en dépendait pas (l’ordre de la météo, l’aléa d’allure), en rejouant la traversée dans des mondes où seul l’un des deux change.</p>
+    <div class="grid-2">
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Et si la météo était tombée dans un autre ordre ?</span><span class="pc-r mono" id="r-cfw"></span></div>
+        <div class="chart" id="c-cfw" data-h="260"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-cfw"></span><span class="src">9! = 362 880 ordres</span></div>
+      </div>
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Épisode pluvieux de 3 jours : les 7 calendriers possibles</span><span class="pc-r mono" id="r-cfb"></span></div>
+        <div class="chart" id="c-cfb" data-h="260"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-cfb"></span></div>
+      </div>
+    </div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Aléa d’allure · rang de chaque journée réelle parmi 5 000 journées simulées</span><span class="pc-r mono" id="r-cfp"></span></div>
+      <div class="chart" id="c-cfp" data-h="230"></div>
+      <div class="pc-foot"><span class="legend-row" id="l-cfp"></span><span class="src">Modèle par blocs (partie 11)</span></div>
+    </div>
+    <div class="grid-2 g-6040 mt">
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Matrice décision × résultat · 11 décisions</span><span class="pc-r mono" id="r-cfd"></span></div>
+        <div class="chart" id="c-cfd" data-h="400"></div>
+      </div>
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Part de chance par décision</span><span class="pc-r mono">résultat − attendu</span></div>
+        <div class="chart" id="c-cfl" data-h="400"></div>
+      </div>
+    </div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Grille ex ante : ce que je savais au moment de décider</span><span class="pc-r mono">notes provisoires</span></div>
+      <div class="table-wrap flat"><table class="data" id="dec-table"></table></div>
+    </div>
+    <div class="notes">
+      <div><h4>Comment lire</h4><p>En haut, l’itinéraire et les décisions sont figés ; seule la météo change de place. Si la barre réelle est à gauche de la distribution, l’ordre des jours m’a été favorable. Dans la matrice, la diagonale est « méritée » ; en haut à gauche, un bon résultat obtenu avec une décision risquée relève de la chance.</p></div>
+      <div><h4>Méthode</h4><p>Exposition = km de terrain exigeant ou expert parcourus un jour de pluie (≥ 1 mm). Qualité ex ante : drapeaux connus au moment de décider (nuit courte, météo, cote, heure, visibilité), selon que la décision est prudente ou engagée. Chance = écart entre le résultat et celui qu’annonce la qualité (droite ajustée).</p></div>
+      <div class="key"><h4>À retenir (provisoire)</h4><p id="t-cf"></p></div>
+    </div>
+    <div class="pc mt todo">
+      <div class="pc-head"><span class="pc-t">Pour affiner cette esquisse</span></div>
+      <ul class="rules" id="cf-next"></ul>
+    </div>
+  </section>
+
+  <section id="s15" class="concl">
+    <header class="sh"><span class="num">15</span><h2>Conclusion</h2></header>
     <ol class="lessons" id="lessons"></ol>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Règles de décision pour la prochaine traversée</span></div>
@@ -333,13 +388,13 @@
         </ul>
       </div>
     </div>
-    <p class="foot mono">LOF-26-RA · v0.2 · calculé par analyse_risque.py à partir des mêmes données que la carte</p>
+    <p class="foot mono">LOF-26-RA · v0.3 · calculé par analyse_risque.py à partir des mêmes données que la carte</p>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip" hidden></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="risque_data.js?v=20261105-4"></script>
-<script src="risque.js?v=20261105-4"></script>
+<script src="risque_data.js?v=20261105-5"></script>
+<script src="risque.js?v=20261105-5"></script>
 </body>
 </html>

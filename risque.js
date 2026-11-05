@@ -704,11 +704,153 @@
       '<b>Après une nuit de moins de 4 h, pas de sommet exposé</b> le lendemain : la décision se dégrade avant les jambes.',
       '<b>Sous la pluie, rester sous la cote « exigeant »</b> : roche mouillée, pierriers et barres rocheuses concentrent les queues.',
       '<b>Au premier passage hors de la bande, réévaluer</b> plutôt que forcer : le suivant a de bonnes chances d’être difficile aussi.',
-    ].map((x, i) => `<li data-k="R${i + 1}">${x}</li>`).join('');
+    ].map((x, i) => `<li data-k="R${i + 1}"><span>${x}</span></li>`).join('');
+  }
+
+  /* ---------- hero · map card thumbnail (the real trace) ---------- */
+  function drawMapThumb() {
+    const svg = d3.select('#map-thumb'); if (svg.empty()) return;
+    svg.selectAll('*').remove();
+    const el = svg.node(), W = el.clientWidth || 240, H = el.clientHeight || 150;
+    svg.attr('viewBox', `0 0 ${W} ${H}`);
+    const T = R.trace, lat0 = d3.mean(T, p => p[1]) * Math.PI / 180;
+    const pts = T.map(p => [p[0] * Math.cos(lat0), -p[1]]);
+    const x = d3.scaleLinear().domain(d3.extent(pts, p => p[0])), y = d3.scaleLinear().domain(d3.extent(pts, p => p[1]));
+    const sx = (W - 24) / (x.domain()[1] - x.domain()[0]), sy = (H - 24) / (y.domain()[1] - y.domain()[0]), s = Math.min(sx, sy);
+    const ox = (W - s * (x.domain()[1] - x.domain()[0])) / 2, oy = (H - s * (y.domain()[1] - y.domain()[0])) / 2;
+    const P = pts.map(p => [ox + (p[0] - x.domain()[0]) * s, oy + (p[1] - y.domain()[0]) * s]);
+    // contour-like halo, then the trace coloured with / without the pack (as on the map)
+    svg.append('path').attr('d', d3.line()(P)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 7).attr('stroke-opacity', .08).attr('stroke-linejoin', 'round');
+    for (let i = 1; i < P.length; i++) {
+      if (Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]) > 18) continue;   // ferry / gap: no segment
+      svg.append('line').attr('x1', P[i - 1][0]).attr('y1', P[i - 1][1]).attr('x2', P[i][0]).attr('y2', P[i][1])
+        .attr('stroke', T[i][2] ? C('--series-avec') : C('--series-sans')).attr('stroke-width', 1.8).attr('stroke-linecap', 'round');
+    }
+    [[P[0], C('--up')], [P[P.length - 1], C('--text-primary')]].forEach(([p, c]) => svg.append('circle').attr('cx', p[0]).attr('cy', p[1]).attr('r', 3.6).attr('fill', c).attr('stroke', C('--bg')).attr('stroke-width', 1.5));
+    svg.append('text').attr('class', 'lbl').attr('x', 8).attr('y', H - 8).text('N ↑');
+  }
+
+  /* ---------- 14 · luck vs decision (sketch) ---------- */
+  function drawCF() {
+    const CW = R.cf.weather, CP = R.cf.pace, CD = R.cf.dec;
+    // (a) distribution of exposure over the 362 880 weather orders
+    {
+      const f = frame('c-cfw', { t: 18, r: 50, b: 34, l: 8 });
+      const dist = CW.km.dist, tot = d3.sum(dist, d => d[1]);
+      const x = d3.scaleLinear().domain([0, CW.total_hard]).range([0, f.w]);
+      const y = d3.scaleLinear().domain([0, d3.max(dist, d => d[1] / tot) * 1.15]).range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => `${f0(v * 100)} %`);
+      xAxis(f.g, x, f.h, 6, v => `${v} km`);
+      axTitle(f.g, 'km exigeants ou experts parcourus un jour de pluie', 0, f.h + 30);
+      const bw = Math.max(2, f.w / 70);
+      f.g.selectAll('.cb').data(dist).join('path').attr('d', d => barPath(x(d[0]) - bw / 2, y(0), bw, y(d[1] / tot), 1.5))
+        .attr('fill', d => Math.abs(d[0] - CW.km.real) < .05 ? C('--warning') : d[0] < CW.km.real ? C('--up') : C('--down')).attr('fill-opacity', d => Math.abs(d[0] - CW.km.real) < .05 ? 1 : .55);
+      const xr = x(CW.km.real);
+      f.g.append('line').attr('x1', xr).attr('x2', xr).attr('y1', -6).attr('y2', f.h).attr('stroke', C('--warning')).attr('stroke-width', 1.6);
+      f.g.append('text').attr('class', 'lbl-ink').attr('x', xr + 6).attr('y', 4).text(`réel ${f1(CW.km.real)} km`);
+      const xm = x(CW.km.mean);
+      f.g.append('line').attr('x1', xm).attr('x2', xm).attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
+      hover(f.g.selectAll('.ch').data(dist).join('rect').attr('class', 'hit').attr('x', d => x(d[0]) - 5).attr('width', 10).attr('y', 0).attr('height', f.h),
+        d => `<b>${f1(d[0])} km exposés</b>${row('part des ordres', `${f2(d[1] / tot * 100)} %`)}`);
+      legend('l-cfw', [['', C('--up'), 'ordre plus favorable'], ['', C('--down'), 'ordre plus défavorable'], ['ln', C('--warning'), 'traversée réelle'], ['dash', '', 'moyenne']]);
+      readout('r-cfw', `rang <b>P${f0(CW.km.rank.below + CW.km.rank.equal / 2)}</b> · moy. <b>${f1(CW.km.mean)} km</b>`);
+    }
+    // (b) the 7 possible calendars for a 3-day wet spell
+    {
+      const B = CW.blocks;
+      const f = frame('c-cfb', { t: 18, r: 50, b: 30, l: 8 });
+      const x = d3.scaleBand().domain(B.map(b => b.start)).range([0, f.w]).padding(.35);
+      const y = d3.scaleLinear().domain([0, d3.max(B, b => b.km) * 1.15]).nice().range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => `${v} km`);
+      xAxis(f.g, x, f.h, null, s => `J${s}–J${s + 2}`);
+      const real = B[B.length - 1];
+      f.g.selectAll('.bb').data(B).join('path').attr('d', b => barPath(x(b.start), y(0), x.bandwidth(), y(b.km), 2))
+        .attr('fill', b => b === real ? C('--warning') : b.km > real.km ? C('--down') : C('--up')).attr('fill-opacity', b => b === real ? 1 : .6);
+      f.g.selectAll('.bt').data(B).join('text').attr('class', 'lbl tagt').attr('x', b => x(b.start) + x.bandwidth() / 2).attr('y', b => y(b.km) - 5).attr('text-anchor', 'middle').text(b => f1(b.km));
+      hover(f.g.selectAll('.bh').data(B).join('rect').attr('class', 'hit').attr('x', b => x(b.start)).attr('width', x.bandwidth()).attr('y', 0).attr('height', f.h),
+        b => `<b>Pluie du J${b.start} au J${b.start + 2}${b === real ? ' (réel)' : ''}</b>${row('km exigeants sous la pluie', f1(b.km))}${row('mm × km', f0(b.mmkm))}${row('écart au réel', `${fs0((b.km / real.km - 1) * 100)} %`)}`);
+      legend('l-cfb', [['', C('--warning'), 'calendrier réel (J7–J9)'], ['', C('--down'), 'plus exposé'], ['', C('--up'), 'moins exposé']]);
+      const worst = B.reduce((a, b) => b.km > a.km ? b : a);
+      readout('r-cfb', `pire <b>J${worst.start}–J${worst.start + 2}</b> · <b class="d">${fs0((worst.km / real.km - 1) * 100)} %</b>`);
+    }
+    // (c) pace luck: each real day inside its simulated range
+    {
+      const f = frame('c-cfp', { t: 14, r: 50, b: 26, l: 8 });
+      const x = d3.scaleBand().domain(CP.days).range([0, f.w]).padding(.5);
+      const y = d3.scaleLinear().domain([0, 100]).range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => `P${v}`);
+      xAxis(f.g, x, f.h, null, dayLbl);
+      [[0, 25, C('--up')], [75, 100, C('--down')]].forEach(([a, b, c]) => f.g.append('rect').attr('x', 0).attr('width', f.w).attr('y', y(b)).attr('height', y(a) - y(b)).attr('fill', c).attr('opacity', .06));
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(50)).attr('y2', y(50)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '4 3');
+      const g = f.g.selectAll('.pd').data(CP.days.map((d, i) => ({ d, r: CP.rank[i], rn: CP.rank_n[i], real: CP.real[i], p5: CP.p5[i], p50: CP.p50[i], p95: CP.p95[i] }))).join('g').attr('transform', d => `translate(${x(d.d) + x.bandwidth() / 2},0)`);
+      g.append('line').attr('y1', y(50)).attr('y2', d => y(d.r)).attr('stroke', d => d.r > 50 ? C('--down') : C('--up')).attr('stroke-width', 2);
+      g.append('circle').attr('cy', d => y(d.r)).attr('r', 5).attr('fill', d => d.r > 50 ? C('--down') : C('--up')).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
+      g.append('text').attr('class', 'lbl tagt').attr('y', d => y(d.r) + (d.r > 50 ? -10 : 16)).attr('text-anchor', 'middle').text(d => `P${f0(d.r)}`);
+      hover(g.append('rect').attr('class', 'hit').attr('x', -x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
+        d => `<b>${dayLbl(d.d)} · ${hm(d.real)} de marche</b>${row('rang parmi 5 000', `P${f0(d.r)}`)}${row('fourchette simulée P5–P95', `${hm(d.p5)} – ${hm(d.p95)}`)}${row('médiane simulée', hm(d.p50))}`);
+      legend('l-cfp', [['', C('--up'), 'plus rapide que la médiane simulée (aléa favorable)'], ['', C('--down'), 'plus lent (aléa défavorable)']]);
+      readout('r-cfp', `jours favorables <b>${CP.rank.filter(r => r < 50).length}</b> / 9`);
+    }
+    // (d) decision × outcome matrix
+    const I = CD.items, qL = q => q >= .5 ? 'bonne' : q <= -.2 ? 'risquée' : 'neutre';
+    {
+      const f = frame('c-cfd', { t: 14, r: 14, b: 34, l: 34 });
+      const x = d3.scaleLinear().domain([-1.25, 1.25]).range([0, f.w]), y = d3.scaleLinear().domain([-1.3, 1.3]).range([f.h, 0]);
+      [[-1.25, 0, 0, 1.3, C('--warning'), 'CHANCE'], [0, 1.25, 0, 1.3, C('--up'), 'MÉRITÉ'], [-1.25, 0, -1.3, 0, C('--down'), 'CONSÉQUENCE'], [0, 1.25, -1.3, 0, C('--series-avec'), 'MALCHANCE']]
+        .forEach(([a, b, c, d, col, t], i) => {
+          f.g.append('rect').attr('x', x(a)).attr('width', x(b) - x(a)).attr('y', y(d)).attr('height', y(c) - y(d)).attr('fill', col).attr('opacity', .06);
+          f.g.append('text').attr('class', 'qd-q').attr('fill', col).attr('x', i % 2 ? f.w - 6 : 6).attr('y', i < 2 ? 14 : f.h - 8).attr('text-anchor', i % 2 ? 'end' : 'start').text(t);
+        });
+      f.g.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-muted'));
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C('--text-muted'));
+      f.g.append('line').attr('x1', x(-1.2)).attr('x2', x(1.2)).attr('y1', y(CD.icpt + CD.slope * -1.2)).attr('y2', y(CD.icpt + CD.slope * 1.2)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4').attr('opacity', .7);
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickValues([-1, 0, 1]).tickSize(0).tickPadding(8).tickFormat(v => ({ '-1': 'risquée', 0: 'neutre', 1: 'bonne' })[v]));
+      f.g.append('g').attr('class', 'axis').call(d3.axisLeft(y).tickValues([-1, 0, 1]).tickSize(0).tickPadding(6).tickFormat(F('+d')));
+      axTitle(f.g, 'qualité de la décision, ex ante →', f.w, f.h + 30, 'end');
+      axTitle(f.g, 'résultat ↑', 4, -4);
+      // small jitter so stacked decisions stay readable
+      const seen = {}; const J = I.map(d => { const k = `${d.q}|${d.out}`; seen[k] = (seen[k] || 0) + 1; return { ...d, jx: (seen[k] - 1) * .09, jy: (seen[k] - 1) * -.07 }; });
+      const g = f.g.selectAll('.dp').data(J).join('g').attr('transform', d => `translate(${x(d.q - d.jx)},${y(d.out + d.jy)})`);
+      g.append('circle').attr('r', 7).attr('fill', d => d.kind === 'P' ? C('--accent') : C('--series-sans')).attr('fill-opacity', .85).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
+      g.append('text').attr('class', 'lbl').attr('dy', '.35em').attr('text-anchor', 'middle').style('fill', '#0b1015').style('font-size', '8.5px').style('font-weight', 700).text(d => d.day.slice(1));
+      if (!f.narrow) g.filter(d => d.luck > .6 || d.luck < -.6).append('text').attr('class', 'lbl-strong').attr('x', 11).attr('dy', '.35em').text(d => d.txt.length > 34 ? `${d.txt.slice(0, 33)}…` : d.txt);
+      hover(g.append('circle').attr('class', 'hit').attr('r', 12),
+        d => `<b>${d.day} · ${d.txt}</b>${row('type', d.kind === 'P' ? 'prudente' : 'engagée')}${row('drapeaux ex ante', d.flags.length ? d.flags.length : 'aucun')}${row('qualité', `${fs2(d.q)} (${qL(d.q)})`)}${row('résultat', fs1(d.out))}${row('part de chance', fs2(d.luck))}`);
+      readout('r-cfd', `ρ <b>${f2(CD.rho)}</b> · R² <b>${f2(CD.r2)}</b>`);
+    }
+    // (e) luck per decision (residual)
+    {
+      const S = [...I].sort((a, b) => b.luck - a.luck);
+      const f = frame('c-cfl', { t: 10, r: 44, b: 26, l: f0(1) && $('c-cfl').clientWidth < 420 ? 130 : 220 });
+      const x = d3.scaleLinear().domain([-1.3, 1.3]).range([0, f.w]);
+      const y = d3.scaleBand().domain(S.map((d, i) => i)).range([0, f.h]).padding(.3);
+      f.g.append('g').attr('class', 'gridl').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(5).tickSize(-f.h).tickFormat('')).lower();
+      xAxis(f.g, x, f.h, 5, F('+.1f'));
+      f.g.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', f.h);
+      const r = f.g.selectAll('.lr').data(S).join('g').attr('transform', (d, i) => `translate(0,${y(i)})`);
+      r.append('text').attr('class', 'lbl-strong').attr('x', -8).attr('y', y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(d => { const t = `${d.day} · ${d.txt}`, n = f.m.l > 200 ? 30 : 18; return t.length > n ? `${t.slice(0, n - 1)}…` : t; });
+      r.append('rect').attr('x', d => x(Math.min(0, d.luck))).attr('width', d => Math.abs(x(d.luck) - x(0))).attr('height', y.bandwidth()).attr('rx', 2)
+        .attr('fill', d => d.luck >= 0 ? C('--up') : C('--down')).attr('fill-opacity', .75);
+      r.append('text').attr('class', 'lbl tagt').attr('x', d => x(d.luck) + (d.luck >= 0 ? 5 : -5)).attr('y', y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', d => d.luck >= 0 ? 'start' : 'end').text(d => fs2(d.luck));
+      hover(r.append('rect').attr('class', 'hit').attr('x', -f.m.l).attr('width', f.w + f.m.l + 40).attr('height', y.step()),
+        d => `<b>${d.day} · ${d.txt}</b>${row('résultat constaté', d.res)}${row('part de chance', fs2(d.luck))}`);
+    }
+    // grid table
+    const FL = { nuit: 'nuit courte', exig: 'cote exigeante', expert: 'cote experte', tard: 'tard / temps perdu', pluie: 'pluie', vent: 'vent > normale', neige: 'neige', brouillard: 'brouillard' };
+    $('dec-table').innerHTML = `<thead><tr><th>Jour</th><th>Décision</th><th>Type</th><th>Drapeaux connus au moment</th><th class="n">Qualité</th><th>Résultat constaté</th><th class="n">Rés.</th><th class="n">Chance</th></tr></thead><tbody>${I.map(d => `<tr><td class="mono">${d.day}</td><td>${d.txt}</td><td class="nw"><span class="dot" style="background:${d.kind === 'P' ? C('--accent') : C('--series-sans')}"></span>${d.kind === 'P' ? 'prudente' : 'engagée'}</td><td>${d.flags.length ? d.flags.map(k => `<span class="flag">${FL[k]}</span>`).join('') : '<span class="muted">aucun</span>'}</td><td class="n">${fs2(d.q)}</td><td class="muted">${d.res}</td><td class="n">${fs1(d.out)}</td><td class="n" style="color:${d.luck >= 0 ? 'var(--up)' : 'var(--down)'}">${fs2(d.luck)}</td></tr>`).join('')}</tbody>`;
+    const real = CW.blocks[CW.blocks.length - 1], worst = CW.blocks.reduce((a, b) => b.km > a.km ? b : a);
+    const lucky = I.reduce((a, b) => b.luck > a.luck ? b : a), unl = I.reduce((a, b) => b.luck < a.luck ? b : a);
+    $('t-cf').textContent = `L’ordre de la météo m’a été légèrement favorable : avec le même itinéraire, ${f0(CW.km.rank.above)} % des 362 880 ordres possibles m’auraient exposé davantage. Si l’épisode pluvieux était arrivé du J${worst.start} au J${worst.start + 2}, il aurait couvert ${fs0((worst.km / real.km - 1) * 100)} % de terrain exigeant en plus. Côté décisions, la qualité ex ante explique environ ${f0(CD.r2 * 100)} % des résultats (ρ = ${f2(CD.rho)}). La plus grosse part de chance est l’arête de Reinebringen dans le brouillard (${fs2(lucky.luck)}) : décision risquée, bon résultat. La Støvla tombe dans « conséquence » : décision risquée, mauvais résultat. Ce n’est pas de la malchance, et l’issue aurait pu être bien pire.`;
+    $('cf-next').innerHTML = [
+      '<b>Météo réelle des 30 années (ERA5 1996–2025, sauvegarde du 01/11)</b> : remplacer la permutation des 9 jours par de vraies séquences historiques, qui gardent la persistance de la pluie.',
+      '<b>Prévisions consultées sur le moment</b> : juger chaque décision avec la météo annoncée, pas avec celle qui est tombée.',
+      '<b>GPX prévu et sorties de secours</b> : mesurer l’exposition du plan initial dans chaque monde météo, et le coût des options non prises.',
+      '<b>Notes de décision à relire ensemble</b> : drapeaux et résultats sont provisoires et seront validés jour par jour.',
+    ].map((x, i) => `<li data-k="A${i + 1}"><span>${x}</span></li>`).join('');
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, () => drawMc(false), drawScatter];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, () => drawMc(false), drawScatter, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
