@@ -182,15 +182,15 @@
   </section>
 
   <section id="s6">
-    <header class="sh"><span class="num">06</span><h2>Les moments difficiles durent, mais ne se propagent pas</h2></header>
-    <p class="lede">Un tronçon lent est souvent suivi d’un autre tronçon lent. Mais un passage dur fait souvent plus de 1 km, soit quatre tronçons : à cette échelle, la corrélation mesure surtout la longueur du passage. Deux questions plus utiles : une fois le niveau propre à chaque section de terrain retiré, l’allure garde-t-elle de la mémoire ? Et après un épisode lent, le kilomètre suivant est-il lui aussi plus lent ?</p>
+    <header class="sh"><span class="num">06</span><h2>Raide d’un coup, puis plat : un massif après l’autre</h2></header>
+    <p class="lede">Les Lofoten ne ressemblent pas aux Alpes. Pas de longue vallée qui monte doucement : on part du niveau de la mer, on monte très raide jusqu’au sommet, puis on redescend à la mer, et le fjord suivant recommence de zéro. Chaque massif est un problème neuf.</p>
     <div class="grid-2">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Mémoire de l’allure, brute et à terrain égal</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="230"></div><div class="pc-foot"><span class="legend-row" id="l-acf1"></span></div></div>
-      <div class="pc"><div class="pc-head"><span class="pc-t">Le kilomètre qui suit un épisode lent</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="230"></div><div class="pc-foot"><span class="legend-row" id="l-acf2"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">La distance est plate, le dénivelé est raide</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="240"></div><div class="pc-foot"><span class="legend-row" id="l-acf1"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Chaque massif part de la mer</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="240"></div><div class="pc-foot"><span class="legend-row" id="l-acf2"></span></div></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>À gauche, la corrélation entre un tronçon et ceux qui le suivent, selon la distance qui les sépare. En gris, brute ; en couleur, après avoir retiré la moyenne de chaque section de terrain (partie 02). Une tige hors de la zone grise est significative. À droite, chaque point est un épisode lent : sa lenteur en abscisse, celle du kilomètre suivant en ordonnée. S’il y avait contagion, les points monteraient vers la droite.</p></div>
-      <div><h4>Méthode</h4><p>Autocorrélation jusqu’à 12 tronçons (3 km), sur les paires du même jour (brute) ou de la même section de terrain (à terrain égal). Retirer la moyenne d’une section rend mécaniquement négatives les corrélations lointaines : seules les premières tiges se lisent. Zone grise : ±1,96/√n, n paires à chaque décalage. Kilomètre suivant : les 4 tronçons après la fin de l’épisode, même jour.</p></div>
+      <div><h4>Comment lire</h4><p>À gauche, pour chaque classe de pente, la part de la distance et la part du dénivelé positif. À droite, les montées des massifs de la traversée superposées, à partir du dernier passage au bord de la mer.</p></div>
+      <div><h4>Méthode</h4><p>Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Raideur : pente moyenne des tronçons en montée et en descente. Corrélations entre la montée et la descente d’un même massif, puis entre un massif et le suivant ; seuil de significativité à 5 %.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-acf"></p></div>
     </div>
   </section>
@@ -429,8 +429,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="risque_data.js?v=20261105-8"></script>
 <script src="risque_sections.js?v=20261106-1"></script>
-<script src="risque_episodes.js?v=20261106-1"></script>
+<script src="risque_episodes.js?v=20261106-2"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261106-7"></script>
+<script src="risque.js?v=20261106-8"></script>
 </body>
 </html>

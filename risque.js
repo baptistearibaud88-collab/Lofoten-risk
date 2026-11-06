@@ -409,52 +409,48 @@
     $('t-roll').textContent = `${MAJ.length} épisodes de 10 min ou plus coûtent ${f0(majMin)} min sur ${f0(d3.sum(MAJ, d => d.len))} km ; ${PAU.length} épisodes plus courts, probablement des pauses, en ajoutent ${f0(pauMin)}. ${(n => n === MAJ.length ? `Tous les ${n} épisodes coûteux sont` : `${n} des ${MAJ.length} épisodes coûteux sont`)(MAJ.filter(d => d.slope < 5).length)} en descente ou à plat : le temps se perd là où le pied cherche sa place, pas là où le souffle manque. La première cause est « ${CAUSE[top.k][0]} » (${f0(top.min / totMin * 100)} % du temps perdu, ${top.n} épisodes) ; avec le terrain instable et la météo, ${f0(subi / totMin * 100)} % du temps perdu est subi. Le reste relève de décisions prises sur place (repérer un bivouac, juger un passage) et de pauses. L’irrégularité dépasse son seuil P90 sur ${f0(above / S2.length * 100)} % du parcours, surtout sur les sorties de trail en montagne.`;
   }
 
-  /* ---------- 06 · persistence: raw vs within terrain section, and carry-over ---------- */
+  /* ---------- 06 · Lofoten topography: steep then flat, one massif after another ---------- */
   function drawAcf() {
-    const P = EP.persist;
+    const T = EP.topo, S = R.series;
     {
+      const B = T.slope, lab = b => b.hi == null ? `> ${b.lo} %` : `${b.lo}–${b.hi} %`;
       const f = frame('c-acf1', { t: 12, r: 44, b: 40, l: 8 });
-      const L = 12, AD = P.acf_day.slice(0, L), AS = P.acf_sec.slice(0, L);
-      const x = d3.scaleLinear().domain([.4, L + .6]).range([0, f.w]);
-      const y = d3.scaleLinear().domain([-.3, .65]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, F('.1f'));
-      const band = d3.area().x(d => x(d.lag)).y0(d => y(-d.conf)).y1(d => y(d.conf)).curve(d3.curveStep);
-      f.g.append('path').attr('d', band(AS)).attr('fill', C('--text-muted')).attr('opacity', .14);
-      f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
-      const sig = d => Math.abs(d.r) > d.conf, dx = Math.min(4, f.w / 90);
-      [[AD, -dx, C('--text-muted'), true], [AS, dx, C('--accent'), false]].forEach(([a, off, col, raw]) => {
-        const st = f.g.selectAll(null).data(a).join('g').attr('transform', d => `translate(${x(d.lag) + off},0)`);
-        st.append('line').attr('y1', y(0)).attr('y2', d => y(d.r)).attr('stroke', col).attr('stroke-width', 1.6).attr('opacity', raw ? .7 : 1);
-        st.append('circle').attr('cy', d => y(d.r)).attr('r', 3.2).attr('fill', d => raw || !sig(d) ? C('--surface-1') : col).attr('stroke', col).attr('stroke-width', 1.4);
-      });
-      xAxis(f.g, x, f.h, 5, d => `${f2(d * .25)}`);
-      axTitle(f.g, 'distance entre les deux tronçons (km)', 0, f.h + 36);
-      hover(f.g.selectAll('.hit').data(AS).join('rect').attr('class', 'hit').attr('x', d => x(d.lag) - f.w / (2 * L)).attr('width', f.w / L).attr('y', 0).attr('height', f.h),
-        d => `<b>${f2(d.lag * .25)} km plus loin</b>${row('brute (même jour)', fs2(P.acf_day[d.lag - 1].r))}${row('à terrain égal', fs2(d.r))}${row('seuil 95 %', `±${f2(d.conf)}`)}`);
-      readout('r-acf1', `brute ρ₁ <b>${f2(P.acf_day[0].r)}</b> · terrain égal ρ₁ <b>${f2(P.acf_sec[0].r)}</b> · mémoire <b>${f0(P.memory_lags * 250)} m</b>`);
-      legend('l-acf1', [['', C('--text-muted'), 'brute'], ['', C('--accent'), 'à terrain égal (moyenne de la section retirée)']]);
+      const x0 = d3.scaleBand().domain(B.map(lab)).range([0, f.w]).padding(.22);
+      const x1 = d3.scaleBand().domain(['dist', 'gain']).range([0, x0.bandwidth()]).padding(.08);
+      const y = d3.scaleLinear().domain([0, d3.max(B, b => Math.max(b.dist, b.gain)) * 1.1]).nice().range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => `${f0(v * 100)} %`);
+      const col = { dist: C('--text-muted'), gain: C('--down') };
+      const gb = f.g.selectAll(null).data(B).join('g').attr('transform', b => `translate(${x0(lab(b))},0)`);
+      ['dist', 'gain'].forEach(k => gb.append('path').attr('d', b => barPath(x1(k), f.h, x1.bandwidth(), y(b[k]))).attr('fill', col[k]).attr('opacity', k === 'dist' ? .55 : .9));
+      hover(gb.append('rect').attr('class', 'hit').attr('width', x0.bandwidth()).attr('height', f.h), b => `<b>pente ${lab(b)}</b>${row('distance', `${f0(b.dist * 100)} %`)}${row('dénivelé positif', `${f0(b.gain * 100)} %`)}`);
+      xAxis(f.g, x0, f.h, 7, d => d);
+      axTitle(f.g, 'pente du tronçon', 0, f.h + 36);
+      const flat = B[0].dist, steep = d3.sum(B.filter(b => b.lo >= 20), b => b.gain);
+      readout('r-acf1', `plat < 5 % : <b>${f0(flat * 100)} %</b> de la distance · pente > 20 % : <b>${f0(steep * 100)} %</b> du D+`);
+      legend('l-acf1', [['', C('--text-muted'), 'part de la distance'], ['', C('--down'), 'part du dénivelé positif']]);
     }
     {
-      const A = P.after.list, EPS = EP.episodes, pc = v => (Math.exp(v) - 1) * 100;
+      const M = T.massifs;
+      const prof = M.map(m => { const k0 = m.i0 ? S[m.i0 - 1].km : 0, a0 = m.i0 ? S[m.i0 - 1].alt : S[0].alt, pts = [[0, a0]];
+        for (let i = m.i0; i <= m.i1; i++) { pts.push([S[i].km - k0, S[i].alt]); if (S[i].alt === m.top) break; } return { m, pts }; });
       const f = frame('c-acf2', { t: 12, r: 44, b: 40, l: 8 });
-      const x = d3.scaleLinear().domain([0, d3.max(A, d => pc(d.ep)) * 1.1]).nice().range([0, f.w]);
-      const y = d3.scaleLinear().domain([-50, 60]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 5, v => `${v > 0 ? '+' : ''}${v} %`);
-      f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
-      const mu = pc(P.after.mean), lo = pc(P.after.mean - 1.96 * P.after.se), hi = pc(P.after.mean + 1.96 * P.after.se);
-      f.g.append('rect').attr('x', 0).attr('width', f.w).attr('y', y(hi)).attr('height', y(lo) - y(hi)).attr('fill', C('--accent')).attr('opacity', .12);
-      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(mu)).attr('y2', y(mu)).attr('stroke', C('--accent')).attr('stroke-dasharray', '4 3');
-      axTag(f.g, f.w + 2, y(mu), `${mu >= 0 ? '+' : ''}${f0(mu)} %`).select('rect').attr('fill', C('--accent'));
-      const cy = v => y(Math.max(-50, Math.min(60, v)));
-      hover(f.g.selectAll('.pt').data(A).join('circle').attr('cx', d => x(pc(d.ep))).attr('cy', d => cy(pc(d.e))).attr('r', 5).attr('fill', C('--down')).attr('fill-opacity', .75).attr('stroke', C('--surface-1')),
-        d => { const ep = EPS.find(q => q.id === d.id); return `<b>${actName(ep.act)} · ${dayLbl(ep.day)}</b>${row('épisode', `+${f0(pc(d.ep))} %`)}${row('km suivant', `${pc(d.e) >= 0 ? '+' : ''}${f0(pc(d.e))} %`)}`; });
-      xAxis(f.g, x, f.h, 5, v => `+${v} %`);
-      axTitle(f.g, 'lenteur de l’épisode', 0, f.h + 36);
-      readout('r-acf2', `km suivant <b>${mu >= 0 ? '+' : ''}${f0(mu)} %</b> · IC 95 % ${f0(lo)} à ${fs0(hi)} %`);
-      legend('l-acf2', [['', C('--down'), 'épisode lent'], ['ln', C('--accent'), 'moyenne du km suivant · IC 95 %']]);
+      const x = d3.scaleLinear().domain([0, Math.min(5, d3.max(prof, p => p.pts[p.pts.length - 1][0]))]).range([0, f.w]);
+      const y = d3.scaleLinear().domain([0, d3.max(M, m => m.top) * 1.08]).nice().range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => `${f0(v)} m`);
+      xAxis(f.g, x, f.h, 5, v => `${v} km`);
+      axTitle(f.g, 'distance depuis le bord de la mer', 0, f.h + 36);
+      const cg = clip(f), ln = d3.line().x(p => x(p[0])).y(p => y(p[1])).curve(d3.curveMonotoneX);
+      const paths = cg.selectAll(null).data(prof).join('path').attr('d', p => ln(p.pts)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 1.6).attr('opacity', .75);
+      // 20 % reference slope
+      cg.append('line').attr('x1', x(0)).attr('y1', y(0)).attr('x2', x(4)).attr('y2', y(800)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '4 3');
+      f.g.append('text').attr('class', 'lbl').attr('x', Math.min(x(3.2), f.w - 4)).attr('y', y(640) - 6).attr('text-anchor', 'end').text('pente 20 %');
+      hover(paths.attr('class', 'hitline'), p => `<b>${actName(p.m.act)} · ${dayLbl(p.m.day)}</b>${row('sommet', `${f0(p.m.top)} m`)}${row('montée moyenne', `${f0(p.m.grad_up)} %`)}${row('descente moyenne', `${f0(p.m.grad_down)} %`)}`);
+      readout('r-acf2', `<b>${M.length}</b> massifs · montée moyenne <b>${f0(d3.mean(M, m => m.grad_up))} %</b>`);
+      legend('l-acf2', [['ln', C('--accent'), 'montée d’un massif, de la mer au sommet'], ['dash', C('--text-muted'), 'pente régulière de 20 %']]);
     }
-    const mu = (Math.exp(P.after.mean) - 1) * 100, S_ = P.sections;
-    $('t-acf').textContent = `La corrélation brute (${f2(P.acf_day[0].r)} au tronçon suivant) vient surtout de la longueur des passages : une section de terrain plus dure que sa cote reste dure sur toute sa longueur, et ce niveau propre à chaque section explique ${f0(P.var_between * 100)} % des écarts. À terrain égal, la mémoire tombe à ${f0(P.memory_lags * 250)} m. Surtout, un épisode lent ne contamine pas la suite : le kilomètre qui suit est en moyenne à ${mu >= 0 ? '+' : ''}${f0(mu)} % du temps prévu, autrement dit normal, et la lenteur d’une section ne prédit pas celle de la suivante (r = ${f2(S_.r)} sur ${S_.n} paires, seuil ${f2(S_.conf)}). Ce qui compte pour la marge (partie 11) : les écarts ne se compensent pas à l’intérieur d’un passage difficile, ils s’additionnent sur 1 à 2 km.`;
+    const g1 = T.grad_same, g2 = T.grad_next, p1 = T.pace_same, p2 = T.pace_next, sig = t => Math.abs(t.r) > t.crit;
+    const flat = T.slope[0].dist, steep = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.gain);
+    $('t-acf').textContent = `La moitié de la distance (${f0(flat * 100)} %) est presque plate, mais ${f0(steep * 100)} % du dénivelé se gagne sur des pentes de plus de 20 %. Dans un même massif, tout se tient : une montée raide annonce une descente raide (r = ${f2(g1.r)}). D’un massif à l’autre, ${sig(g2) ? 'le lien reste visible' : 'plus rien'} : la raideur du suivant ${sig(g2) ? 'en dépend encore' : 'ne se déduit pas du précédent'} (r = ${f2(g2.r)}, ${sig(g2) ? 'significatif' : 'non significatif'}). Chaque retour à la mer remet le terrain à zéro, il faut donc juger chaque sommet pour lui-même. Ce qui passe d’un massif à l’autre, c’est la journée (météo, forme) : l’allure reste ${sig(p2) ? 'liée' : 'peu liée'} d’un massif au suivant (r = ${f2(p2.r)}, contre ${f2(p1.r)} entre la montée et la descente d’un même massif).`;
   }
 
   /* ---------- 07 · sensitivities (tornado) + correlation matrix ---------- */
@@ -779,12 +775,12 @@
   function drawConcl() {
     const L = [
       ['Le sac ralentit, le danger arrive sans lui', `Le sac coûte ${fs0(sacS.pct)} % de temps à terrain égal, mais il rend l’allure plus régulière. Trois des quatre alertes de terrain ont eu lieu sans le sac, sur des sommets en trail, là où je me sentais le plus libre.`],
-      ['Les extrêmes sont plus fréquents qu’une moyenne ne le laisse croire', `Les écarts au-delà de 3σ sont ${f1(tailRatio)} fois plus fréquents que sous une loi normale, et ils durent le temps d’un passage, sur 1 à 2 km, sans contaminer la suite.`],
+      ['Les extrêmes sont plus fréquents qu’une moyenne ne le laisse croire', `Les écarts au-delà de 3σ sont ${f1(tailRatio)} fois plus fréquents que sous une loi normale, et ils se jouent massif par massif : chaque retour à la mer remet le terrain à zéro.`],
       ['La fatigue ne ralentit pas : elle fait renoncer', 'Aucun effet mesurable sur l’allure, mais les trois renoncements suivent tous de la fatigue ou du temps perdu juste avant. La fatigue se voit dans les décisions, pas sur la montre.'],
       ['Le risque s’est concentré à la fin', `${f1(lateRain / W_.total_rain * 100)} % de la pluie est tombée du J7 au J9, quand la réserve physique était au plus bas. Les trois incidents graves tombent dans cette fenêtre.`],
       ['Le terrain coté explique où tombent les alertes', `Les sorties exigeantes ou expertes concentrent toutes les alertes analysées. La cote DNT est le premier filtre de risque, avant la météo et la fatigue.`],
       ['La marge a transformé la pluie en simple attente', R.cf.margin ? `L’été 2026 a été plus arrosé que ${f0(R.cf.clim.pct_rain)} % des étés, mais la pluie est tombée une fois la traversée finie. Ce moment « gratuit » tient aussi à l’avance prise les J2–J3 : elle fait passer de ${f0(R.cf.margin.scen[0].free)} % à ${f0(R.cf.margin.scen[2].free)} % les mondes météo où la pluie ne coûte rien.` : ''],
-      ['Planifier sur la moyenne, c’est sous-estimer la marge', `La loi normale sous-estime d’un facteur ${f0(pB / pN)} le risque d’une journée de plus de 10 h. Les écarts s’additionnent sur toute la longueur d’un passage difficile : la marge se calcule sur le seuil à 95 %.`],
+      ['Planifier sur la moyenne, c’est sous-estimer la marge', `La loi normale sous-estime d’un facteur ${f0(pB / pN)} le risque d’une journée de plus de 10 h. Les écarts s’additionnent sur un même massif : la marge se calcule sur le seuil à 95 %, sommet par sommet.`],
     ];
     $('lessons').innerHTML = L.map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
     $('rules').innerHTML = [
