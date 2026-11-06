@@ -15,6 +15,17 @@ La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu fonc�
 - Analyses : biais du plan, simulation Monte Carlo, indice de dangerosité
 - Chapitres jour par jour de la carte-récit
 
+## Données du rapport de risque
+
+`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Trois fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
+
+```
+node outils/segmentation_terrain.js   # cotation par section (partie 02) → risque_sections.js
+node outils/episodes_allure.js        # épisodes d'allure et massifs (parties 05–06) → risque_episodes.js
+```
+
+`ressentis_episodes.js` se remplit à la main : cause de chaque épisode lent de 10 min ou plus.
+
 ## Sources des fonds de carte
 
 Relief : Mapzen / AWS Terrain Tiles · Imagerie : Esri World Imagery · Topo : OpenTopoMap (© OpenStreetMap, CC-BY-SA) · Carte : MapLibre GL JS
