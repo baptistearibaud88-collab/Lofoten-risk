@@ -17,6 +17,19 @@
   const dateLbl = s => { const [, m, d] = s.split('-'); return `${+d}/${m}`; };
   const GL = { 1: 'Facile', 2: 'Modéré', 3: 'Exigeant', 4: 'Expert' };
   const gcol = g => C(`--g${g}`);
+  // terrain sections inside each outing (risque_sections.js, outils/segmentation_terrain.js)
+  const SEC = window.RISK_SECTIONS || { seg_grade: R.series.map(s => rowOf(s.act).grade), sections: [] };
+  const segG = i => SEC.seg_grade[i];
+  const segKm = i => R.series[i].km - (i ? R.series[i - 1].km : 0);
+  const CAS = { 1: 'T1', 2: 'T2', 3: 'T2–T3', 4: 'T3–T4' };
+  const secWhy = x => !x.why ? 'cote de la sortie' : x.why.k === 'plat' ? 'plat roulant, allure normale' : `même sentier que « ${actName(x.why.o)} »`;
+  const secOf = i => SEC.sections.find(x => i >= x.i0 && i <= x.i1);
+  // D+ of each 250 m piece, rescaled so that each outing sums to its measured D+
+  const segDp = (() => {
+    const raw = R.series.map((s, i) => i && R.series[i - 1].act === s.act ? Math.max(0, s.alt - R.series[i - 1].alt) : 0);
+    const tot = d3.rollup(R.series.map((s, i) => [s.act, raw[i]]), v => d3.sum(v, d => d[1]), d => d[0]);
+    return raw.map((v, i) => { const a = R.series[i].act, t = tot.get(a); return t ? v / t * rowOf(a).dplus : 0; });
+  })();
 
   /* ---------- tooltip ---------- */
   const tip = $('tip');
@@ -185,9 +198,9 @@
     yGrid(f.g, y, f.w, 4, v => `${f0(v)} m`);
     xAxis(f.g, x, f.h, f.narrow ? 4 : 8, v => `${v} km`);
     dayBands(f.g, x, f.h);
-    // one area per run of the same outing, coloured by its grade
+    // one area per terrain section (a whole outing, or a flat / already-walked part of it)
     const runs = []; let cur = null;
-    S.forEach((s, i) => { if (!cur || cur.act !== s.act) { if (cur) cur.pts.push(s); cur = { act: s.act, pts: [], g: rowOf(s.act).grade }; runs.push(cur); } cur.pts.push(s); });
+    S.forEach((s, i) => { const g = segG(i); if (!cur || cur.act !== s.act || cur.g !== g) { if (cur) cur.pts.push(s); cur = { act: s.act, pts: [], g }; runs.push(cur); } cur.pts.push(s); });
     const area = d3.area().x(s => x(s.km)).y0(f.h).y1(s => y(s.alt)).curve(d3.curveMonotoneX);
     const ln = d3.line().x(s => x(s.km)).y(s => y(s.alt)).curve(d3.curveMonotoneX);
     runs.forEach(r => {
@@ -196,22 +209,23 @@
     });
     R.alerts.forEach(a => warnTri(f.g, x(a.km), y(R.series[a.seg].alt) - 12, .9));
     const ch = crossH(f);
-    const share = g => d3.sum(R.rows.filter(r => r.grade >= g), r => r.km) / totKm;
+    const segTot = d3.sum(S, (_, i) => segKm(i));
+    const share = g => d3.sum(S, (_, i) => segG(i) >= g ? segKm(i) : 0) / segTot;
     const def = `exigeant + expert : <b>${f0(share(3) * 100)} %</b> de la distance · expert : <b>${f0((share(4)) * 100)} %</b>`;
     readout('r-terrain', def);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
       .on('pointermove', ev => {
-        const [mx] = d3.pointer(ev); const s = S[d3.minIndex(S, q => Math.abs(q.km - x.invert(mx)))], r = rowOf(s.act);
+        const [mx] = d3.pointer(ev); const si = d3.minIndex(S, q => Math.abs(q.km - x.invert(mx))), s = S[si], r = rowOf(s.act), g = segG(si), sec = secOf(si);
         ch.show(x(s.km), y(s.alt), `${f0(s.alt)} m`, `${f1(s.km)} km`);
-        readout('r-terrain', `<b>${dayLbl(s.day)}</b> ${r.name} · <b>${GL[r.grade]}</b> · ${r.sac_t}`);
-        showTip(ev, `<b>${r.name} · ${dayLbl(s.day)}</b>${row('cote DNT', GL[r.grade])}${row('échelle CAS', r.sac_t)}${row('altitude', `${f0(s.alt)} m`)}${row('pente du tronçon', `${s.slope} %`)}${row('source', r.src)}`);
+        readout('r-terrain', `<b>${dayLbl(s.day)}</b> ${r.name} · <b>${GL[g]}</b>${g === r.grade ? ` · ${r.sac_t}` : ` · passage clé ${GL[r.grade]}`}`);
+        showTip(ev, `<b>${r.name} · ${dayLbl(s.day)}</b>${row('cote ici', GL[g])}${sec ? row('section', `${f1(sec.i0 ? S[sec.i0 - 1].km : 0)} → ${f1(S[sec.i1].km)} km`) : ''}${row('pourquoi', sec ? secWhy(sec) : 'cote de la sortie')}${row('passage clé', `${GL[r.grade]} · ${r.sac_t}`)}${row('altitude', `${f0(s.alt)} m`)}${row('pente du tronçon', `${s.slope} %`)}${row('source', r.src)}`);
       }).on('pointerleave', () => { ch.hide(); hideTip(); readout('r-terrain', def); });
     legend('l-terrain', [1, 2, 3, 4].map(g => ['', g === 4 ? `${gcol(4)};box-shadow:inset 0 0 0 1px var(--text-muted)` : gcol(g), GL[g]]).concat([['', C('--warning'), 'alerte']]));
 
     // distance mix
-    const mix = [1, 2, 3, 4].map(g => ({ g, km: d3.sum(R.rows.filter(r => r.grade === g), r => r.km), n: R.rows.filter(r => r.grade === g).length, dp: d3.sum(R.rows.filter(r => r.grade === g), r => r.dplus) }));
+    const mix = [1, 2, 3, 4].map(g => ({ g, km: d3.sum(S, (_, i) => segG(i) === g ? segKm(i) : 0) / segTot * totKm, n: SEC.sections.filter(x => x.g === g).length, dp: d3.sum(S, (_, i) => segG(i) === g ? segDp[i] : 0) }));
     $('grade-mix').innerHTML = `<div class="gm-bar">${mix.map(d => `<i style="flex:${d.km};background:${gcol(d.g)}${d.g === 4 ? ';box-shadow:inset 0 0 0 1px var(--text-muted)' : ''}" title="${GL[d.g]}"></i>`).join('')}</div>
-      <div class="gm-rows">${mix.map(d => `<div class="gm-row"><i style="background:${gcol(d.g)}${d.g === 4 ? ';box-shadow:inset 0 0 0 1px var(--text-muted)' : ''}"></i><span>${GL[d.g]} <span class="mono">· ${d.n} sorties</span></span><span class="mono">${f1(d.km)} km · ${f0(d.dp)} m D+</span><span class="mono"><b>${f0(d.km / totKm * 100)} %</b></span></div>`).join('')}</div>`;
+      <div class="gm-rows">${mix.map(d => `<div class="gm-row"><i style="background:${gcol(d.g)}${d.g === 4 ? ';box-shadow:inset 0 0 0 1px var(--text-muted)' : ''}"></i><span>${GL[d.g]} <span class="mono">· ${d.n} sections</span></span><span class="mono">${f1(d.km)} km · ${f0(d.dp)} m D+</span><span class="mono"><b>${f0(d.km / totKm * 100)} %</b></span></div>`).join('')}</div>`;
     $('grade-legend').innerHTML = [
       [1, 'T1', 'Sentier facile, sans passage raide ni obstacle.'],
       [2, 'T2', 'Montées modérées, quelques passages plus raides.'],
@@ -219,9 +233,11 @@
       [4, 'T3–T4', 'Arêtes, roche nue, passages exposés à franchir avec les mains.'],
     ].map(([g, t, d]) => `<div><span class="chipg l${g}"><i></i>${GL[g]}</span><span class="mono">${t}</span><span>${d}</span></div>`).join('');
     const rows = [...R.rows].sort((a, b) => a.day - b.day || 0);
-    $('terrain-table').innerHTML = `<thead><tr><th>Jour</th><th>Sortie</th><th>Cote DNT</th><th>CAS</th><th class="n">km</th><th class="n">D+</th><th class="n">Pente raide</th><th>Source</th></tr></thead><tbody>${rows.map(r => `<tr><td class="nw mono">${dayLbl(r.day)}</td><td>${r.name}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td class="mono">${r.sac_t}</td><td class="n">${f1(r.km)}</td><td class="n">${f0(r.dplus)}</td><td class="n">${f0(r.pente_max)} %</td><td class="muted">${r.src}${isEst(r) ? '<span class="est">estimée</span>' : ''}</td></tr>`).join('')}</tbody>`;
-    const alG = R.alerts.map(a => rowOf(a.act).grade);
-    $('t-terrain').textContent = `Les sorties exigeantes ou expertes ne représentent que ${f0(share(3) * 100)} % de la distance, mais elles concentrent les ${alG.filter(g => g >= 3).length} alertes analysées. Les deux sorties expertes (l’arête Reinebringen–Helvete et le Støvla) ont été faites sans le sac, en trail. Plus haut sur l’échelle, plus lent : chaque niveau de cote ajoute ${fs0(sens['terrain (+1 niveau)'].pct)} % au temps de passage (partie 07).`;
+    const split = r => { const ss = SEC.sections.filter(x => x.act === r.id), k = x => d3.sum(d3.range(x.i0, x.i1 + 1), segKm), tot = d3.sum(ss, k);
+      return `<span class="secbar" title="${ss.map(x => `${GL[x.g]} ${f1(k(x) / tot * r.km)} km (${secWhy(x)})`).join(' · ')}">${ss.map(x => `<i style="flex:${k(x)};background:${gcol(x.g)}${x.g === 4 ? ';box-shadow:inset 0 0 0 1px var(--text-muted)' : ''}"></i>`).join('')}</span>`; };
+    $('terrain-table').innerHTML = `<thead><tr><th>Jour</th><th>Sortie</th><th>Passage clé</th><th>CAS</th><th>Découpage</th><th class="n">km</th><th class="n">D+</th><th class="n">Pente raide</th><th>Source</th></tr></thead><tbody>${rows.map(r => `<tr><td class="nw mono">${dayLbl(r.day)}</td><td>${r.name}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td class="mono">${r.sac_t}</td><td>${split(r)}</td><td class="n">${f1(r.km)}</td><td class="n">${f0(r.dplus)}</td><td class="n">${f0(r.pente_max)} %</td><td class="muted">${r.src}${isEst(r) ? '<span class="est">estimée</span>' : ''}</td></tr>`).join('')}</tbody>`;
+    const alG = R.alerts.map(a => segG(a.seg));
+    $('t-terrain').textContent = `Une fois les plats roulants et les sentiers déjà cotés plus bas mis à part, le terrain exigeant ou expert représente ${f0(share(3) * 100)} % de la distance (contre ${f0(d3.sum(R.rows.filter(r => r.grade >= 3), r => r.km) / totKm * 100)} % en cotant chaque sortie d’un bloc). Il concentre ${alG.filter(g => g >= 3).length === alG.length ? 'les' : `${alG.filter(g => g >= 3).length} des`} ${alG.length} alertes analysées. Les deux sorties expertes (l’arête Reinebringen–Helvete et le Støvla) ont été faites sans le sac, en trail. Plus haut sur l’échelle, plus lent : chaque niveau de cote ajoute ${fs0(sens['terrain (+1 niveau)'].pct)} % au temps de passage (partie 07, estimé pour l’instant avec la cote de la sortie entière).`;
   }
 
   /* ---------- 03 · distribution ---------- */

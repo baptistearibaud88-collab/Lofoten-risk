@@ -83,7 +83,7 @@
 
   <section id="s2">
     <header class="sh"><span class="num">02</span><h2>Cotation du terrain</h2></header>
-    <p class="lede">Chaque sortie reçoit une cote sur l’échelle officielle norvégienne (DNT, quatre niveaux) et sur l’échelle suisse du CAS (T1 à T6), à partir des guides de référence. C’est la variable de terrain utilisée dans toute la suite du rapport.</p>
+    <p class="lede">Chaque sortie reçoit une cote sur l’échelle officielle norvégienne (DNT, quatre niveaux) et sur l’échelle suisse du CAS (T1 à T6), à partir des guides de référence. Une sortie n’est pas uniforme : la cote du sommet s’applique à toute la montagne, mais les longs plats roulants et les portions d’un sentier déjà coté plus bas un autre jour sont découpés à part.</p>
     <div class="pc">
       <div class="pc-head"><span class="pc-t">Profil d’altitude coloré par cote DNT · 159 km</span><span class="pc-r mono" id="r-terrain"></span></div>
       <div class="chart" id="c-terrain" data-h="260"></div>
@@ -104,8 +104,8 @@
       <div class="table-wrap flat"><table class="data" id="terrain-table"></table></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Le profil montre l’altitude le long de la trace ; la couleur sous la courbe donne la cote de la sortie en cours. Vert : facile. Bleu : modéré. Rouge : exigeant. Noir : expert, avec passages exposés et mains sur le rocher.</p></div>
-      <div><h4>Méthode</h4><p>Cote publiée quand un guide couvre l’itinéraire (68north, Horizon Rando, Hunting for Bliss). Sinon, cote estimée avec les critères DNT (D+, longueur, terrain, exposition) et le récit du jour, signalée « estimée » dans le tableau.</p></div>
+      <div><h4>Comment lire</h4><p>Le profil montre l’altitude le long de la trace ; la couleur sous la courbe donne la cote de la section en cours. Vert : facile. Bleu : modéré. Rouge : exigeant. Noir : expert, avec passages exposés et mains sur le rocher. Dans le tableau, la barre « Découpage » montre la part de chaque cote dans la sortie.</p></div>
+      <div><h4>Méthode</h4><p>Cote du passage clé publiée quand un guide couvre l’itinéraire (68north, Horizon Rando, Hunting for Bliss). Sinon, cote estimée avec les critères DNT (D+, longueur, terrain, exposition) et le récit du jour, signalée « estimée » dans le tableau. Cette cote vaut pour toute la sortie, sauf deux cassures repérées sur la pente lissée (moyenne sur 1,25 km) : un plat de plus de 1,5 km (pente &lt; 5 %) parcouru à allure normale passe en facile ; un passage de plus de 1 km qui suit un sentier déjà coté plus bas un autre jour reprend cette cote (même sentier, même cote).</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-terrain"></p></div>
     </div>
   </section>
@@ -413,6 +413,7 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="risque_data.js?v=20261105-8"></script>
-<script src="risque.js?v=20261105-11"></script>
+<script src="risque_sections.js?v=20261106-1"></script>
+<script src="risque.js?v=20261106-1"></script>
 </body>
 </html>
