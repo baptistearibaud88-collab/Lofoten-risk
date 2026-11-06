@@ -527,7 +527,10 @@
 
   /* ---------- 08 · physical reserve (underwater curve) ---------- */
   function drawHrv() {
-    const N = R.nights;
+    // recul measured against the best night of the stay; usual night-time HRV of the walker, outside the trip
+    const HRV_BASE = 45, BAND = .1;
+    const bestHrv = d3.max(R.nights, n => n.hrv), N = R.nights.map(n => ({ ...n, dd_hrv: n.hrv / bestHrv - 1 }));
+    const base = HRV_BASE / bestHrv - 1, lowB = HRV_BASE * (1 - BAND) / bestHrv - 1, hiB = HRV_BASE * (1 + BAND) / bestHrv - 1;
     const m = { t: 20, r: 52, b: 24, l: 8 };
     const f = frame('c-hrv', m);
     const x = d3.scalePoint().domain(N.map((n, i) => i)).range([0, f.w]).padding(.5);
@@ -537,10 +540,16 @@
     const st = d3.curveStepAfter, pts = [...N.map((n, i) => [x(i), n.dd_hrv]), [x(N.length - 1) + x.step() / 2, N[N.length - 1].dd_hrv]];
     const xs = pts.map(p => p[0]); xs[0] = x(0) - x.step() / 2;
     const P = pts.map((p, i) => [xs[i], p[1]]);
-    f.g.append('path').attr('d', d3.area().curve(st).x(p => p[0]).y0(y(0)).y1(p => y(p[1]))(P)).attr('fill', C('--down')).attr('fill-opacity', .22);
-    f.g.append('path').attr('d', d3.line().curve(st).x(p => p[0]).y(p => y(p[1]))(P)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 1.6);
+    // usual range (±10 % around the usual HRV), red only below it
+    f.g.append('rect').attr('x', 0).attr('width', f.w).attr('y', y(hiB)).attr('height', y(lowB) - y(hiB)).attr('fill', C('--text-muted')).attr('opacity', .12);
+    f.g.append('path').attr('d', d3.area().curve(st).x(p => p[0]).y0(y(lowB)).y1(p => y(Math.min(p[1], lowB)))(P)).attr('fill', C('--down')).attr('fill-opacity', .25);
+    f.g.append('path').attr('d', d3.area().curve(st).x(p => p[0]).y0(y(hiB)).y1(p => y(Math.max(p[1], hiB)))(P)).attr('fill', C('--up')).attr('fill-opacity', .2);
+    f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(base)).attr('y2', y(base)).attr('stroke', C('--text-secondary')).attr('stroke-dasharray', '5 4').attr('stroke-width', 1.2);
+    axTag(f.g, f.w + 2, y(base), `${HRV_BASE} ms`).select('rect').attr('fill', C('--text-muted'));
+    f.g.append('text').attr('class', 'lbl').attr('x', 4).attr('y', y(hiB) - 5).attr('text-anchor', 'start').text(`VFC habituelle ${HRV_BASE} ms · zone normale ±${f0(BAND * 100)} %`);
+    f.g.append('path').attr('d', d3.line().curve(st).x(p => p[0]).y(p => y(p[1]))(P)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6);
     f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
-    f.g.selectAll('.hd').data(N).join('circle').attr('cx', (n, i) => x(i)).attr('cy', n => y(n.dd_hrv)).attr('r', 3.2).attr('fill', C('--bg')).attr('stroke', C('--down')).attr('stroke-width', 1.5);
+    f.g.selectAll('.hd').data(N).join('circle').attr('cx', (n, i) => x(i)).attr('cy', n => y(n.dd_hrv)).attr('r', 3.4).attr('fill', C('--bg')).attr('stroke', n => n.dd_hrv < lowB ? C('--down') : n.dd_hrv > hiB ? C('--up') : C('--text-primary')).attr('stroke-width', 1.6);
     const worst = N.reduce((a, b) => b.dd_hrv < a.dd_hrv ? b : a), wi = N.indexOf(worst);
     const best = N.reduce((a, b) => b.hrv > a.hrv ? b : a), bi = N.indexOf(best);
     axTag(f.g, f.w + 2, y(worst.dd_hrv), `${f0(worst.dd_hrv * 100)} %`).select('rect').attr('fill', C('--down'));
@@ -549,7 +558,7 @@
       f.g.append('text').attr('class', 'lbl-strong').attr('x', x(bi)).attr('y', y(0) - 8).attr('text-anchor', 'middle').text(`meilleure nuit · ${best.hrv} ms`);
     }
     hover(f.g.selectAll('.hh').data(N).join('rect').attr('class', 'hit').attr('x', (n, i) => x(i) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-      n => `<b>${n.camp} · nuit du ${dateLbl(n.night)}</b>${row('VFC', `${n.hrv} ms`)}${row('recul', `${f0(n.dd_hrv * 100)} %`)}${row('sommeil', hm(n.sleep_h))}${row('score', `${n.score}/100`)}${row('recharge', `${n.bb}/100`)}${row('FC au repos', `${n.fc} bpm`)}`);
+      n => `<b>${n.camp} · nuit du ${dateLbl(n.night)}</b>${row('VFC', `${n.hrv} ms`)}${row('recul / meilleure nuit', `${f0(n.dd_hrv * 100)} %`)}${row('écart à l’habitude', `${fs0((n.hrv / HRV_BASE - 1) * 100)} %`)}${row('sommeil', hm(n.sleep_h))}${row('score', `${n.score}/100`)}${row('recharge', `${n.bb}/100`)}${row('FC au repos', `${n.fc} bpm`)}`);
     readout('r-hrv', `max <b>${best.hrv} ms</b> · min <b>${worst.hrv} ms</b> · recul max <b class="d">${f0(worst.dd_hrv * 100)} %</b>`);
 
     const g = frame('c-sleep', { t: 8, r: 52, b: 22, l: 8 });
@@ -561,7 +570,8 @@
     g.g.selectAll('.stt').data(N).join('text').attr('class', 'lbl').attr('x', (n, i) => x2(i)).attr('y', n => y2(n.sleep_h) - 4).attr('text-anchor', 'middle').text(n => f1(n.sleep_h));
     xAxis(g.g, x2, g.h, null, i => g.narrow ? `${+N[i].night.slice(8)}` : dateLbl(N[i].night));
     const after = N.slice(wi + 1);
-    $('t-hrv').textContent = `La VFC passe de ${best.hrv} ms (${best.camp}, meilleure nuit) à ${worst.hrv} ms à ${worst.camp} (${f0(worst.dd_hrv * 100)} %). Ensuite, elle ne remonte jamais au-dessus de ${f0(d3.max(after, n => n.dd_hrv) * 100)} % : la réserve s’use sans se refaire. Pourtant, l’allure ne baisse pas (partie 07). La fatigue se voit dans les décisions : le Helvetestinden (J4) tombe après 1 h 15 de recherche de bivouac, le Hermannsdalstinden (J5) après la nuit de 2 h et une recharge de ${worst.bb}/100.`;
+    const low = N.filter(n => n.hrv < HRV_BASE * (1 - BAND)), firstLow = low[0];
+    $('t-hrv').textContent = `La VFC habituelle est de ${HRV_BASE} ms. La première nuit (${N[0].camp}, ${N[0].hrv} ms) est normale, la deuxième monte à ${best.hrv} ms (${best.camp}), et la troisième revient dans la zone normale (${N[2].hrv} ms). La rupture arrive à ${firstLow.camp} : ${firstLow.hrv} ms après une nuit de ${hm(firstLow.sleep_h)}, ${f0((firstLow.hrv / HRV_BASE - 1) * -100)} % sous l’habitude. Ensuite, elle ne revient jamais dans la zone normale (au mieux ${d3.max(after, n => n.hrv)} ms) : la réserve s’use sans se refaire. Pourtant, l’allure ne baisse pas (partie 07). La fatigue se voit dans les décisions : le Helvetestinden (J4) tombe après 1 h 15 de recherche de bivouac, le Hermannsdalstinden (J5) après la nuit de 2 h et une recharge de ${worst.bb}/100.`;
   }
 
   /* ---------- 09 · weather vs benchmark ---------- */
