@@ -315,7 +315,7 @@
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">De la distance prévue à la distance réelle</span><span class="pc-r mono" id="r-bridge"></span></div>
       <div class="chart" id="c-bridge" data-h="300"></div>
-      <div class="pc-foot"><span class="src">Distances à pied ; la traversée en bateau Kirkefjord → Vindstad est retirée du plan</span></div>
+      <div class="pc-foot"><span class="legend-row" id="l-bridge"></span><span class="src">Distances à pied ; bateau Kirkefjord → Vindstad retiré du plan</span></div>
     </div>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Journal des écarts au plan</span><span class="pc-r mono" id="r-plan"></span></div>
@@ -326,8 +326,8 @@
       <div class="pc"><div class="pc-head"><span class="pc-t">Le coût du bivouac</span><span class="pc-r mono" id="r-pbiv"></span></div><div class="table-wrap flat"><table class="data" id="plan-biv"></table></div></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>La carte superpose l’itinéraire prévu (pointillés) et la trace réelle ; les carrés sont les campements prévus, les ronds les campements réels. À droite, chaque soir est placé sur le parcours prévu : au-dessus de la ligne du plan, le campement est en avance sur la feuille de route ; en dessous, en retard. Le pont part des 122 km prévus à pied et ajoute ou retire chaque écart jusqu’aux 159 km réels.</p></div>
-      <div><h4>Méthode</h4><p>Plan : itinéraire tracé sur Strava avant le départ (GPX), découpé en journées à partir des campements prévus ; les sommets sont des allers-retours, leur base sert de campement. Un point de la trace réelle est « sur le plan » s’il passe à moins de 60 m du tracé prévu. Les écarts de moins de 400 m sont comptés à part : bruit GPS, sentiers parallèles. Les campements des J7 et J8 du plan, sur le tour du lac, sont estimés. Le dénivelé du plan vient du modèle de terrain de Strava, celui du réel de la montre.</p></div>
+      <div><h4>Comment lire</h4><p>La carte superpose l’itinéraire prévu (pointillés) et la trace réelle ; les carrés sont les campements prévus, les ronds les campements réels. À droite, chaque soir est placé sur le parcours prévu : au-dessus de la ligne du plan, le campement est en avance sur la feuille de route ; en dessous, en retard. Le pont part de l’itinéraire de 8 jours, ajoute le jour de marge, puis chaque écart, classé en décision, terrain ou mesure, jusqu’à la distance réelle.</p></div>
+      <div><h4>Méthode</h4><p>Plan : itinéraire de 8 jours tracé sur Strava avant le départ (GPX), découpé en journées à partir des campements prévus ; les sommets sont des allers-retours, leur base sert de campement. Le J6 ajoute l’aller-retour entre Munkebu et le pied du Hermannsdalstinden. Le jour de marge n’est pas tracé : il a servi à la Støvla, comptée avec sa distance réelle et retirée de la comparaison. Un point de la trace réelle est « sur le plan » s’il passe à moins de 60 m du tracé prévu. Les écarts de moins de 400 m sont comptés à part : bruit GPS, sentiers parallèles. Le campement du 20/06, sur le tour du lac, est estimé ; celui du 21/06 est sur les hauteurs de Sørvågen, au plus près du port. Le dénivelé du plan vient du modèle de terrain de Strava, celui du réel de la montre.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-plan"></p></div>
     </div>
   </section>
@@ -453,8 +453,8 @@
 <script src="risque_data.js?v=20261105-8"></script>
 <script src="risque_sections.js?v=20261106-1"></script>
 <script src="risque_episodes.js?v=20261106-3"></script>
-<script src="risque_plan.js?v=20261106-1"></script>
+<script src="risque_plan.js?v=20261106-2"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261106-12"></script>
+<script src="risque.js?v=20261106-13"></script>
 </body>
 </html>

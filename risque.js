@@ -804,10 +804,10 @@
     [3, '16/06', 'Ryten, Kvalvika, Kitinden, bivouac au pied du Kitinden', 'Ryten (brouillard), plage, Moltinden à la place du Kitinden. Camp impossible au lac : la journée continue jusqu’à Horseid.', [['c-av', 'Avance subie'], ['c-sub', 'Substitution']]],
     [4, '17/06', 'Horseid → bateau de 15 h → Bunes, Helvetestinden', 'Bivouac à Bunes imposé par le bateau. Helvetestinden abandonné après 1 h 15 de recherche de bivouac.', [['c-ren', 'Renoncement']]],
     [5, '18/06', 'Repos : jusqu’à Munkebu, Munken en bonus', 'Plan révisé pour regagner un jour : départ à 2 h après 2 h de sommeil, puis craquage au pied du Hermannsdalstinden. Munkebu et Munken comme prévu.', [['c-ren', 'Renoncement'], ['c-ok', 'Plan initial tenu']]],
-    [6, '19/06', 'Journée 100 % trail depuis Munkebu', 'Reine, Reinebringen, l’arête, Helvete : 21 km, 1 677 m de D+.', [['c-ok', 'Contenu remplacé']]],
+    [6, '19/06', 'Journée 100 % trail depuis Munkebu : Hermannsdalstinden aller-retour', 'Reine, Reinebringen, l’arête, Helvete : 21 km, 1 677 m de D+.', [['c-ok', 'Contenu remplacé']]],
     [7, '20/06', 'Jusqu’à Å, Andstabben, début du tour du lac', 'Camp fixe à Sørvågen sous la pluie. Å et Andstabben en trail. Tour du lac abandonné (déconseillé, météo).', [['c-ab', 'Abandon d’itinéraire']]],
-    [8, '21/06', 'Fin du tour du lac', 'Le jour libéré sert à la Støvla : neige après la barre rocheuse, éboulement au retour.', [['c-av', 'Jour gagné']]],
-    [9, '22/06', 'Marge (météo ou forme), Støvla ou kayak', 'Gylttinden partiel, arrêt dans la grotte après les 10 000 m de D+. Kayak impossible.', [['c-ok', 'Marge utilisée']]],
+    [8, '21/06', 'Fin du tour du lac, puis camp sur les hauteurs de Sørvågen, au plus près du port', 'Le jour de marge est avancé et sert à la Støvla : neige après la barre rocheuse, éboulement au retour.', [['c-ok', 'Marge utilisée']]],
+    [9, '22/06', 'Jour de marge (météo ou forme) : Støvla ou kayak, puis le port', 'Gylttinden partiel, arrêt dans la grotte après les 10 000 m de D+. Kayak impossible.', [['c-sub', 'Jour réaffecté']]],
   ];
   const PL = window.RISK_PLAN;
   const planDay = d => PL && PL.plan.days.find(x => x.day === d), realDay = d => PL && PL.real.days.find(x => x.day === d);
@@ -824,7 +824,7 @@
     if (!PL) return;
     const M = PL.match, P_ = PL.plan, Rl = PL.real;
     const totR = M.bridge.find(b => b.k === 'real').v, dpR = totDp;
-    $('plan-lede').textContent = `L’itinéraire tracé avant le départ faisait ${f1(P_.km_total)} km, dont ${f1(P_.km_total - P_.km_walk)} en bateau : ${f1(P_.km_walk)} km à pied et ${f0(P_.dplus)} m de dénivelé, ${d3.sum(P_.days, d => d.summits.length)} sommets et le tour du lac d’Å, ${P_.camps.length} nuits et un jour de marge (J9 : Støvla ou kayak). La traversée réelle a fait ${f1(totR)} km et ${f0(dpR)} m. Ce qui suit explique l’écart, jour par jour.`;
+    $('plan-lede').textContent = `Le plan, c’est 8 jours d’itinéraire et 1 jour de marge. L’itinéraire tracé avant le départ fait ${f1(P_.km8)} km à pied (hors bateau, avec l’aller-retour au Hermannsdalstinden depuis Munkebu), ${d3.sum(P_.days, d => d.summits.length) - 1} sommets et le tour du lac d’Å. Le jour de marge, prévu pour la météo ou la forme, a servi à la Støvla : ${f1(P_.margin.km)} km de plus. Le plan complet fait donc ${f1(P_.km_walk)} km et ${f0(P_.dplus)} m de dénivelé, sur les mêmes 9 jours que la traversée réelle : ${f1(totR)} km et ${f0(dpR)} m. Ce qui suit explique l’écart, jour par jour.`;
     // planned summits
     const ab = n => M.abandoned.find(a => a.name === n);
     const SUM = [
@@ -837,7 +837,7 @@
       ['J6', 'Hermannsdalstinden', 'ab', 'Abandonné au pied, après la nuit de 2 h ; journée Reinebringen–Helvete à la place'],
       ['J7', 'Andstabben', 'ok', 'Fait, en trail depuis Sørvågen'],
       ['J7–J8', 'Tour du lac', 'ab', 'Abandonné : déconseillé sur place, météo ; Støvla à la place'],
-      ['J9', 'Marge', 'sub', 'Utilisée : Gylttinden partiel ; kayak impossible'],
+      ['J9', 'Støvla (jour de marge)', 'ok', 'Fait au J8 : la marge avance d’un jour après l’abandon du tour du lac ; le J9 sert au Gylttinden'],
     ];
     const chipS = { ok: ['c-ok', 'fait'], ab: ['c-ab', 'abandonné'], sub: ['c-sub', 'remplacé'] };
     $('plan-sum').innerHTML = `<thead><tr><th>Jour</th><th>Prévu</th><th>Statut</th><th class="n">Non fait</th></tr></thead><tbody>${SUM.map(([d, n, k, t]) => { const a = ab(n);
@@ -879,7 +879,7 @@
       hover(f.g.selectAll(null).data(rc).join('circle').attr('cx', c => X([c.lon, c.lat])).attr('cy', c => Y([c.lon, c.lat])).attr('r', 5.5)
         .attr('fill', C('--accent')).attr('stroke', C('--bg')).attr('stroke-width', 1.5), c => `<b>Réel · ${c.name}</b>${row('nuit', Rl.camps.filter(x => x.name === c.name).map(x => dateLbl(x.night)).join(', '))}${row('altitude', `${f0(c.alt)} m`)}`);
       if (!f.narrow) rc.forEach(c => f.g.append('text').attr('class', 'lbl-strong').attr('x', X([c.lon, c.lat]) + 9).attr('y', Y([c.lon, c.lat]) + 4).text(c.name.replace('Hauteurs de ', '').replace(' beach', '')));
-      readout('r-pmap', `plan <b>${f1(P_.km_walk)} km</b> à pied · réel <b>${f1(M.bridge.find(b => b.k === 'real').v)} km</b>`);
+      readout('r-pmap', `plan <b>${f1(P_.km_walk)} km</b> avec la marge · réel <b>${f1(M.bridge.find(b => b.k === 'real').v)} km</b>`);
       legend('l-pmap', [['dash', C('--text-primary'), 'itinéraire prévu'], ['ln', C('--accent'), 'trace réelle'], ['ring', C('--text-primary'), 'campement prévu'], ['', C('--accent'), 'campement réel']]);
     }
     // ---- progress on the planned route, evening after evening
@@ -915,7 +915,7 @@
       const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
       g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(6).tickSize(f.h).tickFormat('')).lower();
       g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
-      const col = d => d.k === 'plan' || d.k === 'real' ? C('--accent') : d.v < 0 ? C('--up') : d.k === 'gps' || d.k === 'noise' ? C('--text-muted') : C('--down');
+      const col = d => ({ plan: C('--accent'), cal: C('--series-avec'), dec: d.v < 0 ? C('--up') : C('--down'), ter: C('--warning'), mes: C('--text-muted') })[d.g];
       D.forEach((d, i) => {
         f.g.append('text').attr('class', d.k === 'plan' || d.k === 'real' ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
         g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', d.k === 'plan' || d.k === 'real' ? .9 : .75);
@@ -924,12 +924,14 @@
           .text(d.k === 'plan' || d.k === 'real' ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
       });
       readout('r-bridge', `tracé commun : la montre mesure <b>×${F('.2f')(M.gps_ratio)}</b> la longueur du tracé`);
+      legend('l-bridge', [['', C('--series-avec'), 'calendrier'], ['', C('--down'), 'décision qui ajoute'], ['', C('--up'), 'décision qui retire'], ['', C('--warning'), 'terrain'], ['', C('--text-muted'), 'mesure']]);
     }
     // ---- text
     const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km);
     const ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5), behind = N.map((d, i) => [d, i]).filter(([d]) => d < -1.5);
     const biv = d3.sum(M.biv, x => x.km), bivUp = d3.sum(M.biv, x => x.up);
-    $('t-plan').textContent = `Le plan prévoyait ${f1(P_.km_walk)} km à pied ; la traversée en a fait ${f1(B.real)}. L’écart ne vient pas d’un plan mal calibré : ${f1(-B.ab)} km de sommets abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac) sont plus que compensés par ${f1(B.add)} km de sorties ajoutées ou substituées (Moltinden, Reinebringen–Helvete, Støvla, Gylttinden), et la montre mesure ${f0((M.gps_ratio - 1) * 100)} % de plus que le tracé sur le parcours commun (+${f1(B.gps)} km). La recherche de bivouac pèse ${f1(biv)} km et ${f0(bivUp)} m de montée, surtout à Bunes. Sur l’avancement, les soirs des ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} sont en avance sur la feuille de route (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) ; le bateau du J4 ramène l’avancement sur le plan. À partir du ${dateLbl(P_.camps[behind[0][1]].night)}, le retard est choisi : camp fixe à Sørvågen, tour du lac abandonné et jour de marge consommé par le Støvla.`;
+    const decPlus = B.add + B.var, decMinus = -(B.ab + B.nd), mes = B.gps + B.noise;
+    $('t-plan').textContent = `Le plan complet, jour de marge compris, faisait ${f1(P_.km_walk)} km et ${f0(P_.dplus)} m de dénivelé ; la traversée en a fait ${f1(B.real)} et ${f0(totDp)} m. Le dénivelé est presque identique : le relief prévu a bien été gravi, autrement. L’écart de distance n’est pas un excès de kilomètres. Les décisions en route se compensent : ${f1(decMinus)} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac) contre ${f1(decPlus)} km de substitutions et de variantes (Moltinden, Reine et l’arête de Reinebringen–Helvete, Gylttinden, chemins du sud). La recherche de bivouac ajoute ${f1(B.biv)} km, surtout à Bunes, et le reste (${f1(mes)} km) est de la mesure : sur le parcours commun, la montre compte ${f0((M.gps_ratio - 1) * 100)} % de plus que le tracé lissé. Sur l’avancement, les soirs des ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} sont en avance sur la feuille de route (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) ; le bateau du J4 ramène l’avancement sur le plan. À partir du ${dateLbl(P_.camps[behind[0][1]].night)}, le retard est choisi : camp fixe à Sørvågen, tour du lac abandonné et jour de marge avancé pour la Støvla.`;
   }
 
   /* ---------- 14 · conclusion ---------- */

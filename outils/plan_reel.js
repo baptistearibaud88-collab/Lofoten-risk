@@ -3,6 +3,8 @@
 // Sortie  : risque_plan.js — à relancer si l'une des entrées change :
 //   node outils/plan_reel.js
 //
+// Le plan, c'est 8 jours d'itinéraire et 1 jour de marge (J9 : Støvla ou kayak, puis le port).
+// La marge n'est pas tracée dans le GPX : elle a servi au Støvla, compté avec sa distance réelle.
 // Le plan est découpé en journées à partir des campements prévus (positions en km sur le tracé).
 // Les sommets prévus sont des allers-retours sur le tracé ; leur base sert de point de campement.
 // La traversée en bateau Kirkefjord → Vindstad est retirée de la distance à pied.
@@ -22,6 +24,7 @@ const KM = cum.map(c => c / 1000), idx = km => { let b = 0; KM.forEach((k, i) =>
 const BOAT = [74.3, 78.35];
 const inBoat = k => k > BOAT[0] && k <= BOAT[1];
 const lenOf = ranges => ranges.reduce((s, [a, b]) => s + d3sum(idx(a) + 1, idx(b), i => inBoat(KM[i]) ? 0 : KM[i] - KM[i - 1]), 0);
+const dmOf = ranges => ranges.reduce((s, [a, b]) => s + d3sum(idx(a) + 1, idx(b), i => inBoat(KM[i]) ? 0 : Math.max(0, P[i - 1][2] - P[i][2])), 0);
 const dpOf = ranges => ranges.reduce((s, [a, b]) => s + d3sum(idx(a) + 1, idx(b), i => inBoat(KM[i]) ? 0 : Math.max(0, P[i][2] - P[i - 1][2])), 0);
 function d3sum(a, b, f) { let s = 0; for (let i = a; i <= b; i++) s += f(i); return s; }
 
@@ -35,7 +38,7 @@ const CAMPS = [
   { night: '2026-06-18', name: 'Munkebu', km: 98.7 },
   { night: '2026-06-19', name: 'Munkebu', km: 98.7 },
   { night: '2026-06-20', name: 'Tour du lac, à l’ouest d’Å', km: 114.5, est: true },
-  { night: '2026-06-21', name: 'Å', km: 120.5, est: true },
+  { night: '2026-06-21', name: 'Hauteurs de Sørvågen', km: 124.0 },
 ];
 const DAYS = [
   { day: 1, ranges: [[0, 22.36]], summits: ['Tønnåsheia'] },
@@ -43,14 +46,22 @@ const DAYS = [
   { day: 3, ranges: [[39.98, 61.81]], summits: ['Ryten', 'Kitinden'] },
   { day: 4, ranges: [[61.81, 85.98]], summits: ['Helvetestinden'], boat: true },
   { day: 5, ranges: [[85.98, 90.78], [95.77, 100.25]], summits: ['Munken'] },
-  { day: 6, ranges: [[90.78, 95.77]], summits: ['Hermannsdalstinden'], note: 'accès depuis Munkebu non tracé' },
+  { day: 6, ranges: [[90.78, 95.77]], access: [95.77, 98.7], summits: ['Hermannsdalstinden'], note: 'aller-retour depuis Munkebu' },
   { day: 7, ranges: [[100.25, 114.5]], summits: ['Andstabben'], est: true },
-  { day: 8, ranges: [[114.5, 120.5]], summits: [], est: true },
-  { day: 9, ranges: [[120.5, KM[KM.length - 1]]], summits: [], note: 'jour de marge : Støvla ou kayak, non tracé' },
+  { day: 8, ranges: [[114.5, 124.0]], summits: [], est: true },
+  { day: 9, ranges: [[124.0, KM[KM.length - 1]]], summits: ['Støvla'], margin: true, note: 'jour de marge : Støvla depuis Sørvågen, puis le port' },
 ];
-DAYS.forEach(d => { d.km = r1(lenOf(d.ranges)); d.dplus = Math.round(dpOf(d.ranges)); });
-const planWalk = r1(d3sum(1, P.length - 1, i => inBoat(KM[i]) ? 0 : KM[i] - KM[i - 1]));
-const planDp = Math.round(d3sum(1, P.length - 1, i => inBoat(KM[i]) ? 0 : Math.max(0, P[i][2] - P[i - 1][2])));
+const stuvla = R.rows.find(r => r.id === 'stuvla'), MARGIN = { km: stuvla.km, dplus: stuvla.dplus };
+DAYS.forEach(d => {
+  d.km = lenOf(d.ranges); d.dplus = dpOf(d.ranges);
+  if (d.access) { const a = [d.access]; d.km += 2 * lenOf(a); d.dplus += dpOf(a) + dmOf(a); }   // Munkebu → spur and back
+  d.route_km = r1(d.km); d.route_dplus = Math.round(d.dplus);
+  if (d.margin) { d.km += MARGIN.km; d.dplus += MARGIN.dplus; }
+  d.km = r1(d.km); d.dplus = Math.round(d.dplus);
+});
+const plan8 = r1(DAYS.reduce((s, d) => s + d.route_km, 0)), planWalk = r1(plan8 + MARGIN.km);
+const planDp = DAYS.reduce((s, d) => s + d.dplus, 0);
+const j6access = r1(DAYS[5].route_km - lenOf(DAYS[5].ranges));   // Munkebu → foot of the spur, both ways
 
 // ---- real data
 const real = {}; R.rows.forEach(r => { const d = real[r.day] = real[r.day] || { km: 0, dplus: 0 }; d.km += r.km; d.dplus += r.dplus; });
@@ -76,7 +87,8 @@ CAMPS.forEach(c => { const p = P[idx(c.km)]; c.lat = p[0]; c.lon = p[1]; c.alt =
 
 // ---- real trace against the plan: shared, off-plan runs, and plan not walked
 const TH = 60, off = []; let tot = 0, on = 0, cur = null;
-T.acts.forEach(a => a.pts.forEach(q => {
+const MARGIN_ACT = 'stuvla';
+T.acts.filter(a => a.id !== MARGIN_ACT).forEach(a => a.pts.forEach(q => {
   const p = [q[1], q[0]], [d] = nearIn(GP, P, p), m = q[3] * 1000; tot += m;
   if (d < TH) { on += m; if (cur) { off.push(cur); cur = null; } }
   else { if (!cur || cur.act !== a.id) { if (cur) off.push(cur); cur = { act: a.id, day: a.day, m: 0, up: 0, z: q[2], t0: q[7] }; } cur.up += Math.max(0, q[2] - cur.z); cur.z = q[2]; cur.m += m; cur.t1 = q[7]; }
@@ -90,28 +102,31 @@ P.forEach((p, i) => { if (!i || inBoat(KM[i])) return; const c = nearIn(GR, RP, 
 if (u) notDone.push(u);
 const ABANDON = [['Tønnåsheia', 16.6, 22.4], ['Kitinden', 56.8, 61.9], ['Helvetestinden', 79, 86], ['Hermannsdalstinden', 90.7, 95.8], ['Tour du lac', 111.9, 120.3]];
 const abandoned = ABANDON.map(([n, a, b]) => ({ name: n, km: r1(notDone.filter(x => x.k0 >= a && x.k1 <= b).reduce((s, x) => s + x.km, 0)), top: Math.round(Math.max(0, ...notDone.filter(x => x.k0 >= a && x.k1 <= b).map(x => x.top))) }));
-const abKm = abandoned.reduce((s, a) => s + a.km, 0), ndKm = notDone.reduce((s, x) => s + x.km, 0);
+abandoned.find(a => a.name === 'Hermannsdalstinden').km = r1(abandoned.find(a => a.name === 'Hermannsdalstinden').km + j6access);   // the J6 approach from Munkebu and back, never walked
+const abKm = abandoned.reduce((s, a) => s + a.km, 0), ndKm = notDone.reduce((s, x) => s + x.km, 0) + j6access;
 
 // off-plan real km by cause
 const CAUSE = {
-  added: ['moltinden', 'munkebu_reine', 'reinebringen_helvete', 'stuvla', 'last_trail'],
+  added: ['moltinden', 'munkebu_reine', 'reinebringen_helvete', 'last_trail'],
   bivouac: ['vindstad_bunes', 'bunes_munkebu', 'horseid_beach', 'fredvang'],
   variant: ['sorvagen_a', 'retour_bateau', 'andstabben', 'munkebu_sorvagen', 'horseid_kirkefjord', 'napp_nusfjord_2', 'retour_campement'],
 };
 const BIG = 400;   // shorter excursions are GPS noise or parallel paths
 const offBy = k => off.filter(o => o.m >= BIG && CAUSE[k].includes(o.act)).reduce((s, o) => s + o.m, 0) / 1000;
 const added = offBy('added'), biv = offBy('bivouac'), variant = offBy('variant'), offTot = (tot - on) / 1000, noise = offTot - added - biv - variant;
-const shared = on / 1000, doneKm = planWalk - ndKm, gps = shared - doneKm;
+const shared = on / 1000, doneKm = plan8 - ndKm, gps = shared - doneKm;
+const realTot = tot / 1000 + MARGIN.km;
 const bridge = [
-  { k: 'plan', l: 'Plan à pied', v: planWalk },
-  { k: 'ab', l: 'Sommets et boucle abandonnés', v: -r1(abKm) },
-  { k: 'nd', l: 'Autres raccourcis du plan', v: -r1(ndKm - abKm) },
-  { k: 'gps', l: 'Mesure GPS sur le tracé commun', v: r1(gps) },
-  { k: 'add', l: 'Sorties ajoutées ou substituées', v: r1(added) },
-  { k: 'biv', l: 'Recherche de bivouac', v: r1(biv) },
-  { k: 'var', l: 'Variantes d’itinéraire', v: r1(variant) },
-  { k: 'noise', l: 'Écarts courts (< 400 m)', v: r1(noise) },
-  { k: 'real', l: 'Réel', v: r1(tot / 1000) },
+  { k: 'plan', g: 'plan', l: 'Itinéraire prévu · 8 jours', v: plan8 },
+  { k: 'margin', g: 'cal', l: 'Jour de marge utilisé : Støvla', v: r1(MARGIN.km) },
+  { k: 'ab', g: 'dec', l: 'Sommets et boucle abandonnés', v: -r1(abKm) },
+  { k: 'nd', g: 'dec', l: 'Autres raccourcis du plan', v: -r1(ndKm - abKm) },
+  { k: 'add', g: 'dec', l: 'Sorties substituées', v: r1(added) },
+  { k: 'var', g: 'dec', l: 'Variantes d’itinéraire', v: r1(variant) },
+  { k: 'biv', g: 'ter', l: 'Recherche de bivouac', v: r1(biv) },
+  { k: 'gps', g: 'mes', l: 'Mesure GPS sur le tracé commun', v: r1(gps) },
+  { k: 'noise', g: 'mes', l: 'Écarts courts (< 400 m)', v: r1(noise) },
+  { k: 'real', g: 'plan', l: 'Réel · 9 jours', v: r1(realTot) },
 ];
 // bivouac search episodes (≥ 400 m off-plan, in the bivouac list)
 const bivEp = off.filter(o => o.m >= BIG && CAUSE.bivouac.includes(o.act)).map(o => ({ act: o.act, day: o.day, km: r2(o.m / 1000), up: Math.round(o.up), t0: o.t0, t1: o.t1 }));
@@ -123,7 +138,7 @@ P.forEach((p, i) => { if (inBoat(KM[i])) { if (seg.length) planLine.push(seg); s
 planLine.push(seg);
 const r5 = v => Math.round(v * 1e5) / 1e5;
 const out = {
-  plan: { km_total: r1(KM[KM.length - 1]), km_walk: planWalk, dplus: planDp, boat: BOAT,
+  plan: { km_total: r1(KM[KM.length - 1]), km8: plan8, km_walk: planWalk, dplus: planDp, margin: MARGIN, j6access, boat: BOAT,
     camps: CAMPS.map(c => ({ ...c, lat: r5(c.lat), lon: r5(c.lon) })), days: DAYS,
     line: planLine.map(s => thin(s, 150).map(p => [r5(p[1]), r5(p[0])])) },
   real: { camps: camps.map(c => ({ ...c })), days: Object.entries(real).map(([d, v]) => ({ day: +d, km: r1(v.km), dplus: Math.round(v.dplus), summits: rsum[d] || [] })),
@@ -131,7 +146,8 @@ const out = {
   match: { th: TH, shared: r1(shared), done: r1(doneKm), gps_ratio: r2(shared / doneKm), abandoned, bridge, biv: bivEp },
 };
 fs.writeFileSync(path.join(root, 'risque_plan.js'), `// généré par outils/plan_reel.js — ne pas modifier à la main\nwindow.RISK_PLAN = ${JSON.stringify(out)};\n`);
-console.log(`plan ${out.plan.km_total} km (${planWalk} à pied, ${planDp} m D+) · commun ${r1(shared)} km réel pour ${r1(doneKm)} km de plan (×${r2(shared / doneKm)})`);
+console.log(`plan ${out.plan.km_total} km tracés · itinéraire 8 j ${plan8} km · avec marge ${planWalk} km, ${planDp} m D+ · accès J6 ${j6access} km`);
+console.log(` · commun ${r1(shared)} km réel pour ${r1(doneKm)} km de plan (×${r2(shared / doneKm)})`);
 DAYS.forEach(d => console.log(`J${d.day} plan ${d.km} km ${d.dplus} m · réel ${r1(real[d.day].km)} km ${Math.round(real[d.day].dplus)} m`));
 console.log(bridge.map(b => `${b.l} ${b.v}`).join(' | '));
 console.log(abandoned, bivEp);
