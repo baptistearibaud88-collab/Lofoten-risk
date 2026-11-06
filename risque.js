@@ -409,9 +409,12 @@
     $('t-roll').textContent = `${MAJ.length} épisodes de 10 min ou plus coûtent ${f0(majMin)} min sur ${f0(d3.sum(MAJ, d => d.len))} km ; ${PAU.length} épisodes plus courts, probablement des pauses, en ajoutent ${f0(pauMin)}. ${(n => n === MAJ.length ? `Tous les ${n} épisodes coûteux sont` : `${n} des ${MAJ.length} épisodes coûteux sont`)(MAJ.filter(d => d.slope < 5).length)} en descente ou à plat : le temps se perd là où le pied cherche sa place, pas là où le souffle manque. La première cause est « ${CAUSE[top.k][0]} » (${f0(top.min / totMin * 100)} % du temps perdu, ${top.n} épisodes) ; avec le terrain instable et la météo, ${f0(subi / totMin * 100)} % du temps perdu est subi. Le reste relève de décisions prises sur place (repérer un bivouac, juger un passage) et de pauses. L’irrégularité dépasse son seuil P90 sur ${f0(above / S2.length * 100)} % du parcours, surtout sur les sorties de trail en montagne.`;
   }
 
-  /* ---------- 06 · Lofoten topography: steep then flat, one massif after another ---------- */
+  /* ---------- 06 · independent summits, steep climbs: the risk structure of the massifs ---------- */
   function drawAcf() {
-    const T = EP.topo, S = R.series;
+    const T = EP.topo, M = T.massifs, A = T.agg, sig = t => Math.abs(t.r) > t.crit;
+    const med = k => d3.median(M, m => m[k]), steepD = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.dist), steepG = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.gain);
+    const steepT = d3.sum(T.intens.filter((c, k) => T.slope[k].lo >= 20), c => c.time), flatI = T.intens[0], topI = T.intens[T.intens.length - 1];
+    const worst = M.reduce((b, m) => m.lost > b.lost ? m : b, M[0]);
     {
       const B = T.slope, lab = b => b.hi == null ? `> ${b.lo} %` : `${b.lo}–${b.hi} %`;
       const f = frame('c-acf1', { t: 12, r: 44, b: 40, l: 8 });
@@ -422,35 +425,64 @@
       const col = { dist: C('--text-muted'), gain: C('--down') };
       const gb = f.g.selectAll(null).data(B).join('g').attr('transform', b => `translate(${x0(lab(b))},0)`);
       ['dist', 'gain'].forEach(k => gb.append('path').attr('d', b => barPath(x1(k), f.h, x1.bandwidth(), y(b[k]))).attr('fill', col[k]).attr('opacity', k === 'dist' ? .55 : .9));
-      hover(gb.append('rect').attr('class', 'hit').attr('width', x0.bandwidth()).attr('height', f.h), b => `<b>pente ${lab(b)}</b>${row('distance', `${f0(b.dist * 100)} %`)}${row('dénivelé positif', `${f0(b.gain * 100)} %`)}`);
+      hover(gb.append('rect').attr('class', 'hit').attr('width', x0.bandwidth()).attr('height', f.h), (b, k) => `<b>pente ${lab(b)}</b>${row('distance', `${f0(b.dist * 100)} %`)}${row('dénivelé positif', `${f0(b.gain * 100)} %`)}${row('vitesse verticale', `${f0(T.intens[B.indexOf(b)].vr)} m/h`)}${row('fréquence cardiaque', `${T.intens[B.indexOf(b)].hr} bpm`)}`);
       xAxis(f.g, x0, f.h, 7, d => d);
       axTitle(f.g, 'pente du tronçon', 0, f.h + 36);
-      const flat = B[0].dist, steep = d3.sum(B.filter(b => b.lo >= 20), b => b.gain);
-      readout('r-acf1', `plat < 5 % : <b>${f0(flat * 100)} %</b> de la distance · pente > 20 % : <b>${f0(steep * 100)} %</b> du D+`);
+      readout('r-acf1', `> 20 % : <b>${f0(steepD * 100)} %</b> de la distance · <b>${f0(steepG * 100)} %</b> du D+`);
       legend('l-acf1', [['', C('--text-muted'), 'part de la distance'], ['', C('--down'), 'part du dénivelé positif']]);
     }
     {
-      const M = T.massifs;
-      const prof = M.map(m => { const k0 = m.i0 ? S[m.i0 - 1].km : 0, a0 = m.i0 ? S[m.i0 - 1].alt : S[0].alt, pts = [[0, a0]];
-        for (let i = m.i0; i <= m.i1; i++) { pts.push([S[i].km - k0, S[i].alt]); if (S[i].alt === m.top) break; } return { m, pts }; });
-      const f = frame('c-acf2', { t: 12, r: 44, b: 40, l: 8 });
-      const x = d3.scaleLinear().domain([0, Math.min(5, d3.max(prof, p => p.pts[p.pts.length - 1][0]))]).range([0, f.w]);
-      const y = d3.scaleLinear().domain([0, d3.max(M, m => m.top) * 1.08]).nice().range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => `${f0(v)} m`);
-      xAxis(f.g, x, f.h, 5, v => `${v} km`);
-      axTitle(f.g, 'distance depuis le bord de la mer', 0, f.h + 36);
-      const cg = clip(f), ln = d3.line().x(p => x(p[0])).y(p => y(p[1])).curve(d3.curveMonotoneX);
-      const paths = cg.selectAll(null).data(prof).join('path').attr('d', p => ln(p.pts)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 1.6).attr('opacity', .75);
-      // 20 % reference slope
-      cg.append('line').attr('x1', x(0)).attr('y1', y(0)).attr('x2', x(4)).attr('y2', y(800)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '4 3');
-      f.g.append('text').attr('class', 'lbl').attr('x', Math.min(x(3.2), f.w - 4)).attr('y', y(640) - 6).attr('text-anchor', 'end').text('pente 20 %');
-      hover(paths.attr('class', 'hitline'), p => `<b>${actName(p.m.act)} · ${dayLbl(p.m.day)}</b>${row('sommet', `${f0(p.m.top)} m`)}${row('montée moyenne', `${f0(p.m.grad_up)} %`)}${row('descente moyenne', `${f0(p.m.grad_down)} %`)}`);
-      readout('r-acf2', `<b>${M.length}</b> massifs · montée moyenne <b>${f0(d3.mean(M, m => m.grad_up))} %</b>`);
-      legend('l-acf2', [['ln', C('--accent'), 'montée d’un massif, de la mer au sommet'], ['dash', C('--text-muted'), 'pente régulière de 20 %']]);
+      const D = [
+        { k: 'seg', l: 'Tronçons indépendants', s: 'hypothèse naïve', v: A.seg, c: C('--text-muted') },
+        { k: 'massif', l: 'Massifs indépendants', s: 'Lofoten, mesuré', v: A.massif, c: C('--accent') },
+        { k: 'block', l: 'Un seul bloc sans sortie', s: 'enchaînement alpin, contrefactuel', v: A.block, c: C('--down') },
+      ];
+      const f = frame('c-acf2', { t: 16, r: 18, b: 34, l: 8 });
+      const lw = Math.min(190, f.w * .42);
+      const x = d3.scaleLinear().domain([0, A.block * 1.12]).range([0, f.w - lw]);
+      const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.38);
+      const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
+      g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(4).tickSize(f.h).tickFormat('')).lower();
+      g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(4).tickSize(0).tickPadding(8).tickFormat(v => `${v} min`));
+      D.forEach(d => {
+        f.g.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2 - 3).text(d.l);
+        f.g.append('text').attr('class', 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2 + 11).text(d.s);
+        g.append('rect').attr('x', 0).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('width', x(d.v)).attr('rx', 3).attr('fill', d.c).attr('opacity', d.k === 'massif' ? .95 : .6);
+        g.append('text').attr('class', 'lbl-strong').attr('x', x(d.v) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(`± ${f0(d.v)} min`);
+      });
+      readout('r-acf2', `sous-estimation naïve <b>×${f1(A.massif / A.seg)}</b> · diversification <b>×${f1(A.block / A.massif)}</b>`);
     }
-    const g1 = T.grad_same, g2 = T.grad_next, p1 = T.pace_same, p2 = T.pace_next, sig = t => Math.abs(t.r) > t.crit;
-    const flat = T.slope[0].dist, steep = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.gain);
-    $('t-acf').textContent = `La moitié de la distance (${f0(flat * 100)} %) est presque plate, mais ${f0(steep * 100)} % du dénivelé se gagne sur des pentes de plus de 20 %. Dans un même massif, tout se tient : une montée raide annonce une descente raide (r = ${f2(g1.r)}). D’un massif à l’autre, ${sig(g2) ? 'le lien reste visible' : 'plus rien'} : la raideur du suivant ${sig(g2) ? 'en dépend encore' : 'ne se déduit pas du précédent'} (r = ${f2(g2.r)}, ${sig(g2) ? 'significatif' : 'non significatif'}). Chaque retour à la mer remet le terrain à zéro, il faut donc juger chaque sommet pour lui-même. Ce qui passe d’un massif à l’autre, c’est la journée (météo, forme) : l’allure reste ${sig(p2) ? 'liée' : 'peu liée'} d’un massif au suivant (r = ${f2(p2.r)}, contre ${f2(p1.r)} entre la montée et la descente d’un même massif).`;
+    // risk sheet
+    const rows = [
+      ['Corrélation du terrain d’un massif au suivant', `raideur r = ${f2(T.grad_next.r)} · ${sig(T.grad_next) ? 'significatif' : 'non significatif'} (seuil ${f2(T.grad_next.crit)}, ${T.grad_next.n} paires)`,
+        'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs risques se diversifient.'],
+      ['Corrélation à l’intérieur d’un massif', `montée → descente : raideur r = ${f2(T.grad_same.r)} · allure r = ${f2(T.pace_same.r)}`,
+        'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Tirer les erreurs par massif, pas par tronçon : l’écart-type du temps total passe de ± ${f0(A.seg)} à ± ${f0(A.massif)} min (×${f1(A.massif / A.seg)}). Les blocs de 2 km de la partie 11 vont dans ce sens.`],
+      ['Facteur commun de la journée', `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''}`,
+        'Météo et forme du jour pèsent sur tous les massifs de la journée : c’est le risque systématique, il ne se diversifie pas.', 'Ajouter un facteur journée commun à tous les massifs du jour, l’équivalent d’un bêta de marché.'],
+      ['Option de sortie', `retour à la mer en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
+        `Chaque massif se termine au niveau de la mer : la perte d’une position est bornée, comme un stop-loss intégré. Pire massif : ${f0(worst.lost)} min perdues (${actName(worst.act)}).`, 'La queue de distribution se coupe massif par massif : une perte ne se propage pas au reste de la traversée.'],
+      ['Durée d’engagement', `${f0(med('t_tot'))} min médianes par massif, dont ${f0(med('t_engage'))} min de montée à partir de 15 %`,
+        `Positions courtes : la décision d’y aller ou de renoncer se reprend au pied de chacun des ${M.length} massifs.`, 'Renoncer est une option réelle, renouvelée à chaque massif : elle a de la valeur parce qu’on peut l’exercer sans compromettre la suite.'],
+      ['Intensité (levier)', `> 20 % : ${f0(steepD * 100)} % de la distance, ${f0(steepT * 100)} % du temps, ${f0(steepG * 100)} % du D+ · ${f0(topI.vr)} m/h et ${topI.hr} bpm au-dessus de 30 %, contre ${f0(flatI.vr)} m/h et ${flatI.hr} bpm sur le plat`,
+        'Le risque n’est pas réparti : il se concentre sur de courts passages très raides, où l’effort est maximal et où une erreur se paie cher.', 'La pente moyenne ne suffit pas : il faut modéliser la part du massif au-dessus de 20 % et l’effet propre des descentes raides (partie 07).'],
+    ];
+    $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th><th>Conséquence pour le modèle</th></tr></thead><tbody>${rows.map(r => `<tr><td><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join('')}</tbody>`;
+    readout('r-sheet', `${M.length} massifs · ${M.length - 1} retours à la mer`);
+    const li = a => a.map(([h, p]) => `<li><b>${h}</b><span>${p}</span></li>`).join('');
+    $('pc-pro').innerHTML = li([
+      ['Diversification', `Des massifs indépendants s’additionnent en racine de la somme des carrés : ± ${f0(A.massif)} min sur la traversée, contre ± ${f0(A.block)} min si tout formait un seul bloc sans sortie.`],
+      ['Perte bornée', `Chaque massif se solde au bord de la mer, ${f0(med('t_exit'))} min médianes après le sommet, avant d’engager le suivant.`],
+      ['Décision renouvelée', `${M.length} points de décision : on peut renoncer au pied d’un massif sans compromettre le reste de l’itinéraire.`],
+      ['Repli facile', 'Le niveau de la mer offre un terrain plat, des routes et des villages : se replier ne demande ni altitude ni col à franchir.'],
+    ]);
+    $('pc-con').innerHTML = li([
+      ['Pas de compensation dans un massif', `Montée et descente vont dans le même sens (r = ${f2(T.pace_same.r)}) : à l’intérieur d’un massif, le risque est ${f1(A.massif / A.seg)} fois celui d’un modèle tronçon par tronçon.`],
+      ['Risque systématique', `La journée reste un facteur commun (r = ${f2(T.pace_next.r)} d’un massif au suivant) : la météo ne se diversifie pas.`],
+      ['Levier élevé', `${f0(steepG * 100)} % du dénivelé se gagne au-dessus de 20 %, sur ${f0(steepD * 100)} % de la distance : l’exposition est courte, mais concentrée.`],
+      ['La sortie n’est pas gratuite', `On sort d’un massif par une descente aussi raide que la montée (r = ${f2(T.grad_same.r)}). La plus grosse perte de la traversée, ${actName(worst.act)}, s’est faite en descente.`],
+    ]);
+    $('t-acf').textContent = `La topographie des Lofoten transforme la traversée en une série de paris courts et indépendants. Le risque total se diversifie : ± ${f0(A.massif)} min sur l’ensemble, ${f1(A.block / A.massif)} fois moins qu’un enchaînement sans sortie, et chaque retour à la mer borne la perte. Mais chaque pari est à fort levier : ${f0(steepG * 100)} % du dénivelé au-dessus de 20 %, et une fois engagé, les écarts s’additionnent jusqu’en bas. La règle qui en découle : décider massif par massif, garder la marge pour la descente, et traiter la journée comme un facteur commun.`;
   }
 
   /* ---------- 07 · sensitivities (tornado) + correlation matrix ---------- */

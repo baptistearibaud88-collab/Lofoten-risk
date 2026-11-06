@@ -79,9 +79,30 @@ S.forEach((s, i) => {
   if (i && S[i - 1].act === s.act && s.alt > S[i - 1].alt) gain[b] += s.alt - S[i - 1].alt;
 });
 const dT = dist.reduce((a, b) => a + b, 0), gT = gain.reduce((a, b) => a + b, 0);
+// intensity by slope class: climbing rate (m/h on climbing pieces), heart rate, pace, share of time
+const intens = SB.slice(0, -1).map((v, k) => {
+  const ii = S.map((_, i) => i).filter(i => { const a = Math.abs(S[i].slope); return a >= v && a < SB[k + 1]; });
+  const up = ii.filter(i => S[i].slope > 0 && i && S[i - 1].act === S[i].act), hrI = ii.filter(i => S[i].hr);
+  const tUp = up.reduce((s, i) => s + t[i], 0), tAll = ii.reduce((s, i) => s + t[i], 0);
+  return { vr: Math.round(up.reduce((s, i) => s + S[i].alt - S[i - 1].alt, 0) / (tUp / 3600)), hr: Math.round(hrI.reduce((s, i) => s + S[i].hr * t[i], 0) / hrI.reduce((s, i) => s + t[i], 0)), time: tAll };
+});
+const tAllS = intens.reduce((s, c) => s + c.time, 0); intens.forEach(c => { c.time = r3(c.time / tAllS); });
+// risk aggregation: sd of total lost time under three dependence structures
+// (realised loss of each piece / massif used as the size of its exposure)
+const inM = new Set(); const Lm = massifs.map(m => { let x = 0; for (let i = m.i0; i <= m.i1; i++) { x += lost[i]; inM.add(i); } return x; });
+const sq = a => Math.sqrt(a.reduce((s, v) => s + v * v, 0));
+const dayL = {}; massifs.forEach((m, k) => { dayL[m.day] = (dayL[m.day] || 0) + Lm[k]; });
+const agg = { seg: r1(sq([...inM].map(i => lost[i]))), massif: r1(sq(Lm)), day: r1(sq(Object.values(dayL))), block: r1(Lm.reduce((s, v) => s + Math.abs(v), 0)) };
+// engagement and exit of each massif (minutes): from the first piece at 15 % or more to the top, and from the top back to the sea
+massifs.forEach((m, k) => {
+  const ii = d3range(m.i0, m.i1), top = ii.reduce((b, i) => S[i].alt > S[b].alt ? i : b, ii[0]), fs = ii.find(i => S[i].slope >= 15) ?? m.i0;
+  m.t_tot = r1(ii.reduce((s, i) => s + t[i], 0) / 60); m.t_engage = r1(ii.filter(i => i >= fs && i <= top).reduce((s, i) => s + t[i], 0) / 60);
+  m.t_exit = r1(ii.filter(i => i > top).reduce((s, i) => s + t[i], 0) / 60); m.lost = r1(Lm[k]);
+});
 const topo = {
   sea: SEA, top: TOP, massifs,
   slope: SB.slice(0, -1).map((v, k) => ({ lo: v, hi: SB[k + 1] < 1000 ? SB[k + 1] : null, dist: r3(dist[k] / dT), gain: r3(gain[k] / gT) })),
+  intens, agg,
   grad_same: test(gSame), grad_next: test(gNext), pace_same: test(pSame), pace_next: test(pNext),
 };
 

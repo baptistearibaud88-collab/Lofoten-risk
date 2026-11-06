@@ -182,15 +182,23 @@
   </section>
 
   <section id="s6">
-    <header class="sh"><span class="num">06</span><h2>Raide d’un coup, puis plat : un massif après l’autre</h2></header>
-    <p class="lede">Les Lofoten ne ressemblent pas aux Alpes. Pas de longue vallée qui monte doucement : on part du niveau de la mer, on monte très raide jusqu’au sommet, puis on redescend à la mer, et le fjord suivant recommence de zéro. Chaque massif est un problème neuf.</p>
+    <header class="sh"><span class="num">06</span><h2>Des sommets indépendants, des montées à fort levier</h2></header>
+    <p class="lede">La topographie des Lofoten impose une structure de risque particulière. Chaque massif monte directement depuis la mer et y redescend : entre deux sommets, on repasse au niveau de la mer, sur un terrain plat, au bord d’un fjord, d’une route ou d’un village. En termes de gestion du risque, la traversée est un portefeuille de positions courtes et indépendantes, avec une sortie à la fin de chacune. Un itinéraire alpin qui enchaîne les cols en altitude ressemble au contraire à une position unique, longue et corrélée : sans point de sortie, une difficulté pèse sur toute la suite. La contrepartie est l’intensité : les montées sont courtes, mais très raides.</p>
     <div class="grid-2">
-      <div class="pc"><div class="pc-head"><span class="pc-t">La distance est plate, le dénivelé est raide</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="240"></div><div class="pc-foot"><span class="legend-row" id="l-acf1"></span></div></div>
-      <div class="pc"><div class="pc-head"><span class="pc-t">Chaque massif part de la mer</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="240"></div><div class="pc-foot"><span class="legend-row" id="l-acf2"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Exposition · la distance est plate, le dénivelé est raide</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-acf1"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Diversification · écart-type du temps total selon la dépendance</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="250"></div><div class="pc-foot"><span class="src">Taille de chaque exposition : temps perdu ou gagné réellement sur le tronçon ou le massif</span></div></div>
+    </div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Fiche de risque · structure des massifs</span><span class="pc-r mono" id="r-sheet"></span></div>
+      <div class="table-wrap flat"><table class="data risk-sheet" id="risk-sheet"></table></div>
+    </div>
+    <div class="grid-2 mt procon">
+      <div class="pc"><div class="pc-head"><span class="pc-t">Ce que l’indépendance apporte</span></div><ul id="pc-pro"></ul></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Ce qu’elle ne couvre pas</span></div><ul id="pc-con"></ul></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>À gauche, pour chaque classe de pente, la part de la distance et la part du dénivelé positif. À droite, les montées des massifs de la traversée superposées, à partir du dernier passage au bord de la mer.</p></div>
-      <div><h4>Méthode</h4><p>Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Raideur : pente moyenne des tronçons en montée et en descente. Corrélations entre la montée et la descente d’un même massif, puis entre un massif et le suivant ; seuil de significativité à 5 %.</p></div>
+      <div><h4>Comment lire</h4><p>À gauche, pour chaque classe de pente, la part de la distance et la part du dénivelé positif : le relief se gagne sur peu de distance. À droite, l’incertitude sur le temps total de la traversée selon la façon dont les écarts se combinent. Indépendants, les risques s’additionnent en racine de la somme des carrés ; parfaitement liés, ils s’additionnent directement.</p></div>
+      <div><h4>Méthode</h4><p>Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Corrélations entre la montée et la descente d’un même massif, puis d’un massif au suivant ; seuil de significativité à 5 %. Agrégation : chaque tronçon ou massif est une exposition dont la taille est le temps perdu ou gagné réellement ; écart-type total = √Σ expositions² si indépendantes, Σ |expositions| si parfaitement corrélées. Le bloc unique est un contrefactuel construit sur ces mêmes données, pas une mesure alpine.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-acf"></p></div>
     </div>
   </section>
@@ -257,7 +265,7 @@
 
   <section id="s11">
     <header class="sh"><span class="num">11</span><h2>Simulation Monte Carlo : 5 000 traversées</h2></header>
-    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent les queues épaisses et les grappes. Les deux modèles ont le même centre ; seule la dispersion change.</p>
+    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent les queues épaisses et la persistance des écarts. Les deux modèles ont le même centre ; seule la dispersion change.</p>
     <div class="pc">
       <div class="pc-head mc-head">
         <div class="segctl" role="group" aria-label="Hypothèse de tirage">
@@ -429,8 +437,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="risque_data.js?v=20261105-8"></script>
 <script src="risque_sections.js?v=20261106-1"></script>
-<script src="risque_episodes.js?v=20261106-2"></script>
+<script src="risque_episodes.js?v=20261106-3"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261106-8"></script>
+<script src="risque.js?v=20261106-9"></script>
 </body>
 </html>

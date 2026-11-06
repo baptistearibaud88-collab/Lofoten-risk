@@ -289,3 +289,12 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 .cause.sec { background: transparent; box-shadow: inset 0 0 0 1px var(--hair); color: var(--text-secondary); }
 .cause.sec i { opacity: .6; }
 .cause-d { margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); min-width: 220px; max-width: 360px; }
+.risk-sheet td { vertical-align: top; font-size: 13px; line-height: 1.45; }
+.risk-sheet td:first-child { min-width: 150px; }
+.risk-sheet .rs-m { font-size: 12px; color: var(--text-secondary); min-width: 190px; }
+.procon ul { list-style: none; margin: 0; padding: 6px 14px 12px; display: grid; gap: 10px; }
+.procon li { display: grid; gap: 2px; font-size: 13.5px; line-height: 1.45; padding-left: 12px; border-left: 2px solid var(--hair); }
+.procon li b { font-weight: 600; }
+.procon li span { color: var(--text-secondary); }
+.procon .pc:first-child li { border-left-color: var(--accent); }
+.procon .pc:last-child li { border-left-color: var(--down); }
