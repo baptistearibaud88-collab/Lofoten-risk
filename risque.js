@@ -801,7 +801,7 @@
   const PLAN = [
     [1, '14/06', 'Napp → Nusfjord, sommet du Tønnåsheia', 'Napp → Nusfjord. Tønnåsheia abandonné : le premier jour avec le sac est bien plus dur que prévu.', [['c-ren', 'Renoncement']]],
     [2, '15/06', 'Volandstinden, bivouac sur son versant ou à Fredvang', 'Volandstinden, puis au-delà de Fredvang jusqu’aux hauteurs de Kvalvika, pour enchaîner sur le Ryten.', [['c-av', 'Avance volontaire']]],
-    [3, '16/06', 'Ryten, Kvalvika, Kitinden, bivouac au pied du Kitinden', 'Ryten (brouillard), plage, Moltinden à la place du Kitinden. Camp impossible au lac : 27 km au lieu d’environ 20, jusqu’à Horseid.', [['c-av', 'Avance subie'], ['c-sub', 'Substitution']]],
+    [3, '16/06', 'Ryten, Kvalvika, Kitinden, bivouac au pied du Kitinden', 'Ryten (brouillard), plage, Moltinden à la place du Kitinden. Camp impossible au lac : la journée continue jusqu’à Horseid.', [['c-av', 'Avance subie'], ['c-sub', 'Substitution']]],
     [4, '17/06', 'Horseid → bateau de 15 h → Bunes, Helvetestinden', 'Bivouac à Bunes imposé par le bateau. Helvetestinden abandonné après 1 h 15 de recherche de bivouac.', [['c-ren', 'Renoncement']]],
     [5, '18/06', 'Repos : jusqu’à Munkebu, Munken en bonus', 'Plan révisé pour regagner un jour : départ à 2 h après 2 h de sommeil, puis craquage au pied du Hermannsdalstinden. Munkebu et Munken comme prévu.', [['c-ren', 'Renoncement'], ['c-ok', 'Plan initial tenu']]],
     [6, '19/06', 'Journée 100 % trail depuis Munkebu', 'Reine, Reinebringen, l’arête, Helvete : 21 km, 1 677 m de D+.', [['c-ok', 'Contenu remplacé']]],
@@ -809,10 +809,127 @@
     [8, '21/06', 'Fin du tour du lac', 'Le jour libéré sert à la Støvla : neige après la barre rocheuse, éboulement au retour.', [['c-av', 'Jour gagné']]],
     [9, '22/06', 'Marge (météo ou forme), Støvla ou kayak', 'Gylttinden partiel, arrêt dans la grotte après les 10 000 m de D+. Kayak impossible.', [['c-ok', 'Marge utilisée']]],
   ];
+  const PL = window.RISK_PLAN;
+  const planDay = d => PL && PL.plan.days.find(x => x.day === d), realDay = d => PL && PL.real.days.find(x => x.day === d);
   function drawPlan() {
-    $('plan').innerHTML = `<thead><tr><th>Jour</th><th>Prévu</th><th>Réel</th><th>Statut</th></tr></thead><tbody>${PLAN.map(([d, dt, p, r, chips]) => `<tr><td>J${d}<br><span class="muted">${dt}</span></td><td>${p}</td><td>${r}</td><td><span class="chips">${chips.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join('')}</span></td></tr>`).join('')}</tbody>`;
+    const fk = v => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${f1(Math.abs(v))} km`, fm = v => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${f0(Math.abs(v))} m`;
+    $('plan').innerHTML = `<thead><tr><th>Jour</th><th>Prévu</th><th>Réel</th><th class="n">Écart</th><th>Statut</th></tr></thead><tbody>${PLAN.map(([d, dt, p, r, chips]) => {
+      const pd = planDay(d), rd = realDay(d);
+      const num = (x, sm) => x ? `<div class="pnum mono">${f1(x.km)} km · ${f0(x.dplus)} m D+${sm && sm.length ? ` · ${sm.join(', ')}` : ''}</div>` : '';
+      return `<tr><td>J${d}<br><span class="muted">${dt}</span></td><td>${p}${num(pd, pd && pd.summits)}</td><td>${r}${num(rd, rd && rd.summits)}</td>
+        <td class="n">${pd && rd ? `${fk(rd.km - pd.km)}<div class="muted">${fm(rd.dplus - pd.dplus)}</div>` : ''}</td><td><span class="chips">${chips.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join('')}</span></td></tr>`;
+    }).join('')}</tbody>`;
     const cnt = k => PLAN.reduce((n, p) => n + p[4].filter(c => c[0] === k).length, 0);
     readout('r-plan', `renoncements <b>${cnt('c-ren')}</b> · substitution <b>${cnt('c-sub')}</b> · abandon <b>${cnt('c-ab')}</b>`);
+    if (!PL) return;
+    const M = PL.match, P_ = PL.plan, Rl = PL.real;
+    const totR = M.bridge.find(b => b.k === 'real').v, dpR = totDp;
+    $('plan-lede').textContent = `L’itinéraire tracé avant le départ faisait ${f1(P_.km_total)} km, dont ${f1(P_.km_total - P_.km_walk)} en bateau : ${f1(P_.km_walk)} km à pied et ${f0(P_.dplus)} m de dénivelé, ${d3.sum(P_.days, d => d.summits.length)} sommets et le tour du lac d’Å, ${P_.camps.length} nuits et un jour de marge (J9 : Støvla ou kayak). La traversée réelle a fait ${f1(totR)} km et ${f0(dpR)} m. Ce qui suit explique l’écart, jour par jour.`;
+    // planned summits
+    const ab = n => M.abandoned.find(a => a.name === n);
+    const SUM = [
+      ['J1', 'Tønnåsheia', 'ab', 'Abandonné : premier jour avec le sac plus dur que prévu'],
+      ['J2', 'Volandstinden', 'ok', 'Fait'],
+      ['J3', 'Ryten', 'ok', 'Fait, dans le brouillard, au réveil depuis le camp'],
+      ['J3', 'Kitinden', 'sub', 'Remplacé par le Moltinden'],
+      ['J4', 'Helvetestinden', 'ab', 'Abandonné après 1 h 15 de recherche de bivouac sur son sentier'],
+      ['J5', 'Munken', 'ok', 'Fait, en soirée depuis Munkebu'],
+      ['J6', 'Hermannsdalstinden', 'ab', 'Abandonné au pied, après la nuit de 2 h ; journée Reinebringen–Helvete à la place'],
+      ['J7', 'Andstabben', 'ok', 'Fait, en trail depuis Sørvågen'],
+      ['J7–J8', 'Tour du lac', 'ab', 'Abandonné : déconseillé sur place, météo ; Støvla à la place'],
+      ['J9', 'Marge', 'sub', 'Utilisée : Gylttinden partiel ; kayak impossible'],
+    ];
+    const chipS = { ok: ['c-ok', 'fait'], ab: ['c-ab', 'abandonné'], sub: ['c-sub', 'remplacé'] };
+    $('plan-sum').innerHTML = `<thead><tr><th>Jour</th><th>Prévu</th><th>Statut</th><th class="n">Non fait</th></tr></thead><tbody>${SUM.map(([d, n, k, t]) => { const a = ab(n);
+      return `<tr><td class="mono">${d}</td><td><b>${n}</b><div class="muted">${t}</div></td><td><span class="chip ${chipS[k][0]}">${chipS[k][1]}</span></td><td class="n">${a ? `${f1(a.km)} km<div class="muted">${f0(a.top)} m</div>` : ''}</td></tr>`; }).join('')}</tbody>`;
+    readout('r-psum', `${SUM.filter(x => x[2] === 'ok').length} faits · ${SUM.filter(x => x[2] === 'ab').length} abandonnés · ${SUM.filter(x => x[2] === 'sub').length} remplacés`);
+    // bivouacs: planned vs real camp, and the bivouac search episodes
+    const hav = (a, b) => { const la = (b[0] - a[0]) * Math.PI / 180, lo = (b[1] - a[1]) * Math.PI / 180 * Math.cos(a[0] * Math.PI / 180); return 6371 * Math.hypot(la, lo); };
+    const bivN = P_.camps.map((c, i) => ({ p: c, r: Rl.camps[i] })).slice(1);
+    const searches = M.biv;
+    $('plan-biv').innerHTML = `<thead><tr><th>Nuit</th><th>Prévu</th><th>Réel</th><th class="n">Écart</th></tr></thead><tbody>${bivN.map(({ p, r }) => {
+      const d = hav([p.lat, p.lon], [r.lat, r.lon]), da = r.alt - p.alt;
+      return `<tr><td class="mono">${dateLbl(p.night)}</td><td>${p.name}${p.est ? '<span class="est">estimé</span>' : ''}<div class="muted mono">${f0(p.alt)} m</div></td><td>${r.name}<div class="muted mono">${f0(r.alt)} m</div></td><td class="n">${d < .3 ? 'même lieu' : `${f1(d)} km`}<div class="muted">${fm(da)}</div></td></tr>`;
+    }).join('')}</tbody>`;
+    readout('r-pbiv', `recherche de bivouac : <b>${f1(d3.sum(searches, x => x.km))} km</b> · <b>+${f0(d3.sum(searches, x => x.up))} m</b>`);
+  }
+  function drawPlanCharts() {
+    if (!PL) return;
+    const P_ = PL.plan, Rl = PL.real, M = PL.match;
+    // ---- map
+    {
+      const f = frame('c-pmap', { t: 10, r: 10, b: 10, l: 10 });
+      const all = [...P_.line.flat(), ...Rl.line.flat()];
+      const lat0 = d3.mean(all, p => p[1]), kx = Math.cos(lat0 * Math.PI / 180);
+      const xs = d3.extent(all, p => p[0] * kx), ys = d3.extent(all, p => p[1]);
+      const sc = Math.min(f.w / (xs[1] - xs[0]), f.h / (ys[1] - ys[0]));
+      const ox = (f.w - (xs[1] - xs[0]) * sc) / 2, oy = (f.h - (ys[1] - ys[0]) * sc) / 2;
+      const X = p => ox + (p[0] * kx - xs[0]) * sc, Y = p => f.h - oy - (p[1] - ys[0]) * sc;
+      const ln = d3.line().x(X).y(Y);
+      Rl.line.forEach(l => f.g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 2).attr('opacity', .85).attr('stroke-linejoin', 'round'));
+      P_.line.forEach(l => f.g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.3).attr('stroke-dasharray', '4 3').attr('opacity', .75));
+      // boat
+      const a = P_.line[0][P_.line[0].length - 1], b = P_.line[1][0];
+      f.g.append('path').attr('d', ln([a, b])).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '1 4').attr('stroke-width', 1.5).attr('fill', 'none');
+      f.g.append('text').attr('class', 'lbl').attr('x', (X(a) + X(b)) / 2 + 8).attr('y', (Y(a) + Y(b)) / 2).text('bateau');
+      const uniq = arr => arr.filter((c, i) => arr.findIndex(x => x.name === c.name) === i);
+      const pc = uniq(P_.camps), rc = uniq(Rl.camps);
+      hover(f.g.selectAll(null).data(pc).join('rect').attr('x', c => X([c.lon, c.lat]) - 5).attr('y', c => Y([c.lon, c.lat]) - 5).attr('width', 10).attr('height', 10)
+        .attr('fill', C('--bg')).attr('stroke', C('--text-primary')).attr('stroke-width', 1.6), c => `<b>Prévu · ${c.name}</b>${row('nuit', P_.camps.filter(x => x.name === c.name).map(x => dateLbl(x.night)).join(', '))}${row('altitude', `${f0(c.alt)} m`)}${c.est ? row('position', 'estimée') : ''}`);
+      hover(f.g.selectAll(null).data(rc).join('circle').attr('cx', c => X([c.lon, c.lat])).attr('cy', c => Y([c.lon, c.lat])).attr('r', 5.5)
+        .attr('fill', C('--accent')).attr('stroke', C('--bg')).attr('stroke-width', 1.5), c => `<b>Réel · ${c.name}</b>${row('nuit', Rl.camps.filter(x => x.name === c.name).map(x => dateLbl(x.night)).join(', '))}${row('altitude', `${f0(c.alt)} m`)}`);
+      if (!f.narrow) rc.forEach(c => f.g.append('text').attr('class', 'lbl-strong').attr('x', X([c.lon, c.lat]) + 9).attr('y', Y([c.lon, c.lat]) + 4).text(c.name.replace('Hauteurs de ', '').replace(' beach', '')));
+      readout('r-pmap', `plan <b>${f1(P_.km_walk)} km</b> à pied · réel <b>${f1(M.bridge.find(b => b.k === 'real').v)} km</b>`);
+      legend('l-pmap', [['dash', C('--text-primary'), 'itinéraire prévu'], ['ln', C('--accent'), 'trace réelle'], ['ring', C('--text-primary'), 'campement prévu'], ['', C('--accent'), 'campement réel']]);
+    }
+    // ---- progress on the planned route, evening after evening
+    {
+      const N = P_.camps.map((c, i) => ({ night: c.night, plan: c.km, real: Rl.camps[i].plan_km, pname: c.name, rname: Rl.camps[i].name }));
+      const f = frame('c-prog', { t: 16, r: 54, b: 34, l: 8 });
+      const x = d3.scalePoint().domain(N.map((n, i) => i)).range([0, f.w]).padding(.4);
+      const y = d3.scaleLinear().domain([0, P_.km_total]).nice().range([f.h, 0]);
+      yGrid(f.g, y, f.w, 6, v => `${v} km`);
+      xAxis(f.g, x, f.h, null, i => dateLbl(N[i].night));
+      const st = d3.line().curve(d3.curveStepAfter).x((n, i) => x(i)).y(v => y(v));
+      // shaded gap between the two
+      f.g.append('path').attr('d', d3.area().curve(d3.curveStepAfter).x((n, i) => x(i)).y0(n => y(n.plan)).y1(n => y(n.real))(N)).attr('fill', C('--accent')).attr('opacity', .12);
+      f.g.append('path').attr('d', st(N.map(n => n.plan))).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4').attr('stroke-width', 1.5);
+      f.g.append('path').attr('d', st(N.map(n => n.real))).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 2.2);
+      f.g.selectAll(null).data(N).join('circle').attr('cx', (n, i) => x(i)).attr('cy', n => y(n.real)).attr('r', 3.8).attr('fill', C('--accent'));
+      f.g.selectAll(null).data(N).join('rect').attr('x', (n, i) => x(i) - 3.5).attr('y', n => y(n.plan) - 3.5).attr('width', 7).attr('height', 7).attr('fill', C('--bg')).attr('stroke', C('--text-primary')).attr('stroke-width', 1.4);
+      N.forEach((n, i) => { const d = n.real - n.plan; if (Math.abs(d) < 1.5) return;
+        f.g.append('text').attr('class', 'lbl-strong').attr('x', x(i) + 6).attr('y', y(Math.max(n.real, n.plan)) - 8).text(`${d > 0 ? '+' : '−'}${f0(Math.abs(d))} km`).attr('fill', d > 0 ? C('--up') : C('--down')); });
+      hover(f.g.selectAll(null).data(N).join('rect').attr('class', 'hit').attr('x', (n, i) => x(i) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
+        n => `<b>Nuit du ${dateLbl(n.night)}</b>${row('prévu', `${n.pname} · km ${f1(n.plan)}`)}${row('réel', `${n.rname} · km ${f1(n.real)}`)}${row('écart', `${n.real - n.plan >= 0 ? '+' : '−'}${f1(Math.abs(n.real - n.plan))} km`)}`);
+      const best = N.reduce((b, n) => n.real - n.plan > b.real - b.plan ? n : b, N[0]);
+      readout('r-prog', `avance max <b>+${f0(best.real - best.plan)} km</b> (${dateLbl(best.night)})`);
+      legend('l-prog', [['dash', C('--text-primary'), 'campements prévus'], ['ln', C('--accent'), 'campements réels, placés sur le parcours prévu']]);
+    }
+    // ---- bridge from planned to real distance
+    {
+      const B = M.bridge, f = frame('c-bridge', { t: 8, r: 70, b: 28, l: 8 });
+      const lw = Math.min(250, f.w * .42);
+      let run = 0; const D = B.map(b => { if (b.k === 'plan' || b.k === 'real') { run = b.v; return { ...b, a: 0, z: b.v }; } const a = run; run += b.v; return { ...b, a, z: run }; });
+      const x = d3.scaleLinear().domain([0, d3.max(D, d => Math.max(d.a, d.z)) * 1.04]).range([0, f.w - lw]);
+      const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.28);
+      const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
+      g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(6).tickSize(f.h).tickFormat('')).lower();
+      g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
+      const col = d => d.k === 'plan' || d.k === 'real' ? C('--accent') : d.v < 0 ? C('--up') : d.k === 'gps' || d.k === 'noise' ? C('--text-muted') : C('--down');
+      D.forEach((d, i) => {
+        f.g.append('text').attr('class', d.k === 'plan' || d.k === 'real' ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
+        g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', d.k === 'plan' || d.k === 'real' ? .9 : .75);
+        if (i < D.length - 1) g.append('line').attr('x1', x(d.z)).attr('x2', x(d.z)).attr('y1', y(d.k) + y.bandwidth()).attr('y2', y(D[i + 1].k)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '2 2');
+        g.append('text').attr('class', 'lbl-strong').attr('x', x(Math.max(d.a, d.z)) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em')
+          .text(d.k === 'plan' || d.k === 'real' ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
+      });
+      readout('r-bridge', `tracé commun : la montre mesure <b>×${F('.2f')(M.gps_ratio)}</b> la longueur du tracé`);
+    }
+    // ---- text
+    const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km);
+    const ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5), behind = N.map((d, i) => [d, i]).filter(([d]) => d < -1.5);
+    const biv = d3.sum(M.biv, x => x.km), bivUp = d3.sum(M.biv, x => x.up);
+    $('t-plan').textContent = `Le plan prévoyait ${f1(P_.km_walk)} km à pied ; la traversée en a fait ${f1(B.real)}. L’écart ne vient pas d’un plan mal calibré : ${f1(-B.ab)} km de sommets abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac) sont plus que compensés par ${f1(B.add)} km de sorties ajoutées ou substituées (Moltinden, Reinebringen–Helvete, Støvla, Gylttinden), et la montre mesure ${f0((M.gps_ratio - 1) * 100)} % de plus que le tracé sur le parcours commun (+${f1(B.gps)} km). La recherche de bivouac pèse ${f1(biv)} km et ${f0(bivUp)} m de montée, surtout à Bunes. Sur l’avancement, les soirs des ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} sont en avance sur la feuille de route (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) ; le bateau du J4 ramène l’avancement sur le plan. À partir du ${dateLbl(P_.camps[behind[0][1]].night)}, le retard est choisi : camp fixe à Sørvågen, tour du lac abandonné et jour de marge consommé par le Støvla.`;
   }
 
   /* ---------- 14 · conclusion ---------- */
@@ -1070,7 +1187,7 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, () => drawMc(false), drawScatter, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, () => drawMc(false), drawScatter, drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
