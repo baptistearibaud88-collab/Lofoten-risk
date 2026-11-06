@@ -309,7 +309,7 @@
   const nearest = km => R.series[d3.minIndex(R.series, s => Math.abs(s.km - km))];
   function drawRoll() {
     const S = R.series, maxKm = S[S.length - 1].km, S2 = S.filter(s => s.sd != null);
-    const EPS = EP.episodes, pc = v => Math.exp(v) - 1, fpc = v => `${v >= 0 ? '+' : '−'}${f0(Math.abs(pc(v)) * 100)} %`;
+    const EPS = EP.episodes.filter(d => d.sign < 0 || Math.round(d.lost_min) >= 5), pc = v => Math.exp(v) - 1, fpc = v => `${v >= 0 ? '+' : '−'}${f0(Math.abs(pc(v)) * 100)} %`;
     const epAt = i => EPS.find(x => i >= x.i0 && i <= x.i1);
     const m = { t: 22, r: 62, b: 6, l: 8 };
     const f = frame('c-bands', m);
@@ -328,6 +328,7 @@
     d3.groups(S2, s => s.day).forEach(([, v]) => cg.append('path').attr('d', d3.line().x(s => x(s.km)).y(s => y(cl(s.m))).curve(d3.curveMonotoneX)(v)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 1.8));
     // labels on the three costliest slow episodes
     const slow = EPS.filter(d => d.sign > 0).sort((a, b) => b.lost_min - a.lost_min);
+    const MAJ = slow.filter(d => Math.round(d.lost_min) >= 10), PAU = slow.filter(d => Math.round(d.lost_min) < 10);
     slow.slice(0, f.narrow ? 2 : 4).forEach(d => {
       const cx = (x0(d.i0) + x(S[d.i1].km)) / 2;
       f.g.append('text').attr('class', 'lbl-strong').attr('x', cx).attr('y', y(1.3) + 12).attr('text-anchor', cx > f.w - 60 ? 'end' : 'middle').text(`${f0(d.lost_min)} min`);
@@ -353,8 +354,7 @@
     axTag(g2.g, g2.w + 2, y2(thr), `P90 ${f2(thr)}`).select('rect').attr('fill', C('--down'));
     R.alerts.forEach(a => { const t = warnTri(g2.g, x2(a.km), 8, .8); t.on('pointermove', ev => showTip(ev, `<b>${a.titre}</b>${row('km', f1(a.km))}${row('σ₂ₖₘ', a.sd == null ? '–' : f2(a.sd))}`)).on('pointerleave', hideTip); });
     const above = S2.filter(s => s.sd > thr).length;
-    const slowMin = d3.sum(slow, d => d.lost_min), slowKm = d3.sum(slow, d => d.len);
-    const def = `${slow.length} épisodes lents · <b>${f0(slowMin)} min</b> perdues sur ${f0(slowKm)} km`;
+    const def = `${slow.length} épisodes lents · <b>${f0(d3.sum(slow, d => d.lost_min))} min</b> perdues sur ${f0(d3.sum(slow, d => d.len))} km`;
     readout('r-roll', def);
     const c1 = crossH(f), c2 = crossH(g2);
     const move = (ev, xs) => {
@@ -368,40 +368,45 @@
     g2.g.append('rect').attr('class', 'hit').attr('y', 16).attr('width', g2.w).attr('height', g2.h - 16).on('pointermove', ev => move(ev, x2)).on('pointerleave', leave);
     legend('l-roll', [['ln', C('--text-muted'), 'tronçon'], ['ln', C('--accent'), 'moyenne glissante 2 km'], ['', C('--down'), 'épisode lent / irrégularité > P90'], ['', C('--up'), 'épisode rapide'], ['', C('--warning'), 'alerte']]);
 
-    // table of slow episodes, with their causes
+    // table of the costly slow episodes (>= 10 min), with their causes
     const RS = window.RESSENTIS_EPISODES || {};
     const CAUSE = {
+      sentier: ['Sentier peu visible', '--series-sans', 'Terrain subi'],
       terrain_instable: ['Terrain instable', '--critical', 'Terrain subi'],
-      hors_sentier: ['Hors sentier', '--series-sans', 'Terrain subi'],
       meteo: ['Météo', '--series-avec', 'Météo subie'],
-      itineraire: ['Itinéraire peu lisible', '--warning', 'Itinéraire'],
       evaluation: ['Évaluation', '--accent', 'Arrêts et décisions'],
       arret: ['Arrêt', '--text-muted', 'Arrêts et décisions'],
+      pause: ['Autre · pause probable', '--hair', 'Pauses probables'],
     };
     const chip = (k, main) => `<span class="cause${main ? '' : ' sec'}"><i style="background:${C(CAUSE[k][1])}"></i>${CAUSE[k][0]}</span>`;
-    readout('r-ep', `${slow.length} épisodes · ${f0(slowMin)} min`);
-    $('ep-table').innerHTML = `<thead><tr><th class="n">#</th><th>Jour</th><th>Sortie</th><th class="n">km</th><th class="n">Réel / prévu</th><th class="n">Perdu</th><th>Cote</th><th>Cause</th></tr></thead><tbody>${slow.map((d, k) => {
+    const majMin = d3.sum(MAJ, d => d.lost_min), pauMin = d3.sum(PAU, d => d.lost_min);
+    readout('r-ep', `${MAJ.length} épisodes de 10 min ou plus · ${f0(majMin)} min`);
+    $('ep-table').innerHTML = `<thead><tr><th class="n">#</th><th>Jour</th><th>Sortie</th><th class="n">km</th><th class="n">Réel / prévu</th><th class="n">Perdu</th><th>Cote</th><th>Cause</th></tr></thead><tbody>${MAJ.map((d, k) => {
       const r = rowOf(d.act), rs = RS[d.id];
       return `<tr title="${d.id}"><td class="n">${k + 1}</td><td class="mono">${dayLbl(d.day)}</td><td class="nw"><span class="dot" style="background:${d.sac ? C('--series-avec') : C('--series-sans')}" title="${d.sac ? 'avec le sac' : 'trail'}"></span>${r.name}</td>
         <td class="n">${f1(d.km0)}–${f1(d.km1)}<div class="muted">${f1(d.len)} km</div></td><td class="n">${f0(d.real_min)} / ${f0(d.real_min - d.lost_min)} min</td>
-        <td class="n"><b>+${f0(d.lost_min)} min</b><span class="zbar" style="width:${Math.round(d.lost_min / slow[0].lost_min * 46)}px"></span></td>
+        <td class="n"><b>+${f0(d.lost_min)} min</b><span class="zbar" style="width:${Math.round(d.lost_min / MAJ[0].lost_min * 46)}px"></span></td>
         <td><span class="chipg l${d.grade}"><i></i>${GL[d.grade]}</span><div class="muted mono">pente ${d.slope > 0 ? '+' : ''}${f0(d.slope)} %</div></td>
         <td>${rs ? `<div class="causes">${rs.causes.map((c, j) => chip(c, !j)).join('')}${rs.certitude === 'probable' ? '<span class="est">probable</span>' : ''}</div><div class="cause-d">${rs.detail}</div>` : `<div class="causes"><span class="cause sec">non qualifié</span></div><div class="cause-d muted">Note de la sortie : ${r.note}</div>`}${d.alert.length ? `<div class="causes" style="margin-top:4px"><span class="tag"><svg viewBox="-8 -8 16 15"><path d="M0,-7 7,5.5 -7,5.5Z" fill="currentColor"/></svg>${d.alert.join(', ')}</span></div>` : ''}</td>
 </tr>`;
     }).join('')}</tbody>`;
-    // minutes lost by main cause
-    const byC = Object.keys(CAUSE).map(k => ({ k, min: d3.sum(slow.filter(d => RS[d.id] && RS[d.id].causes[0] === k), d => d.lost_min), n: slow.filter(d => RS[d.id] && RS[d.id].causes[0] === k).length })).filter(c => c.n);
-    const unq = slow.filter(d => !RS[d.id]), unqMin = d3.sum(unq, d => d.lost_min);
-    const fam = d3.rollups(byC, v => d3.sum(v, c => c.min), c => CAUSE[c.k][2]).sort((a, b) => b[1] - a[1]);
-    const bars = byC.sort((a, b) => b.min - a.min).concat(unq.length ? [{ k: null, min: unqMin, n: unq.length }] : []);
-    $('cause-mix').innerHTML = `<div class="gm-bar">${bars.map(c => `<i style="flex:${c.min};background:${c.k ? C(CAUSE[c.k][1]) : 'var(--surface-3)'}" title="${c.k ? CAUSE[c.k][0] : 'non qualifié'}"></i>`).join('')}</div>
-      <div class="gm-rows">${bars.map(c => `<div class="gm-row"><i style="background:${c.k ? C(CAUSE[c.k][1]) : 'var(--surface-3)'}"></i><span>${c.k ? CAUSE[c.k][0] : 'Non qualifié'} <span class="mono">· ${c.n} épisode${c.n > 1 ? 's' : ''}</span></span><span class="mono">${f0(c.min)} min</span><span class="mono"><b>${f0(c.min / slowMin * 100)} %</b></span></div>`).join('')}</div>`;
-    $('cause-fam').innerHTML = fam.map(([fm, mn]) => `<div class="gm-row"><span></span><span>${fm}</span><span class="mono">${f0(mn)} min</span><span class="mono"><b>${f0(mn / (slowMin - unqMin) * 100)} %</b></span></div>`).join('');
-    readout('r-cause', `${slow.length - unq.length} épisodes qualifiés · ${f0((slowMin - unqMin) / slowMin * 100)} % du temps perdu`);
+    $('ep-pause').innerHTML = `${PAU.length} épisodes plus courts, de 5 à 10 min chacun (${f0(pauMin)} min au total), ne sont pas détaillés : ce sont très probablement des pauses. Ils sont comptés dans le bilan sous « Autre · pause probable ».`;
+    // minutes lost by main cause (costly episodes) + the probable pauses
+    const mainOf = d => RS[d.id] ? RS[d.id].causes[0] : null;
+    const groups = Object.keys(CAUSE).filter(k => k !== 'pause').map(k => ({ k, eps: MAJ.filter(d => mainOf(d) === k) })).filter(c => c.eps.length)
+      .map(c => ({ k: c.k, min: d3.sum(c.eps, d => d.lost_min), n: c.eps.length })).sort((a, b) => b.min - a.min);
+    const unq = MAJ.filter(d => !mainOf(d));
+    const bars = groups.concat(unq.length ? [{ k: null, min: d3.sum(unq, d => d.lost_min), n: unq.length }] : [], PAU.length ? [{ k: 'pause', min: pauMin, n: PAU.length }] : []);
+    const totMin = majMin + pauMin, col = c => c.k ? C(CAUSE[c.k][1]) : 'var(--surface-3)', lab = c => c.k ? CAUSE[c.k][0] : 'Non qualifié';
+    $('cause-mix').innerHTML = `<div class="gm-bar">${bars.map(c => `<i style="flex:${c.min};background:${col(c)}" title="${lab(c)}"></i>`).join('')}</div>
+      <div class="gm-rows">${bars.map(c => `<div class="gm-row"><i style="background:${col(c)}"></i><span>${lab(c)} <span class="mono">· ${c.n} épisode${c.n > 1 ? 's' : ''}</span></span><span class="mono">${f0(c.min)} min</span><span class="mono"><b>${f0(c.min / totMin * 100)} %</b></span></div>`).join('')}</div>`;
+    const fam = d3.rollups(bars.filter(c => c.k), v => d3.sum(v, c => c.min), c => CAUSE[c.k][2]).sort((a, b) => b[1] - a[1]);
+    $('cause-fam').innerHTML = fam.map(([fm, mn]) => `<div class="gm-row"><span></span><span>${fm}</span><span class="mono">${f0(mn)} min</span><span class="mono"><b>${f0(mn / totMin * 100)} %</b></span></div>`).join('');
+    readout('r-cause', `${slow.length} épisodes · ${f0(totMin)} min`);
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
     $('ep-fast').innerHTML = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${fast.filter(d => d.gps).map(d => actName(d.act)).join(' et ')} sont écartés : une pente GPS de plus de 50 % fausse le temps prévu.`;
-    const top3 = d3.sum(slow.slice(0, 3), d => d.lost_min), wet = slow.slice(0, 3).map(d => actName(d.act));
-    $('t-roll').textContent = `${slow.length} épisodes lents coûtent ${f0(slowMin)} min sur ${f0(slowKm)} km, soit ${f0(slowKm / maxKm * 100)} % du parcours. Les trois premiers (${wet.join(', ')}) en font à eux seuls ${f0(top3 / slowMin * 100)} %. ${slow.filter(d => d.slope < 5).length} des ${slow.length} épisodes lents sont en descente ou à plat, et non en montée : le temps se perd là où le pied cherche sa place, pas là où le souffle manque. Une fois les épisodes qualifiés, ${fam.map(([fm, mn]) => `${fm.toLowerCase()} ${f0(mn / (slowMin - unqMin) * 100)} %`).join(', ')} du temps perdu : l’essentiel est subi, et la part des arrêts relève de décisions prises sur place (repérer un bivouac, juger un passage, se ravitailler). L’irrégularité dépasse son seuil P90 sur ${f0(above / S2.length * 100)} % du parcours, surtout sur les sorties de trail en montagne.`;
+    const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
+    $('t-roll').textContent = `${MAJ.length} épisodes de 10 min ou plus coûtent ${f0(majMin)} min sur ${f0(d3.sum(MAJ, d => d.len))} km ; ${PAU.length} épisodes plus courts, probablement des pauses, en ajoutent ${f0(pauMin)}. ${(n => n === MAJ.length ? `Tous les ${n} épisodes coûteux sont` : `${n} des ${MAJ.length} épisodes coûteux sont`)(MAJ.filter(d => d.slope < 5).length)} en descente ou à plat : le temps se perd là où le pied cherche sa place, pas là où le souffle manque. La première cause est « ${CAUSE[top.k][0]} » (${f0(top.min / totMin * 100)} % du temps perdu, ${top.n} épisodes) ; avec le terrain instable et la météo, ${f0(subi / totMin * 100)} % du temps perdu est subi. Le reste relève de décisions prises sur place (repérer un bivouac, juger un passage) et de pauses. L’irrégularité dépasse son seuil P90 sur ${f0(above / S2.length * 100)} % du parcours, surtout sur les sorties de trail en montagne.`;
   }
 
   /* ---------- 06 · persistence: raw vs within terrain section, and carry-over ---------- */
