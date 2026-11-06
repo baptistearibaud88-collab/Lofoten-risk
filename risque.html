@@ -250,7 +250,7 @@
 
   <section id="s10">
     <header class="sh"><span class="num">10</span><h2>L’indice de danger, sortie par sortie</h2></header>
-    <p class="lede">Cinq facteurs, ramenés sur la même échelle puis pondérés : cote du terrain (30 %), pente des passages raides (15 %), irrégularité de l’allure (20 %), météo pendant la sortie (20 %) et fatigue de la nuit précédente (15 %). L’indice est construit <i>sans</i> regarder les alertes ; on vérifie ensuite où elles tombent.</p>
+    <p class="lede">Cinq facteurs, ramenés sur la même échelle puis pondérés : cote du terrain (30 %), pente des passages raides (15 %), irrégularité de l’allure (20 %), météo pendant la sortie (20 %) et fatigue de la nuit précédente (15 %). L’indice est construit <i>sans</i> regarder les alertes ; on vérifie ensuite où elles tombent. Dans le tableau, les cinq cases de la colonne « Facteurs » suivent cet ordre : <b>T</b> terrain, <b>P</b> pente, <b>I</b> irrégularité, <b>M</b> météo, <b>F</b> fatigue.</p>
     <div class="pc">
       <div class="pc-head"><span class="pc-t">Tableau de bord des 25 sorties</span><span class="pc-r mono" id="r-index"></span></div>
       <div class="table-wrap flat"><table class="data score" id="index-table"></table></div>
@@ -265,7 +265,7 @@
 
   <section id="s11">
     <header class="sh"><span class="num">11</span><h2>Simulation Monte Carlo : 5 000 traversées</h2></header>
-    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent les queues épaisses et la persistance des écarts. Les deux modèles ont le même centre ; seule la dispersion change.</p>
+    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent les queues épaisses et la persistance des écarts. Les deux modèles ont le même centre ; seule la dispersion change. Ils sont calés sur le temps total réel : la trajectoire réelle finit donc à zéro par construction, et ce qui compte est son chemin, en avance puis rattrapée.</p>
     <div class="pc">
       <div class="pc-head mc-head">
         <div class="segctl" role="group" aria-label="Hypothèse de tirage">
@@ -284,7 +284,7 @@
       <div class="table-wrap flat"><table class="data" id="mc-table"></table></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Le cône contient 90 % des simulations (P5–P95). La distribution à droite montre où arrivent les 5 000 traversées. La trajectoire blanche est la traversée réelle. Les pointillés jaunes rappellent le cône de l’autre modèle.</p></div>
+      <div><h4>Comment lire</h4><p>Le cône contient 90 % des simulations (P5–P95). La distribution à droite montre où arrivent les 5 000 traversées. La trajectoire blanche est la traversée réelle : son écart cumulé au temps prévu, kilomètre après kilomètre. Elle finit à 0 h parce que le temps prévu est calé sur le temps réel total ; le point marque sa plus grande avance. Les pointillés jaunes rappellent le cône de l’autre modèle.</p></div>
       <div><h4>Méthode</h4><p>Temps attendu de chaque tronçon multiplié par e<sup>ε</sup>. Modèle normal : ε ~ N(0, σ²), indépendants. Modèle par blocs : blocs de 8 écarts réels tirés avec remise et mis bout à bout. Les deux sont recentrés sur le temps réel total.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-mc"></p></div>
     </div>
@@ -439,6 +439,6 @@
 <script src="risque_sections.js?v=20261106-1"></script>
 <script src="risque_episodes.js?v=20261106-3"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261106-10"></script>
+<script src="risque.js?v=20261106-11"></script>
 </body>
 </html>

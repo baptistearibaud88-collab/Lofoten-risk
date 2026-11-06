@@ -694,7 +694,9 @@
     });
     hg.append('text').attr('class', 'lbl').attr('x', 0).attr('y', -10).text(narrow ? 'arrivée' : 'distribution à l’arrivée');
     const lastR = MC.real_dev[MC.real_dev.length - 1];
-    const realL = f.g.append('text').attr('class', 'lbl-ink').attr('x', x(K[d3.minIndex(MC.real_dev)])).attr('y', y(d3.min(MC.real_dev)) + 18).attr('text-anchor', 'middle').text(`réel : ${F('+.1f')(d3.min(MC.real_dev))} h`);
+    const lo = d3.minIndex(MC.real_dev), realL = f.g.append('g');
+    realL.append('circle').attr('cx', x(K[lo])).attr('cy', y(MC.real_dev[lo])).attr('r', 4.5).attr('fill', C('--text-primary')).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
+    realL.append('text').attr('class', 'lbl-ink').attr('x', x(K[lo])).attr('y', y(MC.real_dev[lo]) + 20).attr('text-anchor', 'middle').text(`réel : ${hm(-MC.real_dev[lo])} d’avance au plus fort (${dayLbl(MC.seg_day[lo])})`);
     // crosshair
     const ch = f.g.append('line').attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-muted')).style('display', 'none');
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
