@@ -164,9 +164,19 @@
       <div class="table-wrap flat"><table class="data" id="ep-table"></table></div>
       <div class="pc-foot"><span class="muted" id="ep-fast"></span></div>
     </div>
+    <div class="grid-2 g-terrain">
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Temps perdu par cause principale</span><span class="pc-r mono" id="r-cause"></span></div>
+        <div class="grade-mix" id="cause-mix"></div>
+      </div>
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Par famille, sur les épisodes qualifiés</span></div>
+        <div class="grade-mix"><div class="gm-rows" id="cause-fam"></div></div>
+      </div>
+    </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Au-dessus de zéro, plus lent que prévu ; en dessous, plus rapide. La courbe épaisse lisse le bruit sur 2 km. Le panneau du bas mesure l’irrégularité : il monte quand des tronçons lents et rapides alternent, c’est-à-dire quand l’allure ne se laisse plus prévoir, même si elle reste juste en moyenne. Dans le tableau, « perdu » est le temps passé en plus du temps prévu sur l’épisode, en minutes. La colonne « Ressenti » donne ce que j’ai vécu sur place : c’est elle qui dit si le temps perdu vient du terrain, de la météo, de la fatigue ou d’une décision.</p></div>
-      <div><h4>Méthode</h4><p>e = ln(temps réel ÷ temps prévu), temps réel en mouvement issu de la montre. Épisode : au moins 3 tronçons consécutifs de la même sortie dont la moyenne de e sur 3 tronçons dépasse ±0,20 (environ 22 % plus lent ou 18 % plus rapide). Un épisode qui contient une pente GPS de plus de 50 % est signalé : l’altitude y est douteuse et le temps prévu aussi.</p></div>
+      <div><h4>Comment lire</h4><p>Au-dessus de zéro, plus lent que prévu ; en dessous, plus rapide. La courbe épaisse lisse le bruit sur 2 km. Le panneau du bas mesure l’irrégularité : il monte quand des tronçons lents et rapides alternent, c’est-à-dire quand l’allure ne se laisse plus prévoir, même si elle reste juste en moyenne. Dans le tableau, « perdu » est le temps passé en plus du temps prévu sur l’épisode, en minutes. La colonne « Cause » dit d’où vient le temps perdu : terrain, météo, itinéraire, ou arrêt et décision sur place. La pastille pleine est la cause principale, les autres sont secondaires.</p></div>
+      <div><h4>Méthode</h4><p>e = ln(temps réel ÷ temps prévu), temps réel en mouvement issu de la montre. Épisode : au moins 3 tronçons consécutifs de la même sortie dont la moyenne de e sur 3 tronçons dépasse ±0,20 (environ 22 % plus lent ou 18 % plus rapide). Un épisode qui contient une pente GPS de plus de 50 % est signalé : l’altitude y est douteuse et le temps prévu aussi. Causes qualifiées après coup à partir du terrain, en six catégories : terrain instable, hors sentier, météo, itinéraire peu lisible, évaluation (d’un passage ou d’un bivouac), arrêt (ravitaillement, rencontre, sac). Le bilan ne compte que la cause principale ; « probable » marque une cause incertaine.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-roll"></p></div>
     </div>
   </section>
@@ -420,7 +430,7 @@
 <script src="risque_data.js?v=20261105-8"></script>
 <script src="risque_sections.js?v=20261106-1"></script>
 <script src="risque_episodes.js?v=20261106-1"></script>
-<script src="ressentis_episodes.js?v=20261106-1"></script>
-<script src="risque.js?v=20261106-3"></script>
+<script src="ressentis_episodes.js?v=20261106-2"></script>
+<script src="risque.js?v=20261106-6"></script>
 </body>
 </html>
