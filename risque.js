@@ -183,11 +183,12 @@
     legend('l-candles', [['', C('--up'), 'arrivée plus haute'], ['', C('--down'), 'arrivée plus basse'], ['', `color-mix(in srgb, ${C('--text-secondary')} 80%, transparent)`, 'D+ sans sac (plein) / avec sac (clair)']]);
     const big = data.reduce((a, b) => b.dplus > a.dplus ? b : a);
     const sansShare = d3.sum(data, d => d.dplus - d.dplus_sac) / d3.sum(data, d => d.dplus);
-    $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). Après la descente du J7 vers Sørvågen, <b>bougies plates</b> : le camp ne bouge plus, tout se fait en trail.`;
+    $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). <b>J8</b> : le campement n’a pas bougé, d’où la bougie plate.<br><br>Ce relief n’est pas qu’un décor : avec ou sans sac, en traversée ou en sommet, chaque journée expose à un risque différent. Reste à voir comment ce dénivelé et ce profil ont pesé sur la prise de risque, et où le risque s’est réellement concentré. Première étape : qualifier le terrain.`;
   }
 
   /* ---------- 02 · terrain grading ---------- */
   const isEst = r => /critères/.test(r.src) && !/68north|Horizon|Hunting/.test(r.src);
+  const srcL = r => isEst(r) ? 'DNT' : r.src;
   function drawTerrain() {
     const S = R.series, maxKm = S[S.length - 1].km;
     const m = { t: 22, r: 58, b: 30, l: 8 };
@@ -217,7 +218,7 @@
         const [mx] = d3.pointer(ev); const si = d3.minIndex(S, q => Math.abs(q.km - x.invert(mx))), s = S[si], r = rowOf(s.act), g = segG(si), sec = secOf(si);
         ch.show(x(s.km), y(s.alt), `${f0(s.alt)} m`, `${f1(s.km)} km`);
         readout('r-terrain', `<b>${dayLbl(s.day)}</b> ${r.name} · <b>${GL[g]}</b>${g === r.grade ? ` · ${r.sac_t}` : ` · passage clé ${GL[r.grade]}`}`);
-        showTip(ev, `<b>${r.name} · ${dayLbl(s.day)}</b>${row('cote ici', GL[g])}${sec ? row('section', `${f1(sec.i0 ? S[sec.i0 - 1].km : 0)} → ${f1(S[sec.i1].km)} km`) : ''}${row('pourquoi', sec ? secWhy(sec) : 'cote de la sortie')}${row('passage clé', `${GL[r.grade]} · ${r.sac_t}`)}${row('altitude', `${f0(s.alt)} m`)}${row('pente du tronçon', `${s.slope} %`)}${row('source', r.src)}`);
+        showTip(ev, `<b>${r.name} · ${dayLbl(s.day)}</b>${row('cote ici', GL[g])}${sec ? row('section', `${f1(sec.i0 ? S[sec.i0 - 1].km : 0)} → ${f1(S[sec.i1].km)} km`) : ''}${row('pourquoi', sec ? secWhy(sec) : 'cote de la sortie')}${row('passage clé', `${GL[r.grade]} · ${r.sac_t}`)}${row('altitude', `${f0(s.alt)} m`)}${row('pente du tronçon', `${s.slope} %`)}${row('source', srcL(r))}`);
       }).on('pointerleave', () => { ch.hide(); hideTip(); readout('r-terrain', def); });
     legend('l-terrain', [1, 2, 3, 4].map(g => ['', g === 4 ? `${gcol(4)};box-shadow:inset 0 0 0 1px var(--text-muted)` : gcol(g), GL[g]]).concat([['', C('--warning'), 'alerte']]));
 
@@ -234,9 +235,9 @@
     const rows = [...R.rows].sort((a, b) => a.day - b.day || 0);
     const split = r => { const ss = SEC.sections.filter(x => x.act === r.id), k = x => d3.sum(d3.range(x.i0, x.i1 + 1), segKm), tot = d3.sum(ss, k);
       return `<span class="secbar" title="${ss.map(x => `${GL[x.g]} ${f1(k(x) / tot * r.km)} km (${secWhy(x)})`).join(' · ')}">${ss.map(x => `<i style="flex:${k(x)};background:${gcol(x.g)}${x.g === 4 ? ';box-shadow:inset 0 0 0 1px var(--text-muted)' : ''}"></i>`).join('')}</span>`; };
-    $('terrain-table').innerHTML = `<thead><tr><th>Jour</th><th>Sortie</th><th>Passage clé</th><th>CAS</th><th>Découpage</th><th class="n">km</th><th class="n">D+</th><th class="n">Pente raide</th><th>Source</th></tr></thead><tbody>${rows.map(r => `<tr><td class="nw mono">${dayLbl(r.day)}</td><td>${r.name}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td class="mono">${r.sac_t}</td><td>${split(r)}</td><td class="n">${f1(r.km)}</td><td class="n">${f0(r.dplus)}</td><td class="n">${f0(r.pente_max)} %</td><td class="muted">${r.src}${isEst(r) ? '<span class="est">estimée</span>' : ''}</td></tr>`).join('')}</tbody>`;
+    $('terrain-table').innerHTML = `<thead><tr><th>Jour</th><th>Sortie</th><th>Passage clé</th><th>CAS</th><th>Découpage</th><th class="n">km</th><th class="n">D+</th><th class="n">Pente raide</th><th>Source</th></tr></thead><tbody>${rows.map(r => `<tr><td class="nw mono">${dayLbl(r.day)}</td><td>${r.name}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td class="mono">${r.sac_t}</td><td>${split(r)}</td><td class="n">${f1(r.km)}</td><td class="n">${f0(r.dplus)}</td><td class="n">${f0(r.pente_max)} %</td><td class="muted">${srcL(r)}</td></tr>`).join('')}</tbody>`;
     const alG = R.alerts.map(a => segG(a.seg));
-    $('t-terrain').textContent = `Une fois les plats roulants et les sentiers déjà cotés plus bas mis à part, le terrain exigeant ou expert représente ${f0(share(3) * 100)} % de la distance (contre ${f0(d3.sum(R.rows.filter(r => r.grade >= 3), r => r.km) / totKm * 100)} % en cotant chaque sortie d’un bloc). Il concentre ${alG.filter(g => g >= 3).length === alG.length ? 'les' : `${alG.filter(g => g >= 3).length} des`} ${alG.length} alertes analysées. Les deux sorties expertes (l’arête Reinebringen–Helvete et le Støvla) ont été faites sans le sac, en trail. Plus haut sur l’échelle, plus lent : chaque niveau de cote ajoute ${fs0(sens['terrain (+1 niveau)'].pct)} % au temps de passage (partie 07, estimé pour l’instant avec la cote de la sortie entière).`;
+    $('t-terrain').innerHTML = `<b>${f0(share(3) * 100)} %</b> de la distance en terrain exigeant ou expert. Chaque niveau de cote ajoute <b>${fs0(sens['terrain (+1 niveau)'].pct)} %</b> au temps de passage.<br><br>La traversée est maintenant découpée et cotée sérieusement : on peut analyser la prise de risque en profondeur. Cette cotation est déjà une analyse de risque en soi : elle combine des facteurs quantitatifs et déterministes (pente, D+, longueur, exposition) et l’évaluation officielle de guides qui connaissent le terrain.`;
   }
 
   /* ---------- 03 · distribution ---------- */
