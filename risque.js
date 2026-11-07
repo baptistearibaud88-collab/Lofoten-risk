@@ -150,16 +150,17 @@
     const data = R.candles;
     const m = { t: 22, r: 58, b: 26, l: 8 };
     const f = frame('c-candles', m);
-    const x = d3.scaleBand().domain(data.map(d => d.day)).range([0, f.w]).paddingInner(.08).paddingOuter(.04);
+    const step = Math.min(f.w / data.length, f.narrow ? 40 : 64), gw = step * data.length, off = (f.w - gw) / 2;
+    const x = d3.scaleBand().domain(data.map(d => d.day)).range([off, off + gw]).padding(.5);
     const y = d3.scaleLinear().domain([0, d3.max(data, d => d.h) * 1.12]).nice().range([f.h, 0]);
     yGrid(f.g, y, f.w, 5, v => `${f0(v)} m`);
-    xAxis(f.g, x, f.h, null, d => f.narrow ? dayLbl(d) : `${dayLbl(d)} ${dateLbl(data.find(c => c.day === d).date)}`);
-    const bw = x.bandwidth(), up = d => d.c >= d.o;
+    xAxis(f.g, x, f.h, null, d => dayLbl(d));
+    const bw = Math.max(8, Math.min(step * .46, 24)), up = d => d.c >= d.o;
     const cg = f.g.selectAll('.cd').data(data).join('g').attr('transform', d => `translate(${x(d.day) + x.bandwidth() / 2},0)`);
-    cg.append('line').attr('y1', d => y(d.h)).attr('y2', d => y(d.l)).attr('stroke', d => up(d) ? C('--up') : C('--down')).attr('stroke-width', 1.4);
-    cg.append('rect').attr('x', -bw / 2).attr('width', bw).attr('rx', 1.5)
+    cg.append('line').attr('y1', d => y(d.h)).attr('y2', d => y(d.l)).attr('stroke', d => up(d) ? C('--up') : C('--down')).attr('stroke-width', 1).attr('shape-rendering', 'crispEdges');
+    cg.append('rect').attr('x', -bw / 2).attr('width', bw).attr('rx', 0)
       .attr('y', d => y(Math.max(d.o, d.c))).attr('height', d => Math.max(1.5, Math.abs(y(d.o) - y(d.c))))
-      .attr('fill', d => up(d) ? C('--up') : C('--down')).attr('fill-opacity', .9);
+      .attr('fill', d => up(d) ? C('--up') : C('--down')).attr('stroke', d => up(d) ? C('--up') : C('--down')).attr('stroke-width', 1).attr('shape-rendering', 'crispEdges');
     const top = data.reduce((a, b) => b.h > a.h ? b : a);
     const last = data[data.length - 1];
     const ro = d => `<b>${dayLbl(d.day)} ${dateLbl(d.date)}</b>  O <b>${f0(d.o)}</b>  H <b>${f0(d.h)}</b>  B <b>${f0(d.l)}</b>  C <b class="${up(d) ? 'u' : 'd'}">${f0(d.c)}</b>  D+ <b>${f0(d.dplus)}</b>`;
@@ -168,17 +169,17 @@
     const ch = crossH(f);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
       .on('pointermove', ev => {
-        const [mx, my] = d3.pointer(ev); const d = data[Math.max(0, Math.min(data.length - 1, Math.floor(mx / x.step())))];
+        const [mx, my] = d3.pointer(ev); const d = data[Math.max(0, Math.min(data.length - 1, Math.floor((mx - off) / x.step())))];
         ch.show(x(d.day) + x.bandwidth() / 2, my, `${f0(y.invert(my))} m`); readout('r-candles', ro(d));
         showTip(ev, `<b>${dayLbl(d.day)} · ${dateLbl(d.date)}</b>${row('départ', `${f0(d.o)} m`)}${row('point haut', `${f0(d.h)} m`)}${row('point bas', `${f0(d.l)} m`)}${row('arrivée', `${f0(d.c)} m`)}${row('distance', `${f1(d.km)} km`)}${row('D+ (dont avec sac)', `${f0(d.dplus)} m (${f0(d.dplus_sac)})`)}${row('en mouvement', hm(d.mov_h))}`);
       }).on('pointerleave', () => { ch.hide(); hideTip(); readout('r-candles', def); });
 
     const v = frame('c-volume', { t: 6, r: 58, b: 6, l: 8 });
-    const xv = x.copy().range([0, v.w]);
+    const xv = x.copy();
     const yv = d3.scaleLinear().domain([0, d3.max(data, d => d.dplus)]).nice().range([v.h, 0]);
     yGrid(v.g, yv, v.w, 2, v_ => f0(v_));
     const vb = v.g.selectAll('.vb').data(data).join('g').attr('transform', d => `translate(${xv(d.day) + xv.bandwidth() / 2 - bw / 2},0)`);
-    vb.append('path').attr('d', d => barPath(0, yv(0), bw, yv(d.dplus), 1.5)).attr('fill', d => up(d) ? C('--up') : C('--down')).attr('fill-opacity', .35);
+    vb.append('path').attr('d', d => barPath(0, yv(0), bw, yv(d.dplus), 0)).attr('fill', d => up(d) ? C('--up') : C('--down')).attr('fill-opacity', .35);
     vb.append('path').attr('d', d => d.dplus > d.dplus_sac ? barPath(0, yv(0), bw, yv(d.dplus - d.dplus_sac), 0) : '').attr('fill', d => up(d) ? C('--up') : C('--down')).attr('fill-opacity', .8);
     legend('l-candles', [['', C('--up'), 'arrivée plus haute'], ['', C('--down'), 'arrivée plus basse'], ['', `color-mix(in srgb, ${C('--text-secondary')} 80%, transparent)`, 'D+ sans sac (plein) / avec sac (clair)']]);
     const big = data.reduce((a, b) => b.dplus > a.dplus ? b : a);
