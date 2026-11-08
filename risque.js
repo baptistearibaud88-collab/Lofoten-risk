@@ -383,21 +383,21 @@
 
   /* ---------- 04 · tail table ---------- */
   function drawTail() {
-    const T = D.tail, LBL = { bunes_munkebu: 'sentier fantôme', reinebringen_helvete: 'arête dans le brouillard', stuvla: 'barre rocheuse', ryten: 'descente en courant' };
+    const T = D.tail, LBL = { bunes_munkebu: 'sentier fantôme', reinebringen_helvete: 'arête, brouillard', stuvla: 'barre rocheuse', ryten: 'descente courue' };
     const slow = T.slow.slice(0, 5), fast = T.fast.slice(0, 5), zmax = d3.max([...slow, ...fast], t => Math.abs(t.z));
     const firstOf = arr => (t, k) => arr.findIndex(x => x.act === t.act) === k;
-    const rowT = arr => (t, k) => `<tr><td class="n">${k + 1}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}" title="${t.sac ? 'avec le sac' : 'trail'}"></span>${actName(t.act)}${firstOf(arr)(t, k) && LBL[t.act] ? `<div class="muted">${LBL[t.act]}</div>` : ''}</td><td class="mono">${dayLbl(t.day)}</td>
+    const rowT = arr => (t, k) => `<tr><td class="n">${k + 1}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}" title="${t.sac ? 'avec le sac' : 'trail'}"></span>${actName(t.act).replace(/\s*\(.*\)$/, '')}<div class="muted">km ${f1(t.km)}${firstOf(arr)(t, k) && LBL[t.act] ? ` · ${LBL[t.act]}` : ''}</div></td><td class="mono">${dayLbl(t.day)}</td>
       <td><span class="chipg l${t.grade}"><i></i>${GL[t.grade]}</span></td><td class="n">${t.slope > 0 ? '+' : ''}${f0(t.slope)} %</td><td class="n">×${f1(t.mult)}</td>
-      <td class="n">${fs2(t.z)}<span class="zbar" style="width:${Math.round(Math.abs(t.z) / zmax * 24)}px;${t.z < 0 ? 'background:var(--up)' : ''}"></span></td></tr>`;
-    const head = '<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th class="n">Pente</th><th class="n">Temps</th><th class="n">z</th></tr></thead>';
+      <td class="n">${fs2(t.z)}</td></tr>`;
+    const head = '<colgroup><col style="width:7%"><col style="width:35%"><col style="width:8%"><col style="width:20%"><col style="width:10%"><col style="width:9%"><col style="width:11%"></colgroup><thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th class="n">Pente</th><th class="n">Temps</th><th class="n">z</th></tr></thead>';
     $('tail-table').innerHTML = head + `<tbody>${slow.map(rowT(slow)).join('')}</tbody>`;
     $('tail-fast').innerHTML = head + `<tbody>${fast.map(rowT(fast)).join('')}</tbody>`;
     readout('r-tail', `${T.slow.length} au-delà de +2σ`); readout('r-tail-f', `${T.fast.length} au-delà de −2σ`);
-    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par écart réduit z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. La cote est celle de la section (partie 02). Les cinq plus lents et les cinq plus rapides.`;
+    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. Cote de la section (partie 02). Cinq de chaque côté.`;
     const hard = slow.filter(t => t.grade >= 3).length, desc = fast.filter(t => t.slope < -10).length;
     const PL_ = { ryten: 'dans la descente du Ryten', stuvla: 'au Støvla', bunes_munkebu: 'entre Bunes et Munkebu', munkebu_reine: 'entre Munkebu et Reine', reinebringen_helvete: 'sur l’arête de Reinebringen', napp_nusfjord_1: 'le premier jour vers Nusfjord', volandstinden: 'au Volandstinden' };
     const rep = d3.rollups([...T.slow, ...T.fast], v => v.length, t => t.act).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]);
-    $('t-tail').innerHTML = `Les trois plus lents sont les passages du récit : <b>l’arête de Reinebringen</b> dans le brouillard, <b>la barre du Støvla</b>, <b>le sentier fantôme</b> vers Munkebu. ${hard === slow.length ? `Les ${hard}` : `${hard} des ${slow.length}`} sont en terrain exigeant ou expert. Côté rapide, ${desc === fast.length ? `les ${desc}` : `${desc} des ${fast.length}`} sont des descentes courues.<br><br>Ces extrêmes sont rares, ${T.slow.length + T.fast.length} sur ${f0(D.n)}, mais ${d3.sum(rep, r => r[1])} d’entre eux tombent dans ${rep.length} passages : ${rep.map(([a, n]) => `${n} ${PL_[a] || actName(a)}`).join(', ')}. Les écarts arrivent par passages entiers, pas par pas isolés.`;
+    $('t-tail').innerHTML = `Lents : les passages du récit, en terrain exigeant ou expert. Rapides : des descentes courues.<br><br>Rares (${T.slow.length + T.fast.length} sur ${f0(D.n)}), ces extrêmes reviennent pourtant aux mêmes endroits : <b>${d3.sum(rep, r => r[1])} sur ${T.slow.length + T.fast.length}</b> dans ${rep.length} passages, de l’arête de Reinebringen à la descente du Ryten. Les écarts arrivent par passages entiers.`;
   }
 
   /* ---------- 05 · bands + rolling irregularity (shared crosshair) ---------- */

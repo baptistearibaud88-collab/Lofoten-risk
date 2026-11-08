@@ -314,5 +314,11 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 .ml-row b { font: 600 13px var(--mono); }
 .ml-row.hl { box-shadow: inset 3px 0 0 var(--accent); }
 @media (max-width: 860px) { .tools { grid-template-columns: 1fr; } .tool { border-right: 0; border-bottom: 1px solid var(--grid); } }
-.grid-2.g-tail { grid-template-columns: 1.15fr 1fr; }
+.grid-2.g-tail { grid-template-columns: 1fr 1fr; }
+.g-tail table.data { table-layout: fixed; }
+.g-tail table.data td { height: 52px; padding-top: 6px; padding-bottom: 6px; }
+.g-tail table.data td .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-tail table.data td.nw { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notes.eq { grid-template-columns: 1fr 1fr 1fr; }
 @media (max-width: 900px) { .grid-2.g-tail { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .notes.eq { grid-template-columns: 1fr; } }
