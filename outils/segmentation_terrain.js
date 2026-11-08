@@ -6,7 +6,8 @@
 // Chaque sortie garde sa cote (celle du passage clé, celle du sommet), sauf deux cas :
 //  1. Plat roulant : pente lissée (moyenne glissante sur 5 tronçons, ~1,25 km) < 5 %
 //     sur au moins 1,5 km ET allure normale (écart d'effort moyen ≤ 0,10, donc pas de
-//     terrain caché : blocs, boue) → Facile.
+//     terrain caché : blocs, boue) → Facile. Les morceaux du plat nettement lents
+//     (écart moyen sur 3 tronçons > 0,20, le seuil d'un épisode lent) en sont retirés.
 //  2. Même sentier : un passage d'au moins 1 km qui suit à moins de 35 m un sentier
 //     déjà parcouru lors d'une autre sortie, où il est coté plus bas → prend cette cote
 //     (même sentier, même cote, quel que soit le sommet fait ce jour-là). Un passage
@@ -17,7 +18,7 @@ global.window = global;
 require(path.join(root, 'risque_data.js')); require(path.join(root, 'data.js'));
 const R = window.RISK, S = R.series, TR = window.TREK.trace.features;
 
-const FLAT_SLOPE = 5, FLAT_MIN = 6, FLAT_E = 0.10, NEAR_M = 35, RET_MIN = 4;
+const FLAT_SLOPE = 5, FLAT_MIN = 6, FLAT_E = 0.10, SLOW_E = 0.20, NEAR_M = 35, RET_MIN = 4;
 const grade0 = Object.fromEntries(R.rows.map(r => [r.id, r.grade]));
 const hav = (a, b) => { const la = (b[1] - a[1]) * Math.PI / 180, lo = (b[0] - a[0]) * Math.PI / 180 * Math.cos(a[1] * Math.PI / 180); return 6371000 * Math.hypot(la, lo); };
 const acts = [...new Set(S.map(s => s.act))];
@@ -43,7 +44,10 @@ acts.forEach(id => { const idx = idxOf(id); idx.forEach((i, n) => { const w = id
 acts.forEach(id => {
   if (grade0[id] === 1) return;
   const idx = idxOf(id);
-  runs(idx.length, n => sm[idx[n]] < FLAT_SLOPE, FLAT_MIN).forEach(([a, b]) => {
+  // pace over 3 pieces: a flat stretch walked clearly slower than usual hides difficult ground
+  // (boulders, no path), so it is cut out of the flat run before testing what is left
+  const em = idx.map((_, n) => { const w = idx.slice(Math.max(0, n - 1), n + 2); return w.reduce((s, j) => s + S[j].e, 0) / w.length; });
+  runs(idx.length, n => sm[idx[n]] < FLAT_SLOPE && em[n] <= SLOW_E, FLAT_MIN).forEach(([a, b]) => {
     const seg = idx.slice(a, b + 1), e = seg.reduce((s, i) => s + S[i].e, 0) / seg.length;
     if (e <= FLAT_E) seg.forEach(i => { g[i] = 1; why[i] = { k: 'plat' }; });
   });

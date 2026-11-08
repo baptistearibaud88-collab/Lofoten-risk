@@ -9,7 +9,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js'));
+require(path.join(root, 'risque_data.js')); require(path.join(root, 'risque_sections.js'));
 const R = window.RISK, S = R.series;
 const GPS_SLOPE = 60;
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -49,12 +49,31 @@ const qinv = p => { // Acklam
   if (p > 1 - .02425) return -qinv(1 - p);
   const q = p - .5, r = q * q; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); };
 const zs = [...z].sort((a, b) => a - b), qq = zs.map((v, k) => [r3(qinv((k + .5) / n)), r3(v)]);
+// how often a law produces a gap beyond k σ (both sides), for the normal law and Student laws of the same spread
+const tpdf = (x, df) => Math.exp(lgamma((df + 1) / 2) - lgamma(df / 2) - .5 * Math.log(df * Math.PI) - (df + 1) / 2 * Math.log(1 + x * x / df));
+const tTail = (k, df) => { const c = k * Math.sqrt(df / (df - 2)); let a = 0; const h = .002; for (let x = c; x < c + 60; x += h) a += (tpdf(x, df) + tpdf(x + h, df)) / 2 * h; return 2 * a; };
+const KS = [1, 1.5, 2, 2.5, 3, 3.5];
+const tails = KS.map(k => ({ k, obs: r3(z.filter(v => Math.abs(v) > k).length / n), normal: 2 * (1 - Phi(k)), t4: tTail(k, 4), tfit: tTail(k, best.df) }));
+// the extremes, one by one (part 04): slowest and fastest pieces
+const G = window.RISK_SECTIONS.seg_grade;
+const piece = i => ({ i, act: S[i].act, day: S[i].day, km: S[i].km, slope: S[i].slope, sac: S[i].sac, alt: S[i].alt, grade: G[i], z: r3((S[i].e - mu) / sd), mult: r3(Math.exp(S[i].e)) });
+const byZ = keep.map(piece).sort((a, b) => b.z - a.z);
+const tail = { slow: byZ.filter(p => p.z > 2), fast: byZ.filter(p => p.z < -2).reverse() };
 // with and without the bag
 const sdOf = sac => { const v = keep.filter(i => S[i].sac === sac).map(i => S[i].e), m = mean(v); return Math.sqrt(mean(v.map(x => (x - m) ** 2))); };
+// rolling mean and standard deviation over the last 8 pieces (part 05), artefacts left out of the window
+const ROLL = 8, roll_m = [], roll_sd = [];
+S.forEach((_, i) => {
+  const w = []; for (let j = i; j > i - ROLL && j >= 0; j--) if (Math.abs(S[j].slope) <= GPS_SLOPE) w.push(S[j].e);
+  const m = mean(w); roll_m.push(r3(m));
+  roll_sd.push(i < 2 || w.length < 3 ? null : r3(Math.sqrt(w.reduce((a, v) => a + (v - m) ** 2, 0) / (w.length - 1))));
+});
+const sdv = roll_sd.filter(v => v != null).sort((a, b) => a - b), roll_p90 = r3(sdv[Math.floor(.9 * (sdv.length - 1))]);
 const out = {
   n, n_all: S.length, mu: r3(mu), sd: r3(sd), skew: r3(skew), kurt: r3(kurt), jb: r3(jb), jb_p: r3(jb_p),
   beyond2: r3(b2 / n), beyond3: b3 / n, n2: b2, n3: b3, norm2, norm3, exp3: r3(lam), p_pois3: r3(pPois),
-  t_df: r3(best.df), t_scale: r3(best.s), ll_gain: r3(best.ll - llN),
+  t_df: r3(best.df), t_scale: r3(best.s), ll_gain: r3(best.ll - llN), d_aic: r3(2 - 2 * (best.ll - llN)), tails, tail,
+  mode_mu: R.dist.mode_mu, roll_m, roll_sd, roll_p90, roll_mean_sd: r3(mean(sdv)),
   edges, hist, xs, pdf, pdf_t, qq, extremes,
   artefacts: art.map(i => ({ act: S[i].act, day: S[i].day, km: S[i].km, slope: S[i].slope, e: r3(S[i].e) })),
   sd_avec: r3(sdOf(1)), sd_sans: r3(sdOf(0)),

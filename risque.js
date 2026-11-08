@@ -118,6 +118,8 @@
 
   /* ---------- header: ticker, scope, KPIs ---------- */
   const D = window.RISK_DIST || R.dist, MC = R.mc, W_ = R.weather;
+  // rolling pace and irregularity recomputed without the GPS artefact (outils/distribution.js)
+  if (D.roll_sd) { R.series.forEach((s, i) => { s.m = D.roll_m[i]; s.sd = D.roll_sd[i]; }); R.reg_thr = D.roll_p90; R.long_sd = D.roll_mean_sd; }
   const sens = Object.fromEntries(R.sens.map(s => [s.name, s]));
   const sacS = sens['sac sur le dos'];
   const physIds = ['stuvla', 'last_trail', 'bunes_munkebu', 'andstabben'];
@@ -316,17 +318,67 @@
     $('t-dist').innerHTML = `Pris un par un, les tronçons sont <b>ordinaires</b> : la loi normale les décrit bien (Jarque-Bera p = ${f2(D.jb_p)}). Seuls <b>${D.n3}</b> s’en échappent : ${slow.join(', ')} en lent, ${fast.join(', ')} en rapide.<br><br>Le danger ne vient donc pas d’un pas isolé. La partie 04 regarde ces quelques extrêmes, puis la suite montre où le risque se construit vraiment : dans l’enchaînement.`;
   }
 
+  /* ---------- 03 · the three tools: Tobler, Student, maximum likelihood ---------- */
+  function drawTools() {
+    const S = R.series, mm = D.mode_mu || R.dist.mode_mu, tob = sl => 6 * Math.exp(-3.5 * Math.abs(sl / 100 + .05));
+    {
+      const f = frame('c-tobler', { t: 8, r: 40, b: 26, l: 6 });
+      const x = d3.scaleLinear().domain([-40, 40]).range([0, f.w]), y = d3.scaleLinear().domain([0, 7]).range([f.h, 0]);
+      yGrid(f.g, y, f.w, 3, v => `${v} km/h`);
+      xAxis(f.g, x, f.h, 4, v => `${v > 0 ? '+' : ''}${v} %`);
+      const xs = d3.range(-40, 40.5, .5), ln = k => d3.line().x(v => x(v)).y(v => y(tob(v) * k))(xs);
+      f.g.append('path').attr('d', ln(1)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3');
+      f.g.append('path').attr('d', ln(Math.exp(-mm.avec))).attr('fill', 'none').attr('stroke', C('--series-avec')).attr('stroke-width', 1.8);
+      f.g.append('path').attr('d', ln(Math.exp(-mm.sans))).attr('fill', 'none').attr('stroke', C('--series-sans')).attr('stroke-width', 1.8).attr('opacity', .8);
+      // my real speed: median per 5 % slope class
+      const pts = [];
+      [1, 0].forEach(sac => d3.range(-35, 36, 5).forEach(c => {
+        const v = S.map((s, i) => [s, i]).filter(([s]) => s.sac === sac && Math.abs(s.slope) <= 60 && s.slope >= c - 2.5 && s.slope < c + 2.5)
+          .map(([s, i]) => (s.km - (i ? S[i - 1].km : 0)) / (EP.seg_t[i] / 3600)).filter(v => isFinite(v) && v > 0);
+        if (v.length >= 5) pts.push({ sac, c, v: d3.median(v), n: v.length });
+      }));
+      hover(f.g.selectAll(null).data(pts).join('circle').attr('cx', d => x(d.c)).attr('cy', d => y(Math.min(7, d.v))).attr('r', 3)
+        .attr('fill', d => d.sac ? C('--series-avec') : C('--series-sans')).attr('stroke', C('--bg')),
+        d => `<b>pente ${d.c > 0 ? '+' : ''}${d.c} % · ${d.sac ? 'avec sac' : 'trail'}</b>${row('ma vitesse (médiane)', `${f1(d.v)} km/h`)}${row('Tobler', `${f1(tob(d.c))} km/h`)}${row('tronçons', d.n)}`);
+    }
+    {
+      const T = D.tails, f = frame('c-student', { t: 8, r: 40, b: 26, l: 6 });
+      const x = d3.scaleLinear().domain([1, 3.5]).range([0, f.w]), y = d3.scaleLog().domain([.0004, .4]).range([f.h, 0]);
+      yGrid(f.g, y, f.w, 3, v => `${F('.2~f')(v * 100)} %`);
+      f.g.select('.axis').selectAll('.tick').filter(v => ![.001, .01, .1].some(k => Math.abs(v - k) < 1e-9)).remove();
+      f.g.select('.gridl').selectAll('.tick').filter(v => ![.001, .01, .1].some(k => Math.abs(v - k) < 1e-9)).remove();
+      xAxis(f.g, x, f.h, 5, v => `${v}σ`);
+      const ln = k => d3.line().x(d => x(d.k)).y(d => y(Math.max(.0004, d[k]))).curve(d3.curveMonotoneX)(T);
+      f.g.append('path').attr('d', ln('t4')).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
+      f.g.append('path').attr('d', ln('normal')).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.4);
+      hover(f.g.selectAll(null).data(T.filter(d => d.obs > 0)).join('circle').attr('cx', d => x(d.k)).attr('cy', d => y(d.obs)).attr('r', 3.6).attr('fill', C('--accent')).attr('stroke', C('--bg')),
+        d => `<b>écarts au-delà de ${f1(d.k)}σ</b>${row('mes tronçons', `${f2(d.obs * 100)} %`)}${row('loi normale', `${f2(d.normal * 100)} %`)}${row('Student, 4 ddl', `${f2(d.t4 * 100)} %`)}`);
+    }
+    const t3 = D.tails.find(d => d.k === 3), eUp = d3.mean(R.series.filter(s => s.slope > 15 && s.slope <= 60), s => s.e), eDn = d3.mean(R.series.filter(s => s.slope <= -5 && s.slope >= -15), s => s.e);
+    $('x-tobler').innerHTML = `Waldo Tobler a résumé en 1993 la vitesse de marche selon la pente (pointillés) : <b>v = 6 · e<sup>−3,5 · |pente + 0,05|</sup> km/h</b>. Maximum en légère descente (6 km/h à −5 %), 5 km/h sur le plat, 2,5 km/h à +20 %. Recalée sur mon allure : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac (bleu), à peu près sa vitesse en trail (orange). Les points sont ma vitesse réelle : ${f0((1 - Math.exp(eUp)) * 100)} % plus rapide que prévu dans les montées de plus de 15 %, ${f0((Math.exp(eDn) - 1) * 100)} % plus lente dans les descentes douces, où Tobler suppose qu’on court. Tobler ne connaît ni le terrain ni mon entraînement : c’est ce qui reste dans l’écart e.`;
+    $('x-student').innerHTML = `Une cloche comme la loi normale, avec un réglage en plus : les <b>degrés de liberté</b>. Peu de degrés, et les queues s’épaississent : avec 4 (pointillés), un écart au-delà de 3σ arrive <b>${f0(t3.t4 / t3.normal)} fois</b> plus souvent qu’avec la loi normale (trait plein). Beaucoup, et elle redevient la normale. Les points sont mes tronçons : ils suivent la loi normale. Ajustée sur eux, la Student prend <b>${f0(D.t_df)} degrés</b>, presque une normale.`;
+    $('c-ml').innerHTML = [['Loi normale', '2 réglages', 'centre, largeur'], ['Loi de Student', '3 réglages', '+ degrés de liberté'], ['Gain de la Student', `+${f1(D.ll_gain)}`, 'log-vraisemblance'], ['Bilan (critère d’Akaike)', Math.abs(D.d_aic) < 2 ? 'égalité' : D.d_aic < 0 ? 'Student' : 'normale', 'la plus simple l’emporte']]
+      .map(([a, b, c], i) => `<div class="ml-row${i === 3 ? ' hl' : ''}"><span>${a} <span class="muted">· ${c}</span></span><b>${b}</b></div>`).join('');
+    $('x-ml').innerHTML = `Pour régler une loi, on essaie toutes les valeurs de ses réglages et on garde celles qui rendent les ${f0(D.n)} écarts observés <b>les plus probables</b> : c’est le maximum de vraisemblance. Pour départager deux lois, on compare cette probabilité en pénalisant chaque réglage en plus. Ici la Student ne gagne presque rien : <b>la loi normale suffit</b>.`;
+  }
+
   /* ---------- 04 · tail table ---------- */
   function drawTail() {
-    const T = R.tail, zmax = d3.max(T, t => t.z);
-    $('tail-table').innerHTML = `<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Mode</th><th>Cote</th><th class="n">z</th><th class="n">Pente</th><th class="n">Temps</th><th>Alerte</th></tr></thead><tbody>${T.map(t => {
-      const r = rowOf(t.act);
-      return `<tr><td class="n">${t.rank}</td><td>${t.name}</td><td class="mono">${dayLbl(t.day)}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}"></span>${t.sac ? 'avec sac' : 'trail'}</td>
-        <td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]} · ${r.sac_t}</span></td><td class="n">${f2(t.z)}<span class="zbar" style="width:${Math.round(t.z / zmax * 46)}px"></span></td><td class="n">${t.slope > 0 ? '+' : ''}${t.slope} %</td><td class="n">×${f2(t.mult)}</td>
-        <td>${t.alert ? `<span class="tag"><svg viewBox="-8 -8 16 15"><path d="M0,-7 7,5.5 -7,5.5Z" fill="currentColor"/></svg>alerte</span>` : ''}</td></tr>`;
-    }).join('')}</tbody>`;
-    const hard = T.filter(t => rowOf(t.act).grade >= 3).length, trail = T.filter(t => !t.sac).length;
-    $('t-tail').textContent = `Les trois premiers : l’arête de Reinebringen dans le brouillard (z = ${f2(T[0].z)}), la barre rocheuse du Støvla à la montée (${f2(T[1].z)}) et le sentier fantôme du bord du fjord (${f2(T[2].z)}). ${hard} des 12 tronçons les plus lents sont sur un terrain exigeant ou expert, et ${trail} ont été faits en trail. La queue de la distribution, ce sont les endroits dangereux.`;
+    const T = D.tail, LBL = { bunes_munkebu: 'sentier fantôme', reinebringen_helvete: 'arête dans le brouillard', stuvla: 'barre rocheuse', ryten: 'descente en courant' };
+    const slow = T.slow.slice(0, 10), fast = T.fast.slice(0, 5), zmax = d3.max([...slow, ...fast], t => Math.abs(t.z));
+    const firstOf = arr => (t, k) => arr.findIndex(x => x.act === t.act) === k;
+    const rowT = arr => (t, k) => `<tr><td class="n">${k + 1}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}" title="${t.sac ? 'avec le sac' : 'trail'}"></span>${actName(t.act)}${firstOf(arr)(t, k) && LBL[t.act] ? `<div class="muted">${LBL[t.act]}</div>` : ''}</td><td class="mono">${dayLbl(t.day)}</td>
+      <td><span class="chipg l${t.grade}"><i></i>${GL[t.grade]}</span></td><td class="n">${t.slope > 0 ? '+' : ''}${f0(t.slope)} %</td><td class="n">×${f1(t.mult)}</td>
+      <td class="n">${fs2(t.z)}<span class="zbar" style="width:${Math.round(Math.abs(t.z) / zmax * 24)}px;${t.z < 0 ? 'background:var(--up)' : ''}"></span></td></tr>`;
+    const head = '<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th class="n">Pente</th><th class="n">Temps</th><th class="n">z</th></tr></thead>';
+    $('tail-table').innerHTML = head + `<tbody>${slow.map(rowT(slow)).join('')}</tbody>`;
+    $('tail-fast').innerHTML = head + `<tbody>${fast.map(rowT(fast)).join('')}</tbody>`;
+    readout('r-tail', `${T.slow.length} au-delà de +2σ`); readout('r-tail-f', `${T.fast.length} au-delà de −2σ`);
+    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par écart réduit z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. La cote est celle de la section (partie 02). Dix plus lents et cinq plus rapides affichés.`;
+    const hard = slow.filter(t => t.grade >= 3).length, desc = fast.filter(t => t.slope < -10).length;
+    const PL_ = { ryten: 'dans la descente du Ryten', stuvla: 'au Støvla', bunes_munkebu: 'au-dessus de Bunes', munkebu_reine: 'vers Reine', reinebringen_helvete: 'sur l’arête de Reinebringen' };
+    const rep = d3.rollups([...slow, ...fast], v => v.length, t => t.act).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
+    $('t-tail').innerHTML = `Les trois plus lents sont les passages du récit : <b>l’arête de Reinebringen</b> dans le brouillard, <b>la barre du Støvla</b>, <b>le sentier fantôme</b> vers Munkebu. ${hard} des 10 sont en terrain exigeant ou expert. Côté rapide, ${desc === fast.length ? `les ${desc}` : `${desc} des ${fast.length}`} sont des descentes courues.<br><br>Ces extrêmes sont rares, ${T.slow.length + T.fast.length} sur ${f0(D.n)}, mais ils reviennent aux mêmes endroits : ${rep.map(([a, n]) => `${n} fois ${PL_[a] || actName(a)}`).join(', ')}. Les écarts arrivent par passages entiers, pas par pas isolés.`;
   }
 
   /* ---------- 05 · bands + rolling irregularity (shared crosshair) ---------- */
@@ -430,7 +482,9 @@
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
     $('ep-fast').innerHTML = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${fast.filter(d => d.gps).map(d => actName(d.act)).join(' et ')} sont écartés : une pente GPS de plus de 50 % fausse le temps prévu.`;
     const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
-    $('t-roll').textContent = `${MAJ.length} épisodes de 10 min ou plus coûtent ${f0(majMin)} min sur ${f0(d3.sum(MAJ, d => d.len))} km ; ${PAU.length} épisodes plus courts, probablement des pauses, en ajoutent ${f0(pauMin)}. ${(n => n === MAJ.length ? `Tous les ${n} épisodes coûteux sont` : `${n} des ${MAJ.length} épisodes coûteux sont`)(MAJ.filter(d => d.slope < 5).length)} en descente ou à plat : le temps se perd là où le pied cherche sa place, pas là où le souffle manque. La première cause est « ${CAUSE[top.k][0]} » (${f0(top.min / totMin * 100)} % du temps perdu, ${top.n} épisodes) ; avec le terrain instable et la météo, ${f0(subi / totMin * 100)} % du temps perdu est subi. Le reste relève de décisions prises sur place (repérer un bivouac, juger un passage) et de pauses. L’irrégularité dépasse son seuil P90 sur ${f0(above / S2.length * 100)} % du parcours, surtout sur les sorties de trail en montagne.`;
+    const CL = EP.cluster;
+    if (CL) $('lede-roll').innerHTML = `Chaque tronçon, pris seul, est ordinaire (partie 03). Ce qui compte, c’est leur ordre. Un <b>épisode</b>, c’est au moins 750 m d’affilée nettement plus lents (rouge) ou plus rapides (vert) que l’allure attendue. Si mes ${f0(D.n)} écarts étaient mélangés au hasard, on attendrait environ ${f0(CL.all.n)} épisodes lents de plus de 5 min, pour ${f0(CL.all.min)} min en tout. Il y en a <b>${CL.obs_n}</b>, qui coûtent <b>${f0(CL.obs_min)} min</b> : les tronçons lents s’enchaînent.`;
+    $('t-roll').innerHTML = `<b>${MAJ.length}</b> épisodes de 10 min ou plus coûtent <b>${f0(majMin)} min</b>, et ${PAU.length} plus courts, sans doute des pauses, ${f0(pauMin)} min. Première cause : ${CAUSE[top.k][0].toLowerCase()} ; ${f0(subi / totMin * 100)} % du temps perdu est subi.${CL ? ` Même mélangés à l’intérieur de chaque sortie, les écarts n’en feraient que ${f0(CL.act.min)} min : la lenteur s’enchaîne au sein d’un même passage.` : ''}<br><br>Pourquoi ces enchaînements ? La forme du relief répond (partie 06).`;
   }
 
   /* ---------- 06 · independent summits, steep climbs: the risk structure of the massifs ---------- */
@@ -1214,7 +1268,7 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, () => drawMc(false), drawScatter, drawPlanCharts, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawTools, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, () => drawMc(false), drawScatter, drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;

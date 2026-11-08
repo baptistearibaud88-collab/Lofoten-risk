@@ -13,7 +13,7 @@ global.window = global;
 ['risque_data.js', 'data.js', 'risque_sections.js'].forEach(f => require(path.join(root, f)));
 const R = window.RISK, S = R.series, A = window.TREK.acts, SEC = window.RISK_SECTIONS;
 const N = S.length, e = S.map(s => s.e), acts = [...new Set(S.map(s => s.act))];
-const EP_THR = 0.20, EP_MIN = 3, MAXLAG = 20, GPS_SLOPE = 50;
+const EP_THR = 0.20, EP_MIN = 3, MAXLAG = 20, GPS_SLOPE = 60;   // same threshold as outils/distribution.js
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, r3 = v => Math.round(v * 1000) / 1000;
 
 // real moving time of each 250 m piece (seconds)
@@ -106,9 +106,29 @@ const topo = {
   grad_same: test(gSame), grad_next: test(gNext), pace_same: test(pSame), pace_next: test(pNext),
 };
 
+// do slow pieces chain up? Same écarts shuffled at random (across the whole trip, or inside each
+// outing so that each outing keeps its own level): how many slow episodes of 5 min or more would
+// appear by chance, and how many minutes would they cost?
+const slowEps = ev => {
+  const smv = ev.map((_, i) => { const w = [i - 1, i, i + 1].filter(j => j >= 0 && j < N && same(i, j)); return w.reduce((s, j) => s + ev[j], 0) / w.length; });
+  const o = []; let c = null;
+  for (let i = 0; i < N; i++) { const on = smv[i] > EP_THR; if (c && on && same(i - 1, i)) c.i1 = i; else { if (c) o.push(c); c = on ? { i0: i, i1: i } : null; } }
+  if (c) o.push(c);
+  return o.filter(x => x.i1 - x.i0 + 1 >= EP_MIN).map(x => d3range(x.i0, x.i1).reduce((s, i) => s + t[i] * (1 - Math.exp(-ev[i])) / 60, 0)).filter(m => Math.round(m) >= 5);
+};
+let seed = 20260614; const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x ^= x + Math.imul(x ^ (x >>> 7), 61 | x); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const e0 = S.map(s => Math.abs(s.slope) > GPS_SLOPE ? 0 : s.e);
+const obsEps = slowEps(e0), groupsAct = acts.map(id => S.map((_, i) => i).filter(i => S[i].act === id));
+const perm = mode => { const n = [], m = []; for (let k = 0; k < 2000; k++) {
+  let ev; if (mode === 'all') ev = shuf(e0); else { ev = e0.slice(); groupsAct.forEach(ids => { const v = shuf(ids.map(i => e0[i])); ids.forEach((i, j) => { ev[i] = v[j]; }); }); }
+  const r = slowEps(ev); n.push(r.length); m.push(r.reduce((a, b) => a + b, 0)); }
+  const sm = [...m].sort((a, b) => a - b); return { n: r1(n.reduce((a, b) => a + b, 0) / n.length), min: Math.round(m.reduce((a, b) => a + b, 0) / m.length), p95: Math.round(sm[Math.floor(.95 * sm.length)]), p_obs: r3(m.filter(x => x >= obsEps.reduce((a, b) => a + b, 0)).length / m.length) }; };
+const cluster = { obs_n: obsEps.length, obs_min: Math.round(obsEps.reduce((a, b) => a + b, 0)), all: perm('all'), act: perm('act') };
+
 const out = {
   seg_t: t.map(Math.round), seg_lost: lost.map(r2), thr: EP_THR, episodes,
-  topo,
+  topo, cluster,
 };
 fs.writeFileSync(path.join(root, 'risque_episodes.js'), `// généré par outils/episodes_allure.js — ne pas modifier à la main\nwindow.RISK_EPISODES = ${JSON.stringify(out)};\n`);
 console.log(`${episodes.length} épisodes · ${massifs.length} massifs · raideur même massif r=${r2(topo.grad_same.r)} · suivant r=${r2(topo.grad_next.r)} · allure même massif r=${r2(topo.pace_same.r)} · suivant r=${r2(topo.pace_next.r)} (seuil ${r2(topo.pace_next.crit)})`);

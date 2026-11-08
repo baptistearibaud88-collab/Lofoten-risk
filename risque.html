@@ -113,7 +113,27 @@
   <section id="s3">
     <header class="sh"><span class="num">03</span><h2>Un tronçon pris seul : des écarts ordinaires</h2></header>
     <p class="lede">La partie 02 a classé le terrain. Ici, on mesure la surprise : sur chaque tronçon de 250 m, de combien le temps réel s’écarte-t-il du temps que la pente laissait prévoir ? Le temps attendu vient de la règle de Tobler, recalée sur mon allure moyenne avec et sans sac. L’écart <span class="mono">e = ln(temps réel / temps attendu)</span> vaut 0 quand je suis dans mon allure, +0,4 quand je suis environ 1,5 fois plus lent, −0,4 quand je suis 1,5 fois plus rapide. La question : ces écarts sont-ils ordinaires, ou les grosses surprises sont-elles fréquentes ?</p>
-    <div class="grid-2 g-dist">
+    <div class="pc">
+      <div class="pc-head"><span class="pc-t">Les trois outils de cette partie</span></div>
+      <div class="tools">
+        <div class="tool">
+          <h5>1 · La règle de Tobler</h5>
+          <div class="chart" id="c-tobler" data-h="170"></div>
+          <p id="x-tobler"></p>
+        </div>
+        <div class="tool">
+          <h5>2 · La loi de Student</h5>
+          <div class="chart" id="c-student" data-h="170"></div>
+          <p id="x-student"></p>
+        </div>
+        <div class="tool">
+          <h5>3 · Le maximum de vraisemblance</h5>
+          <div class="ml-box" id="c-ml"></div>
+          <p id="x-ml"></p>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2 g-dist mt">
       <div class="pc">
         <div class="pc-head"><span class="pc-t">Histogramme des écarts · loi normale et loi de Student</span><span class="pc-r mono" id="r-hist"></span></div>
         <div class="chart" id="c-hist" data-h="300"></div>
@@ -136,22 +156,28 @@
   </section>
 
   <section id="s4">
-    <header class="sh"><span class="num">04</span><h2>Les queues : les 12 tronçons les plus lents</h2></header>
-    <p class="lede">Le risque se lit dans les extrêmes, pas dans la moyenne. Voici les tronçons les plus éloignés de mon allure, classés par écart réduit z.</p>
-    <div class="pc">
-      <div class="pc-head"><span class="pc-t">Tronçons au-delà de z = 2</span><span class="pc-r mono">top 12 / 605</span></div>
-      <div class="table-wrap flat"><table class="data" id="tail-table"></table></div>
+    <header class="sh"><span class="num">04</span><h2>Les extrêmes, un par un</h2></header>
+    <p class="lede">La partie 03 l’a montré : presque tous les tronçons sont ordinaires. Voici les exceptions, les tronçons à plus de 2σ de mon allure, pour savoir où elles se trouvent.</p>
+    <div class="grid-2 g-tail">
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Les plus lents</span><span class="pc-r mono" id="r-tail"></span></div>
+        <div class="table-wrap flat"><table class="data" id="tail-table"></table></div>
+      </div>
+      <div class="pc">
+        <div class="pc-head"><span class="pc-t">Les plus rapides</span><span class="pc-r mono" id="r-tail-f"></span></div>
+        <div class="table-wrap flat"><table class="data" id="tail-fast"></table></div>
+      </div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>z mesure l’écart en nombre d’écarts-types : z = 3 correspond à un tronçon qu’une loi normale ne produirait qu’environ une fois sur 740. La colonne « temps » donne le facteur multiplicatif sur l’allure attendue.</p></div>
-      <div><h4>Méthode</h4><p>Tronçons de 250 m triés par z décroissant. Un tronçon est marqué « alerte » s’il se trouve à moins d’un kilomètre d’une alerte vécue.</p></div>
+      <div><h4>Comment lire</h4><p>z compte l’écart en σ : à z = 3, une loi normale n’en produirait qu’un tronçon sur 740 de ce côté. « Temps » est le facteur sur le temps attendu : ×3,5, c’est trois fois et demie plus long.</p></div>
+      <div><h4>Méthode</h4><p id="n-tail-meth"></p></div>
       <div class="key"><h4>À retenir</h4><p id="t-tail"></p></div>
     </div>
   </section>
 
   <section id="s5">
-    <header class="sh"><span class="num">05</span><h2>Où le temps s’est perdu, et où il s’est gagné</h2></header>
-    <p class="lede">Pour chaque tronçon de 250 m, la règle de Tobler prévoit un temps à partir de la pente, recalé sur mon allure moyenne avec et sans sac (partie 03). L’écart e compare le temps réel à ce temps prévu : +30 % veut dire 30 % plus lent que prévu. Pris seuls, les tronçons sont bruités. Regroupés, ils dessinent des épisodes : au moins 750 m d’affilée nettement plus lents (rouge) ou plus rapides (vert) que prévu.</p>
+    <header class="sh"><span class="num">05</span><h2>Des tronçons ordinaires qui s’enchaînent : où le temps s’est perdu</h2></header>
+    <p class="lede" id="lede-roll">Chaque tronçon, pris seul, est ordinaire (partie 03). Ce qui compte, c’est leur ordre.</p>
     <div class="pc">
       <div class="pc-head"><span class="pc-t">Écart au temps prévu · moyenne glissante 2 km · épisodes</span><span class="pc-r mono" id="r-roll"></span></div>
       <div class="chart" id="c-bands" data-h="250"></div>
@@ -176,7 +202,7 @@
     </div>
     <div class="notes">
       <div><h4>Comment lire</h4><p>Au-dessus de zéro, plus lent que prévu ; en dessous, plus rapide. La courbe épaisse lisse le bruit sur 2 km. Le panneau du bas mesure l’irrégularité : il monte quand des tronçons lents et rapides alternent, c’est-à-dire quand l’allure ne se laisse plus prévoir, même si elle reste juste en moyenne. Dans le tableau, « perdu » est le temps passé en plus du temps prévu sur l’épisode, en minutes. La colonne « Cause » dit d’où vient le temps perdu : terrain, météo, ou arrêt et décision sur place. La pastille pleine est la cause principale, les autres sont secondaires.</p></div>
-      <div><h4>Méthode</h4><p>e = ln(temps réel ÷ temps prévu), temps réel en mouvement issu de la montre. Épisode : au moins 3 tronçons consécutifs de la même sortie dont la moyenne de e sur 3 tronçons dépasse ±0,20 (environ 22 % plus lent ou 18 % plus rapide). Un épisode qui contient une pente GPS de plus de 50 % est signalé : l’altitude y est douteuse et le temps prévu aussi. Seuls les épisodes lents qui coûtent au moins 5 min sont retenus. À partir de 10 min, chacun est qualifié après coup à partir du terrain : sentier peu visible (ou absent), terrain instable, météo, évaluation (d’un passage ou d’un bivouac), arrêt (rencontre, sac). De 5 à 10 min, ce sont très probablement des pauses : ils sont regroupés sous « Autre · pause probable ». Le bilan ne compte que la cause principale ; « probable » marque une cause incertaine.</p></div>
+      <div><h4>Méthode</h4><p>e = ln(temps réel ÷ temps prévu), temps réel en mouvement issu de la montre. Épisode : au moins 3 tronçons consécutifs de la même sortie dont la moyenne de e sur 3 tronçons dépasse ±0,20 (environ 22 % plus lent ou 18 % plus rapide). Un épisode qui contient une pente GPS de plus de 60 % est signalé : l’altitude y est douteuse et le temps prévu aussi. Test du hasard : les mêmes écarts mélangés 2 000 fois, sur toute la traversée puis à l’intérieur de chaque sortie. Seuls les épisodes lents qui coûtent au moins 5 min sont retenus. À partir de 10 min, chacun est qualifié après coup à partir du terrain : sentier peu visible (ou absent), terrain instable, météo, évaluation (d’un passage ou d’un bivouac), arrêt (rencontre, sac). De 5 à 10 min, ce sont très probablement des pauses : ils sont regroupés sous « Autre · pause probable ». Le bilan ne compte que la cause principale ; « probable » marque une cause incertaine.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-roll"></p></div>
     </div>
   </section>
@@ -265,7 +291,7 @@
 
   <section id="s11">
     <header class="sh"><span class="num">11</span><h2>Simulation Monte Carlo : 5 000 traversées</h2></header>
-    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent les queues épaisses et la persistance des écarts. Les deux modèles ont le même centre ; seule la dispersion change. Ils sont calés sur le temps total réel : la trajectoire réelle finit donc à zéro par construction, et ce qui compte est son chemin, en avance puis rattrapée.</p>
+    <p class="lede">La traversée est rejouée 5 000 fois, tronçon par tronçon, sur le parcours réel. Chaque trajectoire cumule l’écart de temps au scénario central : au-dessus de zéro, en retard ; en dessous, en avance. Deux hypothèses de tirage s’affrontent. <b>Loi normale</b> : chaque tronçon tire son écart indépendamment, selon une loi normale de même écart-type. <b>Rééchantillonnage par blocs</b> : on tire des séquences réelles de 2 km (8 tronçons), qui conservent la persistance des écarts d’un tronçon à l’autre et les rares extrêmes. Les deux modèles ont le même centre ; seule la dispersion change. Ils sont calés sur le temps total réel : la trajectoire réelle finit donc à zéro par construction, et ce qui compte est son chemin, en avance puis rattrapée.</p>
     <div class="pc">
       <div class="pc-head mc-head">
         <div class="segctl" role="group" aria-label="Hypothèse de tirage">
@@ -451,11 +477,11 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="risque_data.js?v=20261105-8"></script>
-<script src="risque_dist.js?v=20261108-1"></script>
-<script src="risque_sections.js?v=20261106-1"></script>
-<script src="risque_episodes.js?v=20261106-3"></script>
-<script src="risque_plan.js?v=20261106-2"></script>
+<script src="risque_dist.js?v=20261108-3"></script>
+<script src="risque_sections.js?v=20261108-1"></script>
+<script src="risque_episodes.js?v=20261108-1"></script>
+<script src="risque_plan.js?v=20261108-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261108-1"></script>
+<script src="risque.js?v=20261108-3"></script>
 </body>
 </html>
