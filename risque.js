@@ -270,20 +270,38 @@
     legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale'], ['ln', C('--warning'), 'loi de Student ajustée']]);
     readout('r-hist', `${f0(D.n)} tronçons · σ <b>${f2(D.sd)}</b>`);
 
-    // indicators, each one explained, with a verdict
-    const pT = v => `${v >= 0 ? '+' : '−'}${f0(Math.abs(v) * 100)} %`;
+    // indicators, each one explained on the walk itself, with a verdict
+    const SS = R.series, okI = SS.map((q, i) => i).filter(i => Math.abs(SS[i].slope) <= 60);
+    const base = Math.round(d3.median(okI, i => EP.seg_t[i] * Math.exp(-SS[i].e) / 60) * 2) / 2;   // typical expected time of a piece
+    const mn = v => { const t = Math.round(v * 60); return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')}`; };
+    const cnt = f => okI.filter(i => f(SS[i].e)).length, l2 = Math.log(2);
+    const nSlow2 = cnt(v => v > l2), nFast2 = cnt(v => v < -l2);
+    const Phi_ = x => { const t = 1 / (1 + .3275911 * Math.abs(x) / Math.SQRT2), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-x * x / 2); return .5 * (1 + (x >= 0 ? y : -y)); };
+    const exp2 = D.n * (1 - Phi_((l2 - D.mu) / D.sd));
+    const ex3 = (D.extremes || []).map(e => ({ ...e, t: EP.seg_t[e.i] / 60, x: EP.seg_t[e.i] * Math.exp(-SS[e.i].e) / 60 }));
+    const NM = { bunes_munkebu: 'le sentier fantôme', reinebringen_helvete: 'l’arête de Reinebringen', stuvla: 'la barre du Støvla', ryten: 'la descente du Ryten' };
+    const ex3txt = [...ex3].sort((a, b) => b.z - a.z).map(e => e.act === 'stuvla' || e.act === 'ryten' ? `${NM[e.act] || actName(e.act)} (prévu ${mn(e.x)}, fait en ${mn(e.t)})` : (NM[e.act] || actName(e.act))).join(', ');
+    const t3 = D.tails.find(d => d.k === 3), allJB = R.dist;
     const V = { ok: ['c-ok', 'normal'], warn: ['c-sub', 'à surveiller'], info: ['c-av', 'repère'] };
     const rows = [
-      ['Écart-type σ', f2(D.sd), `La dispersion typique. Deux tronçons sur trois tombent entre ${pT(Math.exp(-D.sd) - 1)} et ${pT(Math.exp(D.sd) - 1)} du temps attendu.`, 'info'],
-      ['Asymétrie', fs2(D.skew), 'Compare les deux côtés : positive si les tronçons lents s’éloignent plus que les rapides. 0 pour une loi normale.', Math.abs(D.skew) < .3 ? 'ok' : 'warn'],
-      ['Kurtosis (excès)', fs2(D.kurt), 'L’épaisseur des queues : la fréquence des très gros écarts. 0 pour une loi normale ; au-dessus de 1, les surprises extrêmes deviennent nettement plus fréquentes.', D.kurt < 1 ? 'ok' : 'warn'],
-      ['Test de Jarque-Bera', `${f1(D.jb)} · p = ${f2(D.jb_p)}`, 'Réunit asymétrie et kurtosis en un seul test : « ces écarts peuvent-ils venir d’une loi normale ? ». On répond non au-delà de 6 (p < 5 %).', D.jb_p > .05 ? 'ok' : 'warn'],
-      ['Au-delà de 2σ', `${D.n2} tronçons`, `Les écarts marqués. Une loi normale en attend ${f0(D.n * D.norm2)} sur ${f0(D.n)}.`, 'ok'],
-      ['Au-delà de 3σ', `${D.n3} tronçons`, `Les vraies surprises. Une loi normale en attend ${f1(D.exp3)} ; en voir ${D.n3} ou plus arrive par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
-      ['Loi de Student', `${f0(D.t_df)} degrés de liberté`, 'Une loi faite pour les queues épaisses, ajustée sur les données. Sous 10 degrés de liberté, les queues sont épaisses ; au-delà de 20, elle se confond presque avec la normale.', D.t_df > 20 ? 'ok' : 'warn'],
-      ['Avec ou sans sac', `σ ${f2(D.sd_avec)} / ${f2(D.sd_sans)}`, `En trail, sans le sac, l’allure est ${f0((D.sd_sans / D.sd_avec - 1) * 100)} % plus dispersée : on pousse, on court, on s’arrête.`, 'info'],
+      ['Écart-type σ', 'La largeur de la cloche : de combien on s’écarte d’habitude.',
+        `<b>${f2(D.sd)}</b>. Sur un tronçon prévu en ${mn(base)}, deux fois sur trois je mets entre ${mn(base * Math.exp(-D.sd))} et ${mn(base * Math.exp(D.sd))}.`, 'info'],
+      ['Asymétrie', 'Les deux côtés sont-ils pareils ? Positive si les lents s’éloignent plus que les rapides.',
+        `<b>${fs2(D.skew)}</b>. ${nSlow2} tronçons deux fois plus lents que prévu, ${nFast2} deux fois plus rapides ; une loi normale en attend ${f0(exp2)} de chaque côté.`, Math.abs(D.skew) < .3 ? 'ok' : 'warn'],
+      ['Kurtosis', 'L’épaisseur des queues : les très gros écarts sont-ils fréquents ? 0 pour une loi normale.',
+        `<b>${fs2(D.kurt)}</b>. Seuls ${D.n3} tronçons sur ${f0(D.n)} sont trois fois plus lents ou plus rapides que prévu. Avec des queues épaisses, il y en aurait environ ${f0(t3.t4 * D.n)}.`, D.kurt < 1 ? 'ok' : 'warn'],
+      ['Test de Jarque-Bera', 'Réunit asymétrie et kurtosis en un score : plus il est grand, moins la loi normale est crédible. Au-delà de 6, on la rejette.',
+        `<b>${f1(D.jb)}</b>, un score qu’une vraie loi normale donne ${f0(D.jb_p * 100)} fois sur 100 par hasard : rien d’anormal. Avec l’erreur GPS de Kvalvika gardée, il montait à ${f0(allJB.n / 6 * (allJB.skew ** 2 + allJB.kurt ** 2 / 4))} : un seul tronçon faux faisait croire à des queues épaisses.`, D.jb_p > .05 ? 'ok' : 'warn'],
+      ['Au-delà de 2σ', 'Les écarts marqués.',
+        `<b>${D.n2} tronçons</b> au moins ${f1(Math.exp(2 * D.sd))} fois plus lents ou deux fois plus rapides ; une loi normale en attend ${f0(D.n * D.norm2)}. Ce sont surtout les passages techniques et les descentes courues (partie 04).`, 'ok'],
+      ['Au-delà de 3σ', 'Les vraies surprises.',
+        `<b>${D.n3} tronçons</b> : ${ex3txt}. Une loi normale en attend ${f1(D.exp3)} : léger excès, qu’on obtiendrait par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
+      ['Loi de Student', 'Une cloche à queues réglables (outil 2). Peu de degrés de liberté, queues épaisses ; beaucoup, loi normale.',
+        `<b>${f0(D.t_df)} degrés</b> une fois ajustée sur mes tronçons : presque la normale. À 4 degrés, on aurait eu environ ${f0(t3.t4 * D.n)} tronçons au-delà de 3σ ; j’en ai ${D.n3}.`, D.t_df > 20 ? 'ok' : 'warn'],
+      ['Avec ou sans sac', 'La même largeur, mesurée séparément.',
+        `Sur un tronçon prévu en ${mn(base)} : avec le sac, entre ${mn(base * Math.exp(-D.sd_avec))} et ${mn(base * Math.exp(D.sd_avec))} ; en trail, entre ${mn(base * Math.exp(-D.sd_sans))} et ${mn(base * Math.exp(D.sd_sans))}. Sans le sac, on pousse, on court, on s’arrête.`, 'info'],
     ];
-    $('dist-stats').innerHTML = `<thead><tr><th>Indicateur</th><th class="n">Valeur</th><th>Ce que ça mesure</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, v, t, k]) => `<tr><td><b>${a}</b></td><td class="n">${v}</td><td class="muted">${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody>`;
+    $('dist-stats').innerHTML = `<thead><tr><th>Indicateur</th><th>Ce que ça mesure</th><th>Sur ma traversée</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, m, t, k]) => `<tr><td><b>${a}</b></td><td class="muted">${m}</td><td>${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody>`;
     readout('r-dstats', D.jb_p > .05 ? 'normalité <b>non rejetée</b>' : 'normalité <b>rejetée</b>');
 
     const q = frame('c-qq', { t: 14, r: 46, b: 32, l: 8 });
@@ -355,17 +373,18 @@
         d => `<b>écarts au-delà de ${f1(d.k)}σ</b>${row('mes tronçons', `${f2(d.obs * 100)} %`)}${row('loi normale', `${f2(d.normal * 100)} %`)}${row('Student, 4 ddl', `${f2(d.t4 * 100)} %`)}`);
     }
     const t3 = D.tails.find(d => d.k === 3), eUp = d3.mean(R.series.filter(s => s.slope > 15 && s.slope <= 60), s => s.e), eDn = d3.mean(R.series.filter(s => s.slope <= -5 && s.slope >= -15), s => s.e);
-    $('x-tobler').innerHTML = `Waldo Tobler a résumé en 1993 la vitesse de marche selon la pente (pointillés) : <b>v = 6 · e<sup>−3,5 · |pente + 0,05|</sup> km/h</b>. Maximum en légère descente (6 km/h à −5 %), 5 km/h sur le plat, 2,5 km/h à +20 %. Recalée sur mon allure : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac (bleu), à peu près sa vitesse en trail (orange). Les points sont ma vitesse réelle : ${f0((1 - Math.exp(eUp)) * 100)} % plus rapide que prévu dans les montées de plus de 15 %, ${f0((Math.exp(eDn) - 1) * 100)} % plus lente dans les descentes douces, où Tobler suppose qu’on court. Tobler ne connaît ni le terrain ni mon entraînement : c’est ce qui reste dans l’écart e.`;
-    $('x-student').innerHTML = `Une cloche comme la loi normale, avec un réglage en plus : les <b>degrés de liberté</b>. Peu de degrés, et les queues s’épaississent : avec 4 (pointillés), un écart au-delà de 3σ arrive <b>${f0(t3.t4 / t3.normal)} fois</b> plus souvent qu’avec la loi normale (trait plein). Beaucoup, et elle redevient la normale. Les points sont mes tronçons : ils suivent la loi normale. Ajustée sur eux, la Student prend <b>${f0(D.t_df)} degrés</b>, presque une normale.`;
+    const st = R.series[539], stT = EP.seg_t[539] / 60, stX = stT * Math.exp(-st.e), mn2 = v => { const t = Math.round(v * 60); return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')}`; };
+    $('x-tobler').innerHTML = `<b>Sert à :</b> fixer le temps attendu de chaque tronçon. Exemple : sur la barre du Støvla (${st.slope > 0 ? '+' : ''}${f0(st.slope)} %), le temps attendu était ${mn2(stX)} ; j’ai mis ${mn2(stT)}, soit e = ${fs2(st.e)}, ×${f1(Math.exp(st.e))}.<br>Waldo Tobler a résumé en 1993 la vitesse de marche selon la pente (pointillés) : <b>v = 6 · e<sup>−3,5 · |pente + 0,05|</sup> km/h</b>. Maximum en légère descente (6 km/h à −5 %), 5 km/h sur le plat, 2,5 km/h à +20 %. Recalée sur mon allure : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac (bleu), à peu près sa vitesse en trail (orange). Les points sont ma vitesse réelle : ${f0((1 - Math.exp(eUp)) * 100)} % plus rapide que prévu dans les montées de plus de 15 %, ${f0((Math.exp(eDn) - 1) * 100)} % plus lente dans les descentes douces, où Tobler suppose qu’on court. Tobler ne connaît ni le terrain ni mon entraînement : c’est ce qui reste dans l’écart e.`;
+    $('x-student').innerHTML = `<b>Sert à :</b> vérifier si les grosses surprises sont plus fréquentes que la loi normale ne le dit, ce qui obligerait à prévoir plus de marge.<br>Une cloche comme la loi normale, avec un réglage en plus : les <b>degrés de liberté</b>. Peu de degrés, et les queues s’épaississent : avec 4 (pointillés), un écart au-delà de 3σ arrive <b>${f0(t3.t4 / t3.normal)} fois</b> plus souvent qu’avec la loi normale (trait plein). Beaucoup, et elle redevient la normale. Les points sont mes tronçons : ils suivent la loi normale. Ajustée sur eux, la Student prend <b>${f0(D.t_df)} degrés</b>, presque une normale.`;
     $('c-ml').innerHTML = [['Loi normale', '2 réglages', 'centre, largeur'], ['Loi de Student', '3 réglages', '+ degrés de liberté'], ['Gain de la Student', `+${f1(D.ll_gain)}`, 'log-vraisemblance'], ['Bilan (critère d’Akaike)', Math.abs(D.d_aic) < 2 ? 'égalité' : D.d_aic < 0 ? 'Student' : 'normale', 'la plus simple l’emporte']]
       .map(([a, b, c], i) => `<div class="ml-row${i === 3 ? ' hl' : ''}"><span>${a} <span class="muted">· ${c}</span></span><b>${b}</b></div>`).join('');
-    $('x-ml').innerHTML = `Pour régler une loi, on essaie toutes les valeurs de ses réglages et on garde celles qui rendent les ${f0(D.n)} écarts observés <b>les plus probables</b> : c’est le maximum de vraisemblance. Pour départager deux lois, on compare cette probabilité en pénalisant chaque réglage en plus. Ici la Student ne gagne presque rien : <b>la loi normale suffit</b>.`;
+    $('x-ml').innerHTML = `<b>Sert à :</b> régler la loi de Student sur mes tronçons, puis départager la Student et la normale.<br>Pour régler une loi, on essaie toutes les valeurs de ses réglages et on garde celles qui rendent les ${f0(D.n)} écarts observés <b>les plus probables</b> : c’est le maximum de vraisemblance. Pour départager deux lois, on compare cette probabilité en pénalisant chaque réglage en plus. Ici la Student ne gagne presque rien : <b>la loi normale suffit</b>.`;
   }
 
   /* ---------- 04 · tail table ---------- */
   function drawTail() {
     const T = D.tail, LBL = { bunes_munkebu: 'sentier fantôme', reinebringen_helvete: 'arête dans le brouillard', stuvla: 'barre rocheuse', ryten: 'descente en courant' };
-    const slow = T.slow.slice(0, 10), fast = T.fast.slice(0, 5), zmax = d3.max([...slow, ...fast], t => Math.abs(t.z));
+    const slow = T.slow.slice(0, 5), fast = T.fast.slice(0, 5), zmax = d3.max([...slow, ...fast], t => Math.abs(t.z));
     const firstOf = arr => (t, k) => arr.findIndex(x => x.act === t.act) === k;
     const rowT = arr => (t, k) => `<tr><td class="n">${k + 1}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}" title="${t.sac ? 'avec le sac' : 'trail'}"></span>${actName(t.act)}${firstOf(arr)(t, k) && LBL[t.act] ? `<div class="muted">${LBL[t.act]}</div>` : ''}</td><td class="mono">${dayLbl(t.day)}</td>
       <td><span class="chipg l${t.grade}"><i></i>${GL[t.grade]}</span></td><td class="n">${t.slope > 0 ? '+' : ''}${f0(t.slope)} %</td><td class="n">×${f1(t.mult)}</td>
@@ -374,11 +393,11 @@
     $('tail-table').innerHTML = head + `<tbody>${slow.map(rowT(slow)).join('')}</tbody>`;
     $('tail-fast').innerHTML = head + `<tbody>${fast.map(rowT(fast)).join('')}</tbody>`;
     readout('r-tail', `${T.slow.length} au-delà de +2σ`); readout('r-tail-f', `${T.fast.length} au-delà de −2σ`);
-    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par écart réduit z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. La cote est celle de la section (partie 02). Dix plus lents et cinq plus rapides affichés.`;
+    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par écart réduit z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. La cote est celle de la section (partie 02). Les cinq plus lents et les cinq plus rapides.`;
     const hard = slow.filter(t => t.grade >= 3).length, desc = fast.filter(t => t.slope < -10).length;
-    const PL_ = { ryten: 'dans la descente du Ryten', stuvla: 'au Støvla', bunes_munkebu: 'au-dessus de Bunes', munkebu_reine: 'vers Reine', reinebringen_helvete: 'sur l’arête de Reinebringen' };
-    const rep = d3.rollups([...slow, ...fast], v => v.length, t => t.act).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]);
-    $('t-tail').innerHTML = `Les trois plus lents sont les passages du récit : <b>l’arête de Reinebringen</b> dans le brouillard, <b>la barre du Støvla</b>, <b>le sentier fantôme</b> vers Munkebu. ${hard} des 10 sont en terrain exigeant ou expert. Côté rapide, ${desc === fast.length ? `les ${desc}` : `${desc} des ${fast.length}`} sont des descentes courues.<br><br>Ces extrêmes sont rares, ${T.slow.length + T.fast.length} sur ${f0(D.n)}, mais ils reviennent aux mêmes endroits : ${rep.map(([a, n]) => `${n} fois ${PL_[a] || actName(a)}`).join(', ')}. Les écarts arrivent par passages entiers, pas par pas isolés.`;
+    const PL_ = { ryten: 'dans la descente du Ryten', stuvla: 'au Støvla', bunes_munkebu: 'entre Bunes et Munkebu', munkebu_reine: 'entre Munkebu et Reine', reinebringen_helvete: 'sur l’arête de Reinebringen', napp_nusfjord_1: 'le premier jour vers Nusfjord', volandstinden: 'au Volandstinden' };
+    const rep = d3.rollups([...T.slow, ...T.fast], v => v.length, t => t.act).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]);
+    $('t-tail').innerHTML = `Les trois plus lents sont les passages du récit : <b>l’arête de Reinebringen</b> dans le brouillard, <b>la barre du Støvla</b>, <b>le sentier fantôme</b> vers Munkebu. ${hard === slow.length ? `Les ${hard}` : `${hard} des ${slow.length}`} sont en terrain exigeant ou expert. Côté rapide, ${desc === fast.length ? `les ${desc}` : `${desc} des ${fast.length}`} sont des descentes courues.<br><br>Ces extrêmes sont rares, ${T.slow.length + T.fast.length} sur ${f0(D.n)}, mais ${d3.sum(rep, r => r[1])} d’entre eux tombent dans ${rep.length} passages : ${rep.map(([a, n]) => `${n} ${PL_[a] || actName(a)}`).join(', ')}. Les écarts arrivent par passages entiers, pas par pas isolés.`;
   }
 
   /* ---------- 05 · bands + rolling irregularity (shared crosshair) ---------- */
