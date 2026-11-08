@@ -299,3 +299,6 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 .procon .pc:first-child li { border-left-color: var(--accent); }
 .procon .pc:last-child li { border-left-color: var(--down); }
 .pnum { margin-top: 4px; font-size: 11.5px; color: var(--text-muted); }
+.dstats td { vertical-align: top; font-size: 13px; line-height: 1.45; }
+.dstats td:first-child { min-width: 120px; }
+.dstats td.muted { font-size: 12.5px; color: var(--text-secondary); min-width: 220px; }

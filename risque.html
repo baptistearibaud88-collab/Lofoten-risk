@@ -111,26 +111,26 @@
   </section>
 
   <section id="s3">
-    <header class="sh"><span class="num">03</span><h2>Distribution des écarts d’allure</h2></header>
-    <p class="lede">La trace est découpée en <b id="n-seg"></b> tronçons de 250 m. Pour chacun, la règle de Tobler donne un temps attendu à partir de la pente. La variable étudiée est l’écart <span class="mono">e = ln(temps réel / temps attendu)</span>, centré sur mon rythme moyen avec et sans sac : 0 signifie « dans mon allure », +0,4 environ 1,5 fois plus lent.</p>
+    <header class="sh"><span class="num">03</span><h2>Un tronçon pris seul : des écarts ordinaires</h2></header>
+    <p class="lede">La partie 02 a classé le terrain. Ici, on mesure la surprise : sur chaque tronçon de 250 m, de combien le temps réel s’écarte-t-il du temps que la pente laissait prévoir ? Le temps attendu vient de la règle de Tobler, recalée sur mon allure moyenne avec et sans sac. L’écart <span class="mono">e = ln(temps réel / temps attendu)</span> vaut 0 quand je suis dans mon allure, +0,4 quand je suis environ 1,5 fois plus lent, −0,4 quand je suis 1,5 fois plus rapide. La question : ces écarts sont-ils ordinaires, ou les grosses surprises sont-elles fréquentes ?</p>
     <div class="grid-2 g-dist">
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Histogramme de e · ajustements normal et Student</span><span class="pc-r mono" id="r-hist"></span></div>
+        <div class="pc-head"><span class="pc-t">Histogramme des écarts · loi normale et loi de Student</span><span class="pc-r mono" id="r-hist"></span></div>
         <div class="chart" id="c-hist" data-h="300"></div>
         <div class="pc-foot"><span class="legend-row" id="l-hist"></span></div>
       </div>
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Statistiques descriptives</span></div>
-        <table class="stats-table mono" id="dist-stats"></table>
+        <div class="pc-head"><span class="pc-t">Diagramme quantile-quantile · un point par tronçon</span><span class="pc-r mono" id="r-qq"></span></div>
+        <div class="chart" id="c-qq" data-h="300"></div>
       </div>
     </div>
     <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Diagramme quantile-quantile · e centré-réduit contre loi normale</span><span class="pc-r mono">n = 605</span></div>
-      <div class="chart" id="c-qq" data-h="280"></div>
+      <div class="pc-head"><span class="pc-t">Les indicateurs, expliqués</span><span class="pc-r mono" id="r-dstats"></span></div>
+      <div class="table-wrap flat"><table class="data dstats" id="dist-stats"></table></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Si les écarts suivaient une loi normale, les barres épouseraient la courbe en pointillés et, sur le diagramme quantile-quantile, les points resteraient sur la diagonale. Les points qui s’en écartent aux extrémités signalent des queues plus épaisses que prévu.</p></div>
-      <div><h4>Méthode</h4><p>Ajustement normal par moments, loi de Student par maximum de vraisemblance. Test de normalité de Jarque-Bera sur l’asymétrie et l’aplatissement. Les lignes verticales marquent les seuils à ±2σ.</p></div>
+      <div><h4>Comment lire</h4><p id="n-dist-read"></p></div>
+      <div><h4>Méthode</h4><p id="n-dist-meth"></p></div>
       <div class="key"><h4>À retenir</h4><p id="t-dist"></p></div>
     </div>
   </section>
@@ -151,7 +151,7 @@
 
   <section id="s5">
     <header class="sh"><span class="num">05</span><h2>Où le temps s’est perdu, et où il s’est gagné</h2></header>
-    <p class="lede">Pour chaque tronçon de 250 m, le modèle (partie 07) prévoit un temps à partir de la pente, du sac et de la cote du terrain. L’écart e compare le temps réel à ce temps prévu : +30 % veut dire 30 % plus lent que prévu. Pris seuls, les tronçons sont bruités. Regroupés, ils dessinent des épisodes : au moins 750 m d’affilée nettement plus lents (rouge) ou plus rapides (vert) que prévu.</p>
+    <p class="lede">Pour chaque tronçon de 250 m, la règle de Tobler prévoit un temps à partir de la pente, recalé sur mon allure moyenne avec et sans sac (partie 03). L’écart e compare le temps réel à ce temps prévu : +30 % veut dire 30 % plus lent que prévu. Pris seuls, les tronçons sont bruités. Regroupés, ils dessinent des épisodes : au moins 750 m d’affilée nettement plus lents (rouge) ou plus rapides (vert) que prévu.</p>
     <div class="pc">
       <div class="pc-head"><span class="pc-t">Écart au temps prévu · moyenne glissante 2 km · épisodes</span><span class="pc-r mono" id="r-roll"></span></div>
       <div class="chart" id="c-bands" data-h="250"></div>
@@ -451,10 +451,11 @@
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="risque_data.js?v=20261105-8"></script>
+<script src="risque_dist.js?v=20261108-1"></script>
 <script src="risque_sections.js?v=20261106-1"></script>
 <script src="risque_episodes.js?v=20261106-3"></script>
 <script src="risque_plan.js?v=20261106-2"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261107-3"></script>
+<script src="risque.js?v=20261108-1"></script>
 </body>
 </html>

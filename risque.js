@@ -117,7 +117,7 @@
   }
 
   /* ---------- header: ticker, scope, KPIs ---------- */
-  const D = R.dist, MC = R.mc, W_ = R.weather;
+  const D = window.RISK_DIST || R.dist, MC = R.mc, W_ = R.weather;
   const sens = Object.fromEntries(R.sens.map(s => [s.name, s]));
   const sacS = sens['sac sur le dos'];
   const physIds = ['stuvla', 'last_trail', 'bunes_munkebu', 'andstabben'];
@@ -138,12 +138,12 @@
   $('scope').innerHTML = [['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
   $('kpis').innerHTML = [
-    ['Queues de distribution', `×${f1(tailRatio)}`, 'd’écarts extrêmes (au-delà de 3σ) par rapport à la loi normale', `${f2(D.beyond3 * 100)} % des tronçons contre ${f2(D.norm3 * 100)} %`],
+    ['Persistance', `×${f1(EP.topo.agg.massif / EP.topo.agg.seg)}`, 'd’incertitude sur le temps total : les écarts s’additionnent dans un massif', `± ${f0(EP.topo.agg.massif)} min contre ± ${f0(EP.topo.agg.seg)} min tronçon par tronçon`],
     ['Effet du sac', `${fs0(sacS.pct)} %`, 'de temps par tronçon, à pente et terrain égaux', `IC 95 % : ${fs0(sacS.lo)} à ${fs0(sacS.hi)} %`],
     ['Indice de danger', `${physRanks.filter(r => r <= R.rows.length / 3).length} / ${physIds.length}`, 'alertes de terrain dans le tiers le plus exposé', `rangs ${physRanks.join(', ')} sur ${R.rows.length}`],
     ['Monte Carlo', `×${f0(pB / pN)}`, 'risque sous-estimé d’une journée de plus de 10 h par la loi normale', `J3 : ${f1(pB)} % contre ${f1(pN)} %`],
   ].map(([l, b, s, sm]) => `<div class="kpi"><span class="kl">${l}</span><b>${b}</b><span class="kd">${s}</span><small>${sm}</small></div>`).join('');
-  $('n-seg').textContent = D.n;
+  if ($('n-seg')) $('n-seg').textContent = D.n;
 
   /* ---------- 01 · OHLC candles + D+ ---------- */
   function drawCandles() {
@@ -250,7 +250,7 @@
     const y = d3.scaleLinear().domain([0, d3.max([d3.max(D.hist), d3.max(D.pdf_t)]) * 1.1]).nice().range([f.h, 0]);
     yGrid(f.g, y, f.w, 4);
     xAxis(f.g, x, f.h, 8, F('+.1f'));
-    axTitle(f.g, 'e = ln(réel / attendu)', 0, f.h + 30);
+    axTitle(f.g, 'écart e (0 = dans mon allure)', 0, f.h + 30);
     const z = v => Math.abs((v - D.mu) / D.sd) > 2;
     f.g.selectAll('.hb').data(bins).join('path')
       .attr('d', d => barPath(x(d.a) + .5, y(0), Math.max(1, x(d.b) - x(d.a) - 1.5), y(d.n), 1))
@@ -262,34 +262,58 @@
     });
     const ln = d3.line().x((d, i) => x(D.xs[i])).y(d => y(d)).curve(d3.curveBasis);
     f.g.append('path').attr('d', ln(D.pdf)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4');
-    f.g.append('path').attr('d', ln(D.pdf_t)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.8);
+    f.g.append('path').attr('d', ln(D.pdf_t)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.4).attr('opacity', .8);
     hover(f.g.selectAll('.hh').data(bins).join('rect').attr('class', 'hit').attr('x', d => x(d.a)).attr('width', d => x(d.b) - x(d.a)).attr('y', 0).attr('height', f.h),
-      d => { const mid = (d.a + d.b) / 2, i = d3.minIndex(D.xs, v => Math.abs(v - mid)); return `<b>e ∈ [${f2(d.a)} ; ${f2(d.b)}]</b>${row('facteur de temps', `×${f2(Math.exp(d.a))} – ×${f2(Math.exp(d.b))}`)}${row('tronçons observés', d.n)}${row('attendus (normale)', f1(D.pdf[i]))}${row('attendus (Student)', f1(D.pdf_t[i]))}`; });
-    legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale'], ['ln', C('--warning'), `Student t (${f0(D.t_df)} ddl)`]]);
-    readout('r-hist', `μ <b>${fs2(D.mu)}</b> σ <b>${f2(D.sd)}</b> γ <b>${fs2(D.skew)}</b> κ <b>${fs2(D.kurt)}</b>`);
-    $('dist-stats').innerHTML = [
-      ['Observations', f0(D.n), 'tronçons'], ['Moyenne', fs2(D.mu), 'centrée'], ['Écart-type', f2(D.sd), `×${f2(Math.exp(D.sd))} sur le temps`],
-      ['Asymétrie', fs2(D.skew), 'normale : 0'], ['Excès de kurtosis', fs2(D.kurt), 'normale : 0', true], ['Jarque-Bera', 'p < 10⁻³⁰', 'normalité rejetée', true],
-      ['|z| > 2', `${f2(D.beyond2 * 100)} %`, `normale : ${f2(D.norm2 * 100)} %`], ['|z| > 3', `${f2(D.beyond3 * 100)} %`, `normale : ${f2(D.norm3 * 100)} %`, true],
-      ['Student, ddl', f1(D.t_df), 'queues épaisses'], ['σ avec sac', f2(D.sd_avec), ''], ['σ sans sac', f2(D.sd_sans), `${fs0((D.sd_sans / D.sd_avec - 1) * 100)} %`],
-    ].map(([a, b, c, h]) => `<tr${h ? ' class="hl"' : ''}><td>${a}</td><td>${b}</td><td>${c}</td></tr>`).join('');
+      d => { const mid = (d.a + d.b) / 2, i = d3.minIndex(D.xs, v => Math.abs(v - mid)); return `<b>e entre ${f2(d.a)} et ${f2(d.b)}</b>${row('temps réel / attendu', `×${f2(Math.exp(d.a))} à ×${f2(Math.exp(d.b))}`)}${row('tronçons observés', d.n)}${row('attendus si loi normale', f1(D.pdf[i]))}`; });
+    legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale'], ['ln', C('--warning'), 'loi de Student ajustée']]);
+    readout('r-hist', `${f0(D.n)} tronçons · σ <b>${f2(D.sd)}</b>`);
+
+    // indicators, each one explained, with a verdict
+    const pT = v => `${v >= 0 ? '+' : '−'}${f0(Math.abs(v) * 100)} %`;
+    const V = { ok: ['c-ok', 'normal'], warn: ['c-sub', 'à surveiller'], info: ['c-av', 'repère'] };
+    const rows = [
+      ['Écart-type σ', f2(D.sd), `La dispersion typique. Deux tronçons sur trois tombent entre ${pT(Math.exp(-D.sd) - 1)} et ${pT(Math.exp(D.sd) - 1)} du temps attendu.`, 'info'],
+      ['Asymétrie', fs2(D.skew), 'Compare les deux côtés : positive si les tronçons lents s’éloignent plus que les rapides. 0 pour une loi normale.', Math.abs(D.skew) < .3 ? 'ok' : 'warn'],
+      ['Kurtosis (excès)', fs2(D.kurt), 'L’épaisseur des queues : la fréquence des très gros écarts. 0 pour une loi normale ; au-dessus de 1, les surprises extrêmes deviennent nettement plus fréquentes.', D.kurt < 1 ? 'ok' : 'warn'],
+      ['Test de Jarque-Bera', `${f1(D.jb)} · p = ${f2(D.jb_p)}`, 'Réunit asymétrie et kurtosis en un seul test : « ces écarts peuvent-ils venir d’une loi normale ? ». On répond non au-delà de 6 (p < 5 %).', D.jb_p > .05 ? 'ok' : 'warn'],
+      ['Au-delà de 2σ', `${D.n2} tronçons`, `Les écarts marqués. Une loi normale en attend ${f0(D.n * D.norm2)} sur ${f0(D.n)}.`, 'ok'],
+      ['Au-delà de 3σ', `${D.n3} tronçons`, `Les vraies surprises. Une loi normale en attend ${f1(D.exp3)} ; en voir ${D.n3} ou plus arrive par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
+      ['Loi de Student', `${f0(D.t_df)} degrés de liberté`, 'Une loi faite pour les queues épaisses, ajustée sur les données. Sous 10 degrés de liberté, les queues sont épaisses ; au-delà de 20, elle se confond presque avec la normale.', D.t_df > 20 ? 'ok' : 'warn'],
+      ['Avec ou sans sac', `σ ${f2(D.sd_avec)} / ${f2(D.sd_sans)}`, `En trail, sans le sac, l’allure est ${f0((D.sd_sans / D.sd_avec - 1) * 100)} % plus dispersée : on pousse, on court, on s’arrête.`, 'info'],
+    ];
+    $('dist-stats').innerHTML = `<thead><tr><th>Indicateur</th><th class="n">Valeur</th><th>Ce que ça mesure</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, v, t, k]) => `<tr><td><b>${a}</b></td><td class="n">${v}</td><td class="muted">${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody>`;
+    readout('r-dstats', D.jb_p > .05 ? 'normalité <b>non rejetée</b>' : 'normalité <b>rejetée</b>');
 
     const q = frame('c-qq', { t: 14, r: 46, b: 32, l: 8 });
-    const lim = [Math.floor(Math.min(d3.min(D.qq, d => d[1]), d3.min(D.qq, d => d[0])) - .3), Math.ceil(Math.max(d3.max(D.qq, d => d[1]), d3.max(D.qq, d => d[0])) + .2)];
-    const limX = [Math.floor(d3.min(D.qq, d => d[0]) - .3), Math.ceil(d3.max(D.qq, d => d[0]) + .3)];
-    const xq = d3.scaleLinear().domain(limX).range([0, q.w]), yq = d3.scaleLinear().domain(lim).range([q.h, 0]);
+    const ext = d3.extent(D.qq.flat()), lim = [Math.floor(ext[0] - .2), Math.ceil(ext[1] + .2)];
+    const xq = d3.scaleLinear().domain(lim).range([0, q.w]), yq = d3.scaleLinear().domain(lim).range([q.h, 0]);
     yGrid(q.g, yq, q.w, 6, F('+d'));
     xAxis(q.g, xq, q.h, 8, F('+d'));
-    axTitle(q.g, 'quantile théorique N(0,1)', 0, q.h + 28);
-    [[-3, -2], [2, 3]].forEach(([a, b]) => q.g.append('rect').attr('x', xq(a)).attr('width', xq(b) - xq(a)).attr('y', 0).attr('height', q.h).attr('fill', C('--down')).attr('opacity', .06));
-    q.g.append('line').attr('x1', xq(limX[0])).attr('y1', yq(limX[0])).attr('x2', xq(limX[1])).attr('y2', yq(limX[1])).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2).attr('stroke-dasharray', '5 4');
+    axTitle(q.g, 'position attendue si loi normale (en σ)', 0, q.h + 28);
+    [[lim[0], -3], [3, lim[1]]].forEach(([a, b]) => q.g.append('rect').attr('x', xq(a)).attr('width', xq(b) - xq(a)).attr('y', 0).attr('height', q.h).attr('fill', C('--down')).attr('opacity', .06));
+    q.g.append('line').attr('x1', xq(lim[0])).attr('y1', yq(lim[0])).attr('x2', xq(lim[1])).attr('y2', yq(lim[1])).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2).attr('stroke-dasharray', '5 4');
     q.g.selectAll('.qd').data(D.qq).join('circle').attr('cx', d => xq(d[0])).attr('cy', d => yq(d[1])).attr('r', 2.6)
-      .attr('fill', d => Math.abs(d[1]) > 2.5 ? C('--down') : C('--accent')).attr('fill-opacity', d => Math.abs(d[1]) > 2.5 ? 1 : .7);
-    const hi = D.qq[D.qq.length - 1];
-    q.g.append('text').attr('class', 'lbl-strong').attr('x', xq(hi[0]) - 10).attr('y', yq(hi[1]) + 4).attr('text-anchor', 'end').text('queue lente au-dessus de la droite →');
+      .attr('fill', d => Math.abs(d[1]) > 3 ? C('--down') : C('--accent')).attr('fill-opacity', d => Math.abs(d[1]) > 3 ? 1 : .7);
+    // name the extremes
+    const LBL = { bunes_munkebu: 'le sentier fantôme vers Munkebu', reinebringen_helvete: 'l’arête de Reinebringen', stuvla: 'la barre du Støvla', ryten: 'la descente du Ryten' };
+    const nm = e => LBL[e.act] || actName(e.act);
+    const ex = (D.extremes || []).map(e => ({ ...e, q: D.qq.find(p => Math.abs(p[1] - e.z) < .002) })).filter(e => e.q);
+    // labels stacked so they never overlap: slow ones down the left of their point, fast ones to the right
+    const hiEx = ex.filter(e => e.z > 0).sort((a, b) => b.z - a.z), loEx = ex.filter(e => e.z < 0);
+    hiEx.forEach((e, k) => { const ty = yq(e.q[1]) + k * 15 + 4, tx = xq(e.q[0]) - 34;
+      q.g.append('line').attr('x1', tx + 3).attr('y1', ty - 4).attr('x2', xq(e.q[0]) - 3).attr('y2', yq(e.q[1])).attr('stroke', C('--text-muted')).attr('stroke-width', .8);
+      q.g.append('text').attr('class', 'lbl-strong').attr('x', tx).attr('y', ty).attr('text-anchor', 'end').text(`${nm(e)} · ${dayLbl(e.day)}`); });
+    loEx.forEach(e => q.g.append('text').attr('class', 'lbl-strong').attr('x', xq(e.q[0]) + 8).attr('y', yq(e.q[1]) + 4).text(`${nm(e)} · ${dayLbl(e.day)}`));
+    q.g.append('text').attr('class', 'ax-title').attr('x', 4).attr('y', 10).text('écart observé (en σ)');
     hover(q.g.selectAll('.qh').data(D.qq).join('circle').attr('class', 'hit').attr('cx', d => xq(d[0])).attr('cy', d => yq(d[1])).attr('r', 8),
-      d => `<b>z observé ${fs2(d[1])}</b>${row('attendu si normal', fs2(d[0]))}${row('écart', fs2(d[1] - d[0]))}`);
-    $('t-dist').textContent = `L’allure ne suit pas une loi normale : centre plus pointu, queues plus épaisses (excès de kurtosis ${fs2(D.kurt)}). Les écarts au-delà de 3σ sont ${f1(tailRatio)} fois plus fréquents que prévu, et une loi de Student à ${f0(D.t_df)} degrés de liberté décrit mieux les extrêmes. Sans le sac, l’allure est ${f0((D.sd_sans / D.sd_avec - 1) * 100)} % plus dispersée : c’est en trail que les surprises sont les plus grandes.`;
+      d => `<b>écart observé ${fs2(d[1])} σ</b>${row('attendu si loi normale', `${fs2(d[0])} σ`)}`);
+    readout('r-qq', `${D.n3} tronçons au-delà de 3σ`);
+
+    const art = (D.artefacts || [])[0];
+    $('n-dist-read').textContent = 'Si les écarts sont ordinaires, les barres suivent la courbe en pointillés et les points restent sur la diagonale. Seuls les points tout au bout s’en écartent ici.';
+    $('n-dist-meth').textContent = `${f0(D.n)} tronçons de 250 m.${art ? ` Un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée.` : ''} Loi normale ajustée par la moyenne et l’écart-type, loi de Student par maximum de vraisemblance.`;
+    const slow = ex.filter(e => e.z > 0).map(nm), fast = ex.filter(e => e.z < 0).map(nm);
+    $('t-dist').innerHTML = `Pris un par un, les tronçons sont <b>ordinaires</b> : la loi normale les décrit bien (Jarque-Bera p = ${f2(D.jb_p)}). Seuls <b>${D.n3}</b> s’en échappent : ${slow.join(', ')} en lent, ${fast.join(', ')} en rapide.<br><br>Le danger ne vient donc pas d’un pas isolé. La partie 04 regarde ces quelques extrêmes, puis la suite montre où le risque se construit vraiment : dans l’enchaînement.`;
   }
 
   /* ---------- 04 · tail table ---------- */
@@ -938,7 +962,8 @@
   function drawConcl() {
     const L = [
       ['Le sac ralentit, le danger arrive sans lui', `Le sac coûte ${fs0(sacS.pct)} % de temps à terrain égal, mais il rend l’allure plus régulière. Trois des quatre alertes de terrain ont eu lieu sans le sac, sur des sommets en trail, là où je me sentais le plus libre.`],
-      ['Les extrêmes sont plus fréquents qu’une moyenne ne le laisse croire', `Les écarts au-delà de 3σ sont ${f1(tailRatio)} fois plus fréquents que sous une loi normale, et ils se jouent massif par massif : chaque retour à la mer remet le terrain à zéro.`],
+      ['Chaque pas est ordinaire, c’est l’enchaînement qui coûte', `Pris un par un, les tronçons suivent presque une loi normale. Mais dans un massif, les écarts vont dans le même sens et s’additionnent : l’incertitude sur le temps total passe de ± ${f0(EP.topo.agg.seg)} à ± ${f0(EP.topo.agg.massif)} min.`],
+
       ['La fatigue ne ralentit pas : elle fait renoncer', 'Aucun effet mesurable sur l’allure, mais les trois renoncements suivent tous de la fatigue ou du temps perdu juste avant. La fatigue se voit dans les décisions, pas sur la montre.'],
       ['Le risque s’est concentré à la fin', `${f1(lateRain / W_.total_rain * 100)} % de la pluie est tombée du J7 au J9, quand la réserve physique était au plus bas. Les trois incidents graves tombent dans cette fenêtre.`],
       ['Le terrain coté explique où tombent les alertes', `Les sorties exigeantes ou expertes concentrent toutes les alertes analysées. La cote DNT est le premier filtre de risque, avant la météo et la fatigue.`],

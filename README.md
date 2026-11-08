@@ -21,6 +21,7 @@ La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu fonc�
 
 ```
 node outils/segmentation_terrain.js   # cotation par section (partie 02) → risque_sections.js
+node outils/distribution.js           # distribution des écarts, sans artefact GPS (partie 03) → risque_dist.js
 node outils/episodes_allure.js        # épisodes d'allure et massifs (parties 05–06) → risque_episodes.js
 node outils/plan_reel.js              # plan (donnees/plan.gpx) contre réel (partie 13) → risque_plan.js
 ```
