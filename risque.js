@@ -383,21 +383,27 @@
 
   /* ---------- 04 · tail table ---------- */
   function drawTail() {
-    const T = D.tail, LBL = { bunes_munkebu: 'sentier fantôme', reinebringen_helvete: 'arête, brouillard', stuvla: 'barre rocheuse', ryten: 'descente courue' };
-    const slow = T.slow.slice(0, 5), fast = T.fast.slice(0, 5), zmax = d3.max([...slow, ...fast], t => Math.abs(t.z));
-    const firstOf = arr => (t, k) => arr.findIndex(x => x.act === t.act) === k;
-    const rowT = arr => (t, k) => `<tr><td class="n">${k + 1}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}" title="${t.sac ? 'avec le sac' : 'trail'}"></span>${actName(t.act).replace(/\s*\(.*\)$/, '')}<div class="muted">km ${f1(t.km)}${firstOf(arr)(t, k) && LBL[t.act] ? ` · ${LBL[t.act]}` : ''}</div></td><td class="mono">${dayLbl(t.day)}</td>
+    const T = D.tail, SS = R.series, LBL = { bunes_munkebu: 'sentier fantôme', reinebringen_helvete: 'arête, brouillard', stuvla: 'barre rocheuse', ryten: 'descente', volandstinden: 'descente', munkebu_reine: 'route de Reine' };
+    // neighbouring pieces of the same outing form one passage (the Ryten descent is one descent, not four)
+    const passages = list => {
+      const P = []; [...list].sort((a, b) => a.i - b.i).forEach(t => { const last = P[P.length - 1];
+        if (last && last.act === t.act && t.i - last.i1 <= 2) { last.i1 = t.i; last.items.push(t); } else P.push({ act: t.act, day: t.day, sac: t.sac, i0: t.i, i1: t.i, items: [t] }); });
+      return P.map(p => { const ii = p.items.map(t => t.i), real = d3.sum(ii, i => EP.seg_t[i]), exp = d3.sum(ii, i => EP.seg_t[i] * Math.exp(-SS[i].e));
+        const zz = p.items.reduce((b, t) => Math.abs(t.z) > Math.abs(b.z) ? t : b, p.items[0]);
+        return { ...p, n: ii.length, km0: (p.i0 ? SS[p.i0 - 1].km : 0), km1: SS[p.i1].km, z: zz.z, mult: real / exp, grade: d3.max(p.items, t => t.grade), slope: d3.mean(p.items, t => t.slope) }; })
+        .sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
+    };
+    const PS = passages(T.slow), PF = passages(T.fast), slow = PS.slice(0, 3), fast = PF.slice(0, 3);
+    const rowT = (t, k) => `<tr><td class="n">${k + 1}</td><td class="nw"><span class="dot" style="background:${t.sac ? C('--series-avec') : C('--series-sans')}" title="${t.sac ? 'avec le sac' : 'trail'}"></span>${actName(t.act).replace(/\s*\(.*\)$/, '')}<div class="muted">km ${t.n > 1 ? `${f1(t.km0)}–${f1(t.km1)}` : f1(t.km1)}${LBL[t.act] ? ` · ${LBL[t.act]}` : ''}</div></td><td class="mono">${dayLbl(t.day)}</td>
       <td><span class="chipg l${t.grade}"><i></i>${GL[t.grade]}</span></td><td class="n">${t.slope > 0 ? '+' : ''}${f0(t.slope)} %</td><td class="n">×${f1(t.mult)}</td>
       <td class="n">${fs2(t.z)}</td></tr>`;
-    const head = '<colgroup><col style="width:7%"><col style="width:35%"><col style="width:8%"><col style="width:20%"><col style="width:10%"><col style="width:9%"><col style="width:11%"></colgroup><thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th class="n">Pente</th><th class="n">Temps</th><th class="n">z</th></tr></thead>';
-    $('tail-table').innerHTML = head + `<tbody>${slow.map(rowT(slow)).join('')}</tbody>`;
-    $('tail-fast').innerHTML = head + `<tbody>${fast.map(rowT(fast)).join('')}</tbody>`;
-    readout('r-tail', `${T.slow.length} au-delà de +2σ`); readout('r-tail-f', `${T.fast.length} au-delà de −2σ`);
-    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. Cote de la section (partie 02). Cinq de chaque côté.`;
-    const hard = slow.filter(t => t.grade >= 3).length, desc = fast.filter(t => t.slope < -10).length;
-    const PL_ = { ryten: 'dans la descente du Ryten', stuvla: 'au Støvla', bunes_munkebu: 'entre Bunes et Munkebu', munkebu_reine: 'entre Munkebu et Reine', reinebringen_helvete: 'sur l’arête de Reinebringen', napp_nusfjord_1: 'le premier jour vers Nusfjord', volandstinden: 'au Volandstinden' };
+    const head = '<colgroup><col style="width:7%"><col style="width:35%"><col style="width:8%"><col style="width:20%"><col style="width:10%"><col style="width:9%"><col style="width:11%"></colgroup><thead><tr><th class="n">#</th><th>Passage</th><th>Jour</th><th>Cote</th><th class="n">Pente</th><th class="n">Temps</th><th class="n">z</th></tr></thead>';
+    $('tail-table').innerHTML = head + `<tbody>${slow.map(rowT).join('')}</tbody>`;
+    $('tail-fast').innerHTML = head + `<tbody>${fast.map(rowT).join('')}</tbody>`;
+    readout('r-tail', `${T.slow.length} tronçons au-delà de +2σ`); readout('r-tail-f', `${T.fast.length} tronçons au-delà de −2σ`);
+    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 03, triés par z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. Les tronçons voisins d’une même sortie forment un passage ; z est celui du pire tronçon. Trois passages de chaque côté.`;
     const rep = d3.rollups([...T.slow, ...T.fast], v => v.length, t => t.act).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]);
-    $('t-tail').innerHTML = `Lents : les passages du récit, en terrain exigeant ou expert. Rapides : des descentes courues.<br><br>Rares (${T.slow.length + T.fast.length} sur ${f0(D.n)}), ces extrêmes reviennent pourtant aux mêmes endroits : <b>${d3.sum(rep, r => r[1])} sur ${T.slow.length + T.fast.length}</b> dans ${rep.length} passages, de l’arête de Reinebringen à la descente du Ryten. Les écarts arrivent par passages entiers.`;
+    $('t-tail').innerHTML = `Lents : les passages du récit, en terrain exigeant ou expert. Rapides : des descentes courues en trail, et la route plate vers Reine.<br><br>Rares (${T.slow.length + T.fast.length} sur ${f0(D.n)}), ces extrêmes reviennent pourtant aux mêmes endroits : <b>${d3.sum(rep, r => r[1])} sur ${T.slow.length + T.fast.length}</b> dans ${rep.length} passages, de l’arête de Reinebringen à la descente du Ryten. Les écarts arrivent par passages entiers.`;
   }
 
   /* ---------- 05 · bands + rolling irregularity (shared crosshair) ---------- */
@@ -496,14 +502,14 @@
     $('cause-mix').innerHTML = `<div class="gm-bar">${bars.map(c => `<i style="flex:${c.min};background:${col(c)}" title="${lab(c)}"></i>`).join('')}</div>
       <div class="gm-rows">${bars.map(c => `<div class="gm-row"><i style="background:${col(c)}"></i><span>${lab(c)} <span class="mono">· ${c.n} épisode${c.n > 1 ? 's' : ''}</span></span><span class="mono">${f0(c.min)} min</span><span class="mono"><b>${f0(c.min / totMin * 100)} %</b></span></div>`).join('')}</div>`;
     const fam = d3.rollups(bars.filter(c => c.k), v => d3.sum(v, c => c.min), c => CAUSE[c.k][2]).sort((a, b) => b[1] - a[1]);
-    $('cause-fam').innerHTML = fam.map(([fm, mn]) => `<div class="gm-row"><span></span><span>${fm}</span><span class="mono">${f0(mn)} min</span><span class="mono"><b>${f0(mn / totMin * 100)} %</b></span></div>`).join('');
+    if ($('cause-fam')) $('cause-fam').innerHTML = fam.map(([fm, mn]) => `<div class="gm-row"><span></span><span>${fm}</span><span class="mono">${f0(mn)} min</span><span class="mono"><b>${f0(mn / totMin * 100)} %</b></span></div>`).join('');
     readout('r-cause', `${slow.length} épisodes · ${f0(totMin)} min`);
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
-    $('ep-fast').innerHTML = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${fast.filter(d => d.gps).map(d => actName(d.act)).join(' et ')} sont écartés : une pente GPS de plus de 50 % fausse le temps prévu.`;
+    $('ep-fast').innerHTML = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${(g => g.length ? `${g.join(' et ')} ${g.length > 1 ? 'sont écartés' : 'est écarté'} : une pente GPS de plus de 60 % fausse le temps attendu.` : '')(fast.filter(d => d.gps).map(d => actName(d.act)))}`;
     const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
     const CL = EP.cluster;
     if (CL) $('lede-roll').innerHTML = `Chaque tronçon, pris seul, est ordinaire (partie 03). Ce qui compte, c’est leur ordre. Un <b>épisode</b>, c’est au moins 750 m d’affilée nettement plus lents (rouge) ou plus rapides (vert) que l’allure attendue. Si mes ${f0(D.n)} écarts étaient mélangés au hasard, on attendrait environ ${f0(CL.all.n)} épisodes lents de plus de 5 min, pour ${f0(CL.all.min)} min en tout. Il y en a <b>${CL.obs_n}</b>, qui coûtent <b>${f0(CL.obs_min)} min</b> : les tronçons lents s’enchaînent.`;
-    $('t-roll').innerHTML = `<b>${MAJ.length}</b> épisodes de 10 min ou plus coûtent <b>${f0(majMin)} min</b>, et ${PAU.length} plus courts, sans doute des pauses, ${f0(pauMin)} min. Première cause : ${CAUSE[top.k][0].toLowerCase()} ; ${f0(subi / totMin * 100)} % du temps perdu est subi.${CL ? ` Même mélangés à l’intérieur de chaque sortie, les écarts n’en feraient que ${f0(CL.act.min)} min : la lenteur s’enchaîne au sein d’un même passage.` : ''}<br><br>Pourquoi ces enchaînements ? La forme du relief répond (partie 06).`;
+    $('t-roll').innerHTML = `<b>${MAJ.length}</b> épisodes de 10 min ou plus coûtent <b>${f0(majMin)} min</b>, et ${PAU.length} plus courts, sans doute des pauses, ${f0(pauMin)} min. Première cause : ${CAUSE[top.k][0].toLowerCase()} ; ${f0(subi / totMin * 100)} % du temps perdu est subi.${CL ? ` Même mélangés à l’intérieur de chaque sortie, les écarts n’en feraient que ${f0(CL.act.min)} min : la lenteur s’enchaîne au sein d’un même passage.` : ''}<br><br>Pourquoi ces enchaînements ? Parce que les sentiers des Lofoten ne ressemblent à aucun autre : on part du bord de la mer, on monte d’un coup, très raide, puis on redescend vers le fjord suivant. Un passage difficile ne dure pas un pas, il dure toute une montée ou toute une descente, et on ne peut pas en sortir au milieu. C’est la forme du relief qui fabrique ces enchaînements (partie 06).`;
   }
 
   /* ---------- 06 · independent summits, steep climbs: the risk structure of the massifs ---------- */

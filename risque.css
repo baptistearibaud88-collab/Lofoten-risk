@@ -322,3 +322,15 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 .notes.eq { grid-template-columns: 1fr 1fr 1fr; }
 @media (max-width: 900px) { .grid-2.g-tail { grid-template-columns: 1fr; } }
 @media (max-width: 900px) { .notes.eq { grid-template-columns: 1fr; } }
+table.data.ep { font-size: 12.5px; }
+table.data.ep td { padding: 5px 10px; vertical-align: middle; }
+table.data.ep th { padding: 7px 10px; }
+table.data.ep .cause-d { font-size: 11.5px; margin-top: 2px; line-height: 1.35; }
+table.data.ep .cause { font-size: 10.5px; padding: 1px 6px 1px 3px; }
+table.data.ep .muted { font-size: 11px; }
+table.data.ep .chipg { font-size: 10.5px; padding: 1px 6px 1px 2px; }
+table.data.ep .chipg i { width: 11px; height: 11px; }
+table.data.ep .tag { font-size: 10px; padding: 1px 5px; }
+.cause-wide .gm-rows { grid-template-columns: 1fr 1fr; column-gap: 28px; }
+@media (max-width: 900px) { .cause-wide .gm-rows { grid-template-columns: 1fr; } }
+.pc-foot.ep-foot { display: block; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
