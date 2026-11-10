@@ -8,7 +8,7 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Analyse de risque · Traversée des Lofoten">
-<meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
+<meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
 <link rel="stylesheet" href="risque.css?v=20261110-8">
@@ -24,7 +24,7 @@
 <header class="hero">
   <div class="hero-top">
     <div>
-      <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.3 · 05/11/2026</span><span>Période : 14–22 juin 2026</span></div>
+      <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.3 · 10/11/2026</span><span>Période : 14–22 juin 2026</span></div>
       <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
       <p class="sub">Allure, terrain, météo et récupération sur 9 jours : distribution des écarts, dispersion glissante, sensibilités, simulation Monte Carlo et part de chance.</p>
     </div>
@@ -50,9 +50,9 @@
     <a href="#s1"><b>01</b>Relief des sorties</a>
     <a href="#s2"><b>02</b>Cotation du terrain</a>
     <a href="#s3"><b>03</b>Distribution</a>
-    <a href="#s4"><b>04</b>Queues</a>
-    <a href="#s5"><b>05</b>Irrégularité</a>
-    <a href="#s6"><b>06</b>Grappes</a>
+    <a href="#s4"><b>04</b>Extrêmes</a>
+    <a href="#s5"><b>05</b>Épisodes lents</a>
+    <a href="#s6"><b>06</b>Massifs</a>
     <a href="#s7"><b>07</b>Sensibilités</a>
     <a href="#s8"><b>08</b>Réserve physique</a>
     <a href="#s9"><b>09</b>Météo</a>
@@ -233,14 +233,14 @@
 
   <section id="s7">
     <header class="sh"><span class="num">07</span><h2>Sensibilités : ce qui ralentit, et ce qui ne ralentit pas</h2></header>
-    <p class="lede">Une régression sur les 605 tronçons isole l’effet de chaque facteur, toutes choses égales par ailleurs. Chaque barre donne la variation du temps de passage, avec son intervalle de confiance à 95 %.</p>
+    <p class="lede">Une régression sur les 604 tronçons isole l’effet de chaque facteur, toutes choses égales par ailleurs. Chaque barre donne la variation du temps de passage, avec son intervalle de confiance à 95 %.</p>
     <div class="grid-2 g-6040">
       <div class="pc"><div class="pc-head"><span class="pc-t">Effet marginal sur le temps d’un tronçon</span><span class="pc-r mono" id="r-sens"></span></div><div class="chart" id="c-sens" data-h="300"></div><div class="pc-more" id="sens-more"></div></div>
       <div class="pc"><div class="pc-head"><span class="pc-t">Matrice de corrélation (Spearman, par sortie)</span></div><div class="chart" id="c-corr" data-h="400"></div></div>
     </div>
     <div class="notes wk">
       <div><h4>Comment lire</h4><p>Une barre à droite de zéro ralentit, une barre à gauche accélère. Si la moustache traverse zéro, l’effet n’est pas distinguable du hasard (n.s.). Dans la matrice, rouge = les deux facteurs montent ensemble, bleu = l’un monte quand l’autre baisse.</p></div>
-      <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente (en valeur absolue : montée ou descente), sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1. Les vitesses en km/h comparent les tronçons de 15 à 25 % de pente, en montée et en descente.</p></div>
+      <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente (en valeur absolue : montée ou descente), sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1. L’artefact GPS de Kvalvika (partie 03) est exclu. Les vitesses en km/h comparent les tronçons de 15 à 25 % de pente, en montée et en descente.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-sens"></p></div>
     </div>
   </section>
@@ -449,7 +449,7 @@
       <div>
         <h3>Données</h3>
         <ul>
-          <li><b>Trace et effort</b> : montre GPS, 7 184 points avec altitude, temps en mouvement, fréquence cardiaque et calories, regroupés en 605 tronçons de 250 m.</li>
+          <li><b>Trace et effort</b> : montre GPS, 7 184 points avec altitude, temps en mouvement, fréquence cardiaque et calories, regroupés en 605 tronçons de 250 m, dont 604 analysés (un tronçon écarté pour erreur d’altitude GPS, partie 03).</li>
           <li><b>Sommeil et récupération</b> : 9 nuits (durée, phases, VFC, recharge d’énergie).</li>
           <li><b>Météo</b> : réanalyse ERA5 (Copernicus), heure par heure sur trois zones, et climatologie 1996–2025 sur les mêmes dates.</li>
           <li><b>Terrain</b> : échelle DNT et échelle CAS, à partir des guides cités (partie 02).</li>
@@ -457,12 +457,14 @@
         <h3>Calculs</h3>
         <ul>
           <li><b>Allure attendue</b> : fonction de Tobler, v = 6·e<sup>−3,5·|pente+0,05|</sup> km/h.</li>
-          <li><b>Écart</b> : ln(temps réel / temps attendu), centré séparément avec et sans sac.</li>
+          <li><b>Écart</b> : ln(temps réel / temps attendu), centré séparément avec et sans sac. Un tronçon écarté (erreur d’altitude GPS à Kvalvika, |pente| &gt; 60 %), partout à partir de la partie 03.</li>
           <li><b>Loi</b> : test de Jarque-Bera, loi de Student ajustée par maximum de vraisemblance.</li>
-          <li><b>Grappes</b> : autocorrélation et test de Ljung-Box sur 10 tronçons.</li>
-          <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler).</li>
+          <li><b>Épisodes</b> : moyenne glissante sur 2 km, épisodes d’au moins 3 tronçons au-delà de ±0,20 ; test du hasard par 2 000 mélanges des écarts ; autocorrélation d’ordre 1.</li>
+          <li><b>Massifs</b> : corrélations montée-descente et d’un massif au suivant ; agrégation des écarts en racine de la somme des carrés.</li>
+          <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
           <li><b>Simulation</b> : Monte Carlo, 5 000 tirages par modèle ; blocs de 8 tronçons (2 km).</li>
-          <li><b>Indice</b> : facteurs centrés-réduits, pondérés ; rétrécissement vers la moyenne pour les sorties courtes.</li>
+          <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
+          <li><b>Indice</b> : facteurs centrés-réduits, pondérés ; rétrécissement vers la moyenne pour les sorties courtes ; test exact de Mann-Whitney.</li>
         </ul>
       </div>
       <div>
@@ -479,11 +481,12 @@
         <ul>
           <li>Un seul marcheur, un seul séjour : les effets mesurés décrivent cette traversée, pas une loi générale.</li>
           <li>Les 5 sorties cotées avec les seuls critères DNT reposent aussi sur le récit et peuvent être révisées.</li>
-          <li>La normale météo est une moyenne de période ; une version future la situera en centiles jour par jour.</li>
+          <li>La normale du graphique de pluie cumulée est une moyenne de période sur trois zones ; les centiles (partie 09) ne portent que sur le point centre.</li>
+          <li>Les intervalles de confiance de la régression (partie 07) supposent des tronçons indépendants ; la partie 05 montre qu’ils s’enchaînent : ils sont donc un peu trop étroits.</li>
         </ul>
       </div>
     </div>
-    <p class="foot mono">LOF-26-RA · v0.3 · calculé par analyse_risque.py à partir des mêmes données que la carte</p>
+    <p class="foot mono">LOF-26-RA · v0.3 · calculé par analyse_risque.py et les scripts de outils/ à partir des mêmes données que la carte</p>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip" hidden></div>
@@ -497,7 +500,8 @@
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261110-1"></script>
+<script src="risque_sens.js?v=20261110-2"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-24"></script>
+<script src="risque.js?v=20261110-27"></script>
 </body>
 </html>

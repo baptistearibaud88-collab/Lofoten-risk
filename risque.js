@@ -123,6 +123,10 @@
   // danger index recomputed without the GPS artefact (outils/indice_danger.js)
   const IX = window.RISK_INDICE;
   if (IX) { IX.rows.forEach(o => Object.assign(R.rows.find(r => r.id === o.id), o)); R.idx = IX.idx; }
+  // regression and correlation matrix recomputed without the GPS artefact (outils/sensibilites.js)
+  const SX = window.RISK_SENS;
+  if (SX) { R.sens = SX.sens; R.r2 = SX.r2; R.corr = SX.corr; R.rows.forEach(r => { if (SX.e_mean[r.id] != null) r.e_mean = SX.e_mean[r.id]; }); }
+  const N_REG = SX ? SX.n : R.series.length;
   const sens = Object.fromEntries(R.sens.map(s => [s.name, s]));
   const sacS = sens['sac sur le dos'];
   const physIds = ['stuvla', 'last_trail', 'bunes_munkebu', 'andstabben'];
@@ -136,14 +140,14 @@
   const totKm = d3.sum(R.rows, r => r.km), totDp = d3.sum(R.rows, r => r.dplus);
   $('ticker').innerHTML = [
     ['Tronçons', f0(D.n), ''], ['σ écart', f2(D.sd), ''], ['Kurtosis', fs2(D.kurt), 'up'],
-    ['P(|z| > 3)', `${f2(D.beyond3 * 100)} %`, `×${f1(tailRatio)}`], ['ρ₁ autocorr.', f2(R.acf_r[0]), ''],
+    ['Au-delà de 3σ', `${D.n3}`, `${f1(D.exp3)} attendus`], ['ρ₁ autocorr.', f2(SX ? SX.acf1 : R.acf_r[0]), ''],
     ['Pluie J7–J9', `${f1(lateRain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${fs0((worstN.hrv / HRV_USUAL - 1) * 100)} %`, ''],
     ['σ arrivée MC', hm(BS_.term_sd), `${fs0((BS_.term_sd / NS_.term_sd - 1) * 100)} %`],
   ].map(([k, v, e]) => `<div><span>${k}</span><b>${v}</b>${e && e !== 'up' ? `<em class="up">${e}</em>` : ''}</div>`).join('');
   $('scope').innerHTML = [['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
   $('kpis').innerHTML = [
-    ['Persistance', `×${f1(EP.topo.agg.massif / EP.topo.agg.seg)}`, 'd’incertitude sur le temps total : les écarts s’additionnent dans un massif', `± ${f0(EP.topo.agg.massif)} min contre ± ${f0(EP.topo.agg.seg)} min tronçon par tronçon`],
+    ['Enchaînement', `×${f1(EP.topo.agg.massif / EP.topo.agg.seg)}`, 'd’incertitude sur le temps total : les écarts s’additionnent dans un massif', `± ${f0(EP.topo.agg.massif)} min contre ± ${f0(EP.topo.agg.seg)} min tronçon par tronçon`],
     ['Effet du sac', `${fs0(sacS.pct)} %`, 'de temps par tronçon, à pente et terrain égaux', `IC 95 % : ${fs0(sacS.lo)} à ${fs0(sacS.hi)} %`],
     ['Indice de danger', `${physRanks.filter(r => r <= R.rows.length / 3).length} / ${physIds.length}`, 'alertes de terrain dans le tiers le plus exposé', `rangs ${physRanks.join(', ')} sur ${R.rows.length}`],
     ['Monte Carlo', `×${f0(pB / pN)}`, 'risque sous-estimé d’une journée de plus de 10 h par la loi normale', `J3 : ${f1(pB)} % contre ${f1(pN)} %`],
@@ -301,7 +305,7 @@
       ['Test de Jarque-Bera', 'Réunit asymétrie et kurtosis en un score : plus il est grand, moins la loi normale est crédible. Au-delà de 6, on la rejette.',
         `<b>${f1(D.jb)}</b>, un score qu’une vraie loi normale donne ${f0(D.jb_p * 100)} fois sur 100 par hasard : rien d’anormal. Avec l’erreur GPS de Kvalvika gardée, il montait à ${f0(allJB.n / 6 * (allJB.skew ** 2 + allJB.kurt ** 2 / 4))} : un seul tronçon faux faisait croire à des queues épaisses.`, D.jb_p > .05 ? 'ok' : 'warn'],
       ['Au-delà de 2σ', 'Les écarts marqués.',
-        `<b>${D.n2} tronçons</b> au moins ${f1(Math.exp(2 * D.sd))} fois plus lents ou deux fois plus rapides ; une loi normale en attend ${f0(D.n * D.norm2)}. Ce sont surtout les passages techniques et les descentes courues (partie 04).`, 'ok'],
+        `<b>${D.n2} tronçons</b> au moins ${f1(Math.exp(2 * D.sd))} fois plus lents ou ${f1(Math.exp(2 * D.sd))} fois plus rapides ; une loi normale en attend ${f0(D.n * D.norm2)}. Ce sont surtout les passages techniques et les descentes courues (partie 04).`, 'ok'],
       ['Au-delà de 3σ', 'Les vraies surprises.',
         `<b>${D.n3} tronçons</b> : ${ex3txt}. Une loi normale en attend ${f1(D.exp3)} : léger excès, qu’on obtiendrait par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
       ['Loi de Student', 'Une cloche à queues réglables (outil 2). Peu de degrés de liberté, queues épaisses ; beaucoup, loi normale.',
@@ -648,7 +652,7 @@
       });
       // bloc d'explication en longueur, sous les deux graphiques
       const big = [...M].sort((a, b) => Math.abs(b.lost) - Math.abs(a.lost)).slice(0, 3);
-      $('ex-intro').innerHTML = `On repart des minutes de la partie 05 : sur chaque tronçon, le temps réel moins le temps prévu par Tobler, en retard (+) ou en avance (−). Additionnées massif par massif, elles donnent par exemple ${big.map(m => `<b>${fs0(m.lost)} min</b> sur ${actName(m.act)}`).join(', ')}. Le graphique ne montre pas du temps perdu, mais une <b>incertitude</b> : de combien le temps total de la traversée peut s’écarter du prévu, selon la façon dont ces retards s’additionnent.`;
+      $('ex-intro').innerHTML = `On repart des minutes de la partie 05 : sur chaque tronçon, le temps réel moins le temps prévu par Tobler, en retard (+) ou en avance (−). Additionnées sur tout un massif, avances comprises, elles donnent par exemple ${big.map(m => `<b>${fs0(m.lost)} min</b> sur ${actName(m.act)}`).join(', ')} ${(() => { const ep = EP.episodes.filter(x => x.act === big[0].act && x.sign > 0).sort((a, b) => b.lost_min - a.lost_min)[0]; return ep ? `(sur ${actName(big[0].act)}, l’épisode lent de la partie 05 compte ${fs0(ep.lost_min)} min : il ne retient que la portion lente)` : ''; })()}. Le graphique ne montre pas du temps perdu, mais une <b>incertitude</b> : de combien le temps total de la traversée peut s’écarter du prévu, selon la façon dont ces retards s’additionnent.`;
       $('ex-cols').innerHTML = D.map(d => `<div style="--c:${d.c}"><span class="s">${d.s}</span><div class="t">${d.l}</div><b class="v">± ${f0(d.v)} min</b><p>${{
         seg: 'Chaque tronçon est un tirage à part : un retard ici est compensé par une avance là. C’est l’hypothèse naïve, et elle est fausse : dans une même montée, si je suis lent sur un tronçon, je le suis aussi sur le suivant.',
         massif: 'Dans un massif, les retards s’accumulent sans se compenser : montée et descente vont dans le même sens. D’un massif à l’autre, ils se compensent : un sommet difficile n’en annonce pas un autre. C’est la structure réelle, mesurée.',
@@ -684,7 +688,7 @@
       ['Repli facile', 'Le niveau de la mer offre un terrain plat, des routes et des villages : se replier ne demande ni altitude ni col à franchir.'],
     ]);
     $('pc-con').innerHTML = li([
-      ['Pas de compensation dans un massif', `Montée et descente vont dans le même sens (r = ${f2(T.pace_same.r)}) : à l’intérieur d’un massif, le risque est ${f1(A.massif / A.seg)} fois celui d’un modèle tronçon par tronçon.`],
+      ['Pas de compensation dans un massif', `Montée et descente vont dans le même sens (r = ${f2(T.pace_same.r)}) : les écarts s’additionnent jusqu’en bas, et l’incertitude sur la traversée est ${f1(A.massif / A.seg)} fois celle d’un modèle tronçon par tronçon.`],
       ['Risque systématique', `La journée reste un facteur commun (r = ${f2(T.pace_next.r)} d’un massif au suivant) : la météo ne se diversifie pas.`],
       ['Levier élevé', `${f0(steepG * 100)} % du dénivelé se gagne au-dessus de 20 %, sur ${f0(steepD * 100)} % de la distance : l’exposition est courte, mais concentrée.`],
       ['La sortie n’est pas gratuite', `On sort d’un massif par une descente aussi raide que la montée (r = ${f2(T.grad_same.r)}). La plus grosse perte de la traversée, ${actName(worst.act)}, s’est faite en descente.`],
@@ -716,14 +720,14 @@
       const sac_ = sens['sac sur le dos'], ter_ = sens['terrain (+1 niveau)'], k1 = 1 + sac_.pct / 100, k2 = 1 + ter_.pct / 100;
       DEFS.regression = { t: 'La régression : isoler l’effet de chaque facteur', html: () => `
         <p><b>Le problème.</b> Sur chaque tronçon de 250 m, je compare mon temps réel au temps prévu par Tobler (partie 03). Plusieurs choses jouent en même temps : le sac, la pente, le terrain, le vent, la fatigue. Et elles sont mélangées : avec le sac, je marchais surtout sur du plat ; sans le sac, je montais des sommets raides. Comparer simplement « avec » et « sans » sac mélangerait l’effet du sac avec celui du terrain.</p>
-        <p><b>Le principe.</b> La régression cherche, pour chaque facteur, un multiplicateur du temps, et choisit l’ensemble de multiplicateurs qui explique le mieux les ${f0(R.series.length)} tronçons <i>tous à la fois</i>. Comme chaque tronçon combine les facteurs différemment, le calcul arrive à les démêler : c’est ce qu’on appelle « toutes choses égales par ailleurs ».</p>
+        <p><b>Le principe.</b> La régression cherche, pour chaque facteur, un multiplicateur du temps, et choisit l’ensemble de multiplicateurs qui explique le mieux les ${f0(N_REG)} tronçons <i>tous à la fois</i>. Comme chaque tronçon combine les facteurs différemment, le calcul arrive à les démêler : c’est ce qu’on appelle « toutes choses égales par ailleurs ».</p>
         <p class="def-ex"><b>Exemple.</b> Un tronçon prévu en 10 min. Avec le sac : × ${f2(k1)}, soit ${f1(10 * k1)} min. Si en plus le terrain est un cran plus difficile : × ${f2(k2)}, soit ${f1(10 * k1 * k2)} min. Les effets se multiplient. Le « ${fs0(sac_.pct)} % » du sac veut donc dire : deux tronçons identiques en pente, terrain, vent et fatigue, l’un avec le sac, l’autre sans ; celui avec le sac prend ${f0(sac_.pct)} % de temps en plus.</p>
         <p><b>Comment il choisit.</b> Méthode des moindres carrés : il retient les multiplicateurs qui rendent la somme des erreurs au carré la plus petite possible, entre le temps qu’ils prédisent et le temps réel.</p>
         <p><b>Lire le résultat.</b> La moustache est l’intervalle de confiance à 95 % : la zone où se trouve très probablement le vrai effet. Si elle traverse zéro, l’effet ne se distingue pas du hasard (n.s.), comme la fatigue. Le R² de ${f0(R.r2 * 100)} % dit quelle part des écarts d’un tronçon à l’autre ces facteurs expliquent ; le reste, c’est le terrain que les chiffres ne voient pas.</p>
         <p class="muted">Technique : moindres carrés ordinaires sur ln(temps réel / temps de Tobler) ; un coefficient β devient un effet de e<sup>β</sup> − 1 en %. Le logarithme transforme les multiplications en additions, ce que la régression sait traiter.</p>` };
       $('sens-more').innerHTML = defBtn('regression', 'Comment la régression isole chaque facteur');
     }
-    readout('r-sens', `R² <b>${f2(R.r2)}</b> · n <b>${R.series.length}</b> · MCO`);
+    readout('r-sens', `R² <b>${f2(R.r2)}</b> · n <b>${N_REG}</b> · MCO`);
 
     const V = R.corr.vars, M = R.corr.m, n = V.length;
     const cm = { t: 6, r: 6, b: 92, l: 86 };
