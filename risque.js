@@ -595,25 +595,25 @@
 
   /* ---------- 07 · sensitivities (tornado) + correlation matrix ---------- */
   function drawSens() {
-    const S = R.sens.slice().sort((a, b) => b.pct - a.pct);
+    const S = R.sens.slice().sort((a, b) => b.pct - a.pct), sLbl = n => n === 'pente (+10 %)' ? 'pente ↑ ou ↓ (+10 %)' : n;
     const f = frame('c-sens', { t: 12, r: 64, b: 32, l: 150 });
     const x = d3.scaleLinear().domain([-25, 50]).range([0, f.w]);
     const y = d3.scaleBand().domain(S.map(s => s.name)).range([0, f.h]).padding(.42);
     f.g.append('g').attr('class', 'gridl').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(-f.h).tickFormat('')).lower();
-    xAxis(f.g, x, f.h, 6, v => `${v > 0 ? '+' : ''}${v} %`);
+    xAxis(f.g, x, f.h, f.narrow ? 3 : 6, v => `${v > 0 ? '+' : ''}${v} %`);
     f.g.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0)).attr('y1', -6).attr('y2', f.h);
     const sig = s => s.lo > 0 || s.hi < 0;
     const col = s => !sig(s) ? C('--text-muted') : s.pct > 0 ? C('--down') : C('--up');
     const r = f.g.selectAll('.sr').data(S).join('g').attr('transform', s => `translate(0,${y(s.name)})`);
-    r.append('text').attr('class', 'lbl-strong').attr('x', -10).attr('y', y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(s => s.name);
+    r.append('text').attr('class', 'lbl-strong').attr('x', -10).attr('y', y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(s => sLbl(s.name));
     r.append('rect').attr('x', s => x(Math.min(0, s.pct))).attr('width', s => Math.abs(x(s.pct) - x(0))).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col).attr('fill-opacity', .75);
     const mid = y.bandwidth() / 2;
     r.append('line').attr('x1', s => x(s.lo)).attr('x2', s => x(s.hi)).attr('y1', mid).attr('y2', mid).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2);
     ['lo', 'hi'].forEach(k => r.append('line').attr('x1', s => x(s[k])).attr('x2', s => x(s[k])).attr('y1', mid - 5).attr('y2', mid + 5).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2));
     r.append('text').attr('class', 'lbl-ink tagt').attr('x', s => x(Math.max(s.hi, 0)) + 8).attr('y', mid).attr('dy', '.35em').text(s => `${s.pct > 0 ? '+' : ''}${f1(s.pct)} %${sig(s) ? '' : ' n.s.'}`);
     hover(r.append('rect').attr('class', 'hit').attr('x', -150).attr('width', f.w + 210).attr('y', -y.step() * .2).attr('height', y.step()),
-      s => `<b>${s.name}</b>${row('effet', `${s.pct > 0 ? '+' : ''}${f1(s.pct)} %`)}${row('IC 95 %', `${f1(s.lo)} à ${f1(s.hi)} %`)}${row('significatif', sig(s) ? 'oui' : 'non')}`);
-    readout('r-sens', `R² <b>${f2(R.r2)}</b> · n <b>${D.n}</b> · MCO`);
+      s => `<b>${sLbl(s.name)}</b>${row('effet', `${s.pct > 0 ? '+' : ''}${f1(s.pct)} %`)}${row('IC 95 %', `${f1(s.lo)} à ${f1(s.hi)} %`)}${row('significatif', sig(s) ? 'oui' : 'non')}`);
+    readout('r-sens', `R² <b>${f2(R.r2)}</b> · n <b>${R.series.length}</b> · MCO`);
 
     const V = R.corr.vars, M = R.corr.m, n = V.length;
     const cm = { t: 6, r: 6, b: 92, l: 86 };
@@ -630,7 +630,16 @@
     hover(c.g.selectAll('.ch').data(cells.filter(d => d.i !== d.j)).join('rect').attr('class', 'hit').attr('x', d => d.j * s).attr('y', d => d.i * s).attr('width', s).attr('height', s),
       d => `<b>${V[d.i]} × ${V[d.j]}</b>${row('ρ de Spearman', fs2(d.v))}`);
     const pente = sens['pente (+10 %)'], terr = sens['terrain (+1 niveau)'], desc = sens['descente raide (> 15 %)'], wind = sens['rafales (+10 km/h)'], fat = sens['fatigue (VFC −10 ms)'];
-    $('t-sens').textContent = `Le sac pèse le plus lourd (${fs0(sacS.pct)} %), devant les descentes raides (${fs0(desc.pct)} %), chaque niveau de cote (${fs0(terr.pct)} %) et le vent (${fs1(wind.pct)} % par tranche de 10 km/h). En montée raide, je vais plus vite que ne le prévoit Tobler (${f0(pente.pct)} % par 10 % de pente). La fatigue, elle, n’a aucun effet mesurable sur l’allure (${fs1(fat.pct)} %, n.s.) : elle agit ailleurs (partie 08). Le modèle explique ${f0(R.r2 * 100)} % de la variance ; le reste, c’est le terrain que les chiffres ne voient pas.`;
+    // vitesses réelles en pente raide (15 à 25 %), montée contre descente : temps = Tobler × exp(e) × calage sur le temps en mouvement
+    const tob = q => 6 * Math.exp(-3.5 * Math.abs(q.slope / 100 + .05)), dK = R.series.map((q, i) => q.km - (i ? R.series[i - 1].km : 0));
+    const spd = sac => {
+      const ix = d3.range(R.series.length).filter(i => R.series[i].sac === sac), T = i => dK[i] / tob(R.series[i]) * Math.exp(R.series[i].e);
+      const cal = d3.sum(R.rows.filter(r => r.sac === sac), r => r.mov_h) / d3.sum(ix, T);
+      const v = (lo, hi) => { const k = ix.filter(i => R.series[i].slope >= lo && R.series[i].slope < hi); return { n: k.length, v: d3.sum(k, i => dK[i]) / (d3.sum(k, T) * cal), t: d3.sum(k, i => dK[i]) / d3.sum(k, i => dK[i] / tob(R.series[i])) }; };
+      return { up: v(15, 25), dn: v(-25, -15) };
+    };
+    const vT = spd(0), vS = spd(1);
+    $('t-sens').innerHTML = `<b>Le résultat le plus surprenant : en pente raide, sans le sac, je vais plus vite en montée qu’en descente.</b> Sur les pentes de 15 à 25 %, je monte à <b>${f1(vT.up.v)} km/h</b> et je descends à <b>${f1(vT.dn.v)} km/h</b>. Tobler prévoit l’inverse (${f1(vT.up.t)} contre ${f1(vT.dn.t)} km/h). Avec le sac, l’ordre habituel revient (${f1(vS.up.v)} contre ${f1(vS.dn.v)} km/h).<br><br>Le sac reste le premier frein (<b>${fs0(sacS.pct)} %</b>), devant la descente raide (${fs0(desc.pct)} %), chaque niveau de cote (${fs0(terr.pct)} %) et le vent (${fs1(wind.pct)} % par tranche de 10 km/h). La fatigue n’a aucun effet mesurable sur l’allure (${fs1(fat.pct)} %, n.s.) : elle agit ailleurs, et c’est l’objet de la partie 08. Le modèle explique ${f0(R.r2 * 100)} % de la variance ; le reste, c’est le terrain que les chiffres ne voient pas.`;
   }
 
   /* ---------- 08 · physical reserve (underwater curve) ---------- */

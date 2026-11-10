@@ -17,7 +17,7 @@ La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu fonc�
 
 ## Données du rapport de risque
 
-`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Quatre fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
+`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Cinq fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
 
 ```
 node outils/segmentation_terrain.js   # cotation par section (partie 02) → risque_sections.js

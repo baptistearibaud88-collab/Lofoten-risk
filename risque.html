@@ -232,7 +232,7 @@
     </div>
     <div class="notes">
       <div><h4>Comment lire</h4><p>Une barre à droite de zéro ralentit, une barre à gauche accélère. Si la moustache traverse zéro, l’effet n’est pas distinguable du hasard (n.s.). Dans la matrice, rouge = les deux facteurs montent ensemble, bleu = l’un monte quand l’autre baisse.</p></div>
-      <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente, sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1.</p></div>
+      <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente (en valeur absolue : montée ou descente), sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1. Les vitesses en km/h comparent les tronçons de 15 à 25 % de pente, en montée et en descente.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-sens"></p></div>
     </div>
   </section>
@@ -477,6 +477,6 @@
 <script src="risque_plan.js?v=20261108-1"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-1"></script>
+<script src="risque.js?v=20261110-3"></script>
 </body>
 </html>
