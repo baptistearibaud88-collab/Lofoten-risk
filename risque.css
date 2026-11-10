@@ -103,6 +103,7 @@ h3 { margin: 24px 0 10px; font-size: 15px; font-weight: 700; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .grid-2.g-6040 { grid-template-columns: 1.2fr 1fr; }
 .grid-2.g-dist { grid-template-columns: 1.6fr 1fr; }
+.grid-2.g-meteo { grid-template-columns: .7fr 1.3fr; }
 .grid-2.g-terrain { grid-template-columns: 1.3fr 1fr; margin-top: 14px; }
 .grid-2.g-top { align-items: start; gap: 32px; }
 .mt { margin-top: 14px; }
@@ -252,7 +253,7 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
   .ticker div { flex: 0 0 25%; box-sizing: border-box; border-bottom: 1px solid var(--hair); }
   .notes, .notes.wk { grid-template-columns: 1fr; }
   .kpis { grid-template-columns: 1fr 1fr; }
-  .hero-grid, .grid-2, .grid-2.g-6040, .grid-2.g-dist, .grid-2.g-terrain { grid-template-columns: 1fr; }
+  .hero-grid, .grid-2, .grid-2.g-6040, .grid-2.g-meteo, .grid-2.g-dist, .grid-2.g-terrain { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .hero { padding-top: 30px; }

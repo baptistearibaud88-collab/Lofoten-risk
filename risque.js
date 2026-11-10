@@ -715,7 +715,6 @@
     const S = [
       { k: 'Plus longue série sèche', o: M.dry, fmt: v => `${f0(v)} j`, tick: e => f0(e + .5), unit: 'j' },
       { k: 'Plus gros épisode de 3 jours', o: M.max3, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
-      { k: 'Cumul des 9 jours', o: M.tot, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
     ];
     const rh = g.h / S.length;
     S.forEach((s, i) => {
@@ -771,6 +770,14 @@
     const last = Dd[Dd.length - 1];
     axTag(f.g, f.w + 2, y(last.cum_rain), f1(last.cum_rain)).select('rect').attr('fill', C('--accent'));
     axTag(f.g, f.w + 2, y(last.cum_norm), f1(last.cum_norm));
+    // repère sur 1 200 fenêtres de 9 jours (risque_meteo.js), dans l'espace libre en haut à gauche
+    const MM = window.RISK_METEO;
+    if (MM) {
+      const bx = f.g.append('g').attr('transform', 'translate(6,4)');
+      bx.append('text').attr('class', 'lbl').attr('y', 10).text(f.narrow ? `Cumul de 9 j · ${f0(MM.n)} fenêtres` : `Cumul de 9 jours · ${f0(MM.n)} fenêtres 1996–2025 · point centre`);
+      bx.append('text').attr('class', 'lbl-strong').attr('y', 27).text(`médiane ${f1(MM.tot.med)} mm · moyenne ${f1(MM.tot.mean)} mm`);
+      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : ${f1(MM.tot.v)} mm · centile ${f0(MM.tot.pct)}`);
+    }
     const ch = crossH(f);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h).on('pointermove', ev => {
       const d = Dd[Math.max(0, Math.min(8, Math.round(x.invert(d3.pointer(ev)[0])) - 1))];
