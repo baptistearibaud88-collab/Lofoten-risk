@@ -11,7 +11,7 @@
 <meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261105-6">
+<link rel="stylesheet" href="risque.css?v=20261110-1">
 </head>
 <body>
 <div class="viz-root">
@@ -230,7 +230,7 @@
       <div class="pc"><div class="pc-head"><span class="pc-t">Effet marginal sur le temps d’un tronçon</span><span class="pc-r mono" id="r-sens"></span></div><div class="chart" id="c-sens" data-h="300"></div></div>
       <div class="pc"><div class="pc-head"><span class="pc-t">Matrice de corrélation (Spearman, par sortie)</span></div><div class="chart" id="c-corr" data-h="400"></div></div>
     </div>
-    <div class="notes">
+    <div class="notes wk">
       <div><h4>Comment lire</h4><p>Une barre à droite de zéro ralentit, une barre à gauche accélère. Si la moustache traverse zéro, l’effet n’est pas distinguable du hasard (n.s.). Dans la matrice, rouge = les deux facteurs montent ensemble, bleu = l’un monte quand l’autre baisse.</p></div>
       <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente (en valeur absolue : montée ou descente), sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1. Les vitesses en km/h comparent les tronçons de 15 à 25 % de pente, en montée et en descente.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-sens"></p></div>
@@ -477,6 +477,6 @@
 <script src="risque_plan.js?v=20261108-1"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-3"></script>
+<script src="risque.js?v=20261110-5"></script>
 </body>
 </html>

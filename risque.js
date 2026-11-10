@@ -639,7 +639,7 @@
       return { up: v(15, 25), dn: v(-25, -15) };
     };
     const vT = spd(0), vS = spd(1);
-    $('t-sens').innerHTML = `<b>Le résultat le plus surprenant : en pente raide, sans le sac, je vais plus vite en montée qu’en descente.</b> Sur les pentes de 15 à 25 %, je monte à <b>${f1(vT.up.v)} km/h</b> et je descends à <b>${f1(vT.dn.v)} km/h</b>. Tobler prévoit l’inverse (${f1(vT.up.t)} contre ${f1(vT.dn.t)} km/h). Avec le sac, l’ordre habituel revient (${f1(vS.up.v)} contre ${f1(vS.dn.v)} km/h).<br><br>Le sac reste le premier frein (<b>${fs0(sacS.pct)} %</b>), devant la descente raide (${fs0(desc.pct)} %), chaque niveau de cote (${fs0(terr.pct)} %) et le vent (${fs1(wind.pct)} % par tranche de 10 km/h). La fatigue n’a aucun effet mesurable sur l’allure (${fs1(fat.pct)} %, n.s.) : elle agit ailleurs, et c’est l’objet de la partie 08. Le modèle explique ${f0(R.r2 * 100)} % de la variance ; le reste, c’est le terrain que les chiffres ne voient pas.`;
+    $('t-sens').innerHTML = `<b>Surprise : en pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h entre 15 et 25 %), l’inverse de Tobler. Passé un certain seuil, ce n’est plus la pente qui commande, mais le terrain : dans les Lofoten, peu de larges sentiers, surtout des pierriers, de la roche et parfois de l’escalade. En montée, mains et bâtons aident ; en descente, chaque appui se cherche (${fs0(desc.pct)} %). La fatigue, elle, ne se voit pas dans l’allure : elle agit ailleurs (partie 08).`;
   }
 
   /* ---------- 08 · physical reserve (underwater curve) ---------- */

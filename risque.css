@@ -145,6 +145,7 @@ h3 { margin: 24px 0 10px; font-size: 15px; font-weight: 700; }
 
 /* notes: how to read / method / takeaway */
 .notes { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 12px; margin: 14px 0 26px; }
+.notes.wk { grid-template-columns: 1fr 1fr 1.55fr; }
 .notes.one { grid-template-columns: 1fr; max-width: 900px; }
 .notes > div { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--hair); background: color-mix(in srgb, var(--surface-1) 60%, transparent); }
 .notes h4 { margin: 0 0 5px; font: 650 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
@@ -248,7 +249,7 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 
 @media (max-width: 900px) {
   .ticker div { flex: 0 0 25%; box-sizing: border-box; border-bottom: 1px solid var(--hair); }
-  .notes { grid-template-columns: 1fr; }
+  .notes, .notes.wk { grid-template-columns: 1fr; }
   .kpis { grid-template-columns: 1fr 1fr; }
   .hero-grid, .grid-2, .grid-2.g-6040, .grid-2.g-dist, .grid-2.g-terrain { grid-template-columns: 1fr; }
 }
