@@ -11,7 +11,7 @@
 <meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261110-4">
+<link rel="stylesheet" href="risque.css?v=20261110-5">
 </head>
 <body>
 <div class="viz-root">
@@ -206,7 +206,15 @@
     <p class="lede">La topographie des Lofoten impose une structure de risque particulière. Chaque massif monte directement depuis la mer et y redescend : entre deux sommets, on repasse au niveau de la mer, sur un terrain plat, au bord d’un fjord, d’une route ou d’un village. En termes de gestion du risque, la traversée est un portefeuille de positions courtes et indépendantes, avec une sortie à la fin de chacune. Un itinéraire alpin qui enchaîne les cols en altitude ressemble au contraire à une position unique, longue et corrélée : sans point de sortie, une difficulté pèse sur toute la suite. La contrepartie est l’intensité : les montées sont courtes, mais très raides.</p>
     <div class="grid-2">
       <div class="pc"><div class="pc-head"><span class="pc-t">Exposition · la distance est plate, le dénivelé est raide</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-acf1"></span></div></div>
-      <div class="pc"><div class="pc-head"><span class="pc-t">Diversification · écart-type du temps total selon la dépendance</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="250"></div><div class="pc-foot"><span class="src">Taille de chaque exposition : temps perdu ou gagné réellement sur le tronçon ou le massif</span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Diversification · incertitude sur le temps total</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="250"></div><div class="pc-foot"><span class="src">Taille de chaque exposition : temps perdu ou gagné réellement sur le tronçon ou le massif</span></div></div>
+    </div>
+    <div class="pc mt explain">
+      <div class="pc-head"><span class="pc-t">Lire la diversification · comment les retards s’additionnent</span></div>
+      <div class="ex-body">
+        <p class="ex-intro" id="ex-intro"></p>
+        <div class="ex-cols" id="ex-cols"></div>
+        <p class="ex-msg" id="ex-msg"></p>
+      </div>
     </div>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Fiche de risque · structure des massifs</span><span class="pc-r mono" id="r-sheet"></span></div>
@@ -490,6 +498,6 @@
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-17"></script>
+<script src="risque.js?v=20261110-20"></script>
 </body>
 </html>

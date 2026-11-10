@@ -339,3 +339,14 @@ table.data.ep .tag { font-size: 10px; padding: 1px 5px; }
 .pc-foot.ep-foot { display: block; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
 
 .alt-ic { width: 12px; height: 11px; margin-left: 6px; vertical-align: -1px; color: var(--warning); }
+
+.explain .ex-body { padding: 14px 16px 16px; }
+.explain .ex-intro { margin: 0 0 12px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); max-width: 980px; }
+.explain .ex-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.explain .ex-cols > div { border: 1px solid var(--hair); border-radius: 8px; padding: 10px 12px; border-top: 3px solid var(--c); }
+.explain .ex-cols b.v { display: block; font: 650 20px var(--mono); color: var(--text-primary); margin: 2px 0 4px; }
+.explain .ex-cols .t { font: 650 12.5px var(--font); color: var(--text-primary); }
+.explain .ex-cols .s { font: 600 10.5px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.explain .ex-cols p { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.explain .ex-msg { margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 9%, transparent); font-size: 14px; line-height: 1.55; color: var(--text-primary); }
+@media (max-width: 900px) { .explain .ex-cols { grid-template-columns: 1fr; } }

@@ -537,8 +537,8 @@
       const gb = f.g.selectAll(null).data(B).join('g').attr('transform', b => `translate(${x0(lab(b))},0)`);
       ['dist', 'gain'].forEach(k => gb.append('path').attr('d', b => barPath(x1(k), f.h, x1.bandwidth(), y(b[k]))).attr('fill', col[k]).attr('opacity', k === 'dist' ? .55 : .9));
       hover(gb.append('rect').attr('class', 'hit').attr('width', x0.bandwidth()).attr('height', f.h), (b, k) => `<b>pente ${lab(b)}</b>${row('distance', `${f0(b.dist * 100)} %`)}${row('dénivelé positif', `${f0(b.gain * 100)} %`)}${row('vitesse verticale', `${f0(T.intens[B.indexOf(b)].vr)} m/h`)}${row('fréquence cardiaque', `${T.intens[B.indexOf(b)].hr} bpm`)}`);
-      xAxis(f.g, x0, f.h, 7, d => d);
-      axTitle(f.g, 'pente du tronçon', 0, f.h + 36);
+      xAxis(f.g, x0, f.h, 7, d => f.narrow ? d.replace(' %', '').replace('> ', '>') : d);
+      axTitle(f.g, f.narrow ? 'pente du tronçon (%)' : 'pente du tronçon', 0, f.h + 36);
       readout('r-acf1', `> 20 % : <b>${f0(steepD * 100)} %</b> de la distance · <b>${f0(steepG * 100)} %</b> du D+`);
       legend('l-acf1', [['', C('--text-muted'), 'part de la distance'], ['', C('--down'), 'part du dénivelé positif']]);
     }
@@ -546,21 +546,30 @@
       const D = [
         { k: 'seg', l: 'Tronçons indépendants', s: 'hypothèse naïve', v: A.seg, c: C('--text-muted') },
         { k: 'massif', l: 'Massifs indépendants', s: 'Lofoten, mesuré', v: A.massif, c: C('--accent') },
-        { k: 'block', l: 'Un seul bloc sans sortie', s: 'enchaînement alpin, contrefactuel', v: A.block, c: C('--down') },
+        { k: 'block', l: 'Un seul bloc sans sortie', s: 'alpin, contrefactuel', v: A.block, c: C('--down') },
       ];
       const f = frame('c-acf2', { t: 16, r: 18, b: 34, l: 8 });
       const lw = Math.min(190, f.w * .42);
-      const x = d3.scaleLinear().domain([0, A.block * 1.12]).range([0, f.w - lw]);
+      const x = d3.scaleLinear().domain([0, A.block * 1.28]).range([0, f.w - lw]);
       const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.38);
       const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
       g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(4).tickSize(f.h).tickFormat('')).lower();
-      g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(4).tickSize(0).tickPadding(8).tickFormat(v => `${v} min`));
+      g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(f.narrow ? 2 : 4).tickSize(0).tickPadding(8).tickFormat(v => `${v} min`));
       D.forEach(d => {
         f.g.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2 - 3).text(d.l);
         f.g.append('text').attr('class', 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2 + 11).text(d.s);
         g.append('rect').attr('x', 0).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('width', x(d.v)).attr('rx', 3).attr('fill', d.c).attr('opacity', d.k === 'massif' ? .95 : .6);
         g.append('text').attr('class', 'lbl-strong').attr('x', x(d.v) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(`± ${f0(d.v)} min`);
       });
+      // bloc d'explication en longueur, sous les deux graphiques
+      const big = [...M].sort((a, b) => Math.abs(b.lost) - Math.abs(a.lost)).slice(0, 3);
+      $('ex-intro').innerHTML = `On repart des minutes de la partie 05 : sur chaque tronçon, le temps réel moins le temps prévu par Tobler, en retard (+) ou en avance (−). Additionnées massif par massif, elles donnent par exemple ${big.map(m => `<b>${fs0(m.lost)} min</b> sur ${actName(m.act)}`).join(', ')}. Le graphique ne montre pas du temps perdu, mais une <b>incertitude</b> : de combien le temps total de la traversée peut s’écarter du prévu, selon la façon dont ces retards s’additionnent.`;
+      $('ex-cols').innerHTML = D.map(d => `<div style="--c:${d.c}"><span class="s">${d.s}</span><div class="t">${d.l}</div><b class="v">± ${f0(d.v)} min</b><p>${{
+        seg: 'Chaque tronçon est un tirage à part : un retard ici est compensé par une avance là. C’est l’hypothèse naïve, et elle est fausse : dans une même montée, si je suis lent sur un tronçon, je le suis aussi sur le suivant.',
+        massif: 'Dans un massif, les retards s’accumulent sans se compenser : montée et descente vont dans le même sens. D’un massif à l’autre, ils se compensent : un sommet difficile n’en annonce pas un autre. C’est la structure réelle, mesurée.',
+        block: 'Toute la traversée comme une seule arête sans retour en bas : les retards s’additionnent tous, sans aucune compensation. C’est un cas fictif, construit sur les mêmes minutes, pour comparer avec un enchaînement alpin.',
+      }[d.k]}</p></div>`).join('');
+      $('ex-msg').innerHTML = `<b>Les Lofoten sont un juste milieu.</b> Mieux que des tirages tous liés : chaque retour à la mer remet le compteur à zéro, et l’incertitude est ${f1(A.block / A.massif)} fois plus petite qu’un enchaînement sans sortie. Mais pas des tirages indépendants non plus : une fois dans un massif, on est engagé, et le modèle naïf sous-estime l’incertitude d’un facteur ${f1(A.massif / A.seg)}.`;
       readout('r-acf2', `sous-estimation naïve <b>×${f1(A.massif / A.seg)}</b> · diversification <b>×${f1(A.block / A.massif)}</b>`);
     }
     // risk sheet
