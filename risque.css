@@ -360,3 +360,11 @@ table.data.ep .tag { font-size: 10px; padding: 1px 5px; }
 .def-pop .muted { font-size: 12.5px; }
 .def-pop .def-x { position: absolute; top: 8px; right: 10px; border: 0; background: none; font-size: 20px; line-height: 1; color: var(--text-muted); cursor: pointer; }
 .def-pop.sheet { left: 0 !important; right: 0; bottom: 0; top: auto !important; width: auto; max-height: 75vh; border-radius: 14px 14px 0 0; }
+
+.risk-sheet td.def-mid { position: relative; }
+.risk-sheet td.def-mid .def-btn { position: absolute; left: 12px; bottom: -9px; z-index: 2; margin: 0; background: var(--surface-1); }
+.risk-sheet td.def-mid .def-btn:hover, .risk-sheet td.def-mid .def-btn[aria-expanded="true"] { background: var(--accent); }
+.pc-more { padding: 6px 14px 14px; }
+.def-btn.wide { width: auto; height: auto; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; font: 600 12.5px var(--font); vertical-align: 0; margin: 0; }
+.def-btn.wide i { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--bg); font-style: normal; font-weight: 700; font-size: 11px; }
+.def-btn.wide:hover i, .def-btn.wide[aria-expanded="true"] i { background: var(--bg); color: var(--accent); }

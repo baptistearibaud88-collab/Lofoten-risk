@@ -524,7 +524,9 @@
   /* ---------- definition buttons (finance terms explained on demand) ---------- */
   // usage: defBtn('cle') inside any HTML string; the text lives in DEFS
   const DEFS = {};
-  const defBtn = k => `<button type="button" class="def-btn" data-def="${k}" aria-label="Explication : ${DEFS[k] ? DEFS[k].t : k}">?</button>`;
+  const defBtn = (k, label) => label
+    ? `<button type="button" class="def-btn wide" data-def="${k}"><i>?</i>${label}</button>`
+    : `<button type="button" class="def-btn" data-def="${k}" aria-label="Explication : ${DEFS[k] ? DEFS[k].t : k}">?</button>`;
   const pop = document.createElement('div'); pop.className = 'def-pop'; pop.hidden = true; pop.setAttribute('role', 'dialog'); root.appendChild(pop);
   let popFor = null;
   const closeDef = () => { pop.hidden = true; if (popFor) popFor.setAttribute('aria-expanded', 'false'); popFor = null; };
@@ -616,9 +618,9 @@
         'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs risques se diversifient.'],
       ['Corrélation à l’intérieur d’un massif', `montée → descente : raideur r = ${f2(T.grad_same.r)} · allure r = ${f2(T.pace_same.r)}`,
         'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Tirer les erreurs par massif, pas par tronçon : l’écart-type du temps total passe de ± ${f0(A.seg)} à ± ${f0(A.massif)} min (×${f1(A.massif / A.seg)}). Les blocs de 2 km de la partie 11 vont dans ce sens.`],
-      [`Risque systématique ${defBtn('sysspec')}`, `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''} · ≈ ${f0(sysShare * 100)} % de l’écart vient de la journée`,
+      [`Risque systématique${defBtn('sysspec')}`, `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''} · ≈ ${f0(sysShare * 100)} % de l’écart vient de la journée`,
         'Météo et forme du jour pèsent sur tous les massifs de la journée : il ne se diversifie pas.', 'Ajouter un facteur journée commun à tous les massifs du jour, l’équivalent d’un bêta de marché.'],
-      [`Risque spécifique ${defBtn('sysspec')}`, `≈ ${f0((1 - sysShare) * 100)} % de l’écart propre au massif · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
+      ['Risque spécifique', `≈ ${f0((1 - sysShare) * 100)} % de l’écart propre au massif · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
         'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les retours à la mer diversifient : il fait passer l’incertitude de ± ${f0(A.block)} à ± ${f0(A.massif)} min.`],
       ['Option de sortie', `retour à la mer en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
         `Chaque massif se termine au niveau de la mer : la perte d’une position est bornée, comme un stop-loss intégré. Pire massif : ${f0(worst.lost)} min perdues (${actName(worst.act)}).`, 'La queue de distribution se coupe massif par massif : une perte ne se propage pas au reste de la traversée.'],
@@ -627,7 +629,7 @@
       ['Intensité (levier)', `> 20 % : ${f0(steepD * 100)} % de la distance, ${f0(steepT * 100)} % du temps, ${f0(steepG * 100)} % du D+ · ${f0(topI.vr)} m/h et ${topI.hr} bpm au-dessus de 30 %, contre ${f0(flatI.vr)} m/h et ${flatI.hr} bpm sur le plat`,
         'Le risque n’est pas réparti : il se concentre sur de courts passages très raides, où l’effort est maximal et où une erreur se paie cher.', 'La pente moyenne ne suffit pas : il faut modéliser la part du massif au-dessus de 20 % et l’effet propre des descentes raides (partie 07).'],
     ];
-    $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th><th>Conséquence pour le modèle</th></tr></thead><tbody>${rows.map(r => `<tr><td><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join('')}</tbody>`;
+    $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th><th>Conséquence pour le modèle</th></tr></thead><tbody>${rows.map(r => `<tr><td${/def-btn/.test(r[0]) ? ' class="def-mid"' : ''}><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join('')}</tbody>`;
     readout('r-sheet', `${M.length} massifs · ${M.length - 1} retours à la mer`);
     const li = a => a.map(([h, p]) => `<li><b>${h}</b><span>${p}</span></li>`).join('');
     $('pc-pro').innerHTML = li([
@@ -665,6 +667,17 @@
     r.append('text').attr('class', 'lbl-ink tagt').attr('x', s => x(Math.max(s.hi, 0)) + 8).attr('y', mid).attr('dy', '.35em').text(s => `${s.pct > 0 ? '+' : ''}${f1(s.pct)} %${sig(s) ? '' : ' n.s.'}`);
     hover(r.append('rect').attr('class', 'hit').attr('x', -150).attr('width', f.w + 210).attr('y', -y.step() * .2).attr('height', y.step()),
       s => `<b>${sLbl(s.name)}</b>${row('effet', `${s.pct > 0 ? '+' : ''}${f1(s.pct)} %`)}${row('IC 95 %', `${f1(s.lo)} à ${f1(s.hi)} %`)}${row('significatif', sig(s) ? 'oui' : 'non')}`);
+    {
+      const sac_ = sens['sac sur le dos'], ter_ = sens['terrain (+1 niveau)'], k1 = 1 + sac_.pct / 100, k2 = 1 + ter_.pct / 100;
+      DEFS.regression = { t: 'La régression : isoler l’effet de chaque facteur', html: () => `
+        <p><b>Le problème.</b> Sur chaque tronçon de 250 m, je compare mon temps réel au temps prévu par Tobler (partie 03). Plusieurs choses jouent en même temps : le sac, la pente, le terrain, le vent, la fatigue. Et elles sont mélangées : avec le sac, je marchais surtout sur du plat ; sans le sac, je montais des sommets raides. Comparer simplement « avec » et « sans » sac mélangerait l’effet du sac avec celui du terrain.</p>
+        <p><b>Le principe.</b> La régression cherche, pour chaque facteur, un multiplicateur du temps, et choisit l’ensemble de multiplicateurs qui explique le mieux les ${f0(R.series.length)} tronçons <i>tous à la fois</i>. Comme chaque tronçon combine les facteurs différemment, le calcul arrive à les démêler : c’est ce qu’on appelle « toutes choses égales par ailleurs ».</p>
+        <p class="def-ex"><b>Exemple.</b> Un tronçon prévu en 10 min. Avec le sac : × ${f2(k1)}, soit ${f1(10 * k1)} min. Si en plus le terrain est un cran plus difficile : × ${f2(k2)}, soit ${f1(10 * k1 * k2)} min. Les effets se multiplient. Le « ${fs0(sac_.pct)} % » du sac veut donc dire : deux tronçons identiques en pente, terrain, vent et fatigue, l’un avec le sac, l’autre sans ; celui avec le sac prend ${f0(sac_.pct)} % de temps en plus.</p>
+        <p><b>Comment il choisit.</b> Méthode des moindres carrés : il retient les multiplicateurs qui rendent la somme des erreurs au carré la plus petite possible, entre le temps qu’ils prédisent et le temps réel.</p>
+        <p><b>Lire le résultat.</b> La moustache est l’intervalle de confiance à 95 % : la zone où se trouve très probablement le vrai effet. Si elle traverse zéro, l’effet ne se distingue pas du hasard (n.s.), comme la fatigue. Le R² de ${f0(R.r2 * 100)} % dit quelle part des écarts d’un tronçon à l’autre ces facteurs expliquent ; le reste, c’est le terrain que les chiffres ne voient pas.</p>
+        <p class="muted">Technique : moindres carrés ordinaires sur ln(temps réel / temps de Tobler) ; un coefficient β devient un effet de e<sup>β</sup> − 1 en %. Le logarithme transforme les multiplications en additions, ce que la régression sait traiter.</p>` };
+      $('sens-more').innerHTML = defBtn('regression', 'Comment la régression isole chaque facteur');
+    }
     readout('r-sens', `R² <b>${f2(R.r2)}</b> · n <b>${R.series.length}</b> · MCO`);
 
     const V = R.corr.vars, M = R.corr.m, n = V.length;
