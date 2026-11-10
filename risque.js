@@ -129,12 +129,12 @@
   const pN = MC.normal.p_over10[j3], pB = MC.blocs.p_over10[j3];
   const NS_ = MC.normal.seg, BS_ = MC.blocs.seg;
   const lateRain = d3.sum(W_.days.filter(d => d.day >= 7), d => d.rain);
-  const worstN = R.nights.reduce((a, b) => b.dd_hrv < a.dd_hrv ? b : a);
+  const worstN = R.nights.reduce((a, b) => b.hrv < a.hrv ? b : a), HRV_USUAL = 45;
   const totKm = d3.sum(R.rows, r => r.km), totDp = d3.sum(R.rows, r => r.dplus);
   $('ticker').innerHTML = [
     ['Tronçons', f0(D.n), ''], ['σ écart', f2(D.sd), ''], ['Kurtosis', fs2(D.kurt), 'up'],
     ['P(|z| > 3)', `${f2(D.beyond3 * 100)} %`, `×${f1(tailRatio)}`], ['ρ₁ autocorr.', f2(R.acf_r[0]), ''],
-    ['Pluie J7–J9', `${f1(lateRain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${f0(worstN.dd_hrv * 100)} %`, ''],
+    ['Pluie J7–J9', `${f1(lateRain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${fs0((worstN.hrv / HRV_USUAL - 1) * 100)} %`, ''],
     ['σ arrivée MC', hm(BS_.term_sd), `${fs0((BS_.term_sd / NS_.term_sd - 1) * 100)} %`],
   ].map(([k, v, e]) => `<div><span>${k}</span><b>${v}</b>${e && e !== 'up' ? `<em class="up">${e}</em>` : ''}</div>`).join('');
   $('scope').innerHTML = [['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
@@ -639,20 +639,20 @@
       return { up: v(15, 25), dn: v(-25, -15) };
     };
     const vT = spd(0), vS = spd(1);
-    $('t-sens').innerHTML = `<b>Surprise : en pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h entre 15 et 25 %), l’inverse de Tobler. Passé un certain seuil, ce n’est plus la pente qui commande, mais le terrain : dans les Lofoten, peu de larges sentiers, surtout des pierriers, de la roche et parfois de l’escalade. En montée, mains et bâtons aident ; en descente, chaque appui se cherche (${fs0(desc.pct)} %). La fatigue, elle, ne se voit pas dans l’allure : elle agit ailleurs (partie 08).`;
+    $('t-sens').innerHTML = `<b>Surprise : en pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h entre 15 et 25 %), l’inverse de Tobler. Passé un certain seuil, ce n’est plus la pente qui commande, mais le terrain : dans les Lofoten, peu de larges sentiers, surtout des pierriers, de la roche et parfois de l’escalade. En montée, mains et bâtons aident ; en descente, chaque appui se cherche (${fs0(desc.pct)} %). Le sac reste le premier frein (<b>${fs0(sacS.pct)} %</b>). La fatigue, elle, ne se voit pas dans l’allure : elle agit ailleurs (partie 08).`;
   }
 
   /* ---------- 08 · physical reserve (underwater curve) ---------- */
   function drawHrv() {
-    // recul measured against the best night of the stay; usual night-time HRV of the walker, outside the trip
-    const HRV_BASE = 45, BAND = .1;
-    const bestHrv = d3.max(R.nights, n => n.hrv), N = R.nights.map(n => ({ ...n, dd_hrv: n.hrv / bestHrv - 1 }));
-    const base = HRV_BASE / bestHrv - 1, lowB = HRV_BASE * (1 - BAND) / bestHrv - 1, hiB = HRV_BASE * (1 + BAND) / bestHrv - 1;
+    // écart à la VFC habituelle (45 ms, mesurée hors traversée) : 0 % = nuit ordinaire
+    const HRV_BASE = HRV_USUAL, BAND = .1;
+    const N = R.nights.map(n => ({ ...n, dd_hrv: n.hrv / HRV_BASE - 1 }));
+    const base = 0, lowB = -BAND, hiB = BAND;
     const m = { t: 20, r: 52, b: 24, l: 8 };
     const f = frame('c-hrv', m);
     const x = d3.scalePoint().domain(N.map((n, i) => i)).range([0, f.w]).padding(.5);
-    const y = d3.scaleLinear().domain([-.7, .05]).range([f.h, 0]);
-    yGrid(f.g, y, f.w, 5, v => `${f0(v * 100)} %`);
+    const y = d3.scaleLinear().domain([-.6, .65]).range([f.h, 0]);
+    yGrid(f.g, y, f.w, 5, v => `${fs0(v * 100).replace('+0', '0')} %`);
     xAxis(f.g, x, f.h, null, i => f.narrow ? `${i + 1}` : N[i].camp.replace('Hauteurs de ', '').replace(' beach', ''));
     const st = d3.curveStepAfter, pts = [...N.map((n, i) => [x(i), n.dd_hrv]), [x(N.length - 1) + x.step() / 2, N[N.length - 1].dd_hrv]];
     const xs = pts.map(p => p[0]); xs[0] = x(0) - x.step() / 2;
@@ -662,21 +662,20 @@
     f.g.append('path').attr('d', d3.area().curve(st).x(p => p[0]).y0(y(lowB)).y1(p => y(Math.min(p[1], lowB)))(P)).attr('fill', C('--down')).attr('fill-opacity', .25);
     f.g.append('path').attr('d', d3.area().curve(st).x(p => p[0]).y0(y(hiB)).y1(p => y(Math.max(p[1], hiB)))(P)).attr('fill', C('--up')).attr('fill-opacity', .2);
     f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(base)).attr('y2', y(base)).attr('stroke', C('--text-secondary')).attr('stroke-dasharray', '5 4').attr('stroke-width', 1.2);
-    axTag(f.g, f.w + 2, y(base), `${HRV_BASE} ms`).select('rect').attr('fill', C('--text-muted'));
-    f.g.append('text').attr('class', 'lbl').attr('x', 4).attr('y', y(hiB) - 5).attr('text-anchor', 'start').text(`VFC habituelle ${HRV_BASE} ms · zone normale ±${f0(BAND * 100)} %`);
+        if (!f.narrow) f.g.append('text').attr('class', 'lbl').attr('x', 4).attr('y', y(lowB) + 13).attr('text-anchor', 'start').text(`0 % = VFC habituelle ${HRV_BASE} ms · zone normale ±${f0(BAND * 100)} %`);
     f.g.append('path').attr('d', d3.line().curve(st).x(p => p[0]).y(p => y(p[1]))(P)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6);
-    f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
     f.g.selectAll('.hd').data(N).join('circle').attr('cx', (n, i) => x(i)).attr('cy', n => y(n.dd_hrv)).attr('r', 3.4).attr('fill', C('--bg')).attr('stroke', n => n.dd_hrv < lowB ? C('--down') : n.dd_hrv > hiB ? C('--up') : C('--text-primary')).attr('stroke-width', 1.6);
     const worst = N.reduce((a, b) => b.dd_hrv < a.dd_hrv ? b : a), wi = N.indexOf(worst);
     const best = N.reduce((a, b) => b.hrv > a.hrv ? b : a), bi = N.indexOf(best);
-    axTag(f.g, f.w + 2, y(worst.dd_hrv), `${f0(worst.dd_hrv * 100)} %`).select('rect').attr('fill', C('--down'));
+    axTag(f.g, f.w + 2, y(worst.dd_hrv), `${fs0(worst.dd_hrv * 100)} %`).select('rect').attr('fill', C('--down'));
     if (!f.narrow) {
       f.g.append('text').attr('class', 'lbl-strong').attr('x', x(wi) + 8).attr('y', y(worst.dd_hrv) + 16).text('nuit de 2 h → renoncement au Hermannsdalstinden');
-      f.g.append('text').attr('class', 'lbl-strong').attr('x', x(bi)).attr('y', y(0) - 8).attr('text-anchor', 'middle').text(`meilleure nuit · ${best.hrv} ms`);
+      f.g.append('text').attr('class', 'lbl-strong').attr('x', x(bi) + 8).attr('y', y(best.dd_hrv) + 17).text(`${fs0(best.dd_hrv * 100)} % · bonne fatigue après le J1`);
+      f.g.append('text').attr('class', 'lbl-strong').attr('x', x(0)).attr('y', y(N[0].dd_hrv) - 10).attr('text-anchor', 'middle').text('départ reposé');
     }
     hover(f.g.selectAll('.hh').data(N).join('rect').attr('class', 'hit').attr('x', (n, i) => x(i) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-      n => `<b>${n.camp} · nuit du ${dateLbl(n.night)}</b>${row('VFC', `${n.hrv} ms`)}${row('recul / meilleure nuit', `${f0(n.dd_hrv * 100)} %`)}${row('écart à l’habitude', `${fs0((n.hrv / HRV_BASE - 1) * 100)} %`)}${row('sommeil', hm(n.sleep_h))}${row('score', `${n.score}/100`)}${row('recharge', `${n.bb}/100`)}${row('FC au repos', `${n.fc} bpm`)}`);
-    readout('r-hrv', `max <b>${best.hrv} ms</b> · min <b>${worst.hrv} ms</b> · recul max <b class="d">${f0(worst.dd_hrv * 100)} %</b>`);
+      n => `<b>${n.camp} · nuit du ${dateLbl(n.night)}</b>${row('VFC', `${n.hrv} ms`)}${row('écart à l’habitude', `${fs0(n.dd_hrv * 100)} %`)}${row('sommeil', hm(n.sleep_h))}${row('score', `${n.score}/100`)}${row('recharge', `${n.bb}/100`)}${row('FC au repos', `${n.fc} bpm`)}`);
+    readout('r-hrv', `habituelle <b>${HRV_BASE} ms</b> · max <b>${best.hrv} ms</b> · min <b>${worst.hrv} ms</b> · écart min <b class="d">${fs0(worst.dd_hrv * 100)} %</b>`);
 
     const g = frame('c-sleep', { t: 8, r: 52, b: 22, l: 8 });
     const x2 = x.copy().range([0, g.w]);
@@ -688,7 +687,7 @@
     xAxis(g.g, x2, g.h, null, i => g.narrow ? `${+N[i].night.slice(8)}` : dateLbl(N[i].night));
     const after = N.slice(wi + 1);
     const low = N.filter(n => n.hrv < HRV_BASE * (1 - BAND)), firstLow = low[0];
-    $('t-hrv').textContent = `La VFC habituelle est de ${HRV_BASE} ms. La première nuit (${N[0].camp}, ${N[0].hrv} ms) est normale, la deuxième monte à ${best.hrv} ms (${best.camp}), et la troisième revient dans la zone normale (${N[2].hrv} ms). La rupture arrive à ${firstLow.camp} : ${firstLow.hrv} ms après une nuit de ${hm(firstLow.sleep_h)}, ${f0((firstLow.hrv / HRV_BASE - 1) * -100)} % sous l’habitude. Ensuite, elle ne revient jamais dans la zone normale (au mieux ${d3.max(after, n => n.hrv)} ms) : la réserve s’use sans se refaire. Pourtant, l’allure ne baisse pas (partie 07). La fatigue se voit dans les décisions : le Helvetestinden (J4) tombe après 1 h 15 de recherche de bivouac, le Hermannsdalstinden (J5) après la nuit de 2 h et une recharge de ${worst.bb}/100.`;
+    $('t-hrv').innerHTML = `Le départ se fait dans des conditions idéales : la première nuit, à ${N[0].camp}, tombe pile sur ma VFC habituelle (${N[0].hrv} ms), reposé. Après la grosse première journée, elle grimpe à <b>${best.hrv} ms (${fs0(best.dd_hrv * 100)} %)</b> : une bonne fatigue, celle d’un corps qui encaisse sans rien accumuler encore. La rupture arrive à ${firstLow.camp} : <b>${firstLow.hrv} ms (${fs0(firstLow.dd_hrv * 100)} %)</b> après une nuit de ${hm(firstLow.sleep_h)}. Ensuite, elle ne revient jamais dans la zone normale (au mieux ${d3.max(after, n => n.hrv)} ms) : la réserve s’use sans se refaire. Pourtant, l’allure ne baisse pas (partie 07). La fatigue se voit dans les décisions : le Helvetestinden (J4) tombe après 1 h 15 de recherche de bivouac, le Hermannsdalstinden (J5) après la nuit de 2 h et une recharge de ${worst.bb}/100.`;
   }
 
   /* ---------- 09 · weather vs benchmark ---------- */

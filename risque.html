@@ -239,17 +239,17 @@
 
   <section id="s8">
     <header class="sh"><span class="num">08</span><h2>La réserve physique</h2></header>
-    <p class="lede">La variabilité de la fréquence cardiaque (VFC) mesurée la nuit reflète la récupération. Le graphique montre de combien elle recule par rapport à la meilleure nuit du séjour ; la ligne pointillée marque la VFC habituelle, 45 ms, mesurée hors traversée. En dessous, la durée de chaque nuit.</p>
+    <p class="lede">La variabilité de la fréquence cardiaque (VFC) mesurée la nuit reflète la récupération. Le graphique montre son écart à ma VFC habituelle, 45 ms, mesurée hors traversée : 0 % est une nuit ordinaire. En dessous, la durée de chaque nuit.</p>
     <div class="pc">
-      <div class="pc-head"><span class="pc-t">VFC nocturne · recul depuis le meilleur niveau</span><span class="pc-r mono" id="r-hrv"></span></div>
+      <div class="pc-head"><span class="pc-t">VFC nocturne · écart à la VFC habituelle</span><span class="pc-r mono" id="r-hrv"></span></div>
       <div class="chart" id="c-hrv" data-h="240"></div>
       <div class="pc-sub">Durée de sommeil (h)</div>
       <div class="chart" id="c-sleep" data-h="120"></div>
       <div class="pc-foot"><span class="src">Source : montre · VFC moyenne de la nuit, en ms</span></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>0 % correspond à la meilleure nuit du séjour. La bande grise est la zone normale, à ±10 % de la VFC habituelle : une nuit dans la bande est une nuit ordinaire. En vert, au-dessus de l’habitude ; en rouge, en dessous. Une courbe qui reste sous la bande signale une fatigue qui s’accumule au lieu de se résorber.</p></div>
-      <div><h4>Méthode</h4><p>Recul = VFC de la nuit / meilleure VFC du séjour − 1, le même calcul qu’une baisse depuis un plus haut, appliqué à la récupération. Référence : VFC nocturne habituelle de 45 ms, mesurée par la même montre en dehors de la traversée.</p></div>
+      <div><h4>Comment lire</h4><p>La ligne pointillée (0 %) est la VFC habituelle. La bande grise est la zone normale, à ±10 % : une nuit dans la bande est une nuit ordinaire. En vert, au-dessus de l’habitude ; en rouge, en dessous. Une courbe qui reste sous la bande signale une fatigue qui s’accumule au lieu de se résorber.</p></div>
+      <div><h4>Méthode</h4><p>Écart = VFC de la nuit / VFC habituelle − 1. Référence : VFC nocturne habituelle de 45 ms, mesurée par la même montre en dehors de la traversée. Une VFC au-dessus de l’habitude après un effort signale une récupération active ; durablement en dessous, une fatigue qui s’accumule.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-hrv"></p></div>
     </div>
   </section>
@@ -477,6 +477,6 @@
 <script src="risque_plan.js?v=20261108-1"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-5"></script>
+<script src="risque.js?v=20261110-6"></script>
 </body>
 </html>
