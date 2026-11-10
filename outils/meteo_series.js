@@ -38,15 +38,17 @@ years.forEach(y => {
 });
 const pct = (arr, v) => r1((arr.filter(x => x < v).length + .5 * arr.filter(x => x === v).length) / arr.length * 100);
 const hist = (arr, edges) => edges.slice(0, -1).map((e, i) => arr.filter(v => v >= e && (i === edges.length - 2 ? v <= edges[i + 1] : v < edges[i + 1])).length);
+const med = a => { const b = [...a].sort((x, y) => x - y), n = b.length; return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; };
+const stats = a => ({ med: r1(med(a)), mean: r1(sum(a) / a.length) });
 const rng = (a, b, s) => { const o = []; for (let v = a; v <= b + 1e-9; v += s) o.push(r1(v)); return o; };
 
 const d26 = maxRun(wet(r26).map(v => !v)), m26 = max3(r26), t26 = sum(r26), ep26 = sum(r26.slice(6));
 const out = {
   n: W.length, years: years.length, th: TH, starts: `${START[1]}/0${START[0]} → ${START[1] + N_START - 1 - 30}/07`,
   p_wet: nw / (nw + nd), p_ww: ww / nw, p_wd: wd / nd, n_ww: nw, n_wd: nd,
-  dry: { v: d26, pct: pct(dry, d26), ge: dry.filter(x => x >= d26).length, edges: rng(-.5, 9.5, 1), hist: hist(dry, rng(-.5, 9.5, 1)) },
-  max3: { v: r1(m26), pct: pct(m3, m26), edges: rng(0, 60, 3), hist: hist(m3, rng(0, 60, 3)) },
-  tot: { v: r1(t26), pct: pct(tot, t26), edges: rng(0, 80, 4), hist: hist(tot, rng(0, 80, 4)) },
+  dry: { ...stats(dry), v: d26, pct: pct(dry, d26), ge: dry.filter(x => x >= d26).length, edges: rng(-.5, 9.5, 1), hist: hist(dry, rng(-.5, 9.5, 1)) },
+  max3: { ...stats(m3), v: r1(m26), pct: pct(m3, m26), edges: rng(0, 60, 3), hist: hist(m3, rng(0, 60, 3)) },
+  tot: { ...stats(tot), v: r1(t26), pct: pct(tot, t26), edges: rng(0, 80, 4), hist: hist(tot, rng(0, 80, 4)) },
   ep: { v: r1(ep26), pct: pct(eps, ep26), n: eps.length, mean: r1(sum(eps) / eps.length) },
 };
 fs.writeFileSync(path.join(root, 'risque_meteo.js'), `// généré par outils/meteo_series.js — ne pas modifier à la main\nwindow.RISK_METEO = ${JSON.stringify(out)};\n`);

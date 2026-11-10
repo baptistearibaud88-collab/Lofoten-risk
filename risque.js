@@ -728,12 +728,23 @@
       gg.selectAll('.hb').data(o.hist).join('rect').attr('x', (n, k) => xx(E[k]) + .5).attr('width', (n, k) => Math.max(1, xx(E[k + 1]) - xx(E[k]) - 1)).attr('y', n => yy(n)).attr('height', n => base - yy(n))
         .attr('fill', (n, k) => inBin(k) ? C('--down') : C('--text-muted')).attr('fill-opacity', (n, k) => inBin(k) ? .9 : .5);
       gg.append('line').attr('x1', 0).attr('x2', g.w).attr('y1', base).attr('y2', base).attr('stroke', C('--grid'));
-      const tk = [0, Math.floor(E.length / 2), E.length - 1];
-      tk.forEach((k, j) => gg.append('text').attr('class', 'lbl').attr('x', xx(E[k]) + (s.unit === 'j' ? (j === 2 ? -xx(1) + xx(0) : 0) : 0)).attr('y', base + 13).attr('text-anchor', ['start', 'middle', 'end'][j]).text(`${s.unit === 'j' ? f0(j === 2 ? E[k] - .5 : E[k] + .5) : f0(E[k])} ${s.unit}`));
+      const lo = s.unit === 'j' ? E[0] + .5 : E[0], hi = s.unit === 'j' ? E[E.length - 1] - .5 : E[E.length - 1];
+      const tL = gg.append('text').attr('class', 'lbl').attr('x', 0).attr('y', base + 13).text(`${f0(lo)} ${s.unit}`);
+      const tR = gg.append('text').attr('class', 'lbl').attr('x', g.w).attr('y', base + 13).attr('text-anchor', 'end').text(`${f0(hi)} ${s.unit}`);
+      // médiane sur l'axe ; moyenne ajoutée dans la même étiquette si la place le permet
+      const nb = v => Number.isInteger(v) ? f0(v) : f1(v), pm = xx(o.med);
+      gg.append('line').attr('x1', pm).attr('x2', pm).attr('y1', top - 2).attr('y2', base + 3).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3').attr('opacity', .8);
+      const lab = gg.append('text').attr('class', 'lbl').style('fill', C('--text-primary')).attr('y', base + 13);
+      const put = txt => { lab.text(txt); const w = lab.node().getComputedTextLength(), x0 = Math.max(0, Math.min(g.w - w, pm - w / 2)); lab.attr('x', x0); return [x0, x0 + w]; };
+      let [a0, a1] = put(`méd. ${nb(o.med)} · moy. ${nb(o.mean)} ${s.unit}`);
+      const room = (l, r) => { const L = tL.node().getComputedTextLength(), R_ = g.w - tR.node().getComputedTextLength(); return l > L + 8 && r < R_ - 8; };
+      if (!room(a0, a1)) [a0, a1] = put(`méd. ${nb(o.med)} ${s.unit}`);
+      if (a0 < tL.node().getComputedTextLength() + 8) tL.remove();
+      if (a1 > g.w - tR.node().getComputedTextLength() - 8) tR.remove();
       hover(gg.selectAll('.hh').data(o.hist).join('rect').attr('class', 'hit').attr('x', (n, k) => xx(E[k])).attr('width', (n, k) => xx(E[k + 1]) - xx(E[k])).attr('y', top).attr('height', base - top),
         (n, k) => `<b>${s.k}</b>${row(s.unit === 'j' ? 'durée' : 'pluie', s.unit === 'j' ? `${f0(E[k] + .5)} j` : `${f0(E[k])} à ${f0(E[k + 1])} mm`)}${row('fenêtres', `${n} sur ${M.n}`)}`);
     });
-    legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026']]);
+    legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026'], ['dash', '', 'médiane']]);
     readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
     $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(M.ep.v)} mm en trois jours</b> au point de référence, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 14.`;
   }
