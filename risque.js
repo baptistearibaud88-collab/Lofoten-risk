@@ -705,8 +705,6 @@
     const dry = W.map(w => maxRun(w.map(v => !v))), dry26 = maxRun(wet(r26).map(v => !v));
     const m3 = Y.map(max3), m326 = max3(r26), tot = Y.map(a => d3.sum(a)), tot26 = d3.sum(r26);
     const ep26 = d3.sum(r26.slice(6));
-    const pIid = (1 - p) ** 6 * p ** 3, pMk = (1 - p) * (1 - pwd) ** 5 * pwd * pww ** 2;
-    const nPat = W.filter(w => w.slice(0, 6).every(v => !v) && w.slice(6).every(v => v)).length;
 
     // left: P(rain | yesterday)
     const f = frame('c-persist', { t: 26, r: 46, b: 30, l: 8 });
@@ -746,7 +744,7 @@
     legend('l-strip', [['', C('--text-muted'), 'un été, 1996–2025'], ['', C('--down'), '2026']]);
     readout('r-strip', `${CL.years.length} étés · mêmes dates`);
     const epMean = d3.mean(eps), epPct = pct(eps, ep26);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Six jours secs d’affilée n’ont donc rien d’exceptionnel (${dry.filter(d => d >= 6).length} étés sur ${dry.length}) : ce n’était pas une semaine miraculeuse. L’exception, c’est l’épisode final : <b>${f1(ep26)} mm en trois jours</b> au point de référence, plus que ${f0(epPct / 10)} épisodes sur 10 (en moyenne ${f0(epMean)} mm). Et la vraie chance tient au calendrier : « 6 jours secs puis 3 de pluie » n’arrive qu’environ <b>${f0(pMk * 100)} fois sur 100</b>, et dans aucun des 30 étés ; c’est pourtant ${f0(pMk / pIid)} fois plus fréquent que si chaque jour était tiré au hasard. Il reste à voir ce que ce calendrier m’a valu : c’est la partie 14.`;
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${dry26} jours secs d’affilée, centile ${f0(pct(dry, dry26))}, ${dry.filter(d => d >= dry26).length} étés sur ${dry.length} en ont eu autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(ep26)} mm en trois jours</b> au point de référence, centile ${f0(pct(m3, m326))}, plus fort que ${f0(epPct / 10)} épisodes de pluie sur 10 (en moyenne ${f0(epMean)} mm). Reste à voir ce que ce calendrier m’a valu, entre chance et décisions : c’est la partie 14.`;
   }
 
   /* ---------- 09 · weather vs benchmark ---------- */
