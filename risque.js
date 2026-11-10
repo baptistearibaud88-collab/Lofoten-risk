@@ -521,11 +521,49 @@
   }
 
   /* ---------- 06 · independent summits, steep climbs: the risk structure of the massifs ---------- */
+  /* ---------- definition buttons (finance terms explained on demand) ---------- */
+  // usage: defBtn('cle') inside any HTML string; the text lives in DEFS
+  const DEFS = {};
+  const defBtn = k => `<button type="button" class="def-btn" data-def="${k}" aria-label="Explication : ${DEFS[k] ? DEFS[k].t : k}">?</button>`;
+  const pop = document.createElement('div'); pop.className = 'def-pop'; pop.hidden = true; pop.setAttribute('role', 'dialog'); root.appendChild(pop);
+  let popFor = null;
+  const closeDef = () => { pop.hidden = true; if (popFor) popFor.setAttribute('aria-expanded', 'false'); popFor = null; };
+  document.addEventListener('click', ev => {
+    const b = ev.target.closest('.def-btn');
+    if (!b) { if (!ev.target.closest('.def-pop')) closeDef(); return; }
+    if (popFor === b) { closeDef(); return; }
+    const d = DEFS[b.dataset.def]; if (!d) return;
+    pop.innerHTML = `<button type="button" class="def-x" aria-label="Fermer">×</button><h5>${d.t}</h5>${d.html()}`;
+    pop.hidden = false; popFor = b; b.setAttribute('aria-expanded', 'true');
+    if (innerWidth < 640) { pop.classList.add('sheet'); pop.style.left = pop.style.top = ''; return; }
+    pop.classList.remove('sheet');
+    const r = b.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    let x = Math.min(innerWidth - w - 12, Math.max(12, r.left - 20)), y = r.bottom + 8;
+    if (y + h > innerHeight - 12) y = Math.max(12, r.top - h - 8);
+    pop.style.left = `${x}px`; pop.style.top = `${y}px`;
+  });
+  pop.addEventListener('click', ev => { if (ev.target.closest('.def-x')) closeDef(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeDef(); });
+  addEventListener('scroll', () => { if (!pop.classList.contains('sheet')) closeDef(); }, { passive: true });
+
   function drawAcf() {
     const T = EP.topo, M = T.massifs, A = T.agg, sig = t => Math.abs(t.r) > t.crit;
     const med = k => d3.median(M, m => m[k]), steepD = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.dist), steepG = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.gain);
     const steepT = d3.sum(T.intens.filter((c, k) => T.slope[k].lo >= 20), c => c.time), flatI = T.intens[0], topI = T.intens[T.intens.length - 1];
     const worst = M.reduce((b, m) => m.lost > b.lost ? m : b, M[0]);
+    // part de l'écart de temps perdu qui vient de la journée (systématique) ou du massif (spécifique),
+    // sur les jours qui comptent au moins deux massifs
+    const byDay = d3.groups(M, m => m.day).filter(([, a]) => a.length > 1), inD = byDay.flatMap(([, a]) => a);
+    const muL = d3.mean(inD, m => m.lost), totV = d3.sum(inD, m => (m.lost - muL) ** 2);
+    const sysShare = d3.sum(byDay, ([, a]) => a.length * (d3.mean(a, m => m.lost) - muL) ** 2) / totV;
+    const SPLIT = { reinebringen_helvete: ['Reinebringen', 'Helvete'] };   // une sortie, deux massifs
+    const ex = d => M.filter(m => m.day === d), mName = m => { const same = M.filter(x => x.act === m.act), k = same.indexOf(m); return same.length < 2 ? actName(m.act) : SPLIT[m.act] ? SPLIT[m.act][k] : `${actName(m.act)} (${k + 1})`; };
+    const exT = d => ex(d).map(m => `${mName(m)} ${fs0(m.lost)} min`).join(', ');
+    DEFS.sysspec = { t: 'Risque systématique et risque spécifique', html: () => `
+      <p>En finance, le risque d’un portefeuille se coupe en deux. Le <b>risque systématique</b> touche tout le marché en même temps (une crise, une hausse des taux) : détenir plus de titres n’y change rien. On le mesure par le <i>bêta</i>. Le <b>risque spécifique</b> n’appartient qu’à une entreprise (un produit raté, un procès) : en détenant beaucoup de titres indépendants, il se dilue. C’est le principe de la diversification.</p>
+      <p>Sur la traversée, les massifs sont les titres et la journée est le marché. <b>Systématique</b> : la météo, la forme, la nuit précédente, qui pèsent sur tous les massifs du jour. <b>Spécifique</b> : le terrain propre à chaque massif, un pierrier, un sentier invisible, une barre rocheuse.</p>
+      <p class="def-ex"><b>J2</b>, lendemain de la meilleure nuit : ${exT(2)}. Les deux vont dans le même sens : c’est la journée (systématique).<br><b>J6</b> : ${exT(6)}. Même journée, résultats opposés : c’est le massif (spécifique).</p>
+      <p class="muted">Sur les ${byDay.length} jours à au moins deux massifs (${inD.length} massifs), environ ${f0(sysShare * 100)} % de l’écart vient de la journée et ${f0((1 - sysShare) * 100)} % du massif. Petit échantillon : un ordre de grandeur.</p>` };
     {
       const B = T.slope, lab = b => b.hi == null ? `> ${b.lo} %` : `${b.lo}–${b.hi} %`;
       const f = frame('c-acf1', { t: 12, r: 44, b: 40, l: 8 });
@@ -578,8 +616,10 @@
         'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs risques se diversifient.'],
       ['Corrélation à l’intérieur d’un massif', `montée → descente : raideur r = ${f2(T.grad_same.r)} · allure r = ${f2(T.pace_same.r)}`,
         'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Tirer les erreurs par massif, pas par tronçon : l’écart-type du temps total passe de ± ${f0(A.seg)} à ± ${f0(A.massif)} min (×${f1(A.massif / A.seg)}). Les blocs de 2 km de la partie 11 vont dans ce sens.`],
-      ['Facteur commun de la journée', `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''}`,
-        'Météo et forme du jour pèsent sur tous les massifs de la journée : c’est le risque systématique, il ne se diversifie pas.', 'Ajouter un facteur journée commun à tous les massifs du jour, l’équivalent d’un bêta de marché.'],
+      [`Risque systématique ${defBtn('sysspec')}`, `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''} · ≈ ${f0(sysShare * 100)} % de l’écart vient de la journée`,
+        'Météo et forme du jour pèsent sur tous les massifs de la journée : il ne se diversifie pas.', 'Ajouter un facteur journée commun à tous les massifs du jour, l’équivalent d’un bêta de marché.'],
+      [`Risque spécifique ${defBtn('sysspec')}`, `≈ ${f0((1 - sysShare) * 100)} % de l’écart propre au massif · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
+        'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les retours à la mer diversifient : il fait passer l’incertitude de ± ${f0(A.block)} à ± ${f0(A.massif)} min.`],
       ['Option de sortie', `retour à la mer en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
         `Chaque massif se termine au niveau de la mer : la perte d’une position est bornée, comme un stop-loss intégré. Pire massif : ${f0(worst.lost)} min perdues (${actName(worst.act)}).`, 'La queue de distribution se coupe massif par massif : une perte ne se propage pas au reste de la traversée.'],
       ['Durée d’engagement', `${f0(med('t_tot'))} min médianes par massif, dont ${f0(med('t_engage'))} min de montée à partir de 15 %`,
