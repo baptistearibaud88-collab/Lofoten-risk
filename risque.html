@@ -47,7 +47,7 @@
 
 <main>
   <nav class="toc" aria-label="Sommaire">
-    <a href="#s1"><b>01</b>Relief du jour</a>
+    <a href="#s1"><b>01</b>Relief des sorties</a>
     <a href="#s2"><b>02</b>Cotation du terrain</a>
     <a href="#s3"><b>03</b>Distribution</a>
     <a href="#s4"><b>04</b>Queues</a>
@@ -65,18 +65,18 @@
   </nav>
 
   <section id="s1">
-    <header class="sh"><span class="num">01</span><h2>Le relief du jour</h2></header>
-    <p class="lede">Avant de chercher où le risque s’est caché, regardons ce qu’il a fallu gravir : neuf jours, neuf bougies, comme neuf séances de bourse. Chaque jour est résumé par quatre altitudes : départ, point haut, point bas, arrivée. Le panneau inférieur donne le dénivelé positif du jour.</p>
+    <header class="sh"><span class="num">01</span><h2>Le relief, sortie par sortie</h2></header>
+    <p class="lede">Avant de chercher où le risque s’est caché, regardons ce qu’il a fallu gravir : neuf jours, 25 sorties, 25 bougies, comme autant de séances de bourse. Chaque sortie est résumée par quatre altitudes : départ, point haut, point bas, arrivée. Le panneau inférieur donne son dénivelé positif.</p>
     <div class="pc">
-      <div class="pc-head"><span class="pc-t">Altitude journalière · départ / haut / bas / arrivée</span><span class="pc-r mono" id="r-candles"></span></div>
+      <div class="pc-head"><span class="pc-t">Altitude par sortie · départ / haut / bas / arrivée</span><span class="pc-r mono" id="r-candles"></span></div>
       <div class="chart" id="c-candles" data-h="300"></div>
-      <div class="pc-sub">D+ du jour (m)</div>
+      <div class="pc-sub">D+ par sortie (m)</div>
       <div class="chart" id="c-volume" data-h="110"></div>
       <div class="pc-foot"><span class="legend-row" id="l-candles"></span><span class="src">Source : montre GPS · 7 184 points</span></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Le corps de la bougie relie l’altitude de départ à celle d’arrivée : vert si l’on finit plus haut, rouge si l’on finit plus bas. La mèche va du point le plus bas au point le plus haut de la journée. Survoler un jour affiche ses valeurs dans l’en-tête.</p></div>
-      <div><h4>Méthode</h4><p>Altitudes GPS de toutes les sorties d’une même journée, mises bout à bout. Le D+ additionne les montées de chaque sortie.</p></div>
+      <div><h4>Comment lire</h4><p>Le corps de la bougie relie l’altitude de départ à celle d’arrivée : vert si l’on finit plus haut, rouge si l’on finit plus bas. La mèche va du point le plus bas au point le plus haut de la sortie. Un sommet en aller-retour donne un corps plat et une longue mèche. Les traits verticaux séparent les jours. Survoler une sortie affiche ses valeurs dans l’en-tête.</p></div>
+      <div><h4>Méthode</h4><p>Une bougie par sortie, dans l’ordre de la traversée, à partir de l’altitude de tous les points GPS de la sortie. Le D+ additionne les montées de la sortie : barre pleine sans le sac, barre claire avec.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-candles"></p></div>
     </div>
   </section>
@@ -475,7 +475,8 @@
 <script src="risque_sections.js?v=20261108-1"></script>
 <script src="risque_episodes.js?v=20261108-1"></script>
 <script src="risque_plan.js?v=20261108-1"></script>
+<script src="risque_bougies.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261108-6"></script>
+<script src="risque.js?v=20261110-1"></script>
 </body>
 </html>

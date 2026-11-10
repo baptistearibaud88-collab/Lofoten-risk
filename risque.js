@@ -149,44 +149,49 @@
 
   /* ---------- 01 · OHLC candles + D+ ---------- */
   function drawCandles() {
-    const data = R.candles;
+    const days = R.candles;
+    // une bougie par sortie (risque_bougies.js, altitudes de tous les points GPS)
+    const data = window.RISK_BOUGIES.map(d => ({ ...d }));
     const m = { t: 22, r: 58, b: 26, l: 8 };
     const f = frame('c-candles', m);
-    const step = Math.min(f.w / data.length, f.narrow ? 40 : 64), gw = step * data.length, off = (f.w - gw) / 2;
-    const x = d3.scaleBand().domain(data.map(d => d.day)).range([off, off + gw]).padding(.5);
+    const gap = .7, nd = new Set(data.map(d => d.day)).size, units = data.length + (nd - 1) * gap;
+    const step = Math.min(f.w / units, 34), gw = step * units, off = (f.w - gw) / 2;
+    let di = -1, prev = null;
+    data.forEach((d, i) => { if (d.day !== prev) { di++; prev = d.day; } d.x = off + (i + di * gap + .5) * step; });
     const y = d3.scaleLinear().domain([0, d3.max(data, d => d.h) * 1.12]).nice().range([f.h, 0]);
     yGrid(f.g, y, f.w, 5, v => `${f0(v)} m`);
-    xAxis(f.g, x, f.h, null, d => dayLbl(d));
-    const bw = Math.max(8, Math.min(step * .46, 24)), up = d => d.c >= d.o;
-    const cg = f.g.selectAll('.cd').data(data).join('g').attr('transform', d => `translate(${x(d.day) + x.bandwidth() / 2},0)`);
-    cg.append('line').attr('y1', d => y(d.h)).attr('y2', d => y(d.l)).attr('stroke', d => up(d) ? C('--up') : C('--down')).attr('stroke-width', 1).attr('shape-rendering', 'crispEdges');
-    cg.append('rect').attr('x', -bw / 2).attr('width', bw).attr('rx', 0)
+    const bw = Math.max(4, Math.min(step * .62, 18)), up = d => d.c >= d.o, col = d => up(d) ? C('--up') : C('--down');
+    const groups = d3.groups(data, d => d.day);
+    const sep = (g, h) => groups.slice(1).forEach(([, a]) => g.append('line').attr('class', 'daysep').attr('x1', a[0].x - step * (.5 + gap / 2)).attr('x2', a[0].x - step * (.5 + gap / 2)).attr('y1', 0).attr('y2', h));
+    sep(f.g, f.h);
+    groups.forEach(([day, a]) => f.g.append('text').attr('class', 'lbl').attr('x', (a[0].x + a[a.length - 1].x) / 2).attr('y', f.h + 17).attr('text-anchor', 'middle').text(dayLbl(day)));
+    f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', f.h).attr('y2', f.h).attr('stroke', C('--border')).attr('stroke-width', 1);
+    const cg = f.g.selectAll('.cd').data(data).join('g').attr('transform', d => `translate(${d.x},0)`);
+    cg.append('line').attr('y1', d => y(d.h)).attr('y2', d => y(d.l)).attr('stroke', col).attr('stroke-width', 1).attr('shape-rendering', 'crispEdges');
+    cg.append('rect').attr('x', -bw / 2).attr('width', bw)
       .attr('y', d => y(Math.max(d.o, d.c))).attr('height', d => Math.max(1.5, Math.abs(y(d.o) - y(d.c))))
-      .attr('fill', d => up(d) ? C('--up') : C('--down')).attr('stroke', d => up(d) ? C('--up') : C('--down')).attr('stroke-width', 1).attr('shape-rendering', 'crispEdges');
+      .attr('fill', col).attr('stroke', col).attr('stroke-width', 1).attr('shape-rendering', 'crispEdges');
     const top = data.reduce((a, b) => b.h > a.h ? b : a);
-    const last = data[data.length - 1];
-    const ro = d => `<b>${dayLbl(d.day)} ${dateLbl(d.date)}</b>  O <b>${f0(d.o)}</b>  H <b>${f0(d.h)}</b>  B <b>${f0(d.l)}</b>  C <b class="${up(d) ? 'u' : 'd'}">${f0(d.c)}</b>  D+ <b>${f0(d.dplus)}</b>`;
-    const def = `9 séances · H max <b>${f0(top.h)} m</b> (${dayLbl(top.day)}) · D+ total <b>${f0(d3.sum(data, d => d.dplus))} m</b>`;
+    const ro = d => `<b>${dayLbl(d.day)}</b> ${d.name}  O <b>${f0(d.o)}</b>  H <b>${f0(d.h)}</b>  B <b>${f0(d.l)}</b>  C <b class="${up(d) ? 'u' : 'd'}">${f0(d.c)}</b>  D+ <b>${f0(d.dplus)}</b>`;
+    const def = `${data.length} sorties · H max <b>${f0(top.h)} m</b> (${top.name}) · D+ total <b>${f0(d3.sum(data, d => d.dplus))} m</b>`;
     readout('r-candles', def);
     const ch = crossH(f);
+    const near = mx => data[d3.minIndex(data, d => Math.abs(d.x - mx))];
+    const tip = (ev, d) => showTip(ev, `<b>${d.name} · ${dayLbl(d.day)}</b>${row('départ', `${f0(d.o)} m`)}${row('point haut', `${f0(d.h)} m`)}${row('point bas', `${f0(d.l)} m`)}${row('arrivée', `${f0(d.c)} m`)}${row('distance', `${f1(d.km)} km`)}${row('D+', `${f0(d.dplus)} m`)}${row('sac', d.sac ? 'avec' : 'sans (trail)')}${row('départ à', d.start)}${row('en mouvement', hm(d.mov_h))}`);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
-      .on('pointermove', ev => {
-        const [mx, my] = d3.pointer(ev); const d = data[Math.max(0, Math.min(data.length - 1, Math.floor((mx - off) / x.step())))];
-        ch.show(x(d.day) + x.bandwidth() / 2, my, `${f0(y.invert(my))} m`); readout('r-candles', ro(d));
-        showTip(ev, `<b>${dayLbl(d.day)} · ${dateLbl(d.date)}</b>${row('départ', `${f0(d.o)} m`)}${row('point haut', `${f0(d.h)} m`)}${row('point bas', `${f0(d.l)} m`)}${row('arrivée', `${f0(d.c)} m`)}${row('distance', `${f1(d.km)} km`)}${row('D+ (dont avec sac)', `${f0(d.dplus)} m (${f0(d.dplus_sac)})`)}${row('en mouvement', hm(d.mov_h))}`);
-      }).on('pointerleave', () => { ch.hide(); hideTip(); readout('r-candles', def); });
+      .on('pointermove', ev => { const [mx, my] = d3.pointer(ev), d = near(mx); ch.show(d.x, my, `${f0(y.invert(my))} m`); readout('r-candles', ro(d)); tip(ev, d); })
+      .on('pointerleave', () => { ch.hide(); hideTip(); readout('r-candles', def); });
 
     const v = frame('c-volume', { t: 6, r: 58, b: 6, l: 8 });
-    const xv = x.copy();
     const yv = d3.scaleLinear().domain([0, d3.max(data, d => d.dplus)]).nice().range([v.h, 0]);
     yGrid(v.g, yv, v.w, 2, v_ => f0(v_));
-    const vb = v.g.selectAll('.vb').data(data).join('g').attr('transform', d => `translate(${xv(d.day) + xv.bandwidth() / 2 - bw / 2},0)`);
-    vb.append('path').attr('d', d => barPath(0, yv(0), bw, yv(d.dplus), 0)).attr('fill', d => up(d) ? C('--up') : C('--down')).attr('fill-opacity', .35);
-    vb.append('path').attr('d', d => d.dplus > d.dplus_sac ? barPath(0, yv(0), bw, yv(d.dplus - d.dplus_sac), 0) : '').attr('fill', d => up(d) ? C('--up') : C('--down')).attr('fill-opacity', .8);
+    sep(v.g, v.h);
+    v.g.selectAll('.vb').data(data).join('path').attr('transform', d => `translate(${d.x - bw / 2},0)`)
+      .attr('d', d => barPath(0, yv(0), bw, yv(d.dplus), 0)).attr('fill', col).attr('fill-opacity', d => d.sac ? .35 : .8);
     legend('l-candles', [['', C('--up'), 'arrivée plus haute'], ['', C('--down'), 'arrivée plus basse'], ['', `color-mix(in srgb, ${C('--text-secondary')} 80%, transparent)`, 'D+ sans sac (plein) / avec sac (clair)']]);
-    const big = data.reduce((a, b) => b.dplus > a.dplus ? b : a);
-    const sansShare = d3.sum(data, d => d.dplus - d.dplus_sac) / d3.sum(data, d => d.dplus);
-    $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). <b>J8</b> : le campement n’a pas bougé, d’où la bougie plate.<br><br>Ce relief n’est pas qu’un décor : avec ou sans sac, en traversée ou en sommet, chaque journée expose à un risque différent. Reste à voir comment ce dénivelé et ce profil ont pesé sur la prise de risque, et où le risque s’est réellement concentré. Première étape : qualifier le terrain.`;
+    const big = days.reduce((a, b) => b.dplus > a.dplus ? b : a);
+    const sansShare = d3.sum(days, d => d.dplus - d.dplus_sac) / d3.sum(days, d => d.dplus);
+    $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). <b>J8</b> : le campement n’a pas bougé, d’où la bougie plate.<br><br>Ce relief n’est pas qu’un décor : avec ou sans sac, en traversée ou en sommet, chaque sortie expose à un risque différent. Reste à voir comment ce dénivelé et ce profil ont pesé sur la prise de risque, et où le risque s’est réellement concentré. Première étape : qualifier le terrain.`;
   }
 
   /* ---------- 02 · terrain grading ---------- */
