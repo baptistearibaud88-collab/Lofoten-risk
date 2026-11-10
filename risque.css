@@ -368,3 +368,6 @@ table.data.ep .tag { font-size: 10px; padding: 1px 5px; }
 .def-btn.wide { width: auto; height: auto; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; font: 600 12.5px var(--font); vertical-align: 0; margin: 0; }
 .def-btn.wide i { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--bg); font-style: normal; font-weight: 700; font-size: 11px; }
 .def-btn.wide:hover i, .def-btn.wide[aria-expanded="true"] i { background: var(--bg); color: var(--accent); }
+
+.def-pop .def-f { font: 500 13px var(--mono); color: var(--text-primary); padding: 6px 10px; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
+.pc-t .def-btn { text-transform: none; letter-spacing: 0; }

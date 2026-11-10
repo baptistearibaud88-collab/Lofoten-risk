@@ -306,7 +306,7 @@
         `<b>${D.n3} tronçons</b> : ${ex3txt}. Une loi normale en attend ${f1(D.exp3)} : léger excès, qu’on obtiendrait par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
       ['Loi de Student', 'Une cloche à queues réglables (outil 2). Peu de degrés de liberté, queues épaisses ; beaucoup, loi normale.',
         `<b>${f0(D.t_df)} degrés</b> une fois ajustée sur mes tronçons : presque la normale. À 4 degrés, on aurait eu environ ${f0(t3.t4 * D.n)} tronçons au-delà de 3σ ; j’en ai ${D.n3}.`, D.t_df > 20 ? 'ok' : 'warn'],
-      ['Avec ou sans sac', 'La même largeur, mesurée séparément.',
+      ['Avec ou sans sac', 'La largeur σ, mesurée séparément avec et sans le sac.',
         `Sur un tronçon prévu en ${mn(base)} : avec le sac, entre ${mn(base * Math.exp(-D.sd_avec))} et ${mn(base * Math.exp(D.sd_avec))} ; en trail, entre ${mn(base * Math.exp(-D.sd_sans))} et ${mn(base * Math.exp(D.sd_sans))}. Sans le sac, on pousse, on court, on s’arrête.`, 'info'],
     ];
     $('dist-stats').innerHTML = `<thead><tr><th>Indicateur</th><th>Ce que ça mesure</th><th>Sur ma traversée</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, m, t, k]) => `<tr><td><b>${a}</b></td><td class="muted">${m}</td><td>${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody>`;
@@ -342,6 +342,51 @@
     $('n-dist-meth').textContent = `${f0(D.n)} tronçons de 250 m.${art ? ` Un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée.` : ''} Loi normale ajustée par la moyenne et l’écart-type, loi de Student par maximum de vraisemblance.`;
     const slow = ex.filter(e => e.z > 0).map(nm), fast = ex.filter(e => e.z < 0).map(nm);
     $('t-dist').innerHTML = `Pris un par un, les tronçons sont <b>ordinaires</b> : la loi normale les décrit bien (Jarque-Bera p = ${f2(D.jb_p)}). Seuls <b>${D.n3}</b> s’en échappent : ${slow.join(', ')} en lent, ${fast.join(', ')} en rapide.<br><br>Le danger ne vient donc pas d’un pas isolé. La partie 04 regarde ces quelques extrêmes, puis la suite montre où le risque se construit vraiment : dans l’enchaînement.`;
+
+    /* boutons « ? » de la partie 03 : d'où viennent les outils et les graphiques, façon cours */
+    {
+      const mm = D.mode_mu || R.dist.mode_mu, q0 = D.qq[0], qN = D.qq[D.qq.length - 1], w = D.edges[1] - D.edges[0];
+      DEFS.tobler = { t: 'D’où vient la règle de Tobler', html: () => `
+        <p>En 1950, le cartographe suisse <b>Eduard Imhof</b> publie des tables de vitesse de marche mesurées sur les sentiers de montagne, selon la pente. En 1993, le géographe <b>Waldo Tobler</b> cherche une formule simple qui passe par ces mesures. Il retient une exponentielle de la pente :</p>
+        <p class="def-f">v = 6 · e<sup>−3,5 · |s + 0,05|</sup> km/h, où s est la pente (0,10 pour +10 %)</p>
+        <p>Trois choix de construction : le <b>6</b> est la vitesse maximale ; le <b>+0,05</b> place ce maximum en légère descente (−5 %), parce qu’on y marche plus vite que sur le plat ; le <b>3,5</b> règle la vitesse à laquelle on ralentit quand la pente s’éloigne de −5 %, dans un sens comme dans l’autre. La valeur absolue rend la courbe symétrique autour de −5 %.</p>
+        <p class="def-ex">Sur le plat : 6 · e<sup>−3,5 × 0,05</sup> = <b>5,0 km/h</b>. À +20 % : 6 · e<sup>−3,5 × 0,25</sup> = <b>2,5 km/h</b>. Le temps attendu d’un tronçon de 250 m est sa longueur divisée par cette vitesse.</p>
+        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge. Je multiplie donc sa vitesse par un facteur unique, avec le sac et sans le sac, choisi pour que l’écart moyen e soit nul dans chaque groupe : avec le sac, ce facteur vaut e<sup>−${f2(mm.avec)}</sup> = ${f2(Math.exp(-mm.avec))}.</p>` };
+      DEFS.student = { t: 'D’où vient la loi de Student', html: () => `
+        <p>En 1908, <b>William Gosset</b>, chimiste à la brasserie Guinness à Dublin, contrôle la qualité de l’orge sur de <b>petits échantillons</b>. Il remarque que si l’on estime la moyenne et l’écart-type sur peu de mesures, les écarts extrêmes sortent plus souvent que la loi normale ne le prévoit. Guinness interdisant de publier sous son nom, il signe <b>« Student »</b>.</p>
+        <p><b>La construction.</b> On prend une variable normale Z et on la divise par une estimation bruitée de son écart-type, construite à partir de ν autres variables normales (une loi du χ² à ν degrés de liberté) :</p>
+        <p class="def-f">T = Z / √(χ²<sub>ν</sub> / ν)  →  densité ∝ (1 + t²/ν)<sup>−(ν+1)/2</sup></p>
+        <p>Quand le dénominateur tombe par hasard sur une petite valeur, T devient grand : c’est ce qui épaissit les queues. Plus ν est grand, plus l’estimation de l’écart-type est stable, et plus T ressemble à Z. À ν = 1, c’est la loi de Cauchy, aux queues extrêmes ; quand ν tend vers l’infini, c’est exactement la loi normale.</p>
+        <p class="def-ex">Ici, on l’utilise comme un modèle à trois réglages : un centre, une largeur, et ν. Ajustée sur mes ${f0(D.n)} tronçons, elle prend ν ≈ <b>${f0(D.t_df)}</b> : déjà très proche d’une normale.</p>
+        <p class="muted">En finance, on l’emploie pour les rendements boursiers, dont les krachs sont plus fréquents qu’une loi normale ne le dit.</p>` };
+      DEFS.vraisemblance = { t: 'D’où vient la log-vraisemblance', html: () => `
+        <p><b>Ronald Fisher</b>, entre 1912 et 1922, pose la question à l’envers : au lieu de demander « quelles données cette loi produit-elle ? », il demande « <b>avec quels réglages cette loi rendrait-elle mes données les plus probables ?</b> ».</p>
+        <p><b>La vraisemblance.</b> Pour des réglages θ donnés, la loi attribue une densité f(x<sub>i</sub> | θ) à chaque tronçon. Les tronçons étant traités comme indépendants, la probabilité de l’ensemble est le produit :</p>
+        <p class="def-f">L(θ) = f(x<sub>1</sub> | θ) × f(x<sub>2</sub> | θ) × … × f(x<sub>${f0(D.n)}</sub> | θ)</p>
+        <p><b>Pourquoi le logarithme.</b> Un produit de ${f0(D.n)} petits nombres devient minuscule et difficile à calculer. Le logarithme transforme le produit en somme, sans changer l’endroit du maximum :</p>
+        <p class="def-f">ln L(θ) = Σ ln f(x<sub>i</sub> | θ)</p>
+        <p>On fait varier θ jusqu’à rendre cette somme la plus grande possible. Pour la loi normale, le calcul tombe juste : le maximum est atteint pour la moyenne et l’écart-type des données. Pour la Student, il n’y a pas de formule : l’ordinateur cherche le maximum pas à pas.</p>
+        <p class="def-ex"><b>Départager deux lois.</b> Ajouter un réglage fait toujours monter ln L un peu. En 1973, <b>Hirotugu Akaike</b> propose de compter chaque réglage comme une pénalité : AIC = 2 × (nombre de réglages) − 2 ln L, et la plus petite valeur gagne. Ici, la Student gagne <b>+${f1(D.ll_gain)}</b> en ln L pour un réglage en plus, qui coûte 1 : différence d’AIC ${F('+.2f')(D.d_aic)}, une égalité. On garde la plus simple, la normale.</p>` };
+      DEFS.hist = { t: 'D’où vient l’histogramme et sa courbe', html: () => `
+        <p>Le mot est de <b>Karl Pearson</b>, en 1891. La construction tient en trois étapes.</p>
+        <p><b>1. Les classes.</b> On découpe l’axe des écarts e en intervalles de même largeur, ici ${f1(w)} (de ${f1(D.edges[0])} à ${f1(D.edges[D.edges.length - 1])}).</p>
+        <p><b>2. Le comptage.</b> On range chacun des ${f0(D.n)} tronçons dans sa classe ; la hauteur de chaque barre est le nombre de tronçons de la classe.</p>
+        <p><b>3. La courbe de comparaison.</b> On calcule la moyenne (${F('+.3f')(D.mu)}) et l’écart-type (${f2(D.sd)}) des écarts, et on trace la loi normale qui a ces deux valeurs. Pour la mettre à la même échelle que les barres, on multiplie sa densité par le nombre de tronçons et par la largeur d’une classe : ${f0(D.n)} × ${f1(w)}. La courbe donne alors le nombre de tronçons qu’une loi normale mettrait dans chaque classe.</p>
+        <p class="def-ex">La courbe orange est la loi de Student, réglée par maximum de vraisemblance et mise à l’échelle de la même façon. Les barres rouges sont les classes au-delà de ±2σ, soit ±${f2(2 * D.sd)} en e.</p>` };
+      DEFS.qq = { t: 'Comment on construit le diagramme quantile-quantile', html: () => `
+        <p>Méthode décrite par <b>Wilk et Gnanadesikan</b> en 1968. L’idée : comparer mes tronçons à une loi normale rang par rang, au lieu de les regrouper en classes comme l’histogramme.</p>
+        <p><b>1. Centrer et réduire.</b> Chaque écart devient z = (e − moyenne) / écart-type : il est compté en σ.</p>
+        <p><b>2. Trier.</b> On range les ${f0(D.n)} valeurs de z de la plus petite à la plus grande. La i<sup>e</sup> a une fraction (i − 0,5) / ${f0(D.n)} des tronçons en dessous d’elle.</p>
+        <p><b>3. Chercher la valeur attendue.</b> Pour cette même fraction, on lit dans la table de la loi normale la valeur qu’elle donnerait : c’est le quantile théorique, Φ<sup>−1</sup>((i − 0,5) / ${f0(D.n)}).</p>
+        <p><b>4. Placer le point.</b> Abscisse : la valeur attendue ; ordonnée : la valeur observée. Si mes tronçons suivaient exactement la loi normale, chaque point tomberait sur la diagonale.</p>
+        <p class="def-ex"><b>Exemple.</b> Le tronçon le plus rapide est le 1<sup>er</sup> sur ${f0(D.n)} : fraction 0,5 / ${f0(D.n)} = ${F('.4f')(0.5 / D.n)}. La loi normale attend à ce rang <b>${fs2(q0[0])} σ</b> ; j’ai mesuré <b>${fs2(q0[1])} σ</b>. Le point est sous la diagonale : ce tronçon est plus extrême que prévu. Au milieu, le 302<sup>e</sup> tombe à la fraction 0,5, où la normale attend 0 : le point est sur la diagonale. Le plus lent : attendu ${fs2(qN[0])} σ, observé ${fs2(qN[1])} σ.</p>
+        <p class="muted">Lecture : des points qui s’écartent seulement aux deux bouts, et vers l’extérieur, signalent quelques extrêmes de trop ; une courbe en S sur toute la longueur signalerait des queues épaisses.</p>` };
+      const add = (el, k) => el && !el.querySelector('.def-btn') && el.insertAdjacentHTML('beforeend', defBtn(k));
+      const h5 = document.querySelectorAll('#s3 .tool h5');
+      add(h5[0], 'tobler'); add(h5[1], 'student'); add(h5[2], 'vraisemblance');
+      add($('c-hist').closest('.pc').querySelector('.pc-t'), 'hist');
+      add($('c-qq').closest('.pc').querySelector('.pc-t'), 'qq');
+    }
   }
 
   /* ---------- 03 · the three tools: Tobler, Student, maximum likelihood ---------- */
