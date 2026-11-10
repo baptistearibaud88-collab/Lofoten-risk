@@ -17,7 +17,7 @@ La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu fonc�
 
 ## Données du rapport de risque
 
-`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Cinq fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
+`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Six fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
 
 ```
 node outils/segmentation_terrain.js   # cotation par section (partie 02) → risque_sections.js
@@ -25,7 +25,10 @@ node outils/distribution.js           # distribution des écarts, sans artefact 
 node outils/episodes_allure.js        # épisodes d'allure et massifs (parties 05–06) → risque_episodes.js
 node outils/plan_reel.js              # plan (donnees/plan.gpx) contre réel (partie 13) → risque_plan.js
 node outils/bougies_sorties.js        # bougies par sortie (partie 01) → risque_bougies.js
+node outils/meteo_series.js           # persistance de la pluie, 1 200 fenêtres (partie 09) → risque_meteo.js
 ```
+
+`donnees/era5_climatology_1996_2025_daily.json` : pluie quotidienne ERA5 1996–2025 au point centre (copie de `data/raw/weather/`), lue par `outils/meteo_series.js`.
 
 `ressentis_episodes.js` se remplit à la main : cause de chaque épisode lent de 10 min ou plus.
 

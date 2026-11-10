@@ -690,25 +690,14 @@
     $('t-hrv').innerHTML = `Le départ se fait dans des conditions idéales : la première nuit, à ${N[0].camp}, tombe pile sur ma VFC habituelle (${N[0].hrv} ms), reposé. Après la grosse première journée, elle grimpe à <b>${best.hrv} ms (${fs0(best.dd_hrv * 100)} %)</b> : une bonne fatigue, celle d’un corps qui encaisse sans rien accumuler encore. La rupture arrive à ${firstLow.camp} : <b>${firstLow.hrv} ms (${fs0(firstLow.dd_hrv * 100)} %)</b> après une nuit de ${hm(firstLow.sleep_h)}. Ensuite, elle ne revient jamais dans la zone normale (au mieux ${d3.max(after, n => n.hrv)} ms) : la réserve s’use sans se refaire. Pourtant, l’allure ne baisse pas (partie 07). La fatigue se voit dans les décisions : le Helvetestinden (J4) tombe après 1 h 15 de recherche de bivouac, le Hermannsdalstinden (J5) après la nuit de 2 h et une recharge de ${worst.bb}/100.`;
   }
 
-  /* ---------- 09 bis · rain persistence, 2026 among 30 summers ---------- */
+  /* ---------- 09 bis · rain persistence, 2026 among 1 200 windows (risque_meteo.js, outils/meteo_series.js) ---------- */
   function drawPersist() {
-    const CL = R.cf.clim, TH = 1, Y = CL.years.map(y => y.rain_d), r26 = CL.real_rain_d;
-    const wet = a => a.map(v => v >= TH);
-    const W = Y.map(wet), all = W.flat(), p = d3.mean(all);
-    let ww = 0, nw = 0, wd = 0, nd = 0;
-    W.forEach(w => w.slice(1).forEach((v, i) => { if (w[i]) { nw++; ww += v; } else { nd++; wd += v; } }));
-    const pww = ww / nw, pwd = wd / nd;
-    const maxRun = w => { let m = 0, c = 0; w.forEach(v => { c = v ? c + 1 : 0; m = Math.max(m, c); }); return m; };
-    const max3 = a => d3.max(d3.range(a.length - 2), i => a[i] + a[i + 1] + a[i + 2]);
-    const eps = []; Y.forEach(a => { let s = 0, n = 0; [...a, 0].forEach(v => { if (v >= TH) { s += v; n++; } else if (n) { eps.push(s); s = 0; n = 0; } }); });
-    const pct = (arr, v) => (arr.filter(x => x < v).length + .5 * arr.filter(x => x === v).length) / arr.length * 100;
-    const dry = W.map(w => maxRun(w.map(v => !v))), dry26 = maxRun(wet(r26).map(v => !v));
-    const m3 = Y.map(max3), m326 = max3(r26), tot = Y.map(a => d3.sum(a)), tot26 = d3.sum(r26);
-    const ep26 = d3.sum(r26.slice(6));
+    const M = window.RISK_METEO; if (!M) return;
+    const pww = M.p_ww, pwd = M.p_wd, p = M.p_wet;
 
     // left: P(rain | yesterday)
     const f = frame('c-persist', { t: 26, r: 46, b: 30, l: 8 });
-    const B = [{ k: 'veille sèche', v: pwd, n: nd }, { k: 'veille pluvieuse', v: pww, n: nw }];
+    const B = [{ k: 'veille sèche', v: pwd, n: M.n_wd }, { k: 'veille pluvieuse', v: pww, n: M.n_ww }];
     const x = d3.scaleBand().domain(B.map(b => b.k)).range([0, f.w]).padding(.45);
     const y = d3.scaleLinear().domain([0, .8]).range([f.h, 0]);
     yGrid(f.g, y, f.w, 4, v => `${f0(v * 100)} %`);
@@ -718,33 +707,35 @@
     f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(p)).attr('y2', y(p)).attr('stroke', C('--text-secondary')).attr('stroke-dasharray', '5 4');
     f.g.append('text').attr('class', 'lbl').attr('x', 4).attr('y', y(p) - 5).text(`sans mémoire : ${f0(p * 100)} %`);
     hover(f.g.selectAll('.ph').data(B).join('rect').attr('class', 'hit').attr('x', b => x(b.k)).attr('width', x.bandwidth()).attr('y', 0).attr('height', f.h),
-      b => `<b>Après une ${b.k}</b>${row('pluie le lendemain', `${f0(b.v * 100)} %`)}${row('jours observés', b.n)}`);
+      b => `<b>Après une ${b.k}</b>${row('pluie le lendemain', `${f0(b.v * 100)} %`)}${row('jours observés', f0(b.n))}`);
     readout('r-persist', `×<b>${f1(pww / pwd)}</b> après un jour de pluie`);
 
-    // right: strips
-    const g = frame('c-strip', { t: 8, r: 20, b: 8, l: 8 });
+    // right: one small histogram per question, 2026 marked
+    const g = frame('c-strip', { t: 8, r: 8, b: 4, l: 8 });
     const S = [
-      { k: 'Plus longue série sèche', u: 'j', a: dry, v: dry26, max: 10, fmt: v => `${v} j` },
-      { k: 'Plus gros épisode de 3 jours', u: 'mm', a: m3, v: m326, max: 30, fmt: v => `${f1(v)} mm` },
-      { k: 'Cumul des 9 jours', u: 'mm', a: tot, v: tot26, max: 50, fmt: v => `${f1(v)} mm` },
+      { k: 'Plus longue série sèche', o: M.dry, fmt: v => `${f0(v)} j`, tick: e => f0(e + .5), unit: 'j' },
+      { k: 'Plus gros épisode de 3 jours', o: M.max3, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
+      { k: 'Cumul des 9 jours', o: M.tot, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
     ];
-    const rh = g.h / S.length, xs = d3.scaleLinear().range([0, g.w]);
+    const rh = g.h / S.length;
     S.forEach((s, i) => {
-      const gg = g.g.append('g').attr('transform', `translate(0,${i * rh})`), xx = xs.copy().domain([0, s.max]), cy = rh * .58, pc = pct(s.a, s.v);
-      gg.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 14).text(s.k);
-      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 14).attr('text-anchor', 'end').text(`2026 : ${s.fmt(s.v)} · centile ${f0(pc)}`);
-      gg.append('line').attr('x1', 0).attr('x2', g.w).attr('y1', cy).attr('y2', cy).attr('stroke', C('--grid'));
-      [0, s.max / 2, s.max].forEach(t => gg.append('text').attr('class', 'lbl').attr('x', xx(t)).attr('y', cy + 22).attr('text-anchor', t ? t === s.max ? 'end' : 'middle' : 'start').text(`${f0(t)} ${s.u}`));
-      const cnt = new Map(), jit = v => { const k = Math.round(xx(v) / 5); const n = cnt.get(k) || 0; cnt.set(k, n + 1); return (n % 2 ? 1 : -1) * Math.ceil(n / 2) * 5; };
-      const pts = s.a.map((v, j) => ({ v, yr: CL.years[j].year })).sort((a, b) => a.v - b.v);
-      hover(gg.selectAll('.sd').data(pts).join('circle').attr('cx', d => xx(Math.min(d.v, s.max))).attr('cy', d => cy + jit(d.v)).attr('r', 3.2).attr('fill', C('--text-muted')).attr('fill-opacity', .55),
-        d => `<b>Été ${d.yr}</b>${row(s.k.toLowerCase(), s.fmt(d.v))}`);
-      gg.append('path').attr('d', d3.symbol(d3.symbolDiamond, 110)()).attr('transform', `translate(${xx(s.v)},${cy})`).attr('fill', C('--down')).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
+      const o = s.o, E = o.edges, gg = g.g.append('g').attr('transform', `translate(0,${i * rh})`);
+      const xx = d3.scaleLinear().domain([E[0], E[E.length - 1]]).range([0, g.w]), top = 22, base = rh - 22;
+      const yy = d3.scaleLinear().domain([0, d3.max(o.hist)]).range([base, top]);
+      gg.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 13).text(s.k);
+      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.fmt(o.v)} · centile ${f0(o.pct)}`);
+      const inBin = k => o.v >= E[k] && o.v < E[k + 1];
+      gg.selectAll('.hb').data(o.hist).join('rect').attr('x', (n, k) => xx(E[k]) + .5).attr('width', (n, k) => Math.max(1, xx(E[k + 1]) - xx(E[k]) - 1)).attr('y', n => yy(n)).attr('height', n => base - yy(n))
+        .attr('fill', (n, k) => inBin(k) ? C('--down') : C('--text-muted')).attr('fill-opacity', (n, k) => inBin(k) ? .9 : .5);
+      gg.append('line').attr('x1', 0).attr('x2', g.w).attr('y1', base).attr('y2', base).attr('stroke', C('--grid'));
+      const tk = [0, Math.floor(E.length / 2), E.length - 1];
+      tk.forEach((k, j) => gg.append('text').attr('class', 'lbl').attr('x', xx(E[k]) + (s.unit === 'j' ? (j === 2 ? -xx(1) + xx(0) : 0) : 0)).attr('y', base + 13).attr('text-anchor', ['start', 'middle', 'end'][j]).text(`${s.unit === 'j' ? f0(j === 2 ? E[k] - .5 : E[k] + .5) : f0(E[k])} ${s.unit}`));
+      hover(gg.selectAll('.hh').data(o.hist).join('rect').attr('class', 'hit').attr('x', (n, k) => xx(E[k])).attr('width', (n, k) => xx(E[k + 1]) - xx(E[k])).attr('y', top).attr('height', base - top),
+        (n, k) => `<b>${s.k}</b>${row(s.unit === 'j' ? 'durée' : 'pluie', s.unit === 'j' ? `${f0(E[k] + .5)} j` : `${f0(E[k])} à ${f0(E[k + 1])} mm`)}${row('fenêtres', `${n} sur ${M.n}`)}`);
     });
-    legend('l-strip', [['', C('--text-muted'), 'un été, 1996–2025'], ['', C('--down'), '2026']]);
-    readout('r-strip', `${CL.years.length} étés · mêmes dates`);
-    const epMean = d3.mean(eps), epPct = pct(eps, ep26);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${dry26} jours secs d’affilée, centile ${f0(pct(dry, dry26))}, ${dry.filter(d => d >= dry26).length} étés sur ${dry.length} en ont eu autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(ep26)} mm en trois jours</b> au point de référence, centile ${f0(pct(m3, m326))}, plus fort que ${f0(epPct / 10)} épisodes de pluie sur 10 (en moyenne ${f0(epMean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 14.`;
+    legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026']]);
+    readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(M.ep.v)} mm en trois jours</b> au point de référence, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 14.`;
   }
 
   /* ---------- 09 · weather vs benchmark ---------- */
