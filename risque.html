@@ -289,7 +289,7 @@
     </div>
     <div class="notes">
       <div><h4>Comment lire</h4><p>L’indice est un écart à la moyenne des sorties : positif, la sortie est plus exposée que la moyenne. Les cinq cases colorées décomposent la contribution de chaque facteur (rouge : il aggrave, bleu : il atténue).</p></div>
-      <div><h4>Méthode</h4><p>Chaque facteur est centré-réduit, puis pondéré. Pour les sorties courtes, l’irrégularité et la pente sont rapprochées de la moyenne (7 tronçons ne pèsent pas comme 50). Validation : test de Mann-Whitney entre sorties avec et sans alerte.</p></div>
+      <div><h4>Méthode</h4><p>Chaque facteur est centré-réduit, puis pondéré. Pente : 90<sup>e</sup> centile de la pente des tronçons. Pour les sorties courtes, l’irrégularité et la pente sont rapprochées de la moyenne générale avec un poids de 8 tronçons (7 tronçons ne pèsent pas comme 50). L’artefact GPS de Kvalvika (partie 03) est exclu. Validation : test exact de Mann-Whitney entre sorties avec et sans alerte.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-index"></p></div>
     </div>
   </section>
@@ -488,7 +488,8 @@
 <script src="risque_plan.js?v=20261108-1"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
+<script src="risque_indice.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-15"></script>
+<script src="risque.js?v=20261110-16"></script>
 </body>
 </html>

@@ -120,6 +120,9 @@
   const D = window.RISK_DIST || R.dist, MC = R.mc, W_ = R.weather;
   // rolling pace and irregularity recomputed without the GPS artefact (outils/distribution.js)
   if (D.roll_sd) { R.series.forEach((s, i) => { s.m = D.roll_m[i]; s.sd = D.roll_sd[i]; }); R.reg_thr = D.roll_p90; R.long_sd = D.roll_mean_sd; }
+  // danger index recomputed without the GPS artefact (outils/indice_danger.js)
+  const IX = window.RISK_INDICE;
+  if (IX) { IX.rows.forEach(o => Object.assign(R.rows.find(r => r.id === o.id), o)); R.idx = IX.idx; }
   const sens = Object.fromEntries(R.sens.map(s => [s.name, s]));
   const sacS = sens['sac sur le dos'];
   const physIds = ['stuvla', 'last_trail', 'bunes_munkebu', 'andstabben'];
@@ -825,7 +828,7 @@
     readout('r-index', `Mann-Whitney <b>p = ${F('.3f')(R.idx.mw_p)}</b> · alertes <b>${R.idx.alert_ranks.join(', ')}</b>`);
     const logi = R.rows.filter(x => x.alert.length && !physIds.includes(x.id)).map(x => x.rank);
     const noAlertTop = rows.filter(x => !x.alert.length).slice(0, 2);
-    $('t-index').textContent = `Les quatre alertes de terrain sortent aux rangs ${physRanks.join(', ')} sur ${R.rows.length} (test de Mann-Whitney sur les cinq alertes : p = ${F('.3f')(R.idx.mw_p)}). L’alerte logistique (bivouac impossible) reste au milieu (rang ${logi.join(', ')}) : l’indice mesure le danger physique, pas les imprévus d’organisation. Deux sorties ressortent sans alerte : ${noAlertTop.map(x => `${x.name} (${x.rank}e)`).join(' et ')}.`;
+    $('t-index').innerHTML = `Construit sans regarder les incidents, l’indice les retrouve : les quatre alertes de terrain sortent aux rangs <b>${physRanks.join(', ')}</b> sur ${R.rows.length}, toutes dans le tiers le plus exposé (p = ${F('.3f')(R.idx.mw_p)}). L’alerte logistique (bivouac impossible) reste au milieu (rang ${logi.join(', ')}) : l’indice mesure le danger physique, pas les imprévus d’organisation. Deux sorties très exposées n’ont rien donné : ${noAlertTop.map(x => `${x.name} (${x.rank}e)`).join(' et ')}, le ${dayLbl(noAlertTop[0].day)}. Le danger était là, il n’a simplement rien coûté ce jour-là. Reste à mesurer jusqu’où une journée peut déraper : c’est la partie 11.`;
   }
 
   /* ---------- 11 · Monte Carlo ---------- */
