@@ -11,7 +11,7 @@
 <meta property="og:description" content="605 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261110-1">
+<link rel="stylesheet" href="risque.css?v=20261110-2">
 </head>
 <body>
 <div class="viz-root">
@@ -266,6 +266,17 @@
       <div><h4>Méthode</h4><p>ERA5 (Copernicus), trois zones (nord, centre, sud) ; chaque jour prend la zone de ses sorties. Normale : moyenne 1996–2025 du 14 au 22 juin, répartie uniformément sur 9 jours.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-wx"></p></div>
     </div>
+      <h3 class="subh">La pluie arrive en séries : 2026 face aux 30 étés</h3>
+    <p class="lede">Un cumul ne dit pas tout : les jours de beau temps arrivent ensemble, ceux de pluie aussi. La vraie question est donc de savoir si je suis tombé sur une semaine rare, sur un épisode de pluie hors norme, ou simplement sur un calendrier favorable.</p>
+    <div class="grid-2 g-6040">
+      <div class="pc"><div class="pc-head"><span class="pc-t">Pluie le lendemain · selon la veille</span><span class="pc-r mono" id="r-persist"></span></div><div class="chart" id="c-persist" data-h="250"></div><div class="pc-foot"><span class="src">ERA5 · point centre · 30 étés × 9 jours (14–22 juin)</span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">2026 parmi les 30 étés</span><span class="pc-r mono" id="r-strip"></span></div><div class="chart" id="c-strip" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-strip"></span></div></div>
+    </div>
+    <div class="notes wk">
+      <div><h4>Comment lire</h4><p>À gauche, la chance qu’il pleuve un jour donné, selon qu’il a plu ou non la veille. Si les jours étaient indépendants, les deux barres seraient égales. À droite, chaque point est un été de 1996 à 2025, aux mêmes dates ; le losange est 2026, et le centile dit quelle part des étés fait moins.</p></div>
+      <div><h4>Méthode</h4><p>Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 240 passages d’un jour au suivant. Un épisode est une suite de jours de pluie. La probabilité de l’enchaînement « 6 jours secs puis 3 de pluie » est calculée deux fois : jours tirés au hasard, puis en tenant compte de la persistance (chaîne de Markov). Point centre seulement, d’où 21,7 mm sur les trois derniers jours au lieu de 24,0 mm sur les trois zones. Limite : 30 fenêtres de 9 jours.</p></div>
+      <div class="key"><h4>À retenir</h4><p id="t-wx2"></p></div>
+    </div>
   </section>
 
   <section id="s10">
@@ -477,6 +488,6 @@
 <script src="risque_plan.js?v=20261108-1"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-6"></script>
+<script src="risque.js?v=20261110-8"></script>
 </body>
 </html>
