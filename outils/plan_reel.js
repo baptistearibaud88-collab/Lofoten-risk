@@ -131,6 +131,27 @@ const bridge = [
 // bivouac search episodes (≥ 400 m off-plan, in the bivouac list)
 const bivEp = off.filter(o => o.m >= BIG && CAUSE.bivouac.includes(o.act)).map(o => ({ act: o.act, day: o.day, km: r2(o.m / 1000), up: Math.round(o.up), t0: o.t0, t1: o.t1 }));
 
+// ---- sac ou trail : le plan et le réel, à mesure égale
+// Dans le plan, les sommets sont des allers-retours sans le sac (sac laissé à la base) : ce sont les
+// portions du tracé parcourues deux fois, repérées sur le GPX. Le J6 (Hermannsdalstinden depuis
+// Munkebu) et le jour de marge (Støvla) sont entièrement en trail. Tout le reste se fait avec le sac,
+// tour du lac compris. Le tracé lissé de Strava étant plus court que la mesure de la montre
+// (rapport mesuré sur le parcours commun), les distances du plan sont converties à la mesure de la montre.
+const SPURS = [['Tønnåsheia', 16.7, 22.4], ['Volandstinden', 35.1, 40.0], ['Ryten', 47.5, 50.3], ['Kitinden', 56.8, 61.8], ['Helvetestinden', 80.8, 84.2], ['Munken', 99.1, 100.2], ['Andstabben', 108.4, 111.8], ['Sommet du tour du lac', 114.4, 117.0]];
+const ratio = shared / doneKm, j6 = DAYS[5];
+const spurKm = SPURS.reduce((a, [, k0, k1]) => a + lenOf([[k0, k1]]), 0), spurDp = SPURS.reduce((a, [, k0, k1]) => a + dpOf([[k0, k1]]), 0);
+const pTrail = { gpx: spurKm + j6.route_km, dplus: spurDp + j6.route_dplus + MARGIN.dplus }; pTrail.km = pTrail.gpx * ratio + MARGIN.km;
+const pSac = { gpx: plan8 - pTrail.gpx, dplus: planDp - pTrail.dplus }; pSac.km = pSac.gpx * ratio;
+const rMode = k => { const a = R.rows.filter(r => !!r.sac === (k === 'sac')); return { km: a.reduce((x, r) => x + r.km, 0), dplus: a.reduce((x, r) => x + r.dplus, 0), h: a.reduce((x, r) => x + r.mov_h, 0) }; };
+const rSac = rMode('sac'), rTrail = rMode('trail'), eff = o => o.km + o.dplus / 100;
+const speed = { sac: eff(rSac) / rSac.h, trail: eff(rTrail) / rTrail.h };            // km-effort par heure, mesurés
+pSac.h = eff(pSac) / speed.sac; pTrail.h = eff(pTrail) / speed.trail;
+const hRaw = (pSac.gpx + pSac.dplus / 100) / speed.sac + (pTrail.gpx + MARGIN.km + pTrail.dplus / 100) / speed.trail;   // sans conversion de mesure
+const rnd = o => ({ km: r1(o.km), dplus: Math.round(o.dplus), h: r2(o.h), ...(o.gpx != null ? { gpx: r1(o.gpx) } : {}) });
+const campSame = CAMPS.slice(1).filter((c, i) => hav([c.lat, c.lon], [camps[i + 1].lat, camps[i + 1].lon]) < 300).length;
+const modes = { ratio: r2(ratio), speed: { sac: r2(speed.sac), trail: r2(speed.trail) }, plan: { sac: rnd(pSac), trail: rnd(pTrail) }, real: { sac: rnd(rSac), trail: rnd(rTrail) }, plan_h_raw: r2(hRaw),
+  spurs: SPURS.map(([n, k0, k1]) => ({ name: n, km: r1(lenOf([[k0, k1]])) })), camps_same: campSame, camps_n: CAMPS.length - 1, track_done: r1(doneKm), biv: { n: bivEp.length, km: r1(bivEp.reduce((a, o) => a + o.km, 0)), up: Math.round(bivEp.reduce((a, o) => a + o.up, 0)) } };
+
 // downsampled tracks for the map (every ~150 m)
 const thin = (pts, step) => { const o = [pts[0]]; let acc = 0; for (let i = 1; i < pts.length; i++) { acc += hav(pts[i - 1], pts[i]); if (acc >= step) { o.push(pts[i]); acc = 0; } } o.push(pts[pts.length - 1]); return o; };
 const planLine = []; let seg = [];
@@ -143,12 +164,12 @@ const out = {
     line: planLine.map(s => thin(s, 150).map(p => [r5(p[1]), r5(p[0])])) },
   real: { camps: camps.map(c => ({ ...c })), days: Object.entries(real).map(([d, v]) => ({ day: +d, km: r1(v.km), dplus: Math.round(v.dplus), summits: rsum[d] || [] })),
     line: T.acts.map(a => thin(a.pts.map(q => [q[1], q[0]]), 150).map(p => [r5(p[1]), r5(p[0])])) },
-  match: { th: TH, shared: r1(shared), done: r1(doneKm), gps_ratio: r2(shared / doneKm), abandoned, bridge, biv: bivEp },
+  match: { th: TH, shared: r1(shared), done: r1(doneKm), gps_ratio: r2(shared / doneKm), abandoned, bridge, biv: bivEp },  modes,
 };
 fs.writeFileSync(path.join(root, 'risque_plan.js'), `// généré par outils/plan_reel.js — ne pas modifier à la main\nwindow.RISK_PLAN = ${JSON.stringify(out)};\n`);
 console.log(`plan ${out.plan.km_total} km tracés · itinéraire 8 j ${plan8} km · avec marge ${planWalk} km, ${planDp} m D+ · accès J6 ${j6access} km`);
 console.log(` · commun ${r1(shared)} km réel pour ${r1(doneKm)} km de plan (×${r2(shared / doneKm)})`);
 DAYS.forEach(d => console.log(`J${d.day} plan ${d.km} km ${d.dplus} m · réel ${r1(real[d.day].km)} km ${Math.round(real[d.day].dplus)} m`));
 console.log(bridge.map(b => `${b.l} ${b.v}`).join(' | '));
-console.log(abandoned, bivEp);
+console.log(JSON.stringify(modes));
 camps.forEach(c => console.log(c.night, c.name, 'plan km', c.plan_km, 'hors tracé', c.off_route));

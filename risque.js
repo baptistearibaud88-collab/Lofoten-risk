@@ -1202,34 +1202,8 @@
     if (!PL) return;
     const M = PL.match, P_ = PL.plan, Rl = PL.real;
     const totR = M.bridge.find(b => b.k === 'real').v, dpR = totDp;
-    $('plan-lede').textContent = `Le plan, c’est 8 jours d’itinéraire et 1 jour de marge. L’itinéraire tracé avant le départ fait ${f1(P_.km8)} km à pied (hors bateau, avec l’aller-retour au Hermannsdalstinden depuis Munkebu), ${d3.sum(P_.days, d => d.summits.length) - 1} sommets et le tour du lac d’Å. Le jour de marge, prévu pour la météo ou la forme, a servi à la Støvla : ${f1(P_.margin.km)} km de plus. Le plan complet fait donc ${f1(P_.km_walk)} km et ${f0(P_.dplus)} m de dénivelé, sur les mêmes 9 jours que la traversée réelle : ${f1(totR)} km et ${f0(dpR)} m. Ce qui suit explique l’écart, jour par jour.`;
-    // planned summits
-    const ab = n => M.abandoned.find(a => a.name === n);
-    const SUM = [
-      ['J1', 'Tønnåsheia', 'ab', 'Abandonné : premier jour avec le sac plus dur que prévu'],
-      ['J2', 'Volandstinden', 'ok', 'Fait'],
-      ['J3', 'Ryten', 'ok', 'Fait, dans le brouillard, au réveil depuis le camp'],
-      ['J3', 'Kitinden', 'sub', 'Remplacé par le Moltinden'],
-      ['J4', 'Helvetestinden', 'ab', 'Abandonné après 1 h 15 de recherche de bivouac sur son sentier'],
-      ['J5', 'Munken', 'ok', 'Fait, en soirée depuis Munkebu'],
-      ['J6', 'Hermannsdalstinden', 'ab', 'Abandonné au pied, après la nuit de 2 h ; journée Reinebringen–Helvete à la place'],
-      ['J7', 'Andstabben', 'ok', 'Fait, en trail depuis Sørvågen'],
-      ['J7–J8', 'Tour du lac', 'ab', 'Abandonné : déconseillé sur place, météo ; Støvla à la place'],
-      ['J9', 'Støvla (jour de marge)', 'ok', 'Fait au J8 : la marge avance d’un jour après l’abandon du tour du lac ; le J9 sert au Gylttinden'],
-    ];
-    const chipS = { ok: ['c-ok', 'fait'], ab: ['c-ab', 'abandonné'], sub: ['c-sub', 'remplacé'] };
-    $('plan-sum').innerHTML = `<thead><tr><th>Jour</th><th>Prévu</th><th>Statut</th><th class="n">Non fait</th></tr></thead><tbody>${SUM.map(([d, n, k, t]) => { const a = ab(n);
-      return `<tr><td class="mono">${d}</td><td><b>${n}</b><div class="muted">${t}</div></td><td><span class="chip ${chipS[k][0]}">${chipS[k][1]}</span></td><td class="n">${a ? `${f1(a.km)} km<div class="muted">${f0(a.top)} m</div>` : ''}</td></tr>`; }).join('')}</tbody>`;
-    readout('r-psum', `${SUM.filter(x => x[2] === 'ok').length} faits · ${SUM.filter(x => x[2] === 'ab').length} abandonnés · ${SUM.filter(x => x[2] === 'sub').length} remplacés`);
-    // bivouacs: planned vs real camp, and the bivouac search episodes
-    const hav = (a, b) => { const la = (b[0] - a[0]) * Math.PI / 180, lo = (b[1] - a[1]) * Math.PI / 180 * Math.cos(a[0] * Math.PI / 180); return 6371 * Math.hypot(la, lo); };
-    const bivN = P_.camps.map((c, i) => ({ p: c, r: Rl.camps[i] })).slice(1);
-    const searches = M.biv;
-    $('plan-biv').innerHTML = `<thead><tr><th>Nuit</th><th>Prévu</th><th>Réel</th><th class="n">Écart</th></tr></thead><tbody>${bivN.map(({ p, r }) => {
-      const d = hav([p.lat, p.lon], [r.lat, r.lon]), da = r.alt - p.alt;
-      return `<tr><td class="mono">${dateLbl(p.night)}</td><td>${p.name}${p.est ? '<span class="est">estimé</span>' : ''}<div class="muted mono">${f0(p.alt)} m</div></td><td>${r.name}<div class="muted mono">${f0(r.alt)} m</div></td><td class="n">${d < .3 ? 'même lieu' : `${f1(d)} km`}<div class="muted">${fm(da)}</div></td></tr>`;
-    }).join('')}</tbody>`;
-    readout('r-pbiv', `recherche de bivouac : <b>${f1(d3.sum(searches, x => x.km))} km</b> · <b>+${f0(d3.sum(searches, x => x.up))} m</b>`);
+    const MO = PL.modes;
+    $('plan-lede').innerHTML = `Choisir son profil ne suffit pas : il faut un plan. Le mien tenait en 8 jours d’itinéraire tracés avant le départ, plus 1 jour de marge. Presque rien ne s’est passé comme prévu : seuls ${f0(MO.track_done)} km des ${f0(P_.km8)} km du tracé ont été parcourus, ${MO.camps_same} campements sur ${MO.camps_n} sont à l’endroit prévu, ${M.abandoned.length - 1} sommets et le tour du lac ont sauté. Mais en finance, on ne juge pas un gérant sur sa fidélité à l’indice de référence : on regarde de combien il s’en est écarté, pourquoi, et ce que ça a coûté. La question n’est donc pas « ai-je suivi le plan ? », mais « le budget prévu a-t-il tenu ? ».`;
   }
   function drawPlanCharts() {
     if (!PL) return;
@@ -1304,12 +1278,54 @@
       readout('r-bridge', `tracé commun : la montre mesure <b>×${F('.2f')(M.gps_ratio)}</b> la longueur du tracé`);
       legend('l-bridge', [['', C('--series-avec'), 'calendrier'], ['', C('--down'), 'décision qui ajoute'], ['', C('--up'), 'décision qui retire'], ['', C('--warning'), 'terrain'], ['', C('--text-muted'), 'mesure']]);
     }
-    // ---- text
-    const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km);
-    const ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5), behind = N.map((d, i) => [d, i]).filter(([d]) => d < -1.5);
-    const biv = d3.sum(M.biv, x => x.km), bivUp = d3.sum(M.biv, x => x.up);
-    const decPlus = B.add + B.var, decMinus = -(B.ab + B.nd), mes = B.gps + B.noise;
-    $('t-plan').textContent = `Le plan complet, jour de marge compris, faisait ${f1(P_.km_walk)} km et ${f0(P_.dplus)} m de dénivelé ; la traversée en a fait ${f1(B.real)} et ${f0(totDp)} m. Le dénivelé est presque identique : le relief prévu a bien été gravi, autrement. L’écart de distance n’est pas un excès de kilomètres. Les décisions en route se compensent : ${f1(decMinus)} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac) contre ${f1(decPlus)} km de substitutions et de variantes (Moltinden, Reine et l’arête de Reinebringen–Helvete, Gylttinden, chemins du sud). La recherche de bivouac ajoute ${f1(B.biv)} km, surtout à Bunes, et le reste (${f1(mes)} km) est de la mesure : sur le parcours commun, la montre compte ${f0((M.gps_ratio - 1) * 100)} % de plus que le tracé lissé. Sur l’avancement, les soirs des ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} sont en avance sur la feuille de route (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) ; le bateau du J4 ramène l’avancement sur le plan. À partir du ${dateLbl(P_.camps[behind[0][1]].night)}, le retard est choisi : camp fixe à Sørvågen, tour du lac abandonné et jour de marge avancé pour la Støvla.`;
+    // ---- le plan et le réel par mode : sac ou trail
+    const MO = PL.modes, pS = MO.plan.sac, pT = MO.plan.trail, rS = MO.real.sac, rT = MO.real.trail;
+    const pc = (a, b) => `${fs0((b / a - 1) * 100)} %`, hP = pS.h + pT.h, hR = rS.h + rT.h, dpP = pS.dplus + pT.dplus, dpR = rS.dplus + rT.dplus;
+    {
+      $('c-pmode').dataset.h = innerWidth < 640 ? 420 : 150;
+      const f = frame('c-pmode', { t: 8, r: 8, b: 4, l: 8 }), nar = f.narrow;
+      const MET = [['Distance', 'km', 'km', v => f0(v)], ['Dénivelé positif', 'm', 'dplus', v => f0(v)], ['Temps de marche', '', 'h', v => hm(v)]];
+      const cols = nar ? 1 : 3, rows_ = nar ? 3 : 1, gap = 28, cw = (f.w - gap * (cols - 1)) / cols, ch = f.h / rows_;
+      MET.forEach(([lab, unit, k, fmt], m) => {
+        const g = f.g.append('g').attr('transform', `translate(${nar ? 0 : m * (cw + gap)},${nar ? m * ch : 0})`), lw = 38, tw = unit === '' ? 62 : 70;
+        const tot = [pS[k] + pT[k], rS[k] + rT[k]], x = d3.scaleLinear().domain([0, d3.max(tot)]).range([0, cw - lw - tw]);
+        g.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 14).text(lab);
+        [['Plan', pS, pT], ['Réel', rS, rT]].forEach(([nm, a, b], r) => {
+          const yy = 28 + r * 44, bh = 30;
+          g.append('text').attr('class', 'lbl').attr('x', 0).attr('y', yy + bh / 2 + 4).text(nm);
+          [[a[k], C('--series-avec'), 0], [b[k], C('--series-sans'), a[k]]].forEach(([v, c, x0]) => {
+            g.append('rect').attr('x', lw + x(x0)).attr('width', Math.max(1, x(v) - 1)).attr('y', yy).attr('height', bh).attr('rx', 2).attr('fill', c).attr('opacity', r ? .9 : .5);
+            if (x(v) > 44) g.append('text').attr('class', 'lbl-ink').attr('x', lw + x(x0) + x(v) / 2).attr('y', yy + bh / 2 + 4).attr('text-anchor', 'middle').text(fmt(v));
+          });
+          g.append('text').attr('class', 'lbl-strong').attr('x', lw + x(a[k] + b[k]) + 6).attr('y', yy + bh / 2 + 4).text(`${fmt(a[k] + b[k])}${unit ? ' ' + unit : ''}`);
+        });
+        g.append('text').attr('class', 'lbl').attr('x', lw).attr('y', 28 + 2 * 44 + 8).text(`sac ${pc(pS[k], rS[k])} · trail ${pc(pT[k], rT[k])} · total ${pc(pS[k] + pT[k], rS[k] + rT[k])}`);
+      });
+      legend('l-pmode', [['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'sans le sac (trail)'], ['', C('--text-muted'), 'plan en clair, réel en plein']]);
+      readout('r-pmode', `plan converti à la mesure de la montre (×${F('.2f')(MO.ratio)})`);
+    }
+    $('plan-stats').innerHTML = [
+      [`${f0(pS.km)} → ${f0(rS.km)} km`, `<em>Avec le sac</em>Distance portée : ${pc(pS.km, rS.km)}`],
+      [`${f0(pT.km)} → ${f0(rT.km)} km`, `<em>En trail</em>Distance sans le sac : ${pc(pT.km, rT.km)}`],
+      [`${f0(dpP)} → ${f0(dpR)} m`, `<em>Dénivelé</em>Le même relief, gravi autrement (${pc(dpP, dpR)})`],
+      [`${hm(hP)} → ${hm(hR)}`, '<em>Temps de marche</em>Le plan à mon allure réelle, contre le réel'],
+    ].map(([b, t]) => `<div><b>${b}</b><span>${t}</span></div>`).join('');
+    const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), slow = MO.speed.trail / MO.speed.sac - 1;
+    $('plan-cols').innerHTML = [
+      [C('--down'), 'la trajectoire', 'Le plan n’a pas été suivi', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `Seuls ${f0(MO.track_done / P_.km8 * 100)} % du tracé prévu ont été parcourus. ${f1(-(B.ab + B.nd))} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac), ${f1(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
+      [C('--accent'), 'l’échange', 'Du sac contre du trail', `${fs0(rS.km - pS.km)} km · ${fs0(rT.km - pT.km)} km`, `Le tour du lac était prévu avec le sac. En fixant le camp à Sørvågen, j’ai remplacé ${f0(pS.km - rS.km)} km portés par ${f0(rT.km - pT.km)} km en trail. Ces kilomètres ne se valent pas : avec le sac, le même effort prend ${f0(slow * 100)} % de temps en plus, et le matériel est exposé à la pluie.`],
+      [C('--up'), 'le budget', 'Le budget a tenu', `${hm(hP)} → ${hm(hR)}`, `Plus de kilomètres, mais plus légers : le dénivelé est le même à ${f0(Math.abs(dpR / dpP - 1) * 100)} % près, le temps de marche aussi. Le jour de marge a été utilisé, ni plus ni moins. La recherche de bivouac a coûté ${f1(MO.biv.km)} km et ${f0(MO.biv.up)} m en ${MO.biv.n} détours.`],
+    ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
+    $('plan-msg').innerHTML = `<b>Ni sous-estimé, ni surestimé.</b> Le plan n’a pas servi de trajectoire : il a servi de budget. L’effort total était bien estimé, si bien que les écarts, tous de sens contraires, se sont compensés : comme un portefeuille dont on change la composition sans changer le risque total.`;
+    DEFS.attribution = { t: 'D’où vient l’analyse des écarts au plan', html: () => `
+      <p><b>L’indice de référence.</b> Un gérant de fonds est jugé contre un <i>benchmark</i> : un portefeuille de référence fixé à l’avance. S’en écarter n’est pas une faute, c’est son métier. Mais chaque écart doit s’expliquer.</p>
+      <p><b>L’attribution de performance.</b> En 1986, <b>Brinson, Hood et Beebower</b> publient <i>Determinants of Portfolio Performance</i>. Ils décomposent l’écart entre un fonds et son indice en morceaux qui s’additionnent : ce qui vient de la répartition entre grandes classes d’actifs (l’<i>allocation</i>), et ce qui vient du choix des titres dans chaque classe (la <i>sélection</i>). On sait alors d’où vient chaque point d’écart.</p>
+      <p><b>Le budget de risque.</b> Dans les années 1990, les gérants généralisent l’idée : on ne fixe plus seulement une composition, mais une quantité totale de risque à ne pas dépasser, que l’on répartit librement.</p>
+      <p class="def-ex"><b>Ici.</b> Le plan est l’indice de référence. Le « pont » est une attribution : il part des ${f0(P_.km8)} km prévus et ajoute chaque écart, classé en décision, terrain ou mesure, jusqu’aux ${f0(B.real)} km réels. Le graphique par mode montre l’allocation : moins de sac, plus de trail. Et le budget, c’est l’effort total : ${hm(hP)} prévues à mon allure réelle, ${hm(hR)} marchées.</p>
+      <p class="muted">Deux précautions. Le tracé Strava est lissé : sur le parcours commun, la montre mesure ${f0((MO.ratio - 1) * 100)} % de plus. Les distances du plan sont donc converties à la mesure de la montre ; sans cette conversion, le plan vaudrait ${hm(MO.plan_h_raw)}. Et le temps du plan est calculé avec mes vitesses réelles (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail) : il mesure ce que le plan demandait, pas ce que j’avais estimé avant de partir.</p>` };
+    const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
+    const N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km), ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5);
+    $('t-plan').innerHTML = `<b>Tout a changé, sauf le total.</b> J’ai porté le sac sur ${f0(pS.km - rS.km)} km de moins que prévu et couru ${f0(rT.km - pT.km)} km de plus, pour le même dénivelé (${f0(dpR)} m) et le même temps de marche (${hm(hR)}). L’avance prise les ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) et le jour de marge ont absorbé le reste. Le plan avait donc la place pour l’imprévu. Mais des écarts qui se compensent, est-ce un plan bien construit, de bonnes décisions en route, ou de la chance ? C’est la dernière question.`;
   }
 
   /* ---------- 14 · conclusion ---------- */
