@@ -1052,31 +1052,16 @@
     ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
 
     // backtest, day by day: each evening the model is refitted on the days walked and forecasts the next one
-    $('mc-table').innerHTML = `<thead><tr><th>Jour</th><th class="n">Calé sur</th><th class="n">Prévu</th><th class="n">Intervalle à 90 %</th><th class="n">Réel</th><th class="n">Centile</th><th class="n">Seuil</th></tr></thead><tbody>${BT.days.map(d => {
+    $('mc-table').innerHTML = `<thead><tr><th>Jour</th><th class="n">Prévu la veille</th><th class="n">Fourchette à 90 %</th><th class="n">Réel</th><th class="n">Verdict</th></tr></thead><tbody>${BT.days.map(d => {
       const o = d.blocs, out = d.real > o.p95 || d.real < o.p5;
-      return `<tr><td style="white-space:nowrap">${dayLbl(d.day)}${d.day >= ST.wet_from ? ' <span class="muted">pluie</span>' : ''}</td><td class="n">J1–J${d.day - 1}</td><td class="n">${hm(o.p50)}</td><td class="n">${hm(o.p5)} – ${hm(o.p95)}</td><td class="n${out ? ' over' : ''}">${hm(d.real)}</td><td class="n">${cL(o.pct)}</td><td class="n ${out ? 'over' : 'muted'}">${out ? 'dépassé' : 'tenu'}</td></tr>`; }).join('')}</tbody>`;
-    {
-      const g = frame('c-bt', { t: 20, r: 16, b: 36, l: narrow ? 70 : 186 });
-      const xs = d3.scaleLinear().domain([0, 100]).range([0, g.w]), rh = g.h / 2;
-      g.g.append('rect').attr('x', xs(5)).attr('width', xs(95) - xs(5)).attr('y', 0).attr('height', g.h).attr('fill', C('--accent')).attr('opacity', .09);
-      [5, 95].forEach(v => g.g.append('line').attr('x1', xs(v)).attr('x2', xs(v)).attr('y1', 0).attr('y2', g.h).attr('stroke', C('--accent')).attr('stroke-dasharray', '4 3'));
-      g.g.append('text').attr('class', 'lbl').attr('x', xs(50)).attr('y', -7).attr('text-anchor', 'middle').text(narrow ? '9 sur 10 attendues ici' : 'intervalle à 90 % : 9 sorties sur 10 attendues ici');
-      g.g.append('line').attr('x1', 0).attr('x2', g.w).attr('y1', rh).attr('y2', rh).attr('stroke', C('--grid'));
-      xAxis(g.g, xs, g.h, 5, v => v);
-      axTitle(g.g, narrow ? 'centile du réel' : 'centile du réel dans la prévision de la veille', 0, g.h + 32);
-      [['normal', 'Loi normale'], ['blocs', 'Blocs']].forEach(([k, lab], r) => {
-        const cy = rh * (r + .5), a = SM[k].all;
-        g.g.append('text').attr('class', 'lbl-strong').attr('x', -12).attr('y', cy - 2).attr('text-anchor', 'end').text(narrow ? (r ? 'Blocs' : 'Normale') : lab);
-        g.g.append('text').attr('class', 'lbl').attr('x', -12).attr('y', cy + 12).attr('text-anchor', 'end').text(narrow ? `${a.in90} / ${a.n}` : `${a.in90} / ${a.n} dans l’intervalle`);
-        const cnt = new Map(), pts = BT.outings.map(o => ({ o, v: o[k].pct })).sort((p, q2) => p.v - q2.v);
-        pts.forEach(p => { const key = Math.round(xs(p.v) / 11), n = cnt.get(key) || 0; cnt.set(key, n + 1); p.dy = (n % 2 ? 1 : -1) * Math.ceil(n / 2) * 10; });
-        hover(g.g.selectAll(`.bt-${k}`).data(pts).join('circle').attr('cx', p => xs(p.v)).attr('cy', p => cy + p.dy).attr('r', 4.6)
-          .attr('fill', p => p.o.wet ? C('--down') : C('--accent')).attr('fill-opacity', .85).attr('stroke', C('--bg')).attr('stroke-width', 1),
-          p => `<b>${p.o.name} · ${dayLbl(p.o.day)}</b>${row('prévu', hm(p.o[k].p50))}${row('intervalle à 90 %', `${hm(p.o[k].p5)} – ${hm(p.o[k].p95)}`)}${row('réel', hm(p.o.real))}${row('centile', cL(p.v))}`);
-      });
-      legend('l-bt', [['', C('--accent'), `temps sec, J3–J6 (${SM.blocs.dry.n} sorties)`], ['', C('--down'), `mauvais temps, J7–J9 (${SM.blocs.wet.n} sorties)`]]);
-    }
-    $('bt-sum').innerHTML = `<b>Par temps sec</b>, l’intervalle à 90 % contient ${SM.blocs.dry.in90} sorties sur ${SM.blocs.dry.n} avec les blocs (attendu : ${f0(SM.blocs.dry.n * .9)}), ${SM.normal.dry.in90} sur ${SM.normal.dry.n} avec la loi normale, trop étroite. <b>Sous la pluie</b>, ${SM.blocs.wet.above95} sorties sur ${SM.blocs.wet.n} dépassent le seuil à 95 % même avec les blocs : le modèle, calé sur du temps sec, ne connaît pas ce régime.`;
+      return `<tr><td style="white-space:nowrap">${dayLbl(d.day)}${d.day >= ST.wet_from ? ' <span class="muted">pluie</span>' : ''}</td><td class="n">${hm(o.p50)}</td><td class="n">${hm(o.p5)} – ${hm(o.p95)}</td><td class="n${out ? ' over' : ''}">${hm(d.real)}</td><td class="n ${out ? 'over' : 'muted'}">${out ? 'dépassé' : 'tenu'}</td></tr>`; }).join('')}</tbody>`;
+    const dryOk = BT.days.filter(d => d.day < ST.wet_from && d.real <= d.blocs.p95 && d.real >= d.blocs.p5).length, dryN = BT.days.filter(d => d.day < ST.wet_from).length;
+    const wetOut = BT.days.filter(d => d.day >= ST.wet_from && d.real > d.blocs.p95).map(d => dayLbl(d.day));
+    $('mc-story').innerHTML = `
+      <p><b>1. Le modèle prévoit.</b> Il ne connaît que deux jours de beau temps, où j’étais en forme : c’est tout ce que je savais au soir du J2, et c’est sa limite. Il annonce la durée de la suite, avec une fourchette.</p>
+      <p><b>2. Tant qu’il fait sec, il voit juste.</b> Du J3 au J6, les ${dryN} journées tombent dans la fourchette prévue la veille${dryOk === dryN ? '' : ` (${dryOk} sur ${dryN})`} ; sortie par sortie, ${SM.blocs.dry.in90} sur ${SM.blocs.dry.n}. À condition de garder l’enchaînement des écarts : la loi normale, trop sûre d’elle, n’en contient que ${SM.normal.dry.in90}.</p>
+      <p><b>3. La pluie le prend de court.</b> ${wetOut.join(' et ')} dépassent le seuil. Ce n’est pas un événement imprévisible : aux Lofoten, il pleut un jour sur trois (partie 09). C’est un régime que le modèle n’a jamais vu, comme un modèle de marché calé sur des années calmes qui rencontre son premier krach.</p>
+      <p class="ex-msg"><b>Le modèle n’est pas celui qui le pilote.</b> Une valeur à risque ne prévoit pas la crise ; ce qui protège la banque, c’est le capital qu’elle a mis de côté. Moi, j’avais prévu le mauvais temps autrement que par un calcul d’allure : un jour de marge dans le plan, de l’avance prise tant qu’il faisait beau, un camp fixe quand la pluie est arrivée. Mon capital, c’était la marge. La simulation dit ce que le choc coûte ; les parties 13 et 14 diront si le plan et mes décisions pouvaient l’absorber.</p>`;
 
     // stress test
     const sc = Object.fromEntries(ST.scen.map(x => [x.label, x]));
@@ -1118,7 +1103,7 @@
       <p class="def-ex"><b>Attention au deuxième scénario.</b> Le choc est mesuré sur les J7–J9 puis appliqué aux J7–J9 : que le réel y redevienne ordinaire n’est pas une preuve, c’est une façon de mesurer la taille du choc en heures (${shm(sc.pluie_fin.delta)}). Le vrai test est le troisième : et si le mauvais temps était arrivé dès le J3, avec le sac ?</p>` };
     if (!$('mc-more').querySelector('.def-btn')) $('mc-more').innerHTML = defBtn('montecarlo', 'Monte Carlo, modèle à facteurs et blocs : d’où ça vient');
     [['mc-stats-t', 'var95'], ['bt-t', 'backtest'], ['st-t', 'stress']].forEach(([id, k]) => { if (!$(id).querySelector('.def-btn')) $(id).insertAdjacentHTML('beforeend', defBtn(k)); });
-    $('t-mc').innerHTML = `Au soir du J2, le modèle prévoit <b>${hm(MC.central)}</b> de marche pour la suite. Jusqu’au J6, la traversée suit la prévision (centile ${cL(j6.cum_pct)}). Puis le mauvais temps des J7 à J9 coûte <b>${hm(mcLate)}</b> : presque impossible pour la loi normale (centile ${cL(N_.real_pct)}), un mauvais scénario plausible pour les blocs (centile ${cL(B_.real_pct)}). Le contrôle le confirme : par temps sec, les blocs voient juste (${SM.blocs.dry.in90} sorties sur ${SM.blocs.dry.n} dans l’intervalle) ; sous la pluie, plus aucun modèle ne tient. Un modèle mesure l’aléa du terrain qu’il connaît, pas un changement de régime : celui-là se traite par un scénario, ${fs0(ST.pct)} % de temps, et par une marge capable de l’absorber. Reste à voir si le plan l’avait prévue.`;
+    $('t-mc').innerHTML = `Calé sur deux jours de beau temps, le modèle prévoit la suite et tient jusqu’au J6. Puis le mauvais temps des J7 à J9 coûte <b>${hm(mcLate)}</b> : presque impossible pour la loi normale (centile ${cL(N_.real_pct)}), un mauvais scénario plausible pour les blocs (centile ${cL(B_.real_pct)}). Deux leçons. Garder l’enchaînement des écarts donne la bonne mesure de l’incertitude. Et aucun modèle ne voit venir un régime qu’il n’a jamais connu : celui-là se traite par un scénario (${fs0(ST.pct)} % de temps) et par une marge. Le modèle a fait son travail ; reste à juger celui qui le pilote : le plan, puis les décisions.`;
   }
   function initMc() {
     document.querySelectorAll('.segctl button').forEach(b => b.addEventListener('click', () => {
