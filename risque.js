@@ -1261,7 +1261,8 @@
     {
       const B = M.bridge, f = frame('c-bridge', { t: 8, r: 70, b: 28, l: 8 });
       const lw = Math.min(250, f.w * .42);
-      let run = 0; const D = B.map(b => { if (b.k === 'plan' || b.k === 'real') { run = b.v; return { ...b, a: 0, z: b.v }; } const a = run; run += b.v; return { ...b, a, z: run }; });
+      const isT = d => d.total || d.k === 'plan' || d.k === 'real';
+      let run = 0; const D = B.map(b => { if (isT(b)) { run = b.v; return { ...b, a: 0, z: b.v }; } const a = run; run += b.v; return { ...b, a, z: run }; });
       const x = d3.scaleLinear().domain([0, d3.max(D, d => Math.max(d.a, d.z)) * 1.04]).range([0, f.w - lw]);
       const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.28);
       const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
@@ -1269,13 +1270,13 @@
       g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
       const col = d => ({ plan: C('--accent'), cal: C('--series-avec'), dec: d.v < 0 ? C('--up') : C('--down'), ter: C('--warning'), mes: C('--text-muted') })[d.g];
       D.forEach((d, i) => {
-        f.g.append('text').attr('class', d.k === 'plan' || d.k === 'real' ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
-        g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', d.k === 'plan' || d.k === 'real' ? .9 : .75);
+        f.g.append('text').attr('class', isT(d) ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
+        g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', isT(d) ? (d.k === 'plan' ? .5 : .9) : .75);
         if (i < D.length - 1) g.append('line').attr('x1', x(d.z)).attr('x2', x(d.z)).attr('y1', y(d.k) + y.bandwidth()).attr('y2', y(D[i + 1].k)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '2 2');
         g.append('text').attr('class', 'lbl-strong').attr('x', x(Math.max(d.a, d.z)) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em')
-          .text(d.k === 'plan' || d.k === 'real' ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
+          .text(isT(d) ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
       });
-      readout('r-bridge', `tracé commun : la montre mesure <b>×${F('.2f')(M.gps_ratio)}</b> la longueur du tracé`);
+      readout('r-bridge', `sur le parcours commun, la montre mesure <b>×${F('.2f')(M.gps_ratio)}</b> la longueur du tracé`);
       legend('l-bridge', [['', C('--series-avec'), 'calendrier'], ['', C('--down'), 'décision qui ajoute'], ['', C('--up'), 'décision qui retire'], ['', C('--warning'), 'terrain'], ['', C('--text-muted'), 'mesure']]);
     }
     // ---- le plan et le réel par mode : sac ou trail
@@ -1312,8 +1313,8 @@
     ].map(([b, t]) => `<div><b>${b}</b><span>${t}</span></div>`).join('');
     const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), slow = MO.speed.trail / MO.speed.sac - 1;
     $('plan-cols').innerHTML = [
-      [C('--down'), 'la trajectoire', 'Le plan n’a pas été suivi', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `Seuls ${f0(MO.track_done / P_.km8 * 100)} % du tracé prévu ont été parcourus. ${f1(-(B.ab + B.nd))} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac), ${f1(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
-      [C('--accent'), 'l’échange', 'Du sac contre du trail', `${fs0(rS.km - pS.km)} km · ${fs0(rT.km - pT.km)} km`, `Le tour du lac était prévu avec le sac. En fixant le camp à Sørvågen, j’ai remplacé ${f0(pS.km - rS.km)} km portés par ${f0(rT.km - pT.km)} km en trail. Ces kilomètres ne se valent pas : avec le sac, le même effort prend ${f0(slow * 100)} % de temps en plus, et le matériel est exposé à la pluie.`],
+      [C('--down'), 'la trajectoire', 'Le plan n’a pas été suivi', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `Seuls ${f0(MO.track_done / P_.km8 * 100)} % du tracé prévu ont été parcourus. ${f0(-(B.ab + B.nd))} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac), ${f0(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
+      [C('--accent'), 'l’échange', 'Du sac contre du trail', `${fs0(rS.km - pS.km)} km · ${fs0(rT.km - pT.km)} km`, `Le tour du lac était prévu avec le sac. En fixant le camp à Sørvågen, j’ai remplacé ${f0(pS.km - rS.km)} km portés par ${f0(rT.km - pT.km)} km en trail. Ces kilomètres ne se valent pas. À terrain égal, le sac ajoute ${f0(MO.sac_pct)} % de temps (partie 07) : c’est son coût de portage, ${hm(MO.carry.real)} sur les ${hm(rS.h)} portées, contre ${hm(MO.carry.plan)} dans le plan. Et sous la pluie, un sac porté est un matériel exposé.`],
       [C('--up'), 'le budget', 'Le budget a tenu', `${hm(hP)} → ${hm(hR)}`, `Plus de kilomètres, mais plus légers : le dénivelé est le même à ${f0(Math.abs(dpR / dpP - 1) * 100)} % près, le temps de marche aussi. Le jour de marge a été utilisé, ni plus ni moins. La recherche de bivouac a coûté ${f1(MO.biv.km)} km et ${f0(MO.biv.up)} m en ${MO.biv.n} détours.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
     $('plan-msg').innerHTML = `<b>Ni sous-estimé, ni surestimé.</b> Le plan n’a pas servi de trajectoire : il a servi de budget. L’effort total était bien estimé, si bien que les écarts, tous de sens contraires, se sont compensés : comme un portefeuille dont on change la composition sans changer le risque total.`;
@@ -1321,7 +1322,8 @@
       <p><b>L’indice de référence.</b> Un gérant de fonds est jugé contre un <i>benchmark</i> : un portefeuille de référence fixé à l’avance. S’en écarter n’est pas une faute, c’est son métier. Mais chaque écart doit s’expliquer.</p>
       <p><b>L’attribution de performance.</b> En 1986, <b>Brinson, Hood et Beebower</b> publient <i>Determinants of Portfolio Performance</i>. Ils décomposent l’écart entre un fonds et son indice en morceaux qui s’additionnent : ce qui vient de la répartition entre grandes classes d’actifs (l’<i>allocation</i>), et ce qui vient du choix des titres dans chaque classe (la <i>sélection</i>). On sait alors d’où vient chaque point d’écart.</p>
       <p><b>Le budget de risque.</b> Dans les années 1990, les gérants généralisent l’idée : on ne fixe plus seulement une composition, mais une quantité totale de risque à ne pas dépasser, que l’on répartit librement.</p>
-      <p class="def-ex"><b>Ici.</b> Le plan est l’indice de référence. Le « pont » est une attribution : il part des ${f0(P_.km8)} km prévus et ajoute chaque écart, classé en décision, terrain ou mesure, jusqu’aux ${f0(B.real)} km réels. Le graphique par mode montre l’allocation : moins de sac, plus de trail. Et le budget, c’est l’effort total : ${hm(hP)} prévues à mon allure réelle, ${hm(hR)} marchées.</p>
+      <p class="def-ex"><b>Ici.</b> Le plan est l’indice de référence. Le « pont » est une attribution : il part des ${f0(P_.km8)} km du tracé, les convertit à la mesure de la montre (${f0(B.plan_eq)} km avec le jour de marge), puis ajoute chaque écart, classé en décision, terrain ou mesure, jusqu’aux ${f0(B.real)} km réels. Le graphique par mode montre l’allocation : moins de sac, plus de trail. Et le budget, c’est l’effort total : ${hm(hP)} prévues à mon allure réelle, ${hm(hR)} marchées.</p>
+      <p><b>Le coût de portage.</b> En finance, détenir une position coûte : financement, stockage, assurance. C’est le <i>cost of carry</i>. Ici, le sac est la position : il permet d’avancer avec son camp, mais il ajoute ${f0(MO.sac_pct)} % de temps à terrain égal. Fixer le camp, c’est arrêter de payer ce coût.</p>
       <p class="muted">Deux précautions. Le tracé Strava est lissé : sur le parcours commun, la montre mesure ${f0((MO.ratio - 1) * 100)} % de plus. Les distances du plan sont donc converties à la mesure de la montre ; sans cette conversion, le plan vaudrait ${hm(MO.plan_h_raw)}. Et le temps du plan est calculé avec mes vitesses réelles (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail) : il mesure ce que le plan demandait, pas ce que j’avais estimé avant de partir.</p>` };
     const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
     const N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km), ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5);

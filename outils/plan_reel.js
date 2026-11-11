@@ -116,18 +116,24 @@ const offBy = k => off.filter(o => o.m >= BIG && CAUSE[k].includes(o.act)).reduc
 const added = offBy('added'), biv = offBy('bivouac'), variant = offBy('variant'), offTot = (tot - on) / 1000, noise = offTot - added - biv - variant;
 const shared = on / 1000, doneKm = plan8 - ndKm, gps = shared - doneKm;
 const realTot = tot / 1000 + MARGIN.km;
+// le pont est exprimé à la mesure de la montre : le tracé lissé de Strava est converti (× rapport mesuré
+// sur le parcours commun), ce qui donne le « plan à mesure égale » du graphique par mode
+const kR = shared / doneKm, planEq = plan8 * kR + MARGIN.km;
 const bridge = [
-  { k: 'plan', g: 'plan', l: 'Itinéraire prévu · 8 jours', v: plan8 },
-  { k: 'margin', g: 'cal', l: 'Jour de marge utilisé : Støvla', v: r1(MARGIN.km) },
-  { k: 'ab', g: 'dec', l: 'Sommets et boucle abandonnés', v: -r1(abKm) },
-  { k: 'nd', g: 'dec', l: 'Autres raccourcis du plan', v: -r1(ndKm - abKm) },
+  { k: 'plan', g: 'plan', l: 'Tracé Strava · 8 jours', v: plan8 },
+  { k: 'margin', g: 'cal', l: 'Jour de marge : Støvla', v: r1(MARGIN.km) },
+  { k: 'conv', g: 'mes', l: 'Conversion à la mesure de la montre', v: r1(plan8 * (kR - 1)) },
+  { k: 'plan_eq', g: 'plan', l: 'Plan · à mesure égale', v: r1(planEq), total: true },
+  { k: 'ab', g: 'dec', l: 'Sommets et boucle abandonnés', v: -r1(abKm * kR) },
+  { k: 'nd', g: 'dec', l: 'Autres raccourcis du plan', v: -r1((ndKm - abKm) * kR) },
   { k: 'add', g: 'dec', l: 'Sorties substituées', v: r1(added) },
   { k: 'var', g: 'dec', l: 'Variantes d’itinéraire', v: r1(variant) },
   { k: 'biv', g: 'ter', l: 'Recherche de bivouac', v: r1(biv) },
-  { k: 'gps', g: 'mes', l: 'Mesure GPS sur le tracé commun', v: r1(gps) },
   { k: 'noise', g: 'mes', l: 'Écarts courts (< 400 m)', v: r1(noise) },
-  { k: 'real', g: 'plan', l: 'Réel · 9 jours', v: r1(realTot) },
+  { k: 'real', g: 'plan', l: 'Réel · 9 jours', v: r1(realTot), total: true },
 ];
+bridge[0].total = true;
+{ const calc = planEq - abKm * kR - (ndKm - abKm) * kR + added + variant + biv + noise; if (Math.abs(calc - realTot) > .3) throw new Error(`le pont ne boucle pas : ${calc} contre ${realTot}`); }
 // bivouac search episodes (≥ 400 m off-plan, in the bivouac list)
 const bivEp = off.filter(o => o.m >= BIG && CAUSE.bivouac.includes(o.act)).map(o => ({ act: o.act, day: o.day, km: r2(o.m / 1000), up: Math.round(o.up), t0: o.t0, t1: o.t1 }));
 
@@ -147,9 +153,12 @@ const rSac = rMode('sac'), rTrail = rMode('trail'), eff = o => o.km + o.dplus / 
 const speed = { sac: eff(rSac) / rSac.h, trail: eff(rTrail) / rTrail.h };            // km-effort par heure, mesurés
 pSac.h = eff(pSac) / speed.sac; pTrail.h = eff(pTrail) / speed.trail;
 const hRaw = (pSac.gpx + pSac.dplus / 100) / speed.sac + (pTrail.gpx + MARGIN.km + pTrail.dplus / 100) / speed.trail;   // sans conversion de mesure
+// coût de portage : part du temps avec le sac due au sac lui-même (effet de la régression, partie 07)
+require(path.join(root, 'risque_sens.js'));
+const sacPct = window.RISK_SENS.sens.find(x => x.name === 'sac sur le dos').pct / 100, carry = h => h * (1 - 1 / (1 + sacPct));
 const rnd = o => ({ km: r1(o.km), dplus: Math.round(o.dplus), h: r2(o.h), ...(o.gpx != null ? { gpx: r1(o.gpx) } : {}) });
 const campSame = CAMPS.slice(1).filter((c, i) => hav([c.lat, c.lon], [camps[i + 1].lat, camps[i + 1].lon]) < 300).length;
-const modes = { ratio: r2(ratio), speed: { sac: r2(speed.sac), trail: r2(speed.trail) }, plan: { sac: rnd(pSac), trail: rnd(pTrail) }, real: { sac: rnd(rSac), trail: rnd(rTrail) }, plan_h_raw: r2(hRaw),
+const modes = { ratio: r2(ratio), speed: { sac: r2(speed.sac), trail: r2(speed.trail) }, plan: { sac: rnd(pSac), trail: rnd(pTrail) }, real: { sac: rnd(rSac), trail: rnd(rTrail) }, plan_h_raw: r2(hRaw), sac_pct: r1(sacPct * 100), carry: { plan: r2(carry(pSac.h)), real: r2(carry(rSac.h)) },
   spurs: SPURS.map(([n, k0, k1]) => ({ name: n, km: r1(lenOf([[k0, k1]])) })), camps_same: campSame, camps_n: CAMPS.length - 1, track_done: r1(doneKm), biv: { n: bivEp.length, km: r1(bivEp.reduce((a, o) => a + o.km, 0)), up: Math.round(bivEp.reduce((a, o) => a + o.up, 0)) } };
 
 // downsampled tracks for the map (every ~150 m)
