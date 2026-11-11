@@ -58,7 +58,7 @@
     <a href="#s9"><b>09</b>Météo</a>
     <a href="#s10"><b>10</b>Indice de danger</a>
     <a href="#s11"><b>11</b>Monte Carlo</a>
-    <a href="#s12"><b>12</b>Vitesse / irrégularité</a>
+    <a href="#s12"><b>12</b>Rendement / risque</a>
     <a href="#s13"><b>13</b>Plan contre réel</a>
     <a href="#s14"><b>14</b>Chance ou décision</a>
     <a href="#s15"><b>15</b>Conclusion</a>
@@ -347,16 +347,16 @@
   </section>
 
   <section id="s12">
-    <header class="sh"><span class="num">12</span><h2>Vitesse contre irrégularité</h2></header>
-    <p class="lede">Chaque bulle est une sortie : en abscisse son irrégularité, en ordonnée sa vitesse d’effort (km-effort par heure, où 100 m de D+ comptent pour 1 km), sa taille selon le D+. Les médianes découpent quatre profils de sortie.</p>
+    <header class="sh"><span class="num">12</span><h2>Rendement contre risque : le profil choisi par le pilote</h2></header>
+    <p class="lede">La simulation a montré ce qu’un modèle peut voir, et ce qu’il ne voit pas. Reste celui qui le pilote. Avant même le plan, sa première décision est de choisir comment s’exposer : marcher avec le sac, lentement mais en avançant vers la côte, ou poser le camp et partir léger, en trail. Un investisseur fait le même choix entre un placement prudent et un placement dynamique, et il le juge sur deux axes : ce qu’il rapporte et ce qu’il risque. Ici, chaque bulle est une sortie : en ordonnée son rendement, la vitesse d’effort (km-effort par heure, où 100 m de D+ comptent pour 1 km) ; en abscisse son risque, l’irrégularité des parties 05 et 06 ; sa taille selon le D+.</p>
     <div class="pc">
-      <div class="pc-head"><span class="pc-t">Vitesse d’effort contre irrégularité · 23 sorties de plus de 2 km</span><span class="pc-r mono" id="r-scatter"></span></div>
+      <div class="pc-head"><span class="pc-t">Rendement contre risque · <span id="n-scatter">24</span> sorties</span><span class="pc-r mono" id="r-scatter"></span></div>
       <div class="chart" id="c-scatter" data-h="400"></div>
       <div class="pc-foot"><span class="legend-row" id="l-scatter"></span></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>En haut à gauche : rapide et régulier, le meilleur profil. En bas à droite : lent et irrégulier. La ligne en escalier relie les sorties qui offrent la meilleure vitesse pour un niveau d’irrégularité donné.</p></div>
-      <div><h4>Méthode</h4><p>Irrégularité : écart-type de e sur la sortie, rapproché de la moyenne pour les sorties courtes. Vitesse d’effort : (km + D+/100) / heures en mouvement.</p></div>
+      <div><h4>Comment lire</h4><p>En haut à gauche : rapide et régulier, le meilleur profil. En bas à droite : lent et irrégulier. La ligne en escalier est la frontière : la meilleure vitesse obtenue pour chaque niveau d’irrégularité. Le pointillé bleu suit la tendance des sorties avec le sac.</p></div>
+      <div><h4>Méthode</h4><p>Irrégularité : écart-type de e sur la sortie, rapproché de la moyenne pour les sorties courtes. Vitesse d’effort : (km + D+/100) / heures en mouvement. ρ : corrélation de rang de Spearman, calculée séparément avec et sans le sac. Artefact GPS exclu.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-scatter"></p></div>
     </div>
   </section>
@@ -521,6 +521,6 @@
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261111-7"></script>
+<script src="risque.js?v=20261111-10"></script>
 </body>
 </html>

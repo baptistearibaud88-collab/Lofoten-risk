@@ -1118,7 +1118,8 @@
 
   /* ---------- 12 · speed vs irregularity (quadrants) ---------- */
   function drawScatter() {
-    const P = R.scatter;
+    // irrégularité sans l'artefact GPS (risque_indice.js)
+    const P = R.scatter.map(p => { const r = R.rows.find(q => q.id === p.id); return r && r.e_sd != null ? { ...p, x: r.e_sd } : p; });
     const f = frame('c-scatter', { t: 14, r: 50, b: 34, l: 8 });
     const x = d3.scaleLinear().domain([d3.min(P, p => p.x) - .02, d3.max(P, p => p.x) + .03]).range([0, f.w]);
     const y = d3.scaleLinear().domain([d3.min(P, p => p.y) - .4, d3.max(P, p => p.y) + .6]).range([f.h, 0]);
@@ -1134,6 +1135,12 @@
     if (!f.narrow) [['RAPIDE · RÉGULIER', 6, 14, 'start'], ['RAPIDE · IRRÉGULIER', f.w - 6, 14, 'end'], ['LENT · RÉGULIER', 6, f.h - 8, 'start'], ['LENT · IRRÉGULIER', f.w - 6, f.h - 8, 'end']]
       .forEach(([t, a, b, an]) => f.g.append('text').attr('class', 'ax-title').attr('x', a).attr('y', b).attr('text-anchor', an).text(t));
     f.g.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(p => x(p[0])).y(p => y(p[1]))(R.front)).attr('fill', 'none').attr('stroke', C('--text-secondary')).attr('stroke-width', 1.3);
+    // tendance à l'intérieur de chaque mode (moindres carrés), pour montrer que le lien n'est pas le même
+    const trend = (a, c, lab) => { const mxa = d3.mean(a, p => p.x), mya = d3.mean(a, p => p.y), b = d3.sum(a, p => (p.x - mxa) * (p.y - mya)) / d3.sum(a, p => (p.x - mxa) ** 2), [x0, x1] = d3.extent(a, p => p.x);
+      f.g.append('line').attr('x1', x(x0)).attr('x2', x(x1)).attr('y1', y(mya + b * (x0 - mxa))).attr('y2', y(mya + b * (x1 - mxa))).attr('stroke', c).attr('stroke-width', 1.6).attr('stroke-dasharray', '6 4').attr('opacity', .9);
+    };
+    const Pa = P.filter(p => p.sac), Ps = P.filter(p => !p.sac);
+    trend(Pa, C('--series-avec'), 'avec le sac');
     const S = [...P].sort((a, b) => b.d - a.d);
     f.g.selectAll('.bb').data(S).join('circle').attr('cx', p => x(p.x)).attr('cy', p => y(p.y)).attr('r', p => rr(p.d))
       .attr('fill', p => p.sac ? C('--series-avec') : C('--series-sans')).attr('fill-opacity', .6).attr('stroke', p => p.alert ? C('--warning') : (p.sac ? C('--series-avec') : C('--series-sans'))).attr('stroke-width', p => p.alert ? 2.2 : 1);
@@ -1141,11 +1148,22 @@
     if (!f.narrow) f.g.selectAll('.bl').data(lab).join('text').attr('class', 'lbl-strong').attr('x', p => x(p.x) + rr(p.d) + 4).attr('y', p => y(p.y) + 4).text(p => p.name.replace('Reinebringen / Helvete', 'Reinebringen–Helvete').replace(/\s*\(.*\)/, ''));
     hover(f.g.selectAll('.bh').data(S).join('circle').attr('class', 'hit').attr('cx', p => x(p.x)).attr('cy', p => y(p.y)).attr('r', p => Math.max(10, rr(p.d))),
       p => `<b>${p.name} · ${dayLbl(p.day)}</b>${row('vitesse d’effort', `${f2(p.y)} km-effort/h`)}${row('irrégularité', f2(p.x))}${row('D+', `${f0(p.d)} m`)}${row('mode', p.sac ? 'avec le sac' : 'trail')}`);
-    legend('l-scatter', [['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'sans sac (trail)'], ['ring', C('--warning'), 'sortie avec alerte'], ['ln', C('--text-secondary'), 'meilleure vitesse par niveau d’irrégularité']]);
+    legend('l-scatter', [['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'sans sac (trail)'], ['ring', C('--warning'), 'sortie avec alerte'], ['ln', C('--text-secondary'), 'frontière : meilleure vitesse par niveau d’irrégularité'], ['dash', C('--series-avec'), 'tendance avec le sac']]);
     readout('r-scatter', `médianes σ <b>${f2(mx)}</b> · <b>${f1(my)}</b> km-effort/h`);
-    const al = P.filter(p => p.alert), right = al.filter(p => p.x > mx).length;
-    const mA = d3.mean(P.filter(p => p.sac), p => p.y), mS = d3.mean(P.filter(p => !p.sac), p => p.y);
-    $('t-scatter').textContent = `Avec le sac, les sorties sont groupées en bas : lentes (${f1(mA)} km-effort/h en moyenne) mais assez régulières. Sans le sac, elles montent et s’étalent : ${f1(mS)} km-effort/h, au prix d’une plus grande dispersion. ${right} des ${al.length} sorties à alerte sont à droite de la médiane : gagner en vitesse sans sac, c’est aussi accepter des allures moins prévisibles.`;
+    // corrélation de rang à l'intérieur de chaque mode
+    const rk = a => { const o = a.map((v, i) => [v, i]).sort((u, w) => u[0] - w[0]), r = []; o.forEach(([, i], k) => { r[i] = k; }); return r; };
+    const rho = a => { const X = rk(a.map(p => p.x)), Y = rk(a.map(p => p.y)), mX = d3.mean(X), mY = d3.mean(Y); return d3.sum(X, (v, i) => (v - mX) * (Y[i] - mY)) / Math.sqrt(d3.sum(X, v => (v - mX) ** 2) * d3.sum(Y, v => (v - mY) ** 2)); };
+    const rA = rho(Pa), rS = rho(Ps), mA = d3.mean(Pa, p => p.y), mS = d3.mean(Ps, p => p.y), xA = d3.mean(Pa, p => p.x), xS = d3.mean(Ps, p => p.x);
+    const slowA = Pa.filter(p => p.x > xA + .03 && p.y < mA).sort((a, b) => b.x - a.x).map(p => p.name.replace(/\s*\(.*\)/, ''));
+    $('n-scatter').textContent = P.length;
+    $('t-scatter').innerHTML = `<b>Le sac fait payer le terrain deux fois.</b> Avec le sac, plus une sortie est irrégulière, plus elle est lente (ρ = ${F('+.2f')(rA)}) : ${slowA.length > 1 ? `${slowA.slice(0, -1).join(', ')} et ${slowA[slowA.length - 1]}` : slowA[0]} cumulent les deux. L’irrégularité n’y rapporte rien, c’est un coût pur. En trail, aucun lien (ρ = ${F('+.2f')(rS)}) : le terrain technique ne ralentit pas plus qu’il ne rend irrégulier, et la vitesse monte de ${f1(mA)} à ${f1(mS)} km-effort/h. C’est ce profil que j’ai choisi quand la pluie est arrivée : camp fixe, sorties en trail. Mais choisir son profil ne suffit pas : il faut un plan qui laisse de la place à l’imprévu. Le plan l’avait-il ?`;
+    DEFS.markowitz = { t: 'D’où vient le graphique rendement contre risque', html: () => `
+      <p><b>L’origine.</b> En 1952, <b>Harry Markowitz</b>, étudiant à Chicago, publie <i>Portfolio Selection</i>. Avant lui, on choisissait un placement sur son seul rendement. Il propose de le juger sur deux axes à la fois : le rendement espéré et le risque, mesuré par l’écart-type. Prix Nobel en 1990.</p>
+      <p><b>La frontière efficace.</b> On place chaque placement possible sur le plan risque–rendement. Pour chaque niveau de risque, il en existe un qui rapporte le plus : en les reliant, on obtient la frontière. Un placement en dessous est <i>dominé</i> : un autre rapporte plus pour le même risque. Un investisseur rationnel choisit sur la frontière, selon le risque qu’il accepte.</p>
+      <p><b>Le ratio de Sharpe.</b> En 1966, <b>William Sharpe</b> résume le compromis en un chiffre : rendement obtenu par unité de risque. Plus il est haut, mieux le risque est payé.</p>
+      <p class="def-ex"><b>Ici.</b> Chaque sortie est un placement : sa vitesse d’effort est le rendement, son irrégularité le risque. Le ratio vitesse / irrégularité vaut ${f1(mA / xA)} avec le sac et ${f1(mS / xS)} en trail : le risque y est mieux payé. Et avec le sac, la pente de la tendance est négative : plus de risque pour moins de rendement, la définition d’un placement dominé.</p>
+      <p class="muted">Limite : ${Pa.length} et ${Ps.length} sorties seulement, et une sortie n’est pas un placement que l’on choisit librement : le terrain impose souvent le mode.</p>` };
+    const ht = document.querySelector('#c-scatter').closest('.pc').querySelector('.pc-t'); if (!ht.querySelector('.def-btn')) ht.insertAdjacentHTML('beforeend', defBtn('markowitz'));
   }
 
   /* ---------- 13 · plan vs actual ---------- */
