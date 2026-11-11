@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261110-8">
+<link rel="stylesheet" href="risque.css?v=20261111-2">
 </head>
 <body>
 <div class="viz-root">
@@ -316,7 +316,9 @@
       </div>
       <div class="chart" id="c-mc" data-h="440"></div>
       <div class="pc-foot"><span class="legend-row" id="l-mc"></span><span class="src">2 × 5 000 tirages · graine fixe</span></div>
+      <div class="pc-more" id="mc-more"></div>
     </div>
+    <p class="mc-cmp"><b>Même traversée, deux façons de tirer le hasard.</b> Dans chaque case, à gauche de la flèche : la loi normale (tronçons indépendants) ; à droite : les blocs (mauvaises passes qui s’enchaînent). L’écart entre les deux, c’est le prix d’oublier l’enchaînement.</p>
     <div class="stat-strip" id="mc-stats"></div>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Journée par journée : seuils de temps de marche</span><span class="pc-r mono">P95 · moyenne des 5 % pires</span></div>
@@ -502,6 +504,6 @@
 <script src="risque_indice.js?v=20261110-1"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261110-27"></script>
+<script src="risque.js?v=20261111-2"></script>
 </body>
 </html>

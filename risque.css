@@ -371,3 +371,8 @@ table.data.ep .tag { font-size: 10px; padding: 1px 5px; }
 
 .def-pop .def-f { font: 500 13px var(--mono); color: var(--text-primary); padding: 6px 10px; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
 .pc-t .def-btn { text-transform: none; letter-spacing: 0; }
+
+.mc-cmp { margin: 16px 0 8px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+.mc-cmp b { color: var(--text-primary); }
+table.data td.over { color: var(--down); font-weight: 700; }
+#mc-stats span em { display: block; margin-bottom: 2px; font: 650 12.5px var(--font); font-style: normal; color: var(--text-primary); }
