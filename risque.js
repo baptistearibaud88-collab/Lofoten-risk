@@ -1281,7 +1281,7 @@
     }
     // ---- le plan et le réel par mode : sac ou trail
     const MO = PL.modes, pS = MO.plan.sac, pT = MO.plan.trail, rS = MO.real.sac, rT = MO.real.trail;
-    const pc = (a, b) => `${fs0((b / a - 1) * 100)} %`, hP = pS.h + pT.h, hR = rS.h + rT.h, dpP = pS.dplus + pT.dplus, dpR = rS.dplus + rT.dplus;
+    const pc = (a, b) => { const v = Math.round((b / a - 1) * 100); return v === 0 ? '0 %' : `${fs0(v)} %`; }, hP = pS.h + pT.h, hR = rS.h + rT.h, dpP = pS.dplus + pT.dplus, dpR = rS.dplus + rT.dplus;
     {
       $('c-pmode').dataset.h = innerWidth < 640 ? 420 : 150;
       const f = frame('c-pmode', { t: 8, r: 8, b: 4, l: 8 }), nar = f.narrow;

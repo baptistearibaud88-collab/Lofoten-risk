@@ -139,11 +139,11 @@ const bivEp = off.filter(o => o.m >= BIG && CAUSE.bivouac.includes(o.act)).map(o
 
 // ---- sac ou trail : le plan et le réel, à mesure égale
 // Dans le plan, les sommets sont des allers-retours sans le sac (sac laissé à la base) : ce sont les
-// portions du tracé parcourues deux fois, repérées sur le GPX. Le J6 (Hermannsdalstinden depuis
+// portions du tracé parcourues deux fois, repérées sur le GPX, sauf le Ryten (confirmé par Baptiste : entre le camp du Volandstinden et celui du Kitinden, il se monte avec le sac). Le J6 (Hermannsdalstinden depuis
 // Munkebu) et le jour de marge (Støvla) sont entièrement en trail. Tout le reste se fait avec le sac,
 // tour du lac compris. Le tracé lissé de Strava étant plus court que la mesure de la montre
 // (rapport mesuré sur le parcours commun), les distances du plan sont converties à la mesure de la montre.
-const SPURS = [['Tønnåsheia', 16.7, 22.4], ['Volandstinden', 35.1, 40.0], ['Ryten', 47.5, 50.3], ['Kitinden', 56.8, 61.8], ['Helvetestinden', 80.8, 84.2], ['Munken', 99.1, 100.2], ['Andstabben', 108.4, 111.8], ['Sommet du tour du lac', 114.4, 117.0]];
+const SPURS = [['Tønnåsheia', 16.7, 22.4], ['Volandstinden', 35.1, 40.0], ['Kitinden', 56.8, 61.8], ['Helvetestinden', 80.8, 84.2], ['Munken', 99.1, 100.2], ['Andstabben', 108.4, 111.8], ['Sommet du tour du lac', 114.4, 117.0]];
 const ratio = shared / doneKm, j6 = DAYS[5];
 const spurKm = SPURS.reduce((a, [, k0, k1]) => a + lenOf([[k0, k1]]), 0), spurDp = SPURS.reduce((a, [, k0, k1]) => a + dpOf([[k0, k1]]), 0);
 const pTrail = { gpx: spurKm + j6.route_km, dplus: spurDp + j6.route_dplus + MARGIN.dplus }; pTrail.km = pTrail.gpx * ratio + MARGIN.km;
