@@ -391,3 +391,31 @@ details.fold > summary .pc-t::before { content: '▸'; display: inline-block; ma
 details.fold[open] > summary .pc-t::before { content: '▾'; }
 details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 #plan-stats span em { display: block; margin-bottom: 2px; font: 650 12.5px var(--font); font-style: normal; color: var(--text-primary); }
+
+/* 14 · the rain episode moved to every arrival day */
+.slide { padding: 12px 14px 4px; display: grid; gap: 14px; }
+.sl-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; font-size: 13px; color: var(--text-primary); }
+.sl-h span { font: 500 11px var(--mono); color: var(--text-muted); }
+.sl-g { display: grid; grid-template-columns: 70px repeat(9, minmax(12px, 1fr)) 100px; gap: 3px; align-items: center; }
+.sl-g i { display: block; height: 17px; border-radius: 3px; }
+.sl-g .sl-d { font: 500 10px var(--mono); color: var(--text-muted); text-align: center; }
+.sl-g .sl-l { font: 500 11px var(--mono); color: var(--text-muted); white-space: nowrap; }
+.sl-g .sl-s { font-size: 11.5px; color: var(--text-secondary); padding-left: 6px; white-space: nowrap; }
+.sl-g .sl-s b { font-family: var(--mono); color: var(--text-primary); }
+.sl-g .real { color: var(--text-primary); font-weight: 700; }
+.sl-g .c-E { background: color-mix(in srgb, var(--series-avec) 55%, transparent); }
+.sl-g .c-A { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-muted) 55%, transparent) 0 4px, color-mix(in srgb, var(--text-muted) 25%, transparent) 4px 8px); }
+.sl-g .c-W { background: var(--down); }
+.sl-g .c-F, .sl-g .c-L { background: color-mix(in srgb, var(--up) 75%, transparent); }
+.sl-n { margin: 7px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+@media (max-width: 520px) { .sl-g { grid-template-columns: 56px repeat(9, minmax(10px, 1fr)) 84px; gap: 2px; } .sl-g .sl-s { font-size: 11px; padding-left: 4px; } }
+/* 14 · verdict per quadrant */
+.verdict { padding: 12px 14px 14px; display: grid; gap: 10px; }
+.verdict > div { border-left: 3px solid var(--c); padding: 2px 0 2px 10px; }
+.verdict .vh { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.verdict .vh b { font: 650 18px var(--mono); color: var(--text-primary); }
+.verdict .vh .t { font: 650 13px var(--font); color: var(--text-primary); }
+.verdict .vh .s { font-size: 11.5px; color: var(--text-muted); }
+.verdict ul { margin: 4px 0 0; padding: 0; list-style: none; }
+.verdict li, .verdict p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.verdict li .mono { display: inline-block; width: 24px; color: var(--text-muted); font-size: 11px; }

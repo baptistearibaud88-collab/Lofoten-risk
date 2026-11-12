@@ -1343,7 +1343,7 @@
       ['La fatigue ne ralentit pas : elle fait renoncer', 'Aucun effet mesurable sur l’allure, mais les trois renoncements suivent tous de la fatigue ou du temps perdu juste avant. La fatigue se voit dans les décisions, pas sur la montre.'],
       ['Le risque s’est concentré à la fin', `${f1(lateRain / W_.total_rain * 100)} % de la pluie est tombée du J7 au J9, quand la réserve physique était au plus bas. Les trois incidents graves tombent dans cette fenêtre.`],
       ['Le terrain coté explique où tombent les alertes', `Les sorties exigeantes ou expertes concentrent toutes les alertes analysées. La cote DNT est le premier filtre de risque, avant la météo et la fatigue.`],
-      ['La marge a transformé la pluie en simple attente', R.cf.margin ? `L’été 2026 a été plus arrosé que ${f0(R.cf.clim.pct_rain)} % des étés, mais la pluie est tombée une fois la traversée finie. Ce moment « gratuit » tient aussi à l’avance prise les J2–J3 : elle fait passer de ${f0(R.cf.margin.scen[0].free)} % à ${f0(R.cf.margin.scen[2].free)} % les mondes météo où la pluie ne coûte rien.` : ''],
+      ['La chance choisit le moment, pas le coût', `La semaine a été plus arrosée que ${f0(window.RISK_METEO.tot.pct)} % des départs possibles, mais la pluie est tombée une fois la traversée finie. L’avance prise aux J2 et J3 a fait le reste : elle fait passer de ${f0(R.cf.margin.scen[0].free)} à ${f0(R.cf.margin.scen[2].free)} % les mondes météo sans aucune étape mouillée.`],
       ['Planifier sur la moyenne, c’est sous-estimer la marge', `Prévue au soir du J2, la suite a pris ${hm(mcLate)} de plus que la prévision centrale : presque impossible pour la loi normale (centile ${cL(NS_.real_pct)}), plausible pour le modèle qui garde l’enchaînement des écarts (centile ${cL(BS_.real_pct)}). La marge se calcule sur le seuil à 95 %, pas sur la moyenne.`],
     ];
     $('lessons').innerHTML = L.map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
@@ -1379,111 +1379,35 @@
     svg.append('text').attr('class', 'lbl').attr('x', 8).attr('y', H - 8).text('N ↑');
   }
 
-  /* ---------- 14 · luck vs decision (sketch) ---------- */
+  /* ---------- 14 · luck vs decision ---------- */
   function drawCF() {
-    const CW = R.cf.weather, CP = R.cf.pace, CD = R.cf.dec;
-    // (0) 30 summers + 1 200 start dates (real ERA5)
-    const CL = R.cf.clim;
-    if (CL) {
-      {
-        const Y = [...CL.years.map(y => ({ ...y, real: false })), { year: 2026, km: CL.real.km, rain: CL.real.rain, wet: CL.real.wet, mmkm: CL.real.mmkm, real: true }].sort((a, b) => a.rain - b.rain || a.year - b.year);
-        const f = frame('c-cfy', { t: 18, r: 50, b: 40, l: 8 });
-        const x = d3.scaleBand().domain(Y.map(y => y.year)).range([0, f.w]).padding(.22);
-        const y = d3.scaleLinear().domain([0, d3.max(Y, v => v.rain) * 1.12]).nice().range([f.h, 0]);
-        yGrid(f.g, y, f.w, 4, v => `${v} mm`);
-        const col = d3.scaleLinear().domain([0, CL.med_rain, d3.max(Y, v => v.rain)]).range([C('--up'), C('--text-muted'), C('--down')]).interpolate(d3.interpolateLab);
-        f.g.selectAll('.yb').data(Y).join('path').attr('d', v => barPath(x(v.year), y(0), x.bandwidth(), y(Math.max(v.rain, .4)), 1.5))
-          .attr('fill', v => v.real ? C('--warning') : col(v.rain)).attr('fill-opacity', v => v.real ? 1 : .7);
-        f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(CL.med_rain)).attr('y2', y(CL.med_rain)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
-        axTag(f.g, f.w + 2, y(CL.med_rain), `méd ${f0(CL.med_rain)}`);
-        f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(6).tickFormat(v => v === 2026 ? '2026' : (f.narrow ? '' : `’${String(v).slice(2)}`)))
-          .selectAll('text').attr('transform', 'rotate(-60)').attr('text-anchor', 'end').attr('dx', '-.4em').attr('dy', '.2em').style('fill', v => v === 2026 ? C('--warning') : null).style('font-weight', v => v === 2026 ? 700 : null);
-        const r = Y.find(v => v.real);
-        f.g.append('text').attr('class', 'lbl-ink').attr('x', x(2026) + x.bandwidth() / 2).attr('y', y(r.rain) - 8).attr('text-anchor', 'middle').text('2026');
-        hover(f.g.selectAll('.yh').data(Y).join('rect').attr('class', 'hit').attr('x', v => x(v.year)).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-          v => `<b>Été ${v.year}${v.real ? ' (réel)' : ''}</b>${row('pluie 14–22 juin', `${f1(v.rain)} mm`)}${row('jours de pluie (≥ 1 mm)', v.wet)}`);
-        legend('l-cfy', [['', C('--warning'), 'été 2026 (réel)'], ['', C('--up'), 'été plus sec'], ['', C('--down'), 'été plus arrosé'], ['dash', '', 'médiane des 30 étés']]);
-        readout('r-cfy', `pluie <b>P${f0(CL.pct_rain)}</b> · jours de pluie <b>P${f0(CL.pct_wet)}</b>`);
-      }
-      {
-        const S = CL.starts_rain, tot = d3.sum(S.hist);
-        const f = frame('c-cfs', { t: 18, r: 50, b: 34, l: 8 });
-        const x = d3.scaleLinear().domain([0, S.edges[S.edges.length - 1]]).range([0, f.w]);
-        const y = d3.scaleLinear().domain([0, d3.max(S.hist) / tot * 1.12]).range([f.h, 0]);
-        yGrid(f.g, y, f.w, 4, v => `${f0(v * 100)} %`);
-        xAxis(f.g, x, f.h, 6, v => `${v} mm`);
-        axTitle(f.g, 'pluie cumulée sur 9 jours, par date de départ', 0, f.h + 30);
-        const bins = S.hist.map((n, i) => ({ n, a: S.edges[i], b: S.edges[i] + 2 }));
-        f.g.selectAll('.sb').data(bins).join('path').attr('d', d => barPath(x(d.a) + .5, y(0), Math.max(1, x(d.b) - x(d.a) - 1.5), y(d.n / tot), 1.5))
-          .attr('fill', d => d.b <= CL.real.rain ? C('--up') : d.a > CL.real.rain ? C('--down') : C('--warning')).attr('fill-opacity', .6);
-        const xr = x(CL.real.rain);
-        f.g.append('line').attr('x1', xr).attr('x2', xr).attr('y1', -6).attr('y2', f.h).attr('stroke', C('--warning')).attr('stroke-width', 1.6);
-        f.g.append('text').attr('class', 'lbl-ink').attr('x', xr + 6).attr('y', 4).text(`2026 · P${f0(S.pct)}`);
-        hover(f.g.selectAll('.sh2').data(bins).join('rect').attr('class', 'hit').attr('x', d => x(d.a)).attr('width', d => x(d.b) - x(d.a)).attr('y', 0).attr('height', f.h),
-          d => `<b>${d.a} à ${d.b} mm</b>${row('départs', `${d.n} / ${tot}`)}`);
-        legend('l-cfs', [['', C('--up'), 'départ plus sec'], ['', C('--down'), 'plus arrosé'], ['ln', C('--warning'), 'départ réel (14 juin 2026)']]);
-        readout('r-cfs', `moy. <b>${f1(S.mean)} mm</b> · 2026 <b>${f1(CL.real.rain)} mm</b>`);
-      }
-    }
-    // (f) declared factors: endured vs chosen
-    const FA = R.cf.fact;
-    if (FA) {
-      const groups = ['subi', 'choisi'], lab = { subi: 'Subis · environnement', choisi: 'Choisis · préparation et conduite' };
-      const f = frame('c-cff', { t: 10, r: 20, b: 26, l: $('c-cff').clientWidth < 560 ? 120 : 230 });
-      const mx = d3.max(groups, g => FA.filter(x => x.ctrl === g).length);
-      const x = d3.scaleLinear().domain([-mx, mx]).range([0, f.w]);
-      const y = d3.scaleBand().domain(groups).range([0, f.h]).padding(.3);
-      f.g.append('g').attr('class', 'gridl').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(8).tickSize(-f.h).tickFormat('')).lower();
-      xAxis(f.g, x, f.h, 8, v => Math.abs(v));
-      f.g.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', f.h);
-      groups.forEach(g => {
-        const ag = FA.filter(v => v.ctrl === g && v.sens === 'aggravant'), at = FA.filter(v => v.ctrl === g && v.sens !== 'aggravant');
-        const yy = y(g);
-        f.g.append('text').attr('class', 'lbl-strong').attr('x', -10).attr('y', yy + y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(f.m.l > 200 ? lab[g] : g);
-        // one block per factor, so each can be hovered
-        [[ag, -1, C('--down')], [at, 1, C('--up')]].forEach(([arr, sgn, col]) => arr.forEach((v, i) => {
-          const x0 = sgn > 0 ? x(i) : x(-(i + 1));
-          const b = f.g.append('rect').attr('x', x0 + 1).attr('y', yy).attr('width', Math.max(1, x(1) - x(0) - 2)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col).attr('fill-opacity', .72);
-          b.on('pointermove', ev => showTip(ev, `<b>${v.id.replace(/_/g, ' ')}</b>${row('sens', v.sens)}${row('nature', v.ctrl)}<div class="r" style="display:block;margin-top:4px">${v.txt}</div>`)).on('pointerleave', hideTip);
-        }));
-        f.g.append('text').attr('class', 'lbl tagt').attr('x', x(-ag.length) - 6).attr('y', yy + y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(ag.length);
-        f.g.append('text').attr('class', 'lbl tagt').attr('x', x(at.length) + 6).attr('y', yy + y.bandwidth() / 2).attr('dy', '.35em').text(at.length);
-      });
-      legend('l-cff', [['', C('--down'), 'aggravant'], ['', C('--up'), 'atténuant']]);
-      const cnt = (c, s) => FA.filter(v => v.ctrl === c && (s === 'aggravant' ? v.sens === 'aggravant' : v.sens !== 'aggravant')).length;
-      readout('r-cff', `choisis <b>${cnt('choisi', 'atténuant')}</b> atténuants / <b>${cnt('choisi', 'aggravant')}</b> aggravants`);
-    }
-    // (a) distribution of exposure over the 362 880 weather orders
+    const X = window.RISK_CD, CD = X.dec, MM = window.RISK_METEO, MO = window.RISK_PLAN.modes;
+    const save = MO.carry.plan - MO.carry.real, FR = X.free_real;
+    const SP = X.slide.find(d => d.key === 'plan'), SR = X.slide.find(d => d.key === 'reel');
+    // (a) the real 3-day rain episode, moved to every possible arrival day
     {
-      const f = frame('c-cfw', { t: 18, r: 50, b: 34, l: 8 });
-      const dist = CW.km.dist, tot = d3.sum(dist, d => d[1]);
-      const x = d3.scaleLinear().domain([0, CW.total_hard]).range([0, f.w]);
-      const y = d3.scaleLinear().domain([0, d3.max(dist, d => d[1] / tot) * 1.15]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => `${f0(v * 100)} %`);
-      xAxis(f.g, x, f.h, 6, v => `${v} km`);
-      axTitle(f.g, 'km exigeants ou experts parcourus un jour de pluie', 0, f.h + 30);
-      const bw = Math.max(2, f.w / 70);
-      f.g.selectAll('.cb').data(dist).join('path').attr('d', d => barPath(x(d[0]) - bw / 2, y(0), bw, y(d[1] / tot), 1.5))
-        .attr('fill', d => Math.abs(d[0] - CW.km.real) < .05 ? C('--warning') : d[0] < CW.km.real ? C('--up') : C('--down')).attr('fill-opacity', d => Math.abs(d[0] - CW.km.real) < .05 ? 1 : .55);
-      const xr = x(CW.km.real);
-      f.g.append('line').attr('x1', xr).attr('x2', xr).attr('y1', -6).attr('y2', f.h).attr('stroke', C('--warning')).attr('stroke-width', 1.6);
-      f.g.append('text').attr('class', 'lbl-ink').attr('x', xr + 6).attr('y', 4).text(`réel ${f1(CW.km.real)} km`);
-      const xm = x(CW.km.mean);
-      f.g.append('line').attr('x1', xm).attr('x2', xm).attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
-      hover(f.g.selectAll('.ch').data(dist).join('rect').attr('class', 'hit').attr('x', d => x(d[0]) - 5).attr('width', 10).attr('y', 0).attr('height', f.h),
-        d => `<b>${f1(d[0])} km exposés</b>${row('part des ordres', `${f2(d[1] / tot * 100)} %`)}`);
-      legend('l-cfw', [['', C('--up'), 'placement plus prudent'], ['', C('--down'), 'placement plus exposé'], ['ln', C('--warning'), 'mon placement réel'], ['dash', '', 'placement au hasard (moyenne)']]);
-      readout('r-cfw', `mieux que <b>${f0(CW.km.rank.above)} %</b> du hasard · moy. <b>${f1(CW.km.mean)} km</b>`);
+      const lab = { E: 'étape au sec', A: 'attente sous la tente', W: 'étape sous la pluie, avec le sac', F: 'camp fixe, sorties sans le sac' };
+      const head = `<span></span>${d3.range(1, 10).map(d => `<span class="sl-d">J${d}</span>`).join('')}<span></span>`;
+      const sum = (sc, r) => sc.key === 'plan' ? `<b>${r.wet}</b> mouillées` : r.waited ? `<b>${r.waited} j</b> perdus` : '<b>0 j</b> perdu';
+      const panel = (sc, t, sub, note) => `<div class="sl-p"><div class="sl-h"><b>${t}</b><span>${sub}</span></div><div class="sl-g">${head}${sc.rows.map(r =>
+        `<span class="sl-l${r.real && sc.key === 'reel' ? ' real' : ''}">${r.real && sc.key === 'reel' ? `J${r.start} réel` : `dès J${r.start}`}</span>${[...r.cells].map((c, i) => `<i class="c-${c}" title="J${i + 1} · ${lab[c]}"></i>`).join('')}<span class="sl-s${r.real && sc.key === 'reel' ? ' real' : ''}">${sum(sc, r)}</span>`).join('')}</div><p class="sl-n">${note}</p></div>`;
+      const pr = SP.rows[0], rr = SR.rows[0];
+      $('c-slide').innerHTML = panel(SP, 'Avec la marge du plan', `${SP.n} étapes · ${SP.slack} jour libre`, `Où que tombe la pluie : ${pr.waited} jour d’attente, puis ${pr.wet} étapes sous la pluie avec le sac.`)
+        + panel(SR, 'Avec l’avance prise', `${SR.n} étapes · ${SR.slack} jours libres`, `Plus aucune étape mouillée. Mais avant le J7, les ${rr.waited} jours libres partent en attente.`);
+      legend('l-slide', [['', C('--series-avec'), lab.E], ['', C('--text-muted'), lab.A], ['', C('--down'), lab.W], ['', C('--up'), lab.F]]);
+      readout('r-slide', `épisode réel : <b>${X.episode.length} jours</b>, ${f1(d3.sum(X.episode))} mm`);
+      const pt = $('c-slide').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('option'));
     }
     // (b) the margin: share of the 1 200 weather worlds where rain costs nothing, by margin level
     const MG = R.cf.margin;
     if (MG) {
       const Sc = MG.scen;
+      $('c-cfb').dataset.h = window.innerWidth < 900 ? 270 : 430;
       const f = frame('c-cfb', { t: 26, r: 16, b: 30, l: $('c-cfb').clientWidth < 520 ? 108 : 150 });
       const narrowM = f.w < 420, barW = narrowM ? f.w - 40 : f.w * .5;
       const y = d3.scaleBand().domain(Sc.map(d => d.key)).range([0, f.h]).padding(narrowM ? .5 : .38);
       const x1 = d3.scaleLinear().domain([0, 100]).range([0, barW]);
-      f.g.append('text').attr('class', 'ax-title').attr('y', -12).text(f.w < 300 ? 'mondes où la pluie ne coûte rien' : 'part des 1 200 mondes où la pluie ne coûte rien');
+      f.g.append('text').attr('class', 'ax-title').attr('y', -12).text(f.w < 300 ? 'mondes sans étape mouillée' : 'part des 1 200 mondes sans étape mouillée');
       f.g.append('g').attr('class', 'gridl').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x1).ticks(4).tickSize(-f.h).tickFormat('')).lower();
       f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x1).ticks(4).tickSize(0).tickPadding(8).tickFormat(v => `${v} %`));
       const lbl = { plan: f.m.l > 120 ? 'Marge du plan · 1 j' : 'Plan · 1 j', sans_avance: f.m.l > 120 ? 'Sans l’avance · 2 j' : 'Sans avance · 2 j', reel: f.m.l > 120 ? 'Réel, avance · 3 j' : 'Réel · 3 j' };
@@ -1500,25 +1424,7 @@
         d => `<b>${d.label}</b>${row('étapes avec le sac', `${d.n_moves} en 9 jours`)}${row('mondes sans étape mouillée', `${f1(d.free)} %`)}${row('mondes avec terrain exigeant mouillé', `${f1(d.any_hard)} %`)}${row('km exigeants forcés (moy. · P90)', `${f1(d.mean_forced)} · ${f1(d.p90_forced)}`)}${row('2026', d.r2026.wet_moves ? `${d.r2026.wet_moves} étape(s), ${f1(d.r2026.forced)} km` : 'aucune')}`);
       legend('l-cfb', [['', C('--down'), 'marge du plan'], ['', C('--text-muted'), 'sans l’avance des J2–J3'], ['', C('--up'), 'réel, avance prise']]);
       const P = Sc.find(d => d.key === 'plan'), Rl = Sc.find(d => d.key === 'reel');
-      readout('r-cfb', `pluie gratuite <b>${f0(P.free)} → ${f0(Rl.free)} %</b> · 1 200 mondes`);
-    }
-    // (c) pace luck: each real day inside its simulated range
-    {
-      const f = frame('c-cfp', { t: 14, r: 50, b: 26, l: 8 });
-      const x = d3.scaleBand().domain(CP.days).range([0, f.w]).padding(.5);
-      const y = d3.scaleLinear().domain([0, 100]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => `P${v}`);
-      xAxis(f.g, x, f.h, null, dayLbl);
-      [[0, 25, C('--up')], [75, 100, C('--down')]].forEach(([a, b, c]) => f.g.append('rect').attr('x', 0).attr('width', f.w).attr('y', y(b)).attr('height', y(a) - y(b)).attr('fill', c).attr('opacity', .06));
-      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(50)).attr('y2', y(50)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '4 3');
-      const g = f.g.selectAll('.pd').data(CP.days.map((d, i) => ({ d, r: CP.rank[i], rn: CP.rank_n[i], real: CP.real[i], p5: CP.p5[i], p50: CP.p50[i], p95: CP.p95[i] }))).join('g').attr('transform', d => `translate(${x(d.d) + x.bandwidth() / 2},0)`);
-      g.append('line').attr('y1', y(50)).attr('y2', d => y(d.r)).attr('stroke', d => d.r > 50 ? C('--down') : C('--up')).attr('stroke-width', 2);
-      g.append('circle').attr('cy', d => y(d.r)).attr('r', 5).attr('fill', d => d.r > 50 ? C('--down') : C('--up')).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
-      g.append('text').attr('class', 'lbl tagt').attr('y', d => y(d.r) + (d.r > 50 ? -10 : 16)).attr('text-anchor', 'middle').text(d => `P${f0(d.r)}`);
-      hover(g.append('rect').attr('class', 'hit').attr('x', -x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-        d => `<b>${dayLbl(d.d)} · ${hm(d.real)} de marche</b>${row('rang parmi 5 000', `P${f0(d.r)}`)}${row('fourchette simulée P5–P95', `${hm(d.p5)} – ${hm(d.p95)}`)}${row('médiane simulée', hm(d.p50))}`);
-      legend('l-cfp', [['', C('--up'), 'plus rapide que la médiane simulée (aléa favorable)'], ['', C('--down'), 'plus lent (aléa défavorable)']]);
-      readout('r-cfp', `jours favorables <b>${CP.rank.filter(r => r < 50).length}</b> / 9`);
+      readout('r-cfb', `<b>${f0(P.free)} → ${f0(Rl.free)} %</b> · ${f0(MG.n)} mondes`);
     }
     // (d) decision × outcome matrix
     const I = CD.items, qL = q => q >= .5 ? 'bonne' : q <= -.2 ? 'risquée' : 'neutre';
@@ -1547,46 +1453,49 @@
         d => `<b>${d.day} · ${d.txt}</b>${row('type', d.kind === 'P' ? 'prudente' : 'engagée')}${row('drapeaux ex ante', d.flags.length ? d.flags.length : 'aucun')}${row('qualité', `${fs2(d.q)} (${qL(d.q)})`)}${row('résultat', fs1(d.out))}${row('part de chance', fs2(d.luck))}`);
       readout('r-cfd', `ρ <b>${f2(CD.rho)}</b> · R² <b>${f2(CD.r2)}</b>`);
     }
-    // (e) luck per decision (residual)
     {
-      const S = [...I].sort((a, b) => b.luck - a.luck);
-      const f = frame('c-cfl', { t: 10, r: 44, b: 26, l: $('c-cfl').clientWidth < 420 ? 130 : 220 });
-      const x = d3.scaleLinear().domain([-1.3, 1.3]).range([0, f.w]);
-      const y = d3.scaleBand().domain(S.map((d, i) => i)).range([0, f.h]).padding(.3);
-      f.g.append('g').attr('class', 'gridl').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(5).tickSize(-f.h).tickFormat('')).lower();
-      xAxis(f.g, x, f.h, 5, F('+.1f'));
-      f.g.append('line').attr('class', 'zero').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', f.h);
-      const r = f.g.selectAll('.lr').data(S).join('g').attr('transform', (d, i) => `translate(0,${y(i)})`);
-      r.append('text').attr('class', 'lbl-strong').attr('x', -8).attr('y', y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', 'end').text(d => { const t = `${d.day} · ${d.txt}`, n = f.m.l > 200 ? 30 : 18; return t.length > n ? `${t.slice(0, n - 1)}…` : t; });
-      r.append('rect').attr('x', d => x(Math.min(0, d.luck))).attr('width', d => Math.abs(x(d.luck) - x(0))).attr('height', y.bandwidth()).attr('rx', 2)
-        .attr('fill', d => d.luck >= 0 ? C('--up') : C('--down')).attr('fill-opacity', .75);
-      r.append('text').attr('class', 'lbl tagt').attr('x', d => x(d.luck) + (d.luck >= 0 ? 5 : -5)).attr('y', y.bandwidth() / 2).attr('dy', '.35em').attr('text-anchor', d => d.luck >= 0 ? 'start' : 'end').text(d => fs2(d.luck));
-      hover(r.append('rect').attr('class', 'hit').attr('x', -f.m.l).attr('width', f.w + f.m.l + 40).attr('height', y.step()),
-        d => `<b>${d.day} · ${d.txt}</b>${row('résultat constaté', d.res)}${row('part de chance', fs2(d.luck))}`);
+      const pt = $('c-cfd').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('decision'));
     }
+    // verdict, quadrant by quadrant
+    const QD = [['merite', 'Mérité', C('--up'), 'bonne décision, bon résultat'], ['chance', 'Chance', C('--warning'), 'décision risquée, bon résultat'], ['consequence', 'Conséquence', C('--down'), 'décision risquée, mauvais résultat'], ['malchance', 'Malchance', C('--series-avec'), 'bonne décision, mauvais résultat']];
+    $('cf-verdict').innerHTML = QD.map(([k, t, c, sub]) => { const L = I.filter(d => d.quad === k);
+      return `<div style="--c:${c}"><div class="vh"><b>${L.length}</b><span class="t">${t}</span><span class="s">${sub}</span></div>${L.length ? `<ul>${L.map(d => `<li><span class="mono">${d.day}</span>${d.txt}</li>`).join('')}</ul>` : '<p>Aucune : aucun mauvais résultat après une bonne décision.</p>'}</div>`; }).join('');
     // grid table
     const FL = { nuit: 'nuit courte', exig: 'cote exigeante', expert: 'cote experte', tard: 'tard / temps perdu', pluie: 'pluie', vent: 'vent > normale', neige: 'neige', brouillard: 'brouillard' };
-    $('dec-table').innerHTML = `<thead><tr><th>Jour</th><th>Décision</th><th>Type</th><th>Drapeaux connus au moment</th><th class="n">Qualité</th><th>Résultat constaté</th><th class="n">Rés.</th><th class="n">Chance</th></tr></thead><tbody>${I.map(d => `<tr><td class="mono">${d.day}</td><td>${d.txt}</td><td class="nw"><span class="dot" style="background:${d.kind === 'P' ? C('--accent') : C('--series-sans')}"></span>${d.kind === 'P' ? 'prudente' : 'engagée'}</td><td>${d.flags.length ? d.flags.map(k => `<span class="flag">${FL[k]}</span>`).join('') : '<span class="muted">aucun</span>'}</td><td class="n">${fs2(d.q)}</td><td class="muted">${d.res}</td><td class="n">${fs1(d.out)}</td><td class="n" style="color:${d.luck >= 0 ? 'var(--up)' : 'var(--down)'}">${fs2(d.luck)}</td></tr>`).join('')}</tbody>`;
-    const real = CW.blocks[CW.blocks.length - 1], worst = CW.blocks.reduce((a, b) => b.km > a.km ? b : a);
-    const lucky = I.reduce((a, b) => b.luck > a.luck ? b : a);
-    const fav = CP.rank.filter(r => r < 50).length;
-    if (CL) $('cf-bilan').innerHTML = [
-      ['Chance · pluie', `P${f0(CL.pct_rain)}`, `été 2026 plus arrosé que ${f0(CL.pct_rain)} % des 30 étés : défavorable`],
-      ['Chance · jours de pluie', `P${f0(CL.pct_wet)}`, `${CL.real.wet} jours, comme un été normal : pluie concentrée`],
-      ['Chance · aléa d’allure', `${fav} / 9`, 'journées plus rapides que la médiane simulée'],
-      ['Décision · marge', MG ? `${f0(MG.scen[0].free)} → ${f0(MG.scen[2].free)} %` : '–', 'mondes où la pluie ne coûte rien, de la marge du plan à l’avance prise'],
-      ['Décision · grille', `R² ${f2(CD.r2)}`, 'part des résultats expliquée par la qualité ex ante'],
+    const QL = Object.fromEntries(QD.map(([k, t, c]) => [k, [t, c]]));
+    $('dec-table').innerHTML = `<thead><tr><th>Jour</th><th>Décision</th><th>Ce que je savais</th><th class="n">Qualité</th><th>Résultat constaté</th><th class="n">Rés.</th><th>Verdict</th></tr></thead><tbody>${I.map(d => `<tr><td class="mono">${d.day}</td><td>${d.txt}</td><td>${d.flags.length ? d.flags.map(k => FL[k] || k).join(', ') : 'aucun signal'}</td><td class="n mono">${fs2(d.q)}</td><td>${d.res}</td><td class="n mono">${fs1(d.out)}</td><td class="nw"><span class="dot" style="background:${QL[d.quad][1]}"></span>${QL[d.quad][0]}</td></tr>`).join('')}</tbody>`;
+    readout('r-dec', `${CD.n} décisions`);
+    // texts
+    const P = MG.scen.find(d => d.key === 'plan'), Rl = MG.scen.find(d => d.key === 'reel');
+    $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 13), alors que la pluie a pris le modèle de court (partie 11). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
+    $('cf-bilan').innerHTML = [
+      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(MM.tot.v)} mm en 9 jours : plus que ${f0(MM.tot.pct)} % des départs possibles (partie 09)`],
+      ['Chance · pour moi', 'J7', 'la pluie arrive quand la traversée se termine'],
+      ['Décision · l’avance', `${f0(P.free)} → ${f0(Rl.free)} %`, 'des mondes météo sans aucune étape mouillée'],
+      ['Verdict', `${CD.quad.merite} sur ${CD.n}`, 'décisions au résultat mérité'],
     ].map(([k, b, t]) => `<div><span class="kl">${k}</span><b>${b}</b><span>${t}</span></div>`).join('');
-    const MP = MG && MG.scen[0], MR = MG && MG.scen[2];
-    $('t-cf').textContent = CL && MG
-      ? `La chance a joué deux fois. Contre moi : l’été 2026 a été plus arrosé que ${f0(CL.pct_rain)} % des 30 étés. Pour moi : la pluie est arrivée une fois la traversée finie, quand fixer le camp à Sørvågen ne coûtait rien. Plus tôt, à Bunes ou à Horseid, attendre aurait voulu dire perdre une étape avec un seul jour de marge, ou marcher sous la pluie avec le sac. Mais ce moment « gratuit » doit aussi beaucoup à une décision : l’avance prise les J2–J3. Sur 1 200 mondes météo réels, la pluie ne coûte rien dans ${f0(MP.free)} % des cas avec la marge du plan, et dans ${f0(MR.free)} % avec l’avance prise ; le terrain exigeant parcouru sous la pluie avec le sac passe de ${f1(MP.mean_forced)} à ${f1(MR.mean_forced)} km en moyenne. En 2026, la marge du plan aurait forcé ${MP.r2026.wet_moves} étapes sous la pluie. Ensuite, sur place, l’adaptation est restée partielle : les sommets exigeants ont continué sous la pluie. Dans la grille, la qualité ex ante explique environ ${f0(CD.r2 * 100)} % des résultats. La Støvla tombe dans « conséquence ».`
-      : '';
-    $('cf-next').innerHTML = [
-      '<b>Trois points ERA5 au lieu d’un</b> : rejouer chaque jour sur la zone de ses sorties (nord, centre, sud), et passer de la pluie journalière à la pluie pendant les heures de marche.',
-      '<b>Prévisions consultées sur le moment</b> : la décision du camp fixe repose sur elles ; juger chaque décision avec la météo annoncée, pas avec celle qui est tombée.',
-      '<b>Référence non adaptée : le plan initial (GPX)</b> : son exposition sous la météo réelle de 2026 mesurera directement ce que l’adaptation aux prévisions a apporté ; sous les 1 200 mondes, elle donnera la chance pure. Avec les sorties de secours, on chiffrera aussi le coût des options non prises.',
-      '<b>Plus de décisions, notes validées</b> : compléter la grille (choix de bivouac, horaires, itinéraires) et valider drapeaux et résultats jour par jour.',
-    ].map((x, i) => `<li data-k="A${i + 1}"><span>${x}</span></li>`).join('');
+    $('cf-cols').innerHTML = [
+      [C('--warning'), 'la chance', 'Le moment', 'J7', `Les ${X.episode.length} jours de pluie sont tombés quand il ne restait plus d’étape. Arrivés plus tôt, j’aurais attendu sous la tente et perdu mes ${SR.slack} jours libres : les sorties des J7 à J9, ${f0(FR.km)} km et ${f0(FR.dplus)} m de D+.`],
+      [C('--up'), 'la décision', 'L’avance', `${SP.slack} → ${SR.slack} jours`, `Avec la marge du plan, un seul jour d’attente possible : ensuite, ${SP.rows[0].wet} étapes se font sous la pluie, avec le sac. L’avance prise aux J2 et J3 porte la réserve à ${SR.slack} jours : plus aucune étape forcée.`],
+      [C('--accent'), 'l’option exercée', 'Le camp fixe', `−${hm(save)}`, `Fixer le camp, c’est passer du profil sac au profil trail (partie 12) : matériel au sec et ${hm(save)} de portage en moins (partie 13). Le mauvais temps a quand même coûté ${f0(MC.stress.pct)} % d’allure (partie 11), mais aucune étape.`],
+    ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
+    $('cf-msg').innerHTML = `<b>La chance a décidé quand la pluie tombait. Mes décisions ont décidé ce qu’elle coûtait.</b> Sans l’avance, la même pluie au même moment aurait coûté ${SP.rows[SP.rows.length - 1].wet} étapes mouillées. Sans la chance, l’avance aurait quand même tout absorbé, au prix des ${SR.slack} jours libres.`;
+    const lucky = I.find(d => d.quad === 'chance');
+    $('t-cf').innerHTML = `<b>${f0(MM.tot.pct)}ᵉ centile de pluie</b>, mais tombée au J7. <b>${f0(P.free)} → ${f0(Rl.free)} %</b> des mondes sans étape mouillée grâce à l’avance. <b>${CD.quad.merite} décisions sur ${CD.n}</b> au résultat mérité, ${CD.quad.consequence} payées, ${CD.quad.chance} seule chanceuse${lucky ? ` (${lucky.day}, l’arête de Reinebringen dans le brouillard)` : ''}.<br><br>La chance a choisi le moment, pas le coût. Le plan donnait un budget, l’avance une réserve, le camp fixe une sortie. Reste à en tirer des règles pour la prochaine traversée.`;
+    DEFS.option = { t: 'D’où vient la valeur d’option', html: () => `
+      <p><b>L’origine.</b> Une option est un contrat qui donne un <i>droit</i> sans <i>obligation</i> : acheter ou vendre plus tard, à un prix fixé aujourd’hui. On paie ce droit d’avance : c’est la prime. En 1973, <b>Black, Scholes et Merton</b> montrent comment calculer ce prix. Résultat clé : plus l’avenir est incertain, plus le droit vaut cher.</p>
+      <p><b>Les options réelles.</b> En 1977, Stewart Myers applique l’idée hors des marchés : pouvoir attendre, reporter ou abandonner un projet a une valeur, même si on ne s’en sert jamais. Une décision qui garde des portes ouvertes vaut plus qu’une décision qui les ferme.</p>
+      <div class="def-f">valeur d’option = ce que l’on évite quand ça tourne mal − la prime payée d’avance</div>
+      <div class="def-ex"><b>Ici.</b> La prime : l’effort des J2 et J3 pour prendre de l’avance. Le droit : attendre jusqu’à ${SR.slack} jours sans rater le bateau du retour, contre ${SP.slack} seul dans le plan. Ce que l’on évite : ${SP.rows[0].wet} étapes sous la pluie avec le sac, quel que soit le jour où la pluie arrive. Sur ${f0(MG.n)} mondes météo réels, la part des traversées sans étape mouillée passe de ${f0(P.free)} à ${f0(Rl.free)} %, et le terrain exigeant porté sous la pluie de ${f1(P.mean_forced)} à ${f1(Rl.mean_forced)} km en moyenne.</div>
+      <p><b>Comment lire le graphique.</b> Chaque ligne est une traversée rejouée : les ${X.episode.length} jours de pluie réels sont déplacés à une autre date d’arrivée. La règle est toujours la même : un jour de pluie, on attend si l’on peut encore arriver à temps ; sinon, on marche. Le camp fixe est l’option « exercée » : la pluie est là, et elle ne coûte aucune étape.</p>
+      <p class="muted">Modèle simplifié : les étapes d’abord, les jours libres ensuite. En réalité, le J6 était un jour de trail à Munkebu, et la dernière étape (5 km de descente vers Sørvågen) s’est faite le matin du J7, avant le gros de la pluie (0,6 mm pendant la marche).</p>` };
+    DEFS.decision = { t: 'D’où vient la séparation entre décision et résultat', html: () => `
+      <p><b>L’origine.</b> En 1966, Ronald Howard fonde l’<i>analyse de décision</i> à Stanford sur une règle simple : une décision se juge avec ce que l’on savait au moment de la prendre, pas avec ce qui est arrivé ensuite. Juger sur le résultat seul s’appelle le biais de résultat. Les joueurs de poker disent <i>resulting</i> (Annie Duke, 2018).</p>
+      <p><b>En finance.</b> C’est la question posée à tout gérant : son rendement vient-il de son talent ou de la chance ? Un bon trimestre ne prouve rien ; on regarde si les bonnes décisions donnent, en moyenne, de meilleurs résultats.</p>
+      <p><b>La construction.</b> Chaque décision reçoit deux notes de −1 à +1. La <b>qualité</b>, fixée avec les signaux connus à ce moment-là (nuit courte, météo, cote du terrain, heure, visibilité) : une décision prudente face à des signaux est bonne, une décision engagée malgré eux est risquée. Le <b>résultat</b>, constaté après coup. Les quatre cases croisent les deux.</p>
+      <div class="def-f">résultat attendu = ${f2(CD.icpt)} + ${f2(CD.slope)} × qualité · part de chance = résultat − attendu</div>
+      <div class="def-ex"><b>Exemple.</b> ${lucky ? `${lucky.day}, l’arête de Reinebringen dans le brouillard : qualité ${fs2(lucky.q)}, résultat ${fs1(lucky.out)}. Attendu : ${fs2(CD.icpt + CD.slope * lucky.q)}. Part de chance : ${fs2(lucky.luck)}, la plus forte de la traversée.` : ''} Sur les ${CD.n} décisions, la qualité explique ${f0(CD.r2 * 100)} % des résultats (R² = ${f2(CD.r2)}).</div>
+      <p class="muted">Limites : ${CD.n} décisions, c’est peu, et les notes sont les miennes, données après coup. La grille montre une tendance, pas une preuve.</p>` };
   }
 
   /* ---------- draw all, redraw on resize ---------- */

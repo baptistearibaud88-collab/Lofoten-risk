@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261111-6">
+<link rel="stylesheet" href="risque.css?v=20261112-1">
 </head>
 <body>
 <div class="viz-root">
@@ -402,65 +402,46 @@
   </section>
 
   <section id="s14">
-    <header class="sh"><span class="num">14</span><h2>Chance ou décision : esquisse contrefactuelle</h2><span class="draft">Esquisse</span></header>
-    <p class="lede">Un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Cette partie sépare ce qui ne dépendait pas de moi (la météo elle-même, l’aléa d’allure) de ce qui en dépendait : la façon de m’adapter aux prévisions et les décisions ponctuelles. Piège à éviter : l’itinéraire des derniers jours (camp fixe, sorties courtes) était déjà une réponse aux prévisions. Il ne peut donc pas servir de référence « figée » pour mesurer la chance.</p>
+    <header class="sh"><span class="num">14</span><h2>Chance ou décision : pourquoi le budget a tenu</h2></header>
+    <p class="lede" id="cf-lede"></p>
     <div class="stat-strip cf-bilan" id="cf-bilan"></div>
     <div class="grid-2 g-6040 mt">
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Chance subie · pluie du 14 au 22 juin, 30 étés (1996–2025)</span><span class="pc-r mono" id="r-cfy"></span></div>
-        <div class="chart" id="c-cfy" data-h="280"></div>
-        <div class="pc-foot"><span class="legend-row" id="l-cfy"></span><span class="src">ERA5 · point centre (68,01° N)</span></div>
+        <div class="pc-head"><span class="pc-t">Et si la pluie était arrivée plus tôt ?</span><span class="pc-r mono" id="r-slide"></span></div>
+        <div class="slide" id="c-slide"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-slide"></span></div>
       </div>
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Chance subie · pluie sur 9 jours, 1 200 départs possibles</span><span class="pc-r mono" id="r-cfs"></span></div>
-        <div class="chart" id="c-cfs" data-h="280"></div>
-        <div class="pc-foot"><span class="legend-row" id="l-cfs"></span></div>
+        <div class="pc-head"><span class="pc-t">La même question sur 1 200 mondes météo</span><span class="pc-r mono" id="r-cfb"></span></div>
+        <div class="chart" id="c-cfb" data-h="430"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-cfb"></span><span class="src">ERA5 · 1996–2025</span></div>
       </div>
     </div>
-    <div class="grid-2 mt">
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">Décision · placement des sorties exposées face à la pluie</span><span class="pc-r mono" id="r-cfw"></span></div>
-        <div class="chart" id="c-cfw" data-h="260"></div>
-        <div class="pc-foot"><span class="legend-row" id="l-cfw"></span><span class="src">9! = 362 880 ordres</span></div>
+    <div class="pc mt explain">
+      <div class="pc-head"><span class="pc-t">Lire la pluie · chance ou décision</span></div>
+      <div class="ex-body">
+        <div class="ex-cols" id="cf-cols"></div>
+        <p class="ex-msg" id="cf-msg"></p>
       </div>
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">Décision · la marge transforme la pluie en simple attente</span><span class="pc-r mono" id="r-cfb"></span></div>
-        <div class="chart" id="c-cfb" data-h="270"></div>
-        <div class="pc-foot"><span class="legend-row" id="l-cfb"></span></div>
-      </div>
-    </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Aléa d’allure · rang de chaque journée réelle parmi 5 000 journées simulées</span><span class="pc-r mono" id="r-cfp"></span></div>
-      <div class="chart" id="c-cfp" data-h="230"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-cfp"></span><span class="src">Modèle par blocs (partie 11)</span></div>
-    </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Les 21 facteurs déclarés · subis ou choisis</span><span class="pc-r mono" id="r-cff"></span></div>
-      <div class="chart" id="c-cff" data-h="170"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-cff"></span><span class="src">facteurs_risque_declares.csv · classement provisoire</span></div>
     </div>
     <div class="grid-2 g-6040 mt">
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Matrice décision × résultat · 11 décisions</span><span class="pc-r mono" id="r-cfd"></span></div>
-        <div class="chart" id="c-cfd" data-h="400"></div>
+        <div class="pc-head"><span class="pc-t">Décision par décision · qualité contre résultat</span><span class="pc-r mono" id="r-cfd"></span></div>
+        <div class="chart" id="c-cfd" data-h="360"></div>
       </div>
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Part de chance par décision</span><span class="pc-r mono">résultat − attendu</span></div>
-        <div class="chart" id="c-cfl" data-h="400"></div>
+        <div class="pc-head"><span class="pc-t">Le verdict, case par case</span></div>
+        <div class="verdict" id="cf-verdict"></div>
       </div>
     </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Grille ex ante : ce que je savais au moment de décider</span><span class="pc-r mono">notes provisoires</span></div>
+    <details class="pc mt fold">
+      <summary><span class="pc-t">La grille des décisions, une par une</span><span class="pc-r mono" id="r-dec"></span></summary>
       <div class="table-wrap flat"><table class="data" id="dec-table"></table></div>
-    </div>
-    <div class="notes">
-      <div><h4>Comment lire</h4><p>Les deux premiers graphiques ne regardent que la météo, ce qui est subi. Le troisième compare ma façon réelle de placer les sorties exposées face à la pluie à tous les placements possibles : c’est une mesure de décision, pas de chance. Le quatrième rejoue 1 200 mondes météo avec une stratégie prudente (attendre un jour de pluie si la marge le permet) : plus la marge est grande, plus la pluie devient une simple attente. Si la barre réelle est à gauche de la distribution, l’ordre des jours m’a été favorable. Dans la matrice, la diagonale est « méritée » ; en haut à gauche, un bon résultat obtenu avec une décision risquée relève de la chance.</p></div>
-      <div><h4>Méthode</h4><p>Chance : rang de la pluie 2026 parmi 30 étés et 1 200 départs (ERA5, point centre). Adaptation : km de terrain exigeant ou expert parcourus un jour de pluie (≥ 1 mm), comparés aux 9! appariements possibles entre programmes et météo des 9 jours. Marge : 6 étapes avec le sac en 9 jours (réel), 7 sans l’avance des J2–J3, 8 avec la marge du plan ; on attend un jour de pluie seulement si l’on peut encore arriver à temps, sinon on marche sous la pluie. La référence fine (plan initial) viendra avec le GPX. Qualité ex ante : drapeaux connus au moment de décider (nuit courte, météo, cote, heure, visibilité), selon que la décision est prudente ou engagée. Chance = écart entre le résultat et celui qu’annonce la qualité (droite ajustée).</p></div>
-      <div class="key"><h4>À retenir (provisoire)</h4><p id="t-cf"></p></div>
-    </div>
-    <div class="pc mt todo">
-      <div class="pc-head"><span class="pc-t">Pour affiner cette esquisse</span></div>
-      <ul class="rules" id="cf-next"></ul>
+    </details>
+    <div class="notes wk">
+      <div><h4>Comment lire</h4><p>À gauche, chaque ligne rejoue la traversée avec les 3 jours de pluie déplacés. À droite, la même règle sur 1 200 départs réels : la part des mondes sans étape mouillée. Dans la matrice, la diagonale est méritée ; en haut à gauche, un bon résultat après une décision risquée relève de la chance.</p></div>
+      <div><h4>Méthode</h4><p>Règle : un jour de pluie (≥ 1 mm), on attend si l’on peut encore arriver à temps, sinon on marche. Plan : 8 étapes en 9 jours ; réel : 6. Décisions : qualité notée avec les signaux connus au moment de décider, résultat noté après coup. Détail dans les boutons « ? ».</p></div>
+      <div class="key"><h4>À retenir</h4><p id="t-cf"></p></div>
     </div>
   </section>
 
@@ -533,7 +514,8 @@
 <script src="risque_indice.js?v=20261110-1"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="risque_mc.js?v=20261111-1"></script>
+<script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261111-20"></script>
+<script src="risque.js?v=20261112-1"></script>
 </body>
 </html>

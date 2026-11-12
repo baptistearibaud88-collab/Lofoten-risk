@@ -17,7 +17,7 @@ La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu fonc�
 
 ## Données du rapport de risque
 
-`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Dix fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
+`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Onze fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
 
 ```
 node outils/segmentation_terrain.js   # cotation par section (partie 02) → risque_sections.js
@@ -30,6 +30,7 @@ node outils/indice_danger.js          # indice de danger sans artefact GPS (part
 node outils/sensibilites.js           # régression et matrice sans artefact GPS (partie 07) → risque_sens.js
 node outils/monte_carlo.js            # prévision du J2, contrôle a posteriori, test de résistance (partie 11) → risque_mc.js
 node outils/carte_resume.js           # encart « Analyse de risque » de la carte → risque_carte.js
+node outils/chance_decision.js        # pluie déplacée, grille des décisions (partie 14) → risque_cd.js
 ```
 
 `donnees/era5_climatology_1996_2025_daily.json` : pluie quotidienne ERA5 1996–2025 au point centre (copie de `data/raw/weather/`), lue par `outils/meteo_series.js`.
