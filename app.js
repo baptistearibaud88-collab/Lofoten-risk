@@ -542,9 +542,9 @@
       el('span', { class: 'rk-title' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
       el('span', { class: 'rk-spark-wrap', title: 'Irrégularité de l’allure sur les 159 km ; triangles : alertes' }, s),
       el('span', { class: 'rk-figs' },
-        K.chain ? fig(`×${nf(K.chain, 1)}`, 'd’incertitude : les écarts s’enchaînent') : fig(`×${nf(K.tails, 1)}`, 'écarts extrêmes vs loi normale'),
         fig(`+${K.sac} %`, 'de temps avec le sac'),
-        fig(`${K.phys_top}/${K.phys_n}`, 'alertes terrain dans le tiers exposé')),
+        fig(`+${K.raide} %`, 'en descente raide'),
+        fig(`+${K.terrain} %`, 'par niveau de difficulté')),
       el('span', { class: 'rk-cta' }, 'Rapport complet', el('span', { 'aria-hidden': 'true' }, ' ›')));
   }
 

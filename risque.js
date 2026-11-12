@@ -148,7 +148,7 @@
   $('kpis').innerHTML = [
     ['Enchaînement', `×${f1(EP.topo.agg.massif / EP.topo.agg.seg)}`, 'd’incertitude sur le temps total : les écarts s’additionnent dans un massif', `± ${f0(EP.topo.agg.massif)} min contre ± ${f0(EP.topo.agg.seg)} min tronçon par tronçon`],
     ['Effet du sac', `${fs0(sacS.pct)} %`, 'de temps par tronçon, à pente et terrain égaux', `IC 95 % : ${fs0(sacS.lo)} à ${fs0(sacS.hi)} %`],
-    ['Indice de danger', `${physRanks.filter(r => r <= R.rows.length / 3).length} / ${physIds.length}`, 'alertes de terrain dans le tiers le plus exposé', `rangs ${physRanks.join(', ')} sur ${R.rows.length}`],
+    ['Effet du terrain', `${fs0(sens['terrain (+1 niveau)'].pct)} %`, 'de temps par niveau de difficulté du sentier', `descente raide : ${fs0(sens['descente raide (> 15 %)'].pct)} % · IC 95 % : ${fs0(sens['terrain (+1 niveau)'].lo)} à ${fs0(sens['terrain (+1 niveau)'].hi)} %`],
     ['Monte Carlo', `+${hm(mcLate)}`, 'de retard sur la prévision faite au soir du J2 : hors du modèle normal, dans le modèle par blocs', `centile ${cL(NS_.real_pct)} contre ${cL(BS_.real_pct)}`],
   ].map(([l, b, s, sm]) => `<div class="kpi"><span class="kl">${l}</span><b>${b}</b><span class="kd">${s}</span><small>${sm}</small></div>`).join('');
   if ($('n-seg')) $('n-seg').textContent = D.n;

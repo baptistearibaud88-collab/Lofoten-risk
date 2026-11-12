@@ -17,7 +17,8 @@ R.series.forEach((s, i) => { if (i % 3 === 0 && D.roll_sd[i] != null) spark.push
 const sac = SX.sens.find(s => s.name === 'sac sur le dos').pct;
 const alertIds = R.rows.filter(r => r.alert.length && r.alert.some(a => !/camper/i.test(a))).map(r => r.id);
 const physRanks = IX.rows.filter(o => alertIds.includes(o.id)).map(o => o.rank);
-const out = { spark, long_sd: D.roll_mean_sd, chain: Math.round(A.massif / A.seg * 10) / 10, sac: Math.round(sac), phys_top: physRanks.filter(k => k <= Math.ceil(R.rows.length / 3)).length, phys_n: physRanks.length };
+const pctOf = n => Math.round(SX.sens.find(x => x.name === n).pct);
+const out = { terrain: pctOf('terrain (+1 niveau)'), raide: pctOf('descente raide (> 15 %)'), spark, long_sd: D.roll_mean_sd, chain: Math.round(A.massif / A.seg * 10) / 10, sac: Math.round(sac), phys_top: physRanks.filter(k => k <= Math.ceil(R.rows.length / 3)).length, phys_n: physRanks.length };
 // bulle d'accueil : la simulation de la partie 11 en miniature (prévision au soir du J2, modèle par blocs)
 // 39 points le long de la suite du parcours, 28 trajectoires simulées, bande 5–95 % et écart réel (heures).
 const MC = window.RISK_MC, B = MC.blocs.seg, nP = 39, pick = a => Array.from({ length: nP }, (_, i) => Math.round(a[Math.round(i * (a.length - 1) / (nP - 1))] * 100) / 100);
