@@ -1,4 +1,4 @@
-// Chance ou décision (partie 14).
+// Chance ou décision (partie 13).
 // Entrées : risque_data.js (pluie ERA5 des 9 jours, 1 200 mondes météo, grille des décisions).
 // Sortie  : risque_cd.js — à relancer si risque_data.js change :
 //   node outils/chance_decision.js

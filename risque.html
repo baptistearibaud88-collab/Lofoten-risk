@@ -58,10 +58,9 @@
     <a href="#s9"><b>09</b>Météo</a>
     <a href="#s10"><b>10</b>Indice de danger</a>
     <a href="#s11"><b>11</b>Monte Carlo</a>
-    <a href="#s12"><b>12</b>Rendement / risque</a>
-    <a href="#s13"><b>13</b>Plan contre réel</a>
-    <a href="#s14"><b>14</b>Chance ou décision</a>
-    <a href="#s15"><b>15</b>Conclusion</a>
+    <a href="#s12"><b>12</b>Plan contre réel</a>
+    <a href="#s13"><b>13</b>Chance ou décision</a>
+    <a href="#s14"><b>14</b>Conclusion</a>
   </nav>
 
   <section id="s1">
@@ -282,7 +281,7 @@
     </div>
     <div class="notes wk">
       <div><h4>Comment lire</h4><p>À gauche, la chance qu’il pleuve un jour donné, selon qu’il a plu ou non la veille. Si les jours étaient indépendants, les deux barres seraient égales. À droite, chaque histogramme range 1 200 fenêtres de 9 jours tirées des étés 1996–2025 ; la barre rouge est la classe de 2026, et le centile dit quelle part des fenêtres fait moins.</p></div>
-      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 14. Un épisode est une suite de jours de pluie. Au point centre, les trois derniers jours font 21,7 mm, contre 24,0 mm sur les trois zones.</p></div>
+      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 13. Un épisode est une suite de jours de pluie. Au point centre, les trois derniers jours font 21,7 mm, contre 24,0 mm sur les trois zones.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-wx2"></p></div>
     </div>
   </section>
@@ -347,26 +346,7 @@
   </section>
 
   <section id="s12">
-    <header class="sh"><span class="num">12</span><h2>Rendement contre risque : le profil choisi par le pilote</h2></header>
-    <p class="lede">La simulation a montré ce qu’un modèle peut voir, et ce qu’il ne voit pas. Reste celui qui le pilote. Avant même le plan, sa première décision est de choisir comment s’exposer : marcher avec le sac, lentement mais en avançant vers la côte, ou poser le camp et partir léger, en trail. Un investisseur fait le même choix entre un placement prudent et un placement dynamique, et il le juge sur deux axes : ce qu’il rapporte et ce qu’il risque. Ici, chaque bulle est une sortie : en ordonnée son rendement, la vitesse d’effort (km-effort par heure, où 100 m de D+ comptent pour 1 km) ; en abscisse son risque, l’irrégularité des parties 05 et 06 ; sa taille selon le D+.</p>
-    <div class="pc">
-      <div class="pc-head"><span class="pc-t">Rendement contre risque · <span id="n-scatter">24</span> sorties</span><span class="pc-r mono" id="r-scatter"></span></div>
-      <div class="chart" id="c-scatter" data-h="400"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-scatter"></span></div>
-    </div>
-    <div class="pc mt explain">
-      <div class="pc-head"><span class="pc-t">Lire le risque · avec le sac ou en trail</span></div>
-      <div class="ex-body"><div class="ex-cols" id="ex12-cols"></div></div>
-    </div>
-    <div class="notes">
-      <div><h4>Comment lire</h4><p>En haut à gauche : rapide et régulier, le meilleur profil. En bas à droite : lent et irrégulier. La ligne en escalier est la frontière : la meilleure vitesse obtenue pour chaque niveau d’irrégularité. Le pointillé bleu suit la tendance des sorties avec le sac.</p></div>
-      <div><h4>Méthode</h4><p>Irrégularité : écart-type de e sur la sortie, rapproché de la moyenne pour les sorties courtes. Vitesse d’effort : (km + D+/100) / heures en mouvement. ρ : corrélation de rang de Spearman, calculée séparément avec et sans le sac. Artefact GPS exclu.</p></div>
-      <div class="key"><h4>À retenir</h4><p id="t-scatter"></p></div>
-    </div>
-  </section>
-
-  <section id="s13">
-    <header class="sh"><span class="num">13</span><h2>Plan contre réel : le budget a-t-il tenu ?</h2></header>
+    <header class="sh"><span class="num">12</span><h2>Plan contre réel : le budget a-t-il tenu ?</h2></header>
     <p class="lede" id="plan-lede"></p>
     <div class="stat-strip" id="plan-stats"></div>
     <div class="pc mt">
@@ -401,8 +381,8 @@
     </div>
   </section>
 
-  <section id="s14">
-    <header class="sh"><span class="num">14</span><h2>Chance ou décision : pourquoi le budget a tenu</h2></header>
+  <section id="s13">
+    <header class="sh"><span class="num">13</span><h2>Chance ou décision : pourquoi le budget a tenu</h2></header>
     <p class="lede" id="cf-lede"></p>
     <div class="stat-strip cf-bilan" id="cf-bilan"></div>
     <div class="grid-2 g-6040 mt">
@@ -445,8 +425,8 @@
     </div>
   </section>
 
-  <section id="s15" class="concl">
-    <header class="sh"><span class="num">15</span><h2>Conclusion</h2></header>
+  <section id="s14" class="concl">
+    <header class="sh"><span class="num">14</span><h2>Conclusion</h2></header>
     <ol class="lessons" id="lessons"></ol>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Règles de décision pour la prochaine traversée</span></div>
@@ -516,6 +496,6 @@
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261112-2"></script>
+<script src="risque.js?v=20261112-3"></script>
 </body>
 </html>

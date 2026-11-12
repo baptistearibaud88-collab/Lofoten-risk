@@ -5,7 +5,7 @@
 //   node outils/meteo_series.js
 //
 // Fenêtres de 9 jours (durée de la traversée), départs du 1er juin au 10 juillet :
-// 30 étés × 40 dates = 1 200 fenêtres, les mêmes que la partie 14.
+// 30 étés × 40 dates = 1 200 fenêtres, les mêmes que la partie 13.
 // Jour de pluie : au moins 1 mm. Épisode : suite de jours de pluie (juin–juillet).
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
