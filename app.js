@@ -554,7 +554,7 @@
   function buildRiskHome() {
     const K = window.RISK_CARD && window.RISK_CARD.mc_mini;
     if (!K) return;
-    const W = 220, H = 70, n = K.p5.length, lim = 3.8;
+    const W = 220, H = 70, n = K.p5.length, lim = Math.max(3.8, ...K.p95, ...K.real.map(Math.abs)) * 1.05;
     const X = i => i / (n - 1) * W, Y = v => H / 2 - Math.max(-lim, Math.min(lim, v)) / lim * (H / 2 - 3);
     const line = a => a.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
     const mix = (a, b, t) => `rgb(${a.map((c, i) => Math.round(c + (b[i] - c) * t)).join(',')})`;
