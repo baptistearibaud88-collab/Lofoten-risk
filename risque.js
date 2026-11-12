@@ -925,20 +925,29 @@
   function drawIndex() {
     const rows = R.rows.slice().sort((a, b) => b.score - a.score);
     const mx = d3.max(rows, r => Math.abs(r.score));
-    const keys = [['terrain', 'Terrain'], ['pente', 'Pente'], ['irreg', 'Irrég.'], ['meteo', 'Météo'], ['fatigue', 'Fatigue']];
+    const keys = [['terrain', 'Terrain'], ['pente', 'Pente'], ['meteo', 'Météo'], ['fatigue', 'Fatigue']];
     const col = d3.scaleLinear().domain([-.4, 0, .4]).range([C('--div-neg'), C('--div-mid'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
     const pct = r => Math.round((1 - (r.rank - 1) / (rows.length - 1)) * 100);
-    $('index-table').innerHTML = `<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th>Indice</th><th class="n">Score</th><th class="n">Centile</th><th title="${keys.map(k => k[1]).join(' · ')}">Facteurs <span class="muted">T P I M F</span></th></tr></thead><tbody>${rows.map(r => {
+    $('index-table').innerHTML = `<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th>Indice</th><th class="n">Score</th><th class="n">Centile</th><th title="${keys.map(k => k[1]).join(' · ')}">Facteurs <span class="muted">T P M F</span></th></tr></thead><tbody>${rows.map(r => {
       const w = Math.abs(r.score) / mx * 50;
       const bar = `<span class="sbar"><i style="${r.score >= 0 ? `left:50%;width:${w}%;background:var(--down)` : `right:50%;width:${w}%;background:var(--up)`};opacity:.8"></i></span>`;
       return `<tr><td class="n">${r.rank}</td><td class="nw"><span class="dot" style="background:${r.sac ? C('--series-avec') : C('--series-sans')}" title="${r.sac ? 'avec le sac' : 'trail'}"></span>${r.name}${r.alert.length ? `<svg class="alt-ic" viewBox="-8 -8 16 15" role="img"><title>Alerte : ${r.alert.join(', ')}</title><path d="M0,-7 7,5.5 -7,5.5Z" fill="currentColor"/></svg>` : ''}</td><td class="mono">${dayLbl(r.day)}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td style="min-width:150px">${bar}</td><td class="n">${fs2(r.score)}</td><td class="n">${pct(r)}</td>
         <td><span class="heat">${keys.map(([k, l]) => `<i style="background:${col(r.contrib[k])}" title="${l} ${fs2(r.contrib[k])}"></i>`).join('')}</span></td></tr>`;
     }).join('')}</tbody>`;
     legend('l-index', [['', C('--warning'), 'sortie avec alerte (survoler le triangle)'], ['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'trail'], ['', C('--down'), 'au-dessus de la moyenne (plus exposé)'], ['', C('--up'), 'en dessous'], ['', C('--div-pos'), 'facteur aggravant'], ['', C('--div-neg'), 'facteur atténuant']]);
-    readout('r-index', `Mann-Whitney <b>p = ${F('.3f')(R.idx.mw_p)}</b> · alertes <b>${R.idx.alert_ranks.join(', ')}</b>`);
-    const logi = R.rows.filter(x => x.alert.length && !physIds.includes(x.id)).map(x => x.rank);
+    const RD = R.idx.rand, TR = R.idx.terrain_ranks, nA = TR.length;
+    readout('r-index', `alertes de terrain aux rangs <b>${TR.join(', ')}</b> sur ${R.rows.length}`);
     const noAlertTop = rows.filter(x => !x.alert.length).slice(0, 2);
-    $('t-index').innerHTML = `Construit sans regarder les incidents, l’indice les retrouve : les quatre alertes de terrain sortent aux rangs <b>${physRanks.join(', ')}</b> sur ${R.rows.length}, toutes dans le tiers le plus exposé (p = ${F('.3f')(R.idx.mw_p)}). L’alerte logistique (bivouac impossible) reste au milieu (rang ${logi.join(', ')}) : l’indice mesure le danger physique, pas les imprévus d’organisation. Deux sorties très exposées n’ont rien donné : ${noAlertTop.map(x => `${x.name} (${x.rank}e)`).join(' et ')}, le ${dayLbl(noAlertTop[0].day)}. Le danger était là, il n’a simplement rien coûté ce jour-là. Reste à mesurer jusqu’où une journée peut déraper : c’est la partie 11.`;
+    $('t-index').innerHTML = `Rangs <b>${TR.join(', ')}</b> sur ${R.rows.length} pour les ${nA} alertes de terrain, toutes dans le tiers le plus exposé. Avec <b>${f0(RD.n)}</b> jeux de poids tirés au hasard, au moins ${nA - 1} y restent dans <b>${f0(RD.most * 100)} %</b> des cas.<br><br>L’indice ne prédit pas un éboulement : il dit où les signaux se cumulent avant de partir. Deux sorties très exposées n’ont d’ailleurs rien donné (${noAlertTop.map(x => `${x.name}, ${x.rank}e`).join(' ; ')}). Reste à mesurer jusqu’où une journée peut déraper.`;
+    DEFS.indice = { t: 'D’où vient un indice composite', html: () => `
+      <p><b>L’origine.</b> En 1968, <b>Edward Altman</b> veut prévoir les faillites d’entreprises. Aucun chiffre comptable n’y suffit seul. Il en combine cinq en une seule note, le <i>Z-score</i> : en dessous d’un seuil, l’entreprise est en zone de danger. Les banques notent encore leurs emprunteurs sur ce principe.</p>
+      <p><b>La construction.</b> Les facteurs n’ont pas la même unité (une cote, une pente en %, des millimètres de pluie, des millisecondes de VFC). On les ramène donc à la même échelle : l’écart à la moyenne des ${R.rows.length} sorties, divisé par l’écart-type. Puis on les additionne.</p>
+      <div class="def-f">indice = ¼ terrain + ¼ pente + ¼ météo + ¼ fatigue</div>
+      <p><b>Pourquoi ces quatre-là.</b> Ce sont les signaux connus avant de partir : la cote du sentier, la pente des passages raides, la météo du jour, la nuit précédente. L’irrégularité de l’allure n’y figure pas : elle se mesure pendant la sortie, et un incident la fait monter. Ce serait une conséquence, pas un signal.</p>
+      <p><b>Pourquoi des poids égaux.</b> Altman avait 66 entreprises pour calculer ses poids. Ici, il n’y a que ${nA} alertes de terrain : calculer des poids reviendrait à les ajuster sur le résultat. Poids égaux, donc, et un contrôle : on tire ${f0(RD.n)} jeux de poids au hasard et on regarde où tombent les alertes.</p>
+      <div class="def-ex"><b>Résultat.</b> Les ${nA} alertes sont toutes dans le tiers le plus exposé dans ${f0(RD.all * 100)} % des tirages, au moins ${nA - 1} dans ${f0(RD.most * 100)} %. Leur rang moyen est ${f1(RD.mean_rank)}, contre ${f0(RD.chance_rank)} si l’indice ne valait rien. En retirant un facteur à la fois, le plus sensible est la météo (rangs ${R.idx.loo.meteo.join(', ')}).</div>
+      <p class="muted">Limites : ${nA} alertes sur ${R.rows.length} sorties, c’est peu, et c’est moi qui les ai déclarées. La météo est celle mesurée le jour même, pas la prévision consultée. L’indice classe des sorties ; il ne donne pas une probabilité d’accident.</p>` };
+    const it = $('index-table').closest('.pc').querySelector('.pc-t'); if (!it.querySelector('.def-btn')) it.insertAdjacentHTML('beforeend', defBtn('indice'));
   }
 
   /* ---------- 11 · Monte Carlo ---------- */
