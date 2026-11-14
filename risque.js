@@ -201,12 +201,20 @@
       // slopes on the 250 m segments (GPS artefact excluded): flat ground no longer dilutes the climbs
       const A = R.series, SG = A.map((g, i) => ({ ...g, len: i && A[i - 1].act === g.act ? g.km - A[i - 1].km : .25 })).filter(g => Math.abs(g.slope) <= 60);
       const len = c => d3.sum(SG.filter(c), g => g.len), up = SG.filter(g => g.slope >= 5);
-      const flat = len(g => Math.abs(g.slope) < 5) / len(() => true), upMean = d3.sum(up, g => g.slope * g.len) / d3.sum(up, g => g.len);
+      const upMean = d3.sum(up, g => g.slope * g.len) / d3.sum(up, g => g.len);
       const stT = len(g => !g.sac && Math.abs(g.slope) >= 15) / len(g => !g.sac), stS = len(g => g.sac && Math.abs(g.slope) >= 15) / len(g => g.sac);
+      const top1 = SG.reduce((x, y) => y.slope > x.slope ? y : x), nameOf = id => data.find(d => d.id === id);
+      // steepest kilometre: 4 consecutive segments of one outing (about 1 km), climb brought back to 1 km
+      const AL = A.map((g, i) => ({ ...g, len: i && A[i - 1].act === g.act ? g.km - A[i - 1].km : .25 })); let bestKm = { d: 0 };
+      for (let i = 0; i < AL.length; i++) { let L = 0, dp = 0, j = i, ok = true;
+        while (j < AL.length && AL[j].act === AL[i].act && L < .95) { if (Math.abs(AL[j].slope) > 60) { ok = false; break; } L += AL[j].len; dp += Math.max(0, AL[j].slope) * AL[j].len * 10; j++; }
+        if (ok && L >= .95 && dp / L > bestKm.d) bestKm = { d: dp / L, act: AL[i].act }; }
+      const same = bestKm.act === top1.act;
       $('facts-1').innerHTML = [
-        [`${f0(flat * 100)} %`, `de la distance est presque plate (moins de 5 % de pente) : tout le dénivelé tient sur l’autre moitié`],
-        [`${f0(upMean)} %`, `de pente moyenne dès que ça monte`],
-        [`${f0(stT * 100)} %`, `du trail à plus de 15 % de pente, contre ${f0(stS * 100)} % avec le sac`],
+        [`${f0(stT * 100)} %`, `du trail à plus de 15 % de pente (${f0(stS * 100)} % avec le sac)`],
+        [`${f0(upMean * 10)} m`, `de D+ par kilomètre de montée`],
+        [`${f0(top1.slope)} %`, `sur les 250 m les plus raides (${nameOf(top1.act).name.split(' / ')[0]}, ${dayLbl(top1.day)})`],
+        [`${f0(bestKm.d)} m`, `de D+ sur le kilomètre le plus raide${same ? '' : ` (${nameOf(bestKm.act).name.split(' / ')[0]})`}`],
       ].map(([v, k]) => `<div><dd><b>${v}</b></dd><dt>${k}</dt></div>`).join(''); }
   }
 
