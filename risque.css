@@ -422,10 +422,10 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 
 /* key facts list inside a note box */
 .facts { margin: 0; display: grid; gap: 5px; }
-.facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--hair); }
+.facts > div { display: flex; justify-content: flex-start; align-items: baseline; gap: 12px; padding-bottom: 5px; border-bottom: 1px solid var(--hair); }
 .facts > div:last-child { border-bottom: 0; padding-bottom: 0; }
-.facts dt { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-.facts dd { margin: 0; text-align: right; }
+.facts dt { font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+.facts dd { margin: 0; flex: 0 0 62px; }
 .facts dd b { font: 650 13.5px var(--mono); color: var(--text-primary); white-space: nowrap; }
 .facts dd span { display: block; font-size: 11.5px; color: var(--text-muted); line-height: 1.3; }
 
@@ -434,3 +434,7 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .def-pop.big { width: min(980px, calc(100vw - 24px)); max-height: 82vh; }
 .pc-foot#cotes-btn { justify-content: flex-start; }
 @media (max-width: 900px) { .notes.two, .notes.two:last-child { grid-template-columns: 1fr; } }
+
+.notes.one:has(.kcols) { max-width: none; }
+.kcols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 6px 28px; }
+@media (max-width: 900px) { .kcols { grid-template-columns: 1fr; } }

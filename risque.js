@@ -198,11 +198,13 @@
     const big = days.reduce((a, b) => b.dplus > a.dplus ? b : a);
     const sansShare = d3.sum(days, d => d.dplus - d.dplus_sac) / d3.sum(days, d => d.dplus);
     { const sum = (L, k) => d3.sum(L, d => d[k]), sacL = data.filter(d => d.sac), trL = data.filter(d => !d.sac);
+      const gr = d => d.dplus / d.km, steep = [...data].sort((x, y) => gr(y) - gr(x)), gT = sum(trL, 'dplus') / sum(trL, 'km'), gS = sum(sacL, 'dplus') / sum(sacL, 'km');
+      let nTop = 0; while (nTop < steep.length && !steep[nTop].sac) nTop++;
       $('facts-1').innerHTML = [
-        ['Part du D+ total montée le ' + dayLbl(big.day), `${f0(big.dplus / sum(data, 'dplus') * 100)} %`],
-        ['Distance parcourue avec le sac', `${f0(sum(sacL, 'km') / sum(data, 'km') * 100)} %`],
-        ['D+ par km, en trail contre avec le sac', `${f0(sum(trL, 'dplus') / sum(trL, 'km'))} / ${f0(sum(sacL, 'dplus') / sum(sacL, 'km'))} m`],
-      ].map(([k, v]) => `<div><dt>${k}</dt><dd><b>${v}</b></dd></div>`).join(''); }
+        [`×${f1(gT / gS)}`, `le trail est ${f1(gT / gS)} fois plus raide que le portage : ${f0(gT)} contre ${f0(gS)} m de D+ par km`],
+        [`${nTop} sur ${nTop}`, `les ${nTop} sorties les plus raides sont toutes en trail`],
+        [`${f0(big.dplus / sum(data, 'dplus') * 100)} %`, `du D+ total monté le seul ${dayLbl(big.day)}`],
+      ].map(([v, k]) => `<div><dd><b>${v}</b></dd><dt>${k}</dt></div>`).join(''); }
   }
 
   /* ---------- 01 · terrain grading ---------- */
@@ -265,7 +267,8 @@
     $('cotes-btn').innerHTML = defBtn('cotes', 'Cotation des 25 sorties');
     { const pt = $('c-terrain').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('cotation')); }
     const BG = window.RISK_BOUGIES, sansShare = d3.sum(BG.filter(d => !d.sac), d => d.dplus) / d3.sum(BG, d => d.dplus);
-    $('t-terrain').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${f0(share(3) * 100)} %</b> de la distance en terrain exigeant ou expert. Chaque niveau de cote ajoute <b>${fs0(sens['terrain (+1 niveau)'].pct)} %</b> au temps de passage.<br><br>Ce relief n’est pas qu’un décor : avec ou sans le sac, en traversée ou en sommet, chaque sortie expose à un risque différent. La traversée est maintenant découpée et cotée : on peut mesurer la prise de risque, tronçon par tronçon.`;
+    $('t-terrain').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${f0(share(3) * 100)} %</b> de la distance en terrain exigeant ou expert. Chaque niveau de cote ajoute <b>${fs0(sens['terrain (+1 niveau)'].pct)} %</b> au temps de passage.`;
+    $('t-terrain-b').innerHTML = `Ce relief n’est pas qu’un décor : avec ou sans le sac, en traversée ou en sommet, chaque sortie expose à un risque différent. La traversée est maintenant découpée et cotée : on peut mesurer la prise de risque, tronçon par tronçon.`;
   }
 
   /* ---------- 02 · distribution ---------- */
