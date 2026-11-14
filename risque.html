@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261114-5">
+<link rel="stylesheet" href="risque.css?v=20261114-6">
 </head>
 <body>
 <div class="viz-root">
@@ -47,20 +47,24 @@
 
 <main>
   <nav class="toc" aria-label="Sommaire">
+    <span class="toc-act">Acte 1 · Mesurer</span>
     <a href="#s1"><b>01</b>Relief et cotation</a>
     <a href="#s2"><b>02</b>Distribution</a>
     <a href="#s3"><b>03</b>Extrêmes</a>
     <a href="#s4"><b>04</b>Épisodes lents</a>
     <a href="#s5"><b>05</b>Massifs</a>
+    <span class="toc-act">Acte 2 · Expliquer</span>
     <a href="#s6"><b>06</b>Sensibilités et fatigue</a>
     <a href="#s7"><b>07</b>Météo</a>
     <a href="#s8"><b>08</b>Indice de danger</a>
+    <span class="toc-act">Acte 3 · Piloter</span>
     <a href="#s9"><b>09</b>Monte Carlo</a>
     <a href="#s10"><b>10</b>Plan contre réel</a>
     <a href="#s11"><b>11</b>Chance ou décision</a>
     <a href="#s12"><b>12</b>Conclusion</a>
   </nav>
 
+  <div class="act" id="act1"><span class="act-n">Acte 1</span><span class="act-t">Mesurer</span><span class="act-d">Sur quel terrain, et de combien l’allure s’écarte du prévu.</span></div>
   <section id="s1">
     <header class="sh"><span class="num">01</span><h2>Le terrain : relief et cotation</h2></header>
     <p class="lede">Avant de chercher où le risque s’est caché, regardons ce qu’il a fallu gravir, et sur quel terrain. D’abord le relief : neuf jours, 25 sorties, 25 bougies, comme autant de séances de bourse. Ensuite la cote : chaque sortie est notée sur l’échelle officielle norvégienne (DNT, quatre niveaux).</p>
@@ -214,6 +218,7 @@
     </div>
   </section>
 
+  <div class="act" id="act2"><span class="act-n">Acte 2</span><span class="act-t">Expliquer</span><span class="act-d">Ce qui ralentit, ce qui fatigue, ce que la météo impose, et où tout se cumule.</span></div>
   <section id="s6">
     <header class="sh"><span class="num">06</span><h2>Sensibilités : ce qui ralentit, et ce qui ne ralentit pas</h2></header>
     <p class="lede">Une régression sur les 604 tronçons isole l’effet de chaque facteur, toutes choses égales par ailleurs. Chaque barre donne la variation du temps de passage, avec son intervalle de confiance à 95 %.</p>
@@ -280,6 +285,7 @@
     </div>
   </section>
 
+  <div class="act" id="act3"><span class="act-n">Acte 3</span><span class="act-t">Piloter</span><span class="act-d">Prévoir, tenir un budget, décider : ce que le modèle voit et ce que le pilote choisit.</span></div>
   <section id="s9">
     <header class="sh"><span class="num">09</span><h2>Simulation de risque : la prévision du J2, rejouée 5 000 fois</h2></header>
     <p class="lede">Jusqu’ici, on a mesuré ce qui s’est passé. Une simulation de risque fait l’inverse : elle se place avant, et dit ce qui pouvait arriver. Au soir du J2, je connais mon allure sur deux jours. Un modèle calé sur ces deux seuls jours, de beau temps, prévoit le temps de marche des sept suivants, puis la suite est rejouée 5 000 fois. La traversée réelle n’a pas servi au calage : l’endroit où elle tombe est un vrai résultat. L’aléa est tiré de deux façons. <b>Loi normale</b> : chaque tronçon tire son écart seul. <b>Blocs</b> : on tire des séquences réelles de 2 km, qui gardent l’enchaînement des écarts (parties 04 et 05).</p>
