@@ -1,4 +1,4 @@
-// Plan contre réel (partie 11).
+// Plan contre réel (partie 10).
 // Entrées : donnees/plan.gpx (itinéraire prévu, tracé sur Strava), data.js (trace réelle), risque_data.js.
 // Sortie  : risque_plan.js — à relancer si l'une des entrées change :
 //   node outils/plan_reel.js

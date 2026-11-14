@@ -565,8 +565,7 @@
     };
     const chip = (k, main) => `<span class="cause${main ? '' : ' sec'}"><i style="background:${C(CAUSE[k][1])}"></i>${CAUSE[k][0]}</span>`;
     const majMin = d3.sum(MAJ, d => d.lost_min), pauMin = d3.sum(PAU, d => d.lost_min);
-    readout('r-ep', `${MAJ.length} épisodes de 10 min ou plus · ${f0(majMin)} min`);
-    $('ep-table').innerHTML = `<thead><tr><th class="n">#</th><th>Jour</th><th>Sortie</th><th class="n">km</th><th class="n">Réel / prévu</th><th class="n">Perdu</th><th>Cote</th><th>Cause</th></tr></thead><tbody>${MAJ.map((d, k) => {
+    const epTable = `<thead><tr><th class="n">#</th><th>Jour</th><th>Sortie</th><th class="n">km</th><th class="n">Réel / prévu</th><th class="n">Perdu</th><th>Cote</th><th>Cause</th></tr></thead><tbody>${MAJ.map((d, k) => {
       const r = rowOf(d.act), rs = RS[d.id];
       return `<tr title="${d.id}"><td class="n">${k + 1}</td><td class="mono">${dayLbl(d.day)}</td><td class="nw"><span class="dot" style="background:${d.sac ? C('--series-avec') : C('--series-sans')}" title="${d.sac ? 'avec le sac' : 'trail'}"></span>${r.name}</td>
         <td class="n">${f1(d.km0)}–${f1(d.km1)}<div class="muted">${f1(d.len)} km</div></td><td class="n">${f0(d.real_min)} / ${f0(d.real_min - d.lost_min)} min</td>
@@ -575,7 +574,7 @@
         <td>${rs ? `<div class="causes">${rs.causes.map((c, j) => chip(c, !j)).join('')}${rs.certitude === 'probable' ? '<span class="est">probable</span>' : ''}</div><div class="cause-d">${rs.detail}</div>` : `<div class="causes"><span class="cause sec">non qualifié</span></div><div class="cause-d muted">Note de la sortie : ${r.note}</div>`}${d.alert.length ? `<div class="causes" style="margin-top:4px"><span class="tag"><svg viewBox="-8 -8 16 15"><path d="M0,-7 7,5.5 -7,5.5Z" fill="currentColor"/></svg>${d.alert.join(', ')}</span></div>` : ''}</td>
 </tr>`;
     }).join('')}</tbody>`;
-    $('ep-pause').innerHTML = `${PAU.length} épisodes plus courts, de 5 à 10 min chacun (${f0(pauMin)} min au total), ne sont pas détaillés : ce sont très probablement des pauses. Ils sont comptés dans le bilan sous « Autre · pause probable ».`;
+    const epPause = `${PAU.length} épisodes plus courts, de 5 à 10 min chacun (${f0(pauMin)} min au total), ne sont pas détaillés : ce sont très probablement des pauses. Ils sont comptés dans le bilan sous « Autre · pause probable ».`;
     // minutes lost by main cause (costly episodes) + the probable pauses
     const mainOf = d => RS[d.id] ? RS[d.id].causes[0] : null;
     const groups = Object.keys(CAUSE).filter(k => k !== 'pause').map(k => ({ k, eps: MAJ.filter(d => mainOf(d) === k) })).filter(c => c.eps.length)
@@ -589,7 +588,9 @@
     if ($('cause-fam')) $('cause-fam').innerHTML = fam.map(([fm, mn]) => `<div class="gm-row"><span></span><span>${fm}</span><span class="mono">${f0(mn)} min</span><span class="mono"><b>${f0(mn / totMin * 100)} %</b></span></div>`).join('');
     readout('r-cause', `${slow.length} épisodes · ${f0(totMin)} min`);
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
-    $('ep-fast').innerHTML = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${(g => g.length ? `${g.join(' et ')} ${g.length > 1 ? 'sont écartés' : 'est écarté'} : une pente GPS de plus de 60 % fausse le temps attendu.` : '')(fast.filter(d => d.gps).map(d => actName(d.act)))}`;
+    const epFast = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${(g => g.length ? `${g.join(' et ')} ${g.length > 1 ? 'sont écartés' : 'est écarté'} : une pente GPS de plus de 60 % fausse le temps attendu.` : '')(fast.filter(d => d.gps).map(d => actName(d.act)))}`;
+    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(majMin)} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p><div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
+    $('ep-btn').innerHTML = defBtn('episodes', `Les ${MAJ.length} épisodes lents, un par un`);
     const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
     const CL = EP.cluster;
     if (CL) $('lede-roll').innerHTML = `Chaque tronçon, pris seul, est ordinaire (partie 02). Ce qui compte, c’est leur ordre. Un <b>épisode</b>, c’est au moins 750 m d’affilée nettement plus lents (rouge) ou plus rapides (vert) que l’allure attendue. Si mes ${f0(D.n)} écarts étaient mélangés au hasard, on attendrait environ ${f0(CL.all.n)} épisodes lents de plus de 5 min, pour ${f0(CL.all.min)} min en tout. Il y en a <b>${CL.obs_n}</b>, qui coûtent <b>${f0(CL.obs_min)} min</b> : les tronçons lents s’enchaînent.`;
@@ -694,7 +695,7 @@
       ['Corrélation du terrain d’un massif au suivant', `raideur r = ${f2(T.grad_next.r)} · ${sig(T.grad_next) ? 'significatif' : 'non significatif'} (seuil ${f2(T.grad_next.crit)}, ${T.grad_next.n} paires)`,
         'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs risques se diversifient.'],
       ['Corrélation à l’intérieur d’un massif', `montée → descente : raideur r = ${f2(T.grad_same.r)} · allure r = ${f2(T.pace_same.r)}`,
-        'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Tirer les erreurs par massif, pas par tronçon : l’écart-type du temps total passe de ± ${f0(A.seg)} à ± ${f0(A.massif)} min (×${f1(A.massif / A.seg)}). Les blocs de 2 km de la partie 10 vont dans ce sens.`],
+        'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Tirer les erreurs par massif, pas par tronçon : l’écart-type du temps total passe de ± ${f0(A.seg)} à ± ${f0(A.massif)} min (×${f1(A.massif / A.seg)}). Les blocs de 2 km de la partie 09 vont dans ce sens.`],
       [`Risque systématique${defBtn('sysspec')}`, `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''} · ≈ ${f0(sysShare * 100)} % de l’écart vient de la journée`,
         'Météo et forme du jour pèsent sur tous les massifs de la journée : il ne se diversifie pas.', 'Ajouter un facteur journée commun à tous les massifs du jour, l’équivalent d’un bêta de marché.'],
       ['Risque spécifique', `≈ ${f0((1 - sysShare) * 100)} % de l’écart propre au massif · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
@@ -781,10 +782,10 @@
       return { up: v(15, 25), dn: v(-25, -15) };
     };
     const vT = spd(0), vS = spd(1);
-    $('t-sens').innerHTML = `<b>Surprise : en pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h entre 15 et 25 %), l’inverse de Tobler. Passé un certain seuil, ce n’est plus la pente qui commande, mais le terrain : dans les Lofoten, peu de larges sentiers, surtout des pierriers, de la roche et parfois de l’escalade. En montée, mains et bâtons aident ; en descente, chaque appui se cherche (${fs0(desc.pct)} %). Le sac reste le premier frein (<b>${fs0(sacS.pct)} %</b>). La fatigue, elle, ne se voit pas dans l’allure : elle agit ailleurs (partie 07).`;
+    $('t-sens').innerHTML = `<b>Surprise : en pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h entre 15 et 25 %), l’inverse de Tobler. Passé un certain seuil, ce n’est plus la pente qui commande, mais le terrain : dans les Lofoten, peu de larges sentiers, surtout des pierriers, de la roche et parfois de l’escalade. En montée, mains et bâtons aident ; en descente, chaque appui se cherche (${fs0(desc.pct)} %). Le sac reste le premier frein (<b>${fs0(sacS.pct)} %</b>). La fatigue, elle, ne se voit pas dans l’allure : elle agit ailleurs, comme le montre la suite.`;
   }
 
-  /* ---------- 07 · physical reserve (underwater curve) ---------- */
+  /* ---------- 06 · physical reserve (underwater curve) ---------- */
   function drawHrv() {
     // écart à la VFC habituelle (45 ms, mesurée hors traversée) : 0 % = nuit ordinaire
     const HRV_BASE = HRV_USUAL, BAND = .1;
@@ -829,7 +830,15 @@
     xAxis(g.g, x2, g.h, null, i => g.narrow ? `${+N[i].night.slice(8)}` : dateLbl(N[i].night));
     const after = N.slice(wi + 1);
     const low = N.filter(n => n.hrv < HRV_BASE * (1 - BAND)), firstLow = low[0];
-    $('t-hrv').innerHTML = `Le départ se fait dans des conditions idéales : la première nuit, à ${N[0].camp}, tombe pile sur ma VFC habituelle (${N[0].hrv} ms), reposé. Après la grosse première journée, elle grimpe à <b>${best.hrv} ms (${fs0(best.dd_hrv * 100)} %)</b> : une bonne fatigue, celle d’un corps qui encaisse sans rien accumuler encore. La rupture arrive à ${firstLow.camp} : <b>${firstLow.hrv} ms (${fs0(firstLow.dd_hrv * 100)} %)</b> après une nuit de ${hm(firstLow.sleep_h)}. Ensuite, elle ne revient jamais dans la zone normale (au mieux ${d3.max(after, n => n.hrv)} ms) : la réserve s’use sans se refaire. Pourtant, l’allure ne baisse pas (partie 06). La fatigue se voit dans les décisions : le Helvetestinden (J4) tombe après 1 h 15 de recherche de bivouac, le Hermannsdalstinden (J5) après la nuit de 2 h et une recharge de ${worst.bb}/100.`;
+    $('t-hrv').innerHTML = `<b>0 %</b> la première nuit (${N[0].hrv} ms, reposé). <b>${fs0(best.dd_hrv * 100)} %</b> après la grosse première journée : le corps encaisse. <b>${fs0(firstLow.dd_hrv * 100)} %</b> à ${firstLow.camp}, après une nuit de ${hm(firstLow.sleep_h)} : ensuite, la VFC ne revient plus dans la zone normale.<br><br>La réserve s’use, et pourtant l’allure ne baisse pas. La fatigue se voit dans les décisions : le Helvetestinden (J4) et le Hermannsdalstinden (J5) sont abandonnés. Reste un facteur que je ne contrôle pas : la météo.`;
+    DEFS.vfc = { t: 'D’où vient la mesure de la VFC', html: () => `
+      <p><b>L’origine.</b> Le cœur ne bat pas comme un métronome : l’intervalle entre deux battements varie de quelques millisecondes. Cette variabilité de la fréquence cardiaque (VFC) est pilotée par le système nerveux : reposé, il laisse le cœur varier beaucoup ; fatigué ou stressé, il le resserre. Les sportifs la suivent depuis les années 1990 pour doser leur entraînement.</p>
+      <p><b>La construction.</b> La montre mesure la VFC moyenne de chaque nuit, en millisecondes. Je la compare à ma valeur habituelle, mesurée par la même montre hors traversée.</p>
+      <div class="def-f">écart = VFC de la nuit ÷ VFC habituelle (${N[0].hrv} ms) − 1</div>
+      <div class="def-ex"><b>Exemple.</b> ${firstLow.camp} : ${firstLow.hrv} ms, soit ${fs0(firstLow.dd_hrv * 100)} %. La bande grise (±10 %) est la zone normale : une nuit dedans est une nuit ordinaire.</div>
+      <p><b>Comment lire.</b> Au-dessus de l’habitude après un gros effort : une récupération active, bon signe. Durablement en dessous : une fatigue qui s’accumule au lieu de se résorber. La courbe ressemble à celle d’un fonds sous son plus haut : tant qu’elle reste sous l’eau, la perte n’est pas refaite.</p>
+      <p class="muted">Limite : une seule mesure par nuit, sensible aussi au froid, au vent et à la qualité du sommeil.</p>` };
+    { const pt = $('c-hrv').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('vfc')); }
   }
 
   /* ---------- 09 bis · rain persistence, 2026 among 1 200 windows (risque_meteo.js, outils/meteo_series.js) ---------- */
@@ -887,10 +896,10 @@
     });
     legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026'], ['dash', '', 'médiane']]);
     readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(M.ep.v)} mm en trois jours</b> au point de référence, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 12.`;
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(M.ep.v)} mm en trois jours</b> au point de référence, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 11.`;
   }
 
-  /* ---------- 08 · weather vs benchmark ---------- */
+  /* ---------- 07 · weather vs benchmark ---------- */
   function drawWx() {
     const Dd = W_.days;
     const m = { t: 14, r: 50, b: 26, l: 8 };
@@ -950,7 +959,7 @@
     $('t-wx').textContent = `Six jours secs et plus chauds que la normale (${f1(W_.tmax_mean)} °C de max moyen contre ${f1(W_.climato.tmax)}), puis ${f1(lateRain)} mm en trois jours, soit ${f0((lateRain / W_.climato.pluie_mm - 1) * 100)} % de plus que la normale de toute la période, avec des rafales jusqu’à ${W_.gust_max} km/h. Les trois incidents de terrain les plus graves (escalade, éboulement, grotte) tombent dans ces trois jours, quand la VFC était déjà sous la zone normale (environ −30 %). Le nombre de jours de pluie est normal (${W_.rainy_days}) : c’est leur regroupement en fin de séjour qui a fait le risque.`;
   }
 
-  /* ---------- 09 · danger scorecard ---------- */
+  /* ---------- 08 · danger scorecard ---------- */
   function drawIndex() {
     const rows = R.rows.slice().sort((a, b) => b.score - a.score);
     const mx = d3.max(rows, r => Math.abs(r.score));
@@ -979,7 +988,7 @@
     const it = $('index-table').closest('.pc').querySelector('.pc-t'); if (!it.querySelector('.def-btn')) it.insertAdjacentHTML('beforeend', defBtn('indice'));
   }
 
-  /* ---------- 10 · Monte Carlo ---------- */
+  /* ---------- 09 · Monte Carlo ---------- */
   let mcModel = 'blocs', mcPlayed = false, mcRaf = 0;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function drawMc(animate = false) {
@@ -1098,8 +1107,8 @@
     $('mc-story').innerHTML = `
       <p><b>1. Le modèle prévoit.</b> Il ne connaît que deux jours de beau temps, où j’étais en forme : c’est tout ce que je savais au soir du J2, et c’est sa limite. Il annonce la durée de la suite, avec une fourchette.</p>
       <p><b>2. Tant qu’il fait sec, il voit juste.</b> Du J3 au J6, les ${dryN} journées tombent dans la fourchette prévue la veille${dryOk === dryN ? '' : ` (${dryOk} sur ${dryN})`} ; sortie par sortie, ${SM.blocs.dry.in90} sur ${SM.blocs.dry.n}. À condition de garder l’enchaînement des écarts : la loi normale, trop sûre d’elle, n’en contient que ${SM.normal.dry.in90}.</p>
-      <p><b>3. La pluie le prend de court.</b> ${wetOut.join(' et ')} dépassent le seuil. Ce n’est pas un événement imprévisible : aux Lofoten, il pleut un jour sur trois (partie 08). C’est un régime que le modèle n’a jamais vu, comme un modèle de marché calé sur des années calmes qui rencontre son premier krach.</p>
-      <p class="ex-msg"><b>Le modèle n’est pas celui qui le pilote.</b> Une valeur à risque ne prévoit pas la crise ; ce qui protège la banque, c’est le capital qu’elle a mis de côté. Moi, j’avais prévu le mauvais temps autrement que par un calcul d’allure : un jour de marge dans le plan, de l’avance prise tant qu’il faisait beau, un camp fixe quand la pluie est arrivée. Mon capital, c’était la marge. La simulation dit ce que le choc coûte ; les parties 11 et 12 diront si le plan et mes décisions pouvaient l’absorber.</p>`;
+      <p><b>3. La pluie le prend de court.</b> ${wetOut.join(' et ')} dépassent le seuil. Ce n’est pas un événement imprévisible : aux Lofoten, il pleut un jour sur trois (partie 07). C’est un régime que le modèle n’a jamais vu, comme un modèle de marché calé sur des années calmes qui rencontre son premier krach.</p>
+      <p class="ex-msg"><b>Le modèle n’est pas celui qui le pilote.</b> Une valeur à risque ne prévoit pas la crise ; ce qui protège la banque, c’est le capital qu’elle a mis de côté. Moi, j’avais prévu le mauvais temps autrement que par un calcul d’allure : un jour de marge dans le plan, de l’avance prise tant qu’il faisait beau, un camp fixe quand la pluie est arrivée. Mon capital, c’était la marge. La simulation dit ce que le choc coûte ; les parties 10 et 11 diront si le plan et mes décisions pouvaient l’absorber.</p>`;
 
     // stress test
     const sc = Object.fromEntries(ST.scen.map(x => [x.label, x]));
@@ -1154,7 +1163,7 @@
     io.observe($('c-mc'));
   }
 
-  /* ---------- 11 · plan vs actual ---------- */
+  /* ---------- 10 · plan vs actual ---------- */
   const PLAN = [
     [1, '14/06', 'Napp → Nusfjord, sommet du Tønnåsheia', 'Napp → Nusfjord. Tønnåsheia abandonné : le premier jour avec le sac est bien plus dur que prévu.', [['c-ren', 'Renoncement']]],
     [2, '15/06', 'Volandstinden, bivouac sur son versant ou à Fredvang', 'Volandstinden, puis au-delà de Fredvang jusqu’aux hauteurs de Kvalvika, pour enchaîner sur le Ryten.', [['c-av', 'Avance volontaire']]],
@@ -1306,14 +1315,14 @@
       <p><b>Comment il se calcule.</b> Ce n’est pas le temps passé avec le sac : c’est la part de ce temps qui vient du sac. La régression de la partie 06 dit qu’un trajet porté dure ${f0(MO.sac_pct)} % de plus que le même trajet fait léger. On retrouve donc le temps « léger » en divisant, et le surcoût est la différence.</p>
       <div class="def-f">surcoût = temps porté − temps porté ÷ ${f2(1 + MO.sac_pct / 100)}</div>
       <div class="def-ex"><b>Plan.</b> ${hm(pS.h)} prévues avec le sac ÷ ${f2(1 + MO.sac_pct / 100)} = ${hm(pS.h - MO.carry.plan)} si le même trajet était fait léger. Surcoût : ${hm(MO.carry.plan)}.<br><b>Réel.</b> ${hm(rS.h)} portées ÷ ${f2(1 + MO.sac_pct / 100)} = ${hm(rS.h - MO.carry.real)}. Surcoût : ${hm(MO.carry.real)}.</div>
-      <p>Le plan prévoyait donc bien ${hm(pS.h)} avec le sac sur ${hm(pS.h + pT.h)}, dont ${hm(MO.carry.plan)} dues au sac lui-même. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de ce surcoût. La partie 12 demande si cette économie était une décision ou une chance.</p>
+      <p>Le plan prévoyait donc bien ${hm(pS.h)} avec le sac sur ${hm(pS.h + pT.h)}, dont ${hm(MO.carry.plan)} dues au sac lui-même. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de ce surcoût. La partie 11 demande si cette économie était une décision ou une chance.</p>
       <p class="muted">Précautions. Un point réel est compté « sur le plan » à moins de 60 m du tracé ; le dénivelé du plan vient du modèle de terrain de Strava, le réel de la montre. Le tracé Strava est lissé : sur le parcours commun, la montre mesure ${f0((MO.ratio - 1) * 100)} % de plus. Les distances du plan sont donc converties à la mesure de la montre ; sans cette conversion, le plan vaudrait ${hm(MO.plan_h_raw)}. Et le temps du plan est calculé avec mes vitesses réelles (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail) : il mesure ce que le plan demandait, pas ce que j’avais estimé avant de partir.</p>` };
     const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
     const N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km), ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5);
     $('t-plan').innerHTML = `<b>Tout a changé, sauf le total.</b> J’ai porté le sac sur ${f0(pS.km - rS.km)} km de moins que prévu et couru ${f0(rT.km - pT.km)} km de plus, pour le même dénivelé (${f0(dpR)} m) et le même temps de marche (${hm(hR)}). L’avance prise les ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) et le jour de marge ont absorbé le reste. Le plan avait donc la place pour l’imprévu. Mais des écarts qui se compensent, est-ce un plan bien construit, de bonnes décisions en route, ou de la chance ? C’est la dernière question.`;
   }
 
-  /* ---------- 13 · conclusion ---------- */
+  /* ---------- 12 · conclusion ---------- */
   function drawConcl() {
     const L = [
       ['Le sac ralentit, le danger arrive sans lui', `Le sac coûte ${fs0(sacS.pct)} % de temps à terrain égal, mais il rend l’allure plus régulière. Trois des quatre alertes de terrain ont eu lieu sans le sac, sur des sommets en trail, là où je me sentais le plus libre.`],
@@ -1358,7 +1367,7 @@
     svg.append('text').attr('class', 'lbl').attr('x', 8).attr('y', H - 8).text('N ↑');
   }
 
-  /* ---------- 12 · luck vs decision ---------- */
+  /* ---------- 11 · luck vs decision ---------- */
   function drawCF() {
     const X = window.RISK_CD, CD = X.dec, MM = window.RISK_METEO, MO = window.RISK_PLAN.modes;
     const save = MO.carry.plan - MO.carry.real, FR = X.free_real;
@@ -1446,9 +1455,9 @@
     readout('r-dec', `${CD.n} décisions`);
     // texts
     const P = MG.scen.find(d => d.key === 'plan'), Rl = MG.scen.find(d => d.key === 'reel');
-    $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 11), alors que la pluie a pris le modèle de court (partie 10). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
+    $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 10), alors que la pluie a pris le modèle de court (partie 09). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
     $('cf-bilan').innerHTML = [
-      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(MM.tot.v)} mm en 9 jours : plus que ${f0(MM.tot.pct)} % des départs possibles (partie 08)`],
+      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(MM.tot.v)} mm en 9 jours : plus que ${f0(MM.tot.pct)} % des départs possibles (partie 07)`],
       ['Chance · pour moi', 'J7', 'la pluie arrive quand la traversée se termine'],
       ['Décision · l’avance', `${f0(P.free)} → ${f0(Rl.free)} %`, 'des mondes météo sans aucune étape mouillée'],
       ['Verdict', `${CD.quad.merite} sur ${CD.n}`, 'décisions au résultat mérité'],
@@ -1456,7 +1465,7 @@
     $('cf-cols').innerHTML = [
       [C('--warning'), 'la chance', 'Le moment', 'J7', `Les ${X.episode.length} jours de pluie sont tombés quand il ne restait plus d’étape. Arrivés plus tôt, j’aurais attendu sous la tente et perdu mes ${SR.slack} jours libres : les sorties des J7 à J9, ${f0(FR.km)} km et ${f0(FR.dplus)} m de D+.`],
       [C('--up'), 'la décision', 'L’avance', `${SP.slack} → ${SR.slack} jours`, `Avec la marge du plan, un seul jour d’attente possible : ensuite, ${SP.rows[0].wet} étapes se font sous la pluie, avec le sac. L’avance prise aux J2 et J3 porte la réserve à ${SR.slack} jours : plus aucune étape forcée.`],
-      [C('--accent'), 'l’option exercée', 'Le camp fixe', `−${hm(save)}`, `Fixer le camp, c’est passer du sac au trail : matériel au sec et ${hm(save)} de portage en moins (partie 11). Le mauvais temps a quand même coûté ${f0(MC.stress.pct)} % d’allure (partie 10), mais aucune étape.`],
+      [C('--accent'), 'l’option exercée', 'Le camp fixe', `−${hm(save)}`, `Fixer le camp, c’est passer du sac au trail : matériel au sec et ${hm(save)} de portage en moins (partie 10). Le mauvais temps a quand même coûté ${f0(MC.stress.pct)} % d’allure (partie 09), mais aucune étape.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
     $('cf-msg').innerHTML = `<b>La chance a décidé quand la pluie tombait. Mes décisions ont décidé ce qu’elle coûtait.</b> Sans l’avance, la même pluie au même moment aurait coûté ${SP.rows[SP.rows.length - 1].wet} étapes mouillées. Sans la chance, l’avance aurait quand même tout absorbé, au prix des ${SR.slack} jours libres.`;
     const lucky = I.find(d => d.quad === 'chance');

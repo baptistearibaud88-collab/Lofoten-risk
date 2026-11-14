@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261114-4">
+<link rel="stylesheet" href="risque.css?v=20261114-5">
 </head>
 <body>
 <div class="viz-root">
@@ -52,14 +52,13 @@
     <a href="#s3"><b>03</b>Extrêmes</a>
     <a href="#s4"><b>04</b>Épisodes lents</a>
     <a href="#s5"><b>05</b>Massifs</a>
-    <a href="#s6"><b>06</b>Sensibilités</a>
-    <a href="#s7"><b>07</b>Réserve physique</a>
-    <a href="#s8"><b>08</b>Météo</a>
-    <a href="#s9"><b>09</b>Indice de danger</a>
-    <a href="#s10"><b>10</b>Monte Carlo</a>
-    <a href="#s11"><b>11</b>Plan contre réel</a>
-    <a href="#s12"><b>12</b>Chance ou décision</a>
-    <a href="#s13"><b>13</b>Conclusion</a>
+    <a href="#s6"><b>06</b>Sensibilités et fatigue</a>
+    <a href="#s7"><b>07</b>Météo</a>
+    <a href="#s8"><b>08</b>Indice de danger</a>
+    <a href="#s9"><b>09</b>Monte Carlo</a>
+    <a href="#s10"><b>10</b>Plan contre réel</a>
+    <a href="#s11"><b>11</b>Chance ou décision</a>
+    <a href="#s12"><b>12</b>Conclusion</a>
   </nav>
 
   <section id="s1">
@@ -174,16 +173,12 @@
       <div class="pc-foot"><span class="legend-row" id="l-roll"></span><span class="src">Fenêtre : 8 tronçons</span></div>
     </div>
     <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Les épisodes lents de 10 min ou plus</span><span class="pc-r mono" id="r-ep"></span></div>
-      <div class="table-wrap flat"><table class="data ep" id="ep-table"></table></div>
-      <div class="pc-foot ep-foot"><span id="ep-pause"></span> <span id="ep-fast"></span></div>
-    </div>
-    <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Temps perdu par cause principale</span><span class="pc-r mono" id="r-cause"></span></div>
       <div class="grade-mix cause-wide" id="cause-mix"></div>
+      <div class="pc-foot" id="ep-btn" style="justify-content:flex-start"></div>
     </div>
     <div class="notes">
-      <div><h4>Comment lire</h4><p>Au-dessus de zéro, plus lent que prévu ; en dessous, plus rapide. La courbe épaisse lisse le bruit sur 2 km. Le panneau du bas mesure l’irrégularité : il monte quand des tronçons lents et rapides alternent, c’est-à-dire quand l’allure ne se laisse plus prévoir, même si elle reste juste en moyenne. Dans le tableau, « perdu » est le temps passé en plus du temps prévu sur l’épisode, en minutes. La colonne « Cause » dit d’où vient le temps perdu : terrain, météo, ou arrêt et décision sur place. La pastille pleine est la cause principale, les autres sont secondaires.</p></div>
+      <div><h4>Comment lire</h4><p>Au-dessus de zéro, plus lent que prévu ; en dessous, plus rapide. La courbe épaisse lisse le bruit sur 2 km. Le panneau du bas mesure l’irrégularité : il monte quand des tronçons lents et rapides alternent, c’est-à-dire quand l’allure ne se laisse plus prévoir, même si elle reste juste en moyenne.</p></div>
       <div><h4>Méthode</h4><p>e = ln(temps réel ÷ temps attendu), sur le temps en mouvement de la montre. Épisode : au moins 3 tronçons de suite dont la moyenne de e dépasse ±0,20 (22 % plus lent, 18 % plus rapide). Test du hasard : les mêmes écarts mélangés 2 000 fois. Causes qualifiées après coup à partir de 10 min ; de 5 à 10 min, pauses probables.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-roll"></p></div>
     </div>
@@ -231,27 +226,22 @@
       <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente (en valeur absolue : montée ou descente), sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1. L’artefact GPS de Kvalvika (partie 02) est exclu. Les vitesses en km/h comparent les tronçons de 15 à 25 % de pente, en montée et en descente.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-sens"></p></div>
     </div>
-  </section>
-
-  <section id="s7">
-    <header class="sh"><span class="num">07</span><h2>La réserve physique</h2></header>
-    <p class="lede">La variabilité de la fréquence cardiaque (VFC) mesurée la nuit reflète la récupération. Le graphique montre son écart à ma VFC habituelle, 45 ms, mesurée hors traversée : 0 % est une nuit ordinaire. En dessous, la durée de chaque nuit.</p>
+    <p class="lede">La régression ne trouve aucun effet de la fatigue sur l’allure. Elle existe pourtant. La variabilité de la fréquence cardiaque (VFC), mesurée chaque nuit, reflète la récupération : 0 % est une nuit ordinaire (45 ms, ma valeur habituelle hors traversée). En dessous, la durée de chaque nuit.</p>
     <div class="pc">
-      <div class="pc-head"><span class="pc-t">VFC nocturne · écart à la VFC habituelle</span><span class="pc-r mono" id="r-hrv"></span></div>
+      <div class="pc-head"><span class="pc-t">La réserve physique · VFC nocturne, écart à l’habitude</span><span class="pc-r mono" id="r-hrv"></span></div>
       <div class="chart" id="c-hrv" data-h="240"></div>
       <div class="pc-sub">Durée de sommeil (h)</div>
       <div class="chart" id="c-sleep" data-h="120"></div>
       <div class="pc-foot"><span class="src">Source : montre · VFC moyenne de la nuit, en ms</span></div>
     </div>
-    <div class="notes">
-      <div><h4>Comment lire</h4><p>La ligne pointillée (0 %) est la VFC habituelle. La bande grise est la zone normale, à ±10 % : une nuit dans la bande est une nuit ordinaire. En vert, au-dessus de l’habitude ; en rouge, en dessous. Une courbe qui reste sous la bande signale une fatigue qui s’accumule au lieu de se résorber.</p></div>
-      <div><h4>Méthode</h4><p>Écart = VFC de la nuit / VFC habituelle − 1. Référence : VFC nocturne habituelle de 45 ms, mesurée par la même montre en dehors de la traversée. Une VFC au-dessus de l’habitude après un effort signale une récupération active ; durablement en dessous, une fatigue qui s’accumule.</p></div>
+    <div class="notes two kr">
+      <div><h4>Comment lire</h4><p>La ligne pointillée (0 %) est la VFC habituelle ; la bande grise, la zone normale à ±10 %. En vert, au-dessus de l’habitude ; en rouge, en dessous. Une courbe qui reste sous la bande signale une fatigue qui s’accumule.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-hrv"></p></div>
     </div>
   </section>
 
-  <section id="s8">
-    <header class="sh"><span class="num">08</span><h2>La météo face à la normale</h2></header>
+  <section id="s7">
+    <header class="sh"><span class="num">07</span><h2>La météo face à la normale</h2></header>
     <p class="lede">La météo vécue (réanalyse ERA5, heure par heure, sur la zone de chaque jour) est comparée à la moyenne de 30 ans (1996–2025) sur les mêmes dates.</p>
     <div class="grid-2">
       <div class="pc"><div class="pc-head"><span class="pc-t">Pluie cumulée · vécue contre normale</span><span class="pc-r mono" id="r-rain"></span></div><div class="chart" id="c-rain" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-rain"></span></div></div>
@@ -270,13 +260,13 @@
     </div>
     <div class="notes wk">
       <div><h4>Comment lire</h4><p>À gauche, la chance qu’il pleuve un jour donné, selon qu’il a plu ou non la veille. Si les jours étaient indépendants, les deux barres seraient égales. À droite, chaque histogramme range 1 200 fenêtres de 9 jours tirées des étés 1996–2025 ; la barre rouge est la classe de 2026, et le centile dit quelle part des fenêtres fait moins.</p></div>
-      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 12. Un épisode est une suite de jours de pluie. Au point centre, les trois derniers jours font 21,7 mm, contre 24,0 mm sur les trois zones.</p></div>
+      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 11. Un épisode est une suite de jours de pluie. Au point centre, les trois derniers jours font 21,7 mm, contre 24,0 mm sur les trois zones.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-wx2"></p></div>
     </div>
   </section>
 
-  <section id="s9">
-    <header class="sh"><span class="num">09</span><h2>L’indice de danger, sortie par sortie</h2></header>
+  <section id="s8">
+    <header class="sh"><span class="num">08</span><h2>L’indice de danger, sortie par sortie</h2></header>
     <p class="lede">Avant chaque sortie, quatre signaux sont déjà connus : la cote du terrain, la pente des passages raides, la météo du jour et la fatigue de la nuit précédente. Ramenés à la même échelle et additionnés à poids égaux, ils donnent un indice. Il est construit <i>sans</i> regarder les alertes ; on vérifie ensuite où elles tombent. Dans le tableau, les quatre cases de la colonne « Facteurs » suivent cet ordre : <b>T</b> terrain, <b>P</b> pente, <b>M</b> météo, <b>F</b> fatigue.</p>
     <div class="pc">
       <div class="pc-head"><span class="pc-t">Tableau de bord des 25 sorties</span><span class="pc-r mono" id="r-index"></span></div>
@@ -290,8 +280,8 @@
     </div>
   </section>
 
-  <section id="s10">
-    <header class="sh"><span class="num">10</span><h2>Simulation de risque : la prévision du J2, rejouée 5 000 fois</h2></header>
+  <section id="s9">
+    <header class="sh"><span class="num">09</span><h2>Simulation de risque : la prévision du J2, rejouée 5 000 fois</h2></header>
     <p class="lede">Jusqu’ici, on a mesuré ce qui s’est passé. Une simulation de risque fait l’inverse : elle se place avant, et dit ce qui pouvait arriver. Au soir du J2, je connais mon allure sur deux jours. Un modèle calé sur ces deux seuls jours, de beau temps, prévoit le temps de marche des sept suivants, puis la suite est rejouée 5 000 fois. La traversée réelle n’a pas servi au calage : l’endroit où elle tombe est un vrai résultat. L’aléa est tiré de deux façons. <b>Loi normale</b> : chaque tronçon tire son écart seul. <b>Blocs</b> : on tire des séquences réelles de 2 km, qui gardent l’enchaînement des écarts (parties 04 et 05).</p>
     <div class="pc">
       <div class="pc-head mc-head">
@@ -334,8 +324,8 @@
     </div>
   </section>
 
-  <section id="s11">
-    <header class="sh"><span class="num">11</span><h2>Plan contre réel : le budget a-t-il tenu ?</h2></header>
+  <section id="s10">
+    <header class="sh"><span class="num">10</span><h2>Plan contre réel : le budget a-t-il tenu ?</h2></header>
     <p class="lede" id="plan-lede"></p>
     <div class="stat-strip" id="plan-stats"></div>
     <div class="pc mt">
@@ -370,8 +360,8 @@
     </div>
   </section>
 
-  <section id="s12">
-    <header class="sh"><span class="num">12</span><h2>Chance ou décision : pourquoi le budget a tenu</h2></header>
+  <section id="s11">
+    <header class="sh"><span class="num">11</span><h2>Chance ou décision : pourquoi le budget a tenu</h2></header>
     <p class="lede" id="cf-lede"></p>
     <div class="stat-strip cf-bilan" id="cf-bilan"></div>
     <div class="grid-2 g-6040 mt">
@@ -414,8 +404,8 @@
     </div>
   </section>
 
-  <section id="s13" class="concl">
-    <header class="sh"><span class="num">13</span><h2>Conclusion</h2></header>
+  <section id="s12" class="concl">
+    <header class="sh"><span class="num">12</span><h2>Conclusion</h2></header>
     <ol class="lessons" id="lessons"></ol>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Règles de décision pour la prochaine traversée</span></div>
@@ -461,8 +451,8 @@
         <ul>
           <li>Un seul marcheur, un seul séjour : les effets mesurés décrivent cette traversée, pas une loi générale.</li>
           <li>Les 5 sorties cotées avec les seuls critères DNT reposent aussi sur le récit et peuvent être révisées.</li>
-          <li>La simulation (partie 10) est calée sur deux jours de beau temps et suit le parcours réellement choisi ; le contrôle porte sur 7 journées et 19 sorties, et le choc de mauvais temps mêle pluie, vent et fatigue.</li>
-          <li>La normale du graphique de pluie cumulée est une moyenne de période sur trois zones ; les centiles (partie 08) ne portent que sur le point centre.</li>
+          <li>La simulation (partie 09) est calée sur deux jours de beau temps et suit le parcours réellement choisi ; le contrôle porte sur 7 journées et 19 sorties, et le choc de mauvais temps mêle pluie, vent et fatigue.</li>
+          <li>La normale du graphique de pluie cumulée est une moyenne de période sur trois zones ; les centiles (partie 07) ne portent que sur le point centre.</li>
           <li>Les intervalles de confiance de la régression (partie 06) supposent des tronçons indépendants ; la partie 04 montre qu’ils s’enchaînent : ils sont donc un peu trop étroits.</li>
         </ul>
       </div>
@@ -485,6 +475,6 @@
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261114-8"></script>
+<script src="risque.js?v=20261114-9"></script>
 </body>
 </html>
