@@ -197,6 +197,14 @@
     legend('l-candles', [['', C('--up'), 'arrivée plus haute'], ['', C('--down'), 'arrivée plus basse'], ['', `color-mix(in srgb, ${C('--text-secondary')} 80%, transparent)`, 'D+ sans sac (plein) / avec sac (clair)']]);
     const big = days.reduce((a, b) => b.dplus > a.dplus ? b : a);
     const sansShare = d3.sum(days, d => d.dplus - d.dplus_sac) / d3.sum(days, d => d.dplus);
+    { const sum = k => d3.sum(data, d => d[k]), sacKm = d3.sum(data.filter(d => d.sac), d => d.km), long = data.reduce((x, y) => y.km > x.km ? y : x);
+      $('facts-1').innerHTML = [
+        ['Distance', `${f0(sum('km'))} km`, `${f0(sacKm)} avec le sac · ${f0(sum('km') - sacKm)} en trail`],
+        ['Dénivelé positif', `${f0(sum('dplus'))} m`, `${f0(d3.sum(data.filter(d => d.sac), d => d.dplus))} avec le sac · ${f0(d3.sum(data.filter(d => !d.sac), d => d.dplus))} en trail`],
+        ['Temps de marche', hm(sum('mov_h')), `${data.length} sorties en ${nd} jours`],
+        ['Point le plus haut', `${f0(top.h)} m`, top.name],
+        ['Plus longue sortie', `${f1(long.km)} km`, `${long.name} · ${dayLbl(long.day)}`],
+      ].map(([k, v, s_]) => `<div><dt>${k}</dt><dd><b>${v}</b>${s_ ? `<span>${s_}</span>` : ''}</dd></div>`).join(''); }
     $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). <b>J8</b> : le campement n’a pas bougé, d’où la bougie plate.<br><br>Ce relief n’est pas qu’un décor : avec ou sans sac, en traversée ou en sommet, chaque sortie expose à un risque différent. Reste à voir comment ce dénivelé et ce profil ont pesé sur la prise de risque, et où le risque s’est réellement concentré. Première étape : qualifier le terrain.`;
   }
 

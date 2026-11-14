@@ -419,3 +419,12 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .verdict ul { margin: 4px 0 0; padding: 0; list-style: none; }
 .verdict li, .verdict p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
 .verdict li .mono { display: inline-block; width: 24px; color: var(--text-muted); font-size: 11px; }
+
+/* key facts list inside a note box */
+.facts { margin: 0; display: grid; gap: 5px; }
+.facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--hair); }
+.facts > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.facts dt { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.facts dd { margin: 0; text-align: right; }
+.facts dd b { font: 650 13.5px var(--mono); color: var(--text-primary); white-space: nowrap; }
+.facts dd span { display: block; font-size: 11.5px; color: var(--text-muted); line-height: 1.3; }
