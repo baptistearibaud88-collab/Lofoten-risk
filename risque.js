@@ -212,7 +212,7 @@
       const same = bestKm.act === top1.act;
       $('facts-1').innerHTML = [
         [`${f0(stT * 100)} %`, `du trail à plus de 15 % de pente (${f0(stS * 100)} % avec le sac)`],
-        [`${f0(upMean * 10)} m`, `de D+ par kilomètre de montée`],
+        [`${f0(upMean * 10)} m`, `de D+ en moyenne par kilomètre de montée`],
         [`${f0(top1.slope)} %`, `sur les 250 m les plus raides (${nameOf(top1.act).name.split(' / ')[0]}, ${dayLbl(top1.day)})`],
       ].map(([v, k]) => `<div><dd><b>${v}</b></dd><dt>${k}</dt></div>`).join(''); }
     $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). <b>J8</b> : le campement n’a pas bougé, d’où la bougie plate.<br><br>Ce relief n’est pas qu’un décor : avec ou sans le sac, en traversée ou en sommet, chaque sortie expose à un risque différent. Première étape : qualifier le terrain.`;
