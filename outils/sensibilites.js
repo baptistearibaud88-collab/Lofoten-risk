@@ -1,10 +1,10 @@
-// Sensibilités (partie 07) : régression et matrice de corrélation, recalculées sans les artefacts GPS.
+// Sensibilités (partie 06) : régression et matrice de corrélation, recalculées sans les artefacts GPS.
 // Entrées : risque_data.js, risque_indice.js (irrégularité et pente des sorties, déjà sans artefact).
 // Sortie  : risque_sens.js — à relancer après outils/indice_danger.js :
 //   node outils/sensibilites.js
 //
 // analyse_risque.py estime la régression sur les 605 tronçons, artefact GPS de Kvalvika compris
-// (pente de −79 % sur 250 m), alors que la partie 03 en garde 604. On reproduit d'abord exactement
+// (pente de −79 % sur 250 m), alors que la partie 02 en garde 604. On reproduit d'abord exactement
 // ses résultats (contrôle), puis on refait le calcul sans l'artefact :
 //   ln(temps réel / Tobler) = a + b1·|pente|/10 + b2·sac + b3·cote + b4·rafales/10 + b5·(−VFC/10) + b6·[pente < −15 %]
 // moindres carrés ordinaires, intervalle de confiance à 95 % = β ± 1,96·se ; effet en % = e^β − 1.

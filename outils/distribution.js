@@ -1,4 +1,4 @@
-// Distribution des écarts d'allure (partie 03), sans les artefacts GPS.
+// Distribution des écarts d'allure (partie 02), sans les artefacts GPS.
 // Entrée : risque_data.js (tronçons de 250 m, écart e = ln(temps réel / temps de Tobler),
 // centré sur l'allure moyenne avec et sans sac).
 // Sortie : risque_dist.js — à relancer après chaque régénération de risque_data.js :

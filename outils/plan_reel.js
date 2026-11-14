@@ -1,4 +1,4 @@
-// Plan contre réel (partie 12).
+// Plan contre réel (partie 11).
 // Entrées : donnees/plan.gpx (itinéraire prévu, tracé sur Strava), data.js (trace réelle), risque_data.js.
 // Sortie  : risque_plan.js — à relancer si l'une des entrées change :
 //   node outils/plan_reel.js
@@ -153,7 +153,7 @@ const rSac = rMode('sac'), rTrail = rMode('trail'), eff = o => o.km + o.dplus / 
 const speed = { sac: eff(rSac) / rSac.h, trail: eff(rTrail) / rTrail.h };            // km-effort par heure, mesurés
 pSac.h = eff(pSac) / speed.sac; pTrail.h = eff(pTrail) / speed.trail;
 const hRaw = (pSac.gpx + pSac.dplus / 100) / speed.sac + (pTrail.gpx + MARGIN.km + pTrail.dplus / 100) / speed.trail;   // sans conversion de mesure
-// coût de portage : part du temps avec le sac due au sac lui-même (effet de la régression, partie 07)
+// coût de portage : part du temps avec le sac due au sac lui-même (effet de la régression, partie 06)
 require(path.join(root, 'risque_sens.js'));
 const sacPct = window.RISK_SENS.sens.find(x => x.name === 'sac sur le dos').pct / 100, carry = h => h * (1 - 1 / (1 + sacPct));
 const rnd = o => ({ km: r1(o.km), dplus: Math.round(o.dplus), h: r2(o.h), ...(o.gpx != null ? { gpx: r1(o.gpx) } : {}) });

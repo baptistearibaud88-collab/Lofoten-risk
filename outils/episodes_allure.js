@@ -1,4 +1,4 @@
-// Épisodes d'allure (partie 05) et topographie en massifs indépendants (partie 06).
+// Épisodes d'allure (partie 04) et topographie en massifs indépendants (partie 05).
 // Entrées : risque_data.js, data.js (temps réel point par point), risque_sections.js.
 // Sortie  : risque_episodes.js — à relancer après segmentation_terrain.js :
 //   node outils/episodes_allure.js

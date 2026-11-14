@@ -1,4 +1,4 @@
-// Simulation de risque (partie 11) : une vraie prévision, hors échantillon.
+// Simulation de risque (partie 10) : une vraie prévision, hors échantillon.
 // Entrées : risque_data.js (tronçons, sorties), risque_sections.js (cote du terrain par tronçon).
 // Sortie  : risque_mc.js — à relancer après outils/segmentation_terrain.js :
 //   node outils/monte_carlo.js

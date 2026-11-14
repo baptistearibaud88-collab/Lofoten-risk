@@ -1,4 +1,4 @@
-// Indice de danger (partie 10) : recalculé sans les artefacts GPS, puis réduit aux quatre facteurs
+// Indice de danger (partie 09) : recalculé sans les artefacts GPS, puis réduit aux quatre facteurs
 // connus avant de partir, à poids égaux (voir plus bas).
 // Entrée : risque_data.js (sorties, tronçons de 250 m, contributions terrain / météo / fatigue).
 // Sortie : risque_indice.js — à relancer après chaque régénération de risque_data.js :
