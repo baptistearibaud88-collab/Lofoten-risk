@@ -140,7 +140,7 @@
   $('ticker').innerHTML = [
     ['Tronçons', f0(D.n), ''], ['σ écart', f2(D.sd), ''], ['Kurtosis', fs2(D.kurt), 'up'],
     ['Au-delà de 3σ', `${D.n3}`, `${f1(D.exp3)} attendus`], ['ρ₁ autocorr.', f2(SX ? SX.acf1 : R.acf_r[0]), ''],
-    ['Pluie J7–J9', `${f1(lateRain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${fs0((worstN.hrv / HRV_USUAL - 1) * 100)} %`, ''],
+    ['Pluie · 9 jours', `${f1(W_.total_rain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${fs0((worstN.hrv / HRV_USUAL - 1) * 100)} %`, ''],
     ['σ prévision MC', hm(BS_.term_sd), `${fs0((BS_.term_sd / NS_.term_sd - 1) * 100)} %`],
   ].map(([k, v, e]) => `<div><span>${k}</span><b>${v}</b>${e && e !== 'up' ? `<em class="up">${e}</em>` : ''}</div>`).join('');
   $('scope').innerHTML = [['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
@@ -872,7 +872,7 @@
     const g = frame('c-strip', { t: 8, r: 8, b: 4, l: 8 });
     const S = [
       { k: 'Plus longue série sèche', o: M.dry, fmt: v => `${f0(v)} j`, tick: e => f0(e + .5), unit: 'j' },
-      { k: 'Plus gros épisode de 3 jours', o: M.max3, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
+      { k: 'Plus gros épisode de 3 jours', o: M.max3, hideV: true, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
     ];
     const rh = g.h / S.length;
     S.forEach((s, i) => {
@@ -880,7 +880,7 @@
       const xx = d3.scaleLinear().domain([E[0], E[E.length - 1]]).range([0, g.w]), top = 22, base = rh - 22;
       const yy = d3.scaleLinear().domain([0, d3.max(o.hist)]).range([base, top]);
       gg.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 13).text(s.k);
-      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.fmt(o.v)} · centile ${f0(o.pct)}`);
+      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.hideV ? '' : `${s.fmt(o.v)} · `}centile ${f0(o.pct)}`);
       const inBin = k => o.v >= E[k] && o.v < E[k + 1];
       gg.selectAll('.hb').data(o.hist).join('rect').attr('x', (n, k) => xx(E[k]) + .5).attr('width', (n, k) => Math.max(1, xx(E[k + 1]) - xx(E[k]) - 1)).attr('y', n => yy(n)).attr('height', n => base - yy(n))
         .attr('fill', (n, k) => inBin(k) ? C('--down') : C('--text-muted')).attr('fill-opacity', (n, k) => inBin(k) ? .9 : .5);
@@ -903,7 +903,7 @@
     });
     legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026'], ['dash', '', 'médiane']]);
     readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(M.ep.v)} mm en trois jours</b> au point de référence, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 11.`;
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>centile ${f0(M.max3.pct)}</b> pour ses trois jours de pluie, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 11.`;
   }
 
   /* ---------- 07 · weather vs benchmark ---------- */
@@ -934,7 +934,7 @@
       const bx = f.g.append('g').attr('transform', 'translate(6,4)');
       bx.append('text').attr('class', 'lbl').attr('y', 10).text(f.narrow ? `Cumul de 9 j · ${f0(MM.n)} fenêtres` : `Cumul de 9 jours · ${f0(MM.n)} fenêtres 1996–2025 · point centre`);
       bx.append('text').attr('class', 'lbl-strong').attr('y', 27).text(`médiane ${f1(MM.tot.med)} mm · moyenne ${f1(MM.tot.mean)} mm`);
-      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : ${f1(MM.tot.v)} mm · centile ${f0(MM.tot.pct)}`);
+      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : centile ${f0(MM.tot.pct)}`);
     }
     const ch = crossH(f);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h).on('pointermove', ev => {
@@ -1390,7 +1390,7 @@
       $('c-slide').innerHTML = panel(SP, 'Avec la marge du plan', `${SP.n} étapes · ${SP.slack} jour libre`, `Où que tombe la pluie : ${pr.waited} jour d’attente, puis ${pr.wet} étapes sous la pluie avec le sac.`)
         + panel(SR, 'Avec l’avance prise', `${SR.n} étapes · ${SR.slack} jours libres`, `Plus aucune étape mouillée. Mais avant le J7, les ${rr.waited} jours libres partent en attente.`);
       legend('l-slide', [['', C('--series-avec'), lab.E], ['', C('--text-muted'), lab.A], ['', C('--down'), lab.W], ['', C('--up'), lab.F]]);
-      readout('r-slide', `épisode réel : <b>${X.episode.length} jours</b>, ${f1(d3.sum(X.episode))} mm`);
+      readout('r-slide', `épisode réel : <b>${X.episode.length} jours</b> de pluie`);
       const pt = $('c-slide').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('option'));
     }
     // (b) the margin: share of the 1 200 weather worlds where rain costs nothing, by margin level
@@ -1464,7 +1464,7 @@
     const P = MG.scen.find(d => d.key === 'plan'), Rl = MG.scen.find(d => d.key === 'reel');
     $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 10), alors que la pluie a pris le modèle de court (partie 09). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
     $('cf-bilan').innerHTML = [
-      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(MM.tot.v)} mm en 9 jours : plus que ${f0(MM.tot.pct)} % des départs possibles (partie 07)`],
+      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(R.weather.total_rain)} mm en 9 jours : plus arrosé que ${f0(MM.tot.pct)} % des départs possibles (partie 07)`],
       ['Chance · pour moi', 'J7', 'la pluie arrive quand la traversée se termine'],
       ['Décision · l’avance', `${f0(P.free)} → ${f0(Rl.free)} %`, 'des mondes météo sans aucune étape mouillée'],
       ['Verdict', `${CD.quad.merite} sur ${CD.n}`, 'décisions au résultat mérité'],
