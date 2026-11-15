@@ -872,7 +872,7 @@
     const g = frame('c-strip', { t: 8, r: 8, b: 4, l: 8 });
     const S = [
       { k: 'Plus longue série sèche', o: M.dry, fmt: v => `${f0(v)} j`, tick: e => f0(e + .5), unit: 'j' },
-      { k: 'Plus gros épisode de 3 jours', o: M.max3, hideV: true, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
+      { k: 'Plus gros épisode de 3 jours', o: M.max3, lived: lateRain, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
     ];
     const rh = g.h / S.length;
     S.forEach((s, i) => {
@@ -880,7 +880,7 @@
       const xx = d3.scaleLinear().domain([E[0], E[E.length - 1]]).range([0, g.w]), top = 22, base = rh - 22;
       const yy = d3.scaleLinear().domain([0, d3.max(o.hist)]).range([base, top]);
       gg.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 13).text(s.k);
-      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.hideV ? '' : `${s.fmt(o.v)} · `}centile ${f0(o.pct)}`);
+      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.fmt(s.lived || o.v)} · centile ${f0(o.pct)}`);
       const inBin = k => o.v >= E[k] && o.v < E[k + 1];
       gg.selectAll('.hb').data(o.hist).join('rect').attr('x', (n, k) => xx(E[k]) + .5).attr('width', (n, k) => Math.max(1, xx(E[k + 1]) - xx(E[k]) - 1)).attr('y', n => yy(n)).attr('height', n => base - yy(n))
         .attr('fill', (n, k) => inBin(k) ? C('--down') : C('--text-muted')).attr('fill-opacity', (n, k) => inBin(k) ? .9 : .5);
@@ -903,7 +903,7 @@
     });
     legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026'], ['dash', '', 'médiane']]);
     readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>centile ${f0(M.max3.pct)}</b> pour ses trois jours de pluie, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 11.`;
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(lateRain)} mm en trois jours</b>, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 11.`;
   }
 
   /* ---------- 07 · weather vs benchmark ---------- */
@@ -934,7 +934,7 @@
       const bx = f.g.append('g').attr('transform', 'translate(6,4)');
       bx.append('text').attr('class', 'lbl').attr('y', 10).text(f.narrow ? `Cumul de 9 j · ${f0(MM.n)} fenêtres` : `Cumul de 9 jours · ${f0(MM.n)} fenêtres 1996–2025 · point centre`);
       bx.append('text').attr('class', 'lbl-strong').attr('y', 27).text(`médiane ${f1(MM.tot.med)} mm · moyenne ${f1(MM.tot.mean)} mm`);
-      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : centile ${f0(MM.tot.pct)}`);
+      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : ${f1(W_.total_rain)} mm · centile ${f0(MM.tot.pct)}`);
     }
     const ch = crossH(f);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h).on('pointermove', ev => {
