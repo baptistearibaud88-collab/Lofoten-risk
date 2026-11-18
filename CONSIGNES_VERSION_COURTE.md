@@ -1,14 +1,14 @@
-# Branche `version-courte` : raccourcir le rapport et le mettre en forme finale
+# Branche `version-courte-acte-2` : raccourcir le rapport et le mettre en forme finale (suite)
 
 Lis ce fichier en premier si tu reprends ce travail dans une nouvelle conversation.
 
 ## Règles
-- **On travaille uniquement sur la branche `version-courte`.** `main` est le site en ligne : on n'y touche pas avant la fusion finale.
+- **On travaille uniquement sur la branche `version-courte-acte-2`** (créée le 18/11 à partir de `version-courte`, que Baptiste fusionne lui-même dans `main` : introduction et acte 1 terminés, v0.4). `main` est le site en ligne : on n'y touche pas ; fusion seulement quand Baptiste le demande.
 - Le site ne se publie que depuis `main` : les changements de cette branche ne sont pas en ligne. Pour les montrer à Baptiste :
   - captures d'écran : `python3 outils/apercu/captures.py s1 s6` (une ou plusieurs parties, `--mobile` pour le téléphone) ou `python3 outils/apercu/captures.py tout`, puis envoyer les images de `apercu/` dans la conversation ;
-  - aperçu en ligne de la branche (Baptiste peut l'ouvrir lui-même sur son téléphone) : `https://raw.githack.com/baptistearibaud88-collab/Lofoten-risk/version-courte/risque.html` (mis à jour quelques minutes après chaque envoi).
+  - aperçu en ligne de la branche (Baptiste peut l'ouvrir lui-même sur son téléphone) : `https://raw.githack.com/baptistearibaud88-collab/Lofoten-risk/version-courte-acte-2/risque.html` (mis à jour quelques minutes après chaque envoi).
 - Compter les mots de chaque encadré : `python3 outils/apercu/textes.py`.
-- Après chaque modification validée : commit sur `version-courte`, puis `git push origin version-courte`. Monter les numéros de version `?v=` dans `risque.html` à chaque changement de `risque.js` ou `risque.css`.
+- Après chaque modification validée : commit sur `version-courte-acte-2`, puis `git push origin version-courte-acte-2`. Monter les numéros de version `?v=` dans `risque.html` à chaque changement de `risque.js` ou `risque.css`.
 - Fusion dans `main` seulement quand Baptiste le demande.
 
 ## Objectif (Baptiste, 14–18/11)
@@ -27,8 +27,9 @@ Lis ce fichier en premier si tu reprends ce travail dans une nouvelle conversati
 
 ## Avancement (18/11)
 - Le rapport compte maintenant **10 parties** : 02 « Écarts et temps perdu » réunit les anciennes 02, 03 (extrêmes, en bandeau dépliable) et 04 (épisodes lents). Les parties suivantes sont renumérotées (05 → 03 … 12 → 10).
-- 01 validée telle quelle (remise comme sur main). 02 faite et validée.
+- 01 validée telle quelle (remise comme sur main). 02 et 03 faites et validées ; introduction épurée (problématique + périmètre + sommaire). Acte 1 terminé.
 - Étalon de la partie 02 : on garde Tobler recalé sur l'allure moyenne avec et sans le sac (convention annoncée, testée dans le bouton « ? »). Ne pas rouvrir sans Baptiste.
-- Prochaines : 03 massifs, puis acte 3.
+- Partie 03 : risque spécifique (terrain, ± 67 min) et systématique (pluie, +13 % à terrain égal, +50 min), calculés dans `outils/episodes_allure.js` (`sys`). La Støvla (bouton des épisodes) utilise ce même +13 %.
+- Prochaines : acte 2 (04 sensibilités et fatigue, 05 météo, 06 indice de danger, avec l'alerte « Éboulement » à revoir), puis acte 3.
 
 Le détail de chaque partie et tous les chiffres sont dans les documents de projet `claude/version_courte.md` (avancement de cette branche, nouvelle numérotation) et `claude/analyse_risque.md` (référence, ancienne numérotation à 12 parties).
