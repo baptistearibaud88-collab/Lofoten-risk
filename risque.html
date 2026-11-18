@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261114-6">
+<link rel="stylesheet" href="risque.css?v=20261118-1">
 </head>
 <body>
 <div class="viz-root">
@@ -103,51 +103,29 @@
 
   <section id="s2">
     <header class="sh"><span class="num">02</span><h2>Un tronçon pris seul : des écarts ordinaires</h2></header>
-    <p class="lede">La partie 01 a classé le terrain. Ici, on mesure la surprise : sur chaque tronçon de 250 m, de combien le temps réel s’écarte-t-il du temps que la pente laissait prévoir ? Le temps attendu vient de la règle de Tobler, recalée sur mon allure moyenne avec et sans sac. L’écart <span class="mono">e = ln(temps réel / temps attendu)</span> vaut 0 quand je suis dans mon allure, +0,4 quand je suis environ 1,5 fois plus lent, −0,4 quand je suis 1,5 fois plus rapide. La question : ces écarts sont-ils ordinaires, ou les grosses surprises sont-elles fréquentes ?</p>
-    <div class="pc">
-      <div class="pc-head"><span class="pc-t">Les trois outils de cette partie</span></div>
-      <div class="tools">
-        <div class="tool">
-          <h5>1 · La règle de Tobler</h5>
-          <div class="chart" id="c-tobler" data-h="170"></div>
-          <p id="x-tobler"></p>
-        </div>
-        <div class="tool">
-          <h5>2 · La loi de Student</h5>
-          <div class="chart" id="c-student" data-h="170"></div>
-          <p id="x-student"></p>
-        </div>
-        <div class="tool">
-          <h5>3 · Le maximum de vraisemblance</h5>
-          <div class="ml-box" id="c-ml"></div>
-          <p id="x-ml"></p>
-        </div>
-      </div>
-    </div>
-    <div class="grid-2 g-dist mt">
+    <p class="lede" id="lede-dist">Pour mesurer la surprise, il faut un étalon. Le mien : la règle de Tobler, qui donne la vitesse de marche selon la pente, recalée sur mon allure moyenne avec et sans le sac. Sur chaque tronçon de 250 m, de combien je m’en écarte ?</p>
+    <div class="grid-2 g-dist">
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Histogramme des écarts · loi normale et loi de Student</span><span class="pc-r mono" id="r-hist"></span></div>
+        <div class="pc-head"><span class="pc-t">Histogramme des écarts · comparés à la loi normale</span><span class="pc-r mono" id="r-hist"></span></div>
         <div class="chart" id="c-hist" data-h="300"></div>
         <div class="pc-foot"><span class="legend-row" id="l-hist"></span></div>
       </div>
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">Diagramme quantile-quantile · un point par tronçon</span><span class="pc-r mono" id="r-qq"></span></div>
-        <div class="chart" id="c-qq" data-h="300"></div>
+      <div class="pc dist-key">
+        <div class="pc-head"><span class="pc-t">Ce que montre le graphique</span></div>
+        <div class="dk-body" id="dist-key"></div>
+        <div class="pc-foot dk-btns" id="dist-btns"></div>
       </div>
     </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Les indicateurs, expliqués</span><span class="pc-r mono" id="r-dstats"></span></div>
-      <div class="table-wrap flat"><table class="data dstats" id="dist-stats"></table></div>
-    </div>
-    <div class="notes">
-      <div><h4>Comment lire</h4><p id="n-dist-read"></p></div>
-      <div><h4>Méthode</h4><p id="n-dist-meth"></p></div>
+    <div class="notes two kr">
+      <div><h4>Comment lire</h4><p>Chaque barre compte les tronçons d’un même écart. À droite de 0, plus lent que prévu ; à gauche, plus rapide. En rouge, au-delà de 2σ. Les pointillés : une loi normale.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-dist"></p></div>
     </div>
   </section>
 
-  <section id="s3">
-    <header class="sh"><span class="num">03</span><h2>Les extrêmes, un par un</h2></header>
+  <section id="s3" class="fold-sec">
+    <details class="fold">
+      <summary class="act fold-bar"><span class="num">03</span><span class="act-t">Les extrêmes, un par un</span><span class="act-d" id="fold-d">Les rares passages hors norme, pour qui veut les voir.</span><span class="fold-i" aria-hidden="true"></span></summary>
+      <div class="fold-body">
     <p class="lede">La partie 02 l’a montré : presque tous les tronçons sont ordinaires. Voici les exceptions : les trois passages les plus lents et les trois plus rapides, à plus de 2σ de mon allure.</p>
     <div class="grid-2 g-tail">
       <div class="pc">
@@ -164,6 +142,8 @@
       <div><h4>Méthode</h4><p id="n-tail-meth"></p></div>
       <div class="key"><h4>À retenir</h4><p id="t-tail"></p></div>
     </div>
+      </div>
+    </details>
   </section>
 
   <section id="s4">
@@ -480,6 +460,6 @@
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261106-3"></script>
-<script src="risque.js?v=20261118-2"></script>
+<script src="risque.js?v=20261118-3"></script>
 </body>
 </html>

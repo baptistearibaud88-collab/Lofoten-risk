@@ -303,86 +303,77 @@
     });
     const ln = d3.line().x((d, i) => x(D.xs[i])).y(d => y(d)).curve(d3.curveBasis);
     f.g.append('path').attr('d', ln(D.pdf)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4');
-    f.g.append('path').attr('d', ln(D.pdf_t)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.4).attr('opacity', .8);
     hover(f.g.selectAll('.hh').data(bins).join('rect').attr('class', 'hit').attr('x', d => x(d.a)).attr('width', d => x(d.b) - x(d.a)).attr('y', 0).attr('height', f.h),
       d => { const mid = (d.a + d.b) / 2, i = d3.minIndex(D.xs, v => Math.abs(v - mid)); return `<b>e entre ${f2(d.a)} et ${f2(d.b)}</b>${row('temps réel / attendu', `×${f2(Math.exp(d.a))} à ×${f2(Math.exp(d.b))}`)}${row('tronçons observés', d.n)}${row('attendus si loi normale', f1(D.pdf[i]))}`; });
-    legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale'], ['ln', C('--warning'), 'loi de Student ajustée']]);
+    legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale']]);
     readout('r-hist', `${f0(D.n)} tronçons · σ <b>${f2(D.sd)}</b>`);
 
-    // indicators, each one explained on the walk itself, with a verdict
+    // ---------- the key numbers, the indicators (in a button), the « ? » buttons ----------
     const SS = R.series, okI = SS.map((q, i) => i).filter(i => Math.abs(SS[i].slope) <= 60);
     const base = Math.round(d3.median(okI, i => EP.seg_t[i] * Math.exp(-SS[i].e) / 60) * 2) / 2;   // typical expected time of a piece
     const mn = v => { const t = Math.round(v * 60); return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')}`; };
-    const cnt = f => okI.filter(i => f(SS[i].e)).length, l2 = Math.log(2);
-    const nSlow2 = cnt(v => v > l2), nFast2 = cnt(v => v < -l2);
-    const Phi_ = x => { const t = 1 / (1 + .3275911 * Math.abs(x) / Math.SQRT2), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-x * x / 2); return .5 * (1 + (x >= 0 ? y : -y)); };
-    const exp2 = D.n * (1 - Phi_((l2 - D.mu) / D.sd));
+    const lo1 = base * Math.exp(-D.sd), hi1 = base * Math.exp(D.sd);
     const ex3 = (D.extremes || []).map(e => ({ ...e, t: EP.seg_t[e.i] / 60, x: EP.seg_t[e.i] * Math.exp(-SS[e.i].e) / 60 }));
     const NM = { bunes_munkebu: 'le sentier fantôme', reinebringen_helvete: 'l’arête de Reinebringen', stuvla: 'la barre du Støvla', ryten: 'la descente du Ryten' };
     const ex3txt = [...ex3].sort((a, b) => b.z - a.z).map(e => e.act === 'stuvla' || e.act === 'ryten' ? `${NM[e.act] || actName(e.act)} (prévu ${mn(e.x)}, fait en ${mn(e.t)})` : (NM[e.act] || actName(e.act))).join(', ');
-    const t3 = D.tails.find(d => d.k === 3), allJB = R.dist;
+    const art = (D.artefacts || [])[0], w = D.edges[1] - D.edges[0];
     const V = { ok: ['c-ok', 'normal'], warn: ['c-sub', 'à surveiller'], info: ['c-av', 'repère'] };
     const rows = [
       ['Écart-type σ', 'La largeur de la cloche : de combien on s’écarte d’habitude.',
-        `<b>${f2(D.sd)}</b>. Sur un tronçon prévu en ${mn(base)}, deux fois sur trois je mets entre ${mn(base * Math.exp(-D.sd))} et ${mn(base * Math.exp(D.sd))}.`, 'info'],
-      ['Asymétrie', 'Les deux côtés sont-ils pareils ? Positive si les lents s’éloignent plus que les rapides.',
-        `<b>${fs2(D.skew)}</b>. ${nSlow2} tronçons deux fois plus lents que prévu, ${nFast2} deux fois plus rapides ; une loi normale en attend ${f0(exp2)} de chaque côté.`, Math.abs(D.skew) < .3 ? 'ok' : 'warn'],
-      ['Kurtosis', 'L’épaisseur des queues : les très gros écarts sont-ils fréquents ? 0 pour une loi normale.',
-        `<b>${fs2(D.kurt)}</b>. Seuls ${D.n3} tronçons sur ${f0(D.n)} sont trois fois plus lents ou plus rapides que prévu. Avec des queues épaisses, il y en aurait environ ${f0(t3.t4 * D.n)}.`, D.kurt < 1 ? 'ok' : 'warn'],
-      ['Test de Jarque-Bera', 'Réunit asymétrie et kurtosis en un score : plus il est grand, moins la loi normale est crédible. Au-delà de 6, on la rejette.',
-        `<b>${f1(D.jb)}</b>, un score qu’une vraie loi normale donne ${f0(D.jb_p * 100)} fois sur 100 par hasard : rien d’anormal. Avec l’erreur GPS de Kvalvika gardée, il montait à ${f0(allJB.n / 6 * (allJB.skew ** 2 + allJB.kurt ** 2 / 4))} : un seul tronçon faux faisait croire à des queues épaisses.`, D.jb_p > .05 ? 'ok' : 'warn'],
-      ['Au-delà de 2σ', 'Les écarts marqués.',
-        `<b>${D.n2} tronçons</b> au moins ${f1(Math.exp(2 * D.sd))} fois plus lents ou ${f1(Math.exp(2 * D.sd))} fois plus rapides ; une loi normale en attend ${f0(D.n * D.norm2)}. Ce sont surtout les passages techniques et les descentes courues (partie 03).`, 'ok'],
+        `<b>${f2(D.sd)}</b>. Sur un tronçon prévu en ${mn(base)}, deux fois sur trois je mets entre ${mn(lo1)} et ${mn(hi1)}.`, 'info'],
+      ['Test de Jarque-Bera', 'Regarde si la cloche penche d’un côté (asymétrie) et si ses bords sont trop épais (kurtosis). Plus le score est grand, moins la loi normale est crédible ; au-delà de 6, on la rejette.',
+        `<b>${f1(D.jb)}</b> (asymétrie ${fs2(D.skew)}, kurtosis ${fs2(D.kurt)}), un score qu’une vraie loi normale donne ${f0(D.jb_p * 100)} fois sur 100 par hasard : rien d’anormal.`, D.jb_p > .05 ? 'ok' : 'warn'],
       ['Au-delà de 3σ', 'Les vraies surprises.',
         `<b>${D.n3} tronçons</b> : ${ex3txt}. Une loi normale en attend ${f1(D.exp3)} : léger excès, qu’on obtiendrait par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
-      ['Loi de Student', 'Une cloche à queues réglables (outil 2). Peu de degrés de liberté, queues épaisses ; beaucoup, loi normale.',
-        `<b>${f0(D.t_df)} degrés</b> une fois ajustée sur mes tronçons : presque la normale. À 4 degrés, on aurait eu environ ${f0(t3.t4 * D.n)} tronçons au-delà de 3σ ; j’en ai ${D.n3}.`, D.t_df > 20 ? 'ok' : 'warn'],
       ['Avec ou sans sac', 'La largeur σ, mesurée séparément avec et sans le sac.',
         `Sur un tronçon prévu en ${mn(base)} : avec le sac, entre ${mn(base * Math.exp(-D.sd_avec))} et ${mn(base * Math.exp(D.sd_avec))} ; en trail, entre ${mn(base * Math.exp(-D.sd_sans))} et ${mn(base * Math.exp(D.sd_sans))}. Sans le sac, on pousse, on court, on s’arrête.`, 'info'],
     ];
-    $('dist-stats').innerHTML = `<thead><tr><th>Indicateur</th><th>Ce que ça mesure</th><th>Sur ma traversée</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, m, t, k]) => `<tr><td><b>${a}</b></td><td class="muted">${m}</td><td>${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody>`;
-    readout('r-dstats', D.jb_p > .05 ? 'normalité <b>non rejetée</b>' : 'normalité <b>rejetée</b>');
+    DEFS.indicateurs = { t: 'Les indicateurs, un par un', wide: true, html: () => `
+      <div class="table-wrap flat"><table class="data dstats"><thead><tr><th>Indicateur</th><th>Ce que ça mesure</th><th>Sur ma traversée</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, m, t, k]) => `<tr><td><b>${a}</b></td><td class="muted">${m}</td><td>${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody></table></div>
+      <p class="muted">${f0(D.n)} tronçons de 250 m.${art ? ` Un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée.` : ''}</p>` };
 
-    const q = frame('c-qq', { t: 14, r: 46, b: 32, l: 8 });
-    const ext = d3.extent(D.qq.flat()), lim = [Math.floor(ext[0] - .2), Math.ceil(ext[1] + .2)];
-    const xq = d3.scaleLinear().domain(lim).range([0, q.w]), yq = d3.scaleLinear().domain(lim).range([q.h, 0]);
-    yGrid(q.g, yq, q.w, 6, F('+d'));
-    xAxis(q.g, xq, q.h, 8, F('+d'));
-    axTitle(q.g, 'position attendue si loi normale (en σ)', 0, q.h + 28);
-    [[lim[0], -3], [3, lim[1]]].forEach(([a, b]) => q.g.append('rect').attr('x', xq(a)).attr('width', xq(b) - xq(a)).attr('y', 0).attr('height', q.h).attr('fill', C('--down')).attr('opacity', .06));
-    q.g.append('line').attr('x1', xq(lim[0])).attr('y1', yq(lim[0])).attr('x2', xq(lim[1])).attr('y2', yq(lim[1])).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2).attr('stroke-dasharray', '5 4');
-    q.g.selectAll('.qd').data(D.qq).join('circle').attr('cx', d => xq(d[0])).attr('cy', d => yq(d[1])).attr('r', 2.6)
-      .attr('fill', d => Math.abs(d[1]) > 3 ? C('--down') : C('--accent')).attr('fill-opacity', d => Math.abs(d[1]) > 3 ? 1 : .7);
-    // name the extremes
-    const LBL = { bunes_munkebu: 'le sentier fantôme vers Munkebu', reinebringen_helvete: 'l’arête de Reinebringen', stuvla: 'la barre du Støvla', ryten: 'la descente du Ryten' };
-    const nm = e => LBL[e.act] || actName(e.act);
-    const ex = (D.extremes || []).map(e => ({ ...e, q: D.qq.find(p => Math.abs(p[1] - e.z) < .002) })).filter(e => e.q);
-    // labels stacked so they never overlap: slow ones down the left of their point, fast ones to the right
-    const hiEx = ex.filter(e => e.z > 0).sort((a, b) => b.z - a.z), loEx = ex.filter(e => e.z < 0);
-    hiEx.forEach((e, k) => { const ty = yq(e.q[1]) + k * 15 + 4, tx = xq(e.q[0]) - 34;
-      q.g.append('line').attr('x1', tx + 3).attr('y1', ty - 4).attr('x2', xq(e.q[0]) - 3).attr('y2', yq(e.q[1])).attr('stroke', C('--text-muted')).attr('stroke-width', .8);
-      q.g.append('text').attr('class', 'lbl-strong').attr('x', tx).attr('y', ty).attr('text-anchor', 'end').text(`${nm(e)} · ${dayLbl(e.day)}`); });
-    loEx.forEach(e => q.g.append('text').attr('class', 'lbl-strong').attr('x', xq(e.q[0]) + 8).attr('y', yq(e.q[1]) + 4).text(`${nm(e)} · ${dayLbl(e.day)}`));
-    q.g.append('text').attr('class', 'ax-title').attr('x', 4).attr('y', 10).text('écart observé (en σ)');
-    hover(q.g.selectAll('.qh').data(D.qq).join('circle').attr('class', 'hit').attr('cx', d => xq(d[0])).attr('cy', d => yq(d[1])).attr('r', 8),
-      d => `<b>écart observé ${fs2(d[1])} σ</b>${row('attendu si loi normale', `${fs2(d[0])} σ`)}`);
-    readout('r-qq', `${D.n3} tronçons au-delà de 3σ`);
-
-    const art = (D.artefacts || [])[0];
-    $('n-dist-read').textContent = 'Si les écarts sont ordinaires, les barres suivent la courbe en pointillés et les points restent sur la diagonale. Seuls les points tout au bout s’en écartent ici.';
-    $('n-dist-meth').textContent = `${f0(D.n)} tronçons de 250 m.${art ? ` Un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée.` : ''} Loi normale ajustée par la moyenne et l’écart-type, loi de Student par maximum de vraisemblance.`;
-    const slow = ex.filter(e => e.z > 0).map(nm), fast = ex.filter(e => e.z < 0).map(nm);
-    $('t-dist').innerHTML = `Pris un par un, les tronçons sont <b>ordinaires</b> : la loi normale les décrit bien (Jarque-Bera p = ${f2(D.jb_p)}). Seuls <b>${D.n3}</b> s’en échappent : ${slow.join(', ')} en lent, ${fast.join(', ')} en rapide.<br><br>Le danger ne vient donc pas d’un pas isolé. La partie 03 regarde ces quelques extrêmes, puis la suite montre où le risque se construit vraiment : dans l’enchaînement.`;
+    $('dist-key').innerHTML = `
+      <p><span class="dk-v">${mn(lo1)} – ${mn(hi1)}</span>Deux fois sur trois, pour un tronçon prévu en ${mn(base)}. Chaque pas est imprévisible.</p>
+      <p><span class="dk-v">${D.n3} sur ${f0(D.n)}</span>tronçons au-delà de 3σ ; une loi normale en attend ${f1(D.exp3)}. Les grosses surprises sont rares.</p>
+      <p>La cloche suit les barres : la loi normale décrit bien mes écarts.</p>`;
+    $('dist-btns').innerHTML = defBtn('indicateurs', 'Les indicateurs') + defBtn('student', 'Loi de Student') + defBtn('vraisemblance', 'Maximum de vraisemblance');
+    $('t-dist').innerHTML = `<b>2 fois sur 3</b> entre ${mn(lo1)} et ${mn(hi1)} ; <b>${D.n3}</b> vraies surprises sur <b>${f0(D.n)}</b>.<br><br>Pris un par un, mes pas sont imprévisibles mais ordinaires : le danger ne vient pas d’un pas isolé. Les rares exceptions se déplient juste en dessous (03) ; le vrai danger, des pas ordinaires qui s’enchaînent, c’est la partie 04.`;
 
     /* boutons « ? » de la partie 02 : d'où viennent les outils et les graphiques, façon cours */
     {
-      const mm = D.mode_mu || R.dist.mode_mu, q0 = D.qq[0], qN = D.qq[D.qq.length - 1], w = D.edges[1] - D.edges[0];
+      const mm = D.mode_mu || R.dist.mode_mu;
+      const tob = sl => 6 * Math.exp(-3.5 * Math.abs(sl / 100 + .05));
+      const eUp = d3.mean(SS.filter(q => q.slope > 15 && q.slope <= 60), q => q.e), eDn = d3.mean(SS.filter(q => q.slope <= -5 && q.slope >= -15), q => q.e);
+      const st = SS[539], stT = EP.seg_t[539] / 60, stX = stT * Math.exp(-st.e);
+      // small chart of the rule, drawn as a static SVG for the pop-up
+      const tobSvg = () => {
+        const W = 400, H = 170, m = { t: 8, r: 46, b: 24, l: 20 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+        const x = d3.scaleLinear().domain([-40, 40]).range([0, iw]), y = d3.scaleLinear().domain([0, 7]).range([ih, 0]);
+        const xs = d3.range(-40, 40.5, .5), ln = k => d3.line().x(v => x(v)).y(v => y(tob(v) * k))(xs);
+        const pts = [];
+        [1, 0].forEach(sac => d3.range(-35, 36, 5).forEach(c => {
+          const v = SS.map((q, i) => [q, i]).filter(([q]) => q.sac === sac && Math.abs(q.slope) <= 60 && q.slope >= c - 2.5 && q.slope < c + 2.5)
+            .map(([q, i]) => (q.km - (i ? SS[i - 1].km : 0)) / (EP.seg_t[i] / 3600)).filter(v => isFinite(v) && v > 0);
+          if (v.length >= 5) pts.push({ sac, c, v: d3.median(v) });
+        }));
+        const grid = [0, 2, 4, 6].map(v => `<line x1="0" x2="${iw}" y1="${y(v)}" y2="${y(v)}" stroke="${C('--grid')}"/><text x="${iw + 6}" y="${y(v) + 4}" class="lbl">${v} km/h</text>`).join('');
+        const xt = [-40, -20, 0, 20, 40].map(v => `<text x="${x(v)}" y="${ih + 16}" text-anchor="middle" class="lbl">${v > 0 ? '+' : ''}${v} %</text>`).join('');
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;margin:4px 0 6px"><g transform="translate(${m.l},${m.t})">${grid}${xt}
+          <path d="${ln(1)}" fill="none" stroke="${C('--text-primary')}" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <path d="${ln(Math.exp(-mm.avec))}" fill="none" stroke="${C('--series-avec')}" stroke-width="1.8"/>
+          <path d="${ln(Math.exp(-mm.sans))}" fill="none" stroke="${C('--series-sans')}" stroke-width="1.8" opacity=".8"/>
+          ${pts.map(d => `<circle cx="${x(d.c)}" cy="${y(Math.min(7, d.v))}" r="3" fill="${d.sac ? C('--series-avec') : C('--series-sans')}" stroke="${C('--bg')}"/>`).join('')}</g></svg>
+          <p class="muted">Pointillés : Tobler. Traits : Tobler recalé, avec le sac (bleu) et sans (orange). Points : ma vitesse réelle, médiane par classe de pente.</p>`;
+      };
       DEFS.tobler = { t: 'D’où vient la règle de Tobler', html: () => `
         <p>En 1950, le cartographe suisse <b>Eduard Imhof</b> publie des tables de vitesse de marche mesurées sur les sentiers de montagne, selon la pente. En 1993, le géographe <b>Waldo Tobler</b> cherche une formule simple qui passe par ces mesures. Il retient une exponentielle de la pente :</p>
         <p class="def-f">v = 6 · e<sup>−3,5 · |s + 0,05|</sup> km/h, où s est la pente (0,10 pour +10 %)</p>
-        <p>Trois choix de construction : le <b>6</b> est la vitesse maximale ; le <b>+0,05</b> place ce maximum en légère descente (−5 %), parce qu’on y marche plus vite que sur le plat ; le <b>3,5</b> règle la vitesse à laquelle on ralentit quand la pente s’éloigne de −5 %, dans un sens comme dans l’autre. La valeur absolue rend la courbe symétrique autour de −5 %.</p>
-        <p class="def-ex">Sur le plat : 6 · e<sup>−3,5 × 0,05</sup> = <b>5,0 km/h</b>. À +20 % : 6 · e<sup>−3,5 × 0,25</sup> = <b>2,5 km/h</b>. Le temps attendu d’un tronçon de 250 m est sa longueur divisée par cette vitesse.</p>
-        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge. Je multiplie donc sa vitesse par un facteur unique, avec le sac et sans le sac, choisi pour que l’écart moyen e soit nul dans chaque groupe : avec le sac, ce facteur vaut e<sup>−${f2(mm.avec)}</sup> = ${f2(Math.exp(-mm.avec))}.</p>` };
+        <p>Le <b>6</b> est la vitesse maximale ; le <b>+0,05</b> place ce maximum en légère descente (−5 %) ; le <b>3,5</b> règle la vitesse à laquelle on ralentit quand la pente s’éloigne de −5 %, dans un sens comme dans l’autre. Sur le plat : <b>5,0 km/h</b> ; à +20 % : <b>2,5 km/h</b>.</p>
+        ${tobSvg()}
+        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge, mesuré par d’autres, il y a 70 ans : c’est la seule pièce de l’analyse qui ne vient pas de mon trek. Je ne prends dans mes données que deux nombres, mon allure moyenne avec et sans le sac : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac, à peu près sa vitesse sans.</p>
+        <p class="def-ex"><b>Exemple.</b> Sur la barre du Støvla (${st.slope > 0 ? '+' : ''}${f0(st.slope)} %), le temps attendu était ${mn(stX)} ; j’ai mis ${mn(stT)}, soit un écart e = ${fs2(st.e)} : <b>×${f1(Math.exp(st.e))}</b> le temps attendu. e = 0 : dans mon allure ; +0,4 : environ 1,5 fois plus lent.</p>
+        <p><b>Ma façon de marcher.</b> Par rapport à Tobler, je vais ${f0((1 - Math.exp(eUp)) * 100)} % plus vite dans les montées de plus de 15 %, et ${f0((Math.exp(eDn) - 1) * 100)} % plus lentement dans les descentes douces, où Tobler suppose qu’on court. Ces écarts restent des surprises : je ne les connaissais pas avant de partir.</p>
+        <p class="muted"><b>Test de solidité.</b> Pas de sortie témoin : l’étalon est une convention. J’en ai essayé cinq autres (allure calée sur le plat, sur le plat facile, une voix par sortie, médiane, jour mesuré mis de côté). Les extrêmes restent les mêmes passages, et 3 à 6 tronçons dépassent 3σ quand la loi normale en attend 1,6. Seul le verdict « loi normale acceptée ou non » change selon l’étalon : il est à la limite.</p>` };
       DEFS.student = { t: 'D’où vient la loi de Student', html: () => `
         <p>En 1908, <b>William Gosset</b>, chimiste à la brasserie Guinness à Dublin, contrôle la qualité de l’orge sur de <b>petits échantillons</b>. Il remarque que si l’on estime la moyenne et l’écart-type sur peu de mesures, les écarts extrêmes sortent plus souvent que la loi normale ne le prévoit. Guinness interdisant de publier sous son nom, il signe <b>« Student »</b>.</p>
         <p><b>La construction.</b> On prend une variable normale Z et on la divise par une estimation bruitée de son écart-type, construite à partir de ν autres variables normales (une loi du χ² à ν degrés de liberté) :</p>
@@ -403,66 +394,11 @@
         <p><b>1. Les classes.</b> On découpe l’axe des écarts e en intervalles de même largeur, ici ${f1(w)} (de ${f1(D.edges[0])} à ${f1(D.edges[D.edges.length - 1])}).</p>
         <p><b>2. Le comptage.</b> On range chacun des ${f0(D.n)} tronçons dans sa classe ; la hauteur de chaque barre est le nombre de tronçons de la classe.</p>
         <p><b>3. La courbe de comparaison.</b> On calcule la moyenne (${F('+.3f')(D.mu)}) et l’écart-type (${f2(D.sd)}) des écarts, et on trace la loi normale qui a ces deux valeurs. Pour la mettre à la même échelle que les barres, on multiplie sa densité par le nombre de tronçons et par la largeur d’une classe : ${f0(D.n)} × ${f1(w)}. La courbe donne alors le nombre de tronçons qu’une loi normale mettrait dans chaque classe.</p>
-        <p class="def-ex">La courbe orange est la loi de Student, réglée par maximum de vraisemblance et mise à l’échelle de la même façon. Les barres rouges sont les classes au-delà de ±2σ, soit ±${f2(2 * D.sd)} en e.</p>` };
-      DEFS.qq = { t: 'Comment on construit le diagramme quantile-quantile', html: () => `
-        <p>Méthode décrite par <b>Wilk et Gnanadesikan</b> en 1968. L’idée : comparer mes tronçons à une loi normale rang par rang, au lieu de les regrouper en classes comme l’histogramme.</p>
-        <p><b>1. Centrer et réduire.</b> Chaque écart devient z = (e − moyenne) / écart-type : il est compté en σ.</p>
-        <p><b>2. Trier.</b> On range les ${f0(D.n)} valeurs de z de la plus petite à la plus grande. La i<sup>e</sup> a une fraction (i − 0,5) / ${f0(D.n)} des tronçons en dessous d’elle.</p>
-        <p><b>3. Chercher la valeur attendue.</b> Pour cette même fraction, on lit dans la table de la loi normale la valeur qu’elle donnerait : c’est le quantile théorique, Φ<sup>−1</sup>((i − 0,5) / ${f0(D.n)}).</p>
-        <p><b>4. Placer le point.</b> Abscisse : la valeur attendue ; ordonnée : la valeur observée. Si mes tronçons suivaient exactement la loi normale, chaque point tomberait sur la diagonale.</p>
-        <p class="def-ex"><b>Exemple.</b> Le tronçon le plus rapide est le 1<sup>er</sup> sur ${f0(D.n)} : fraction 0,5 / ${f0(D.n)} = ${F('.4f')(0.5 / D.n)}. La loi normale attend à ce rang <b>${fs2(q0[0])} σ</b> ; j’ai mesuré <b>${fs2(q0[1])} σ</b>. Le point est sous la diagonale : ce tronçon est plus extrême que prévu. Au milieu, le 302<sup>e</sup> tombe à la fraction 0,5, où la normale attend 0 : le point est sur la diagonale. Le plus lent : attendu ${fs2(qN[0])} σ, observé ${fs2(qN[1])} σ.</p>
-        <p class="muted">Lecture : des points qui s’écartent seulement aux deux bouts, et vers l’extérieur, signalent quelques extrêmes de trop ; une courbe en S sur toute la longueur signalerait des queues épaisses.</p>` };
+        <p class="def-ex">Les barres rouges sont les classes au-delà de ±2σ, soit ±${f2(2 * D.sd)} en e. ${f0(D.n)} tronçons de 250 m${art ? ` ; un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée` : ''}.</p>` };
       const add = (el, k) => el && !el.querySelector('.def-btn') && el.insertAdjacentHTML('beforeend', defBtn(k));
-      const h5 = document.querySelectorAll('#s3 .tool h5');
-      add(h5[0], 'tobler'); add(h5[1], 'student'); add(h5[2], 'vraisemblance');
+      add($('lede-dist'), 'tobler');
       add($('c-hist').closest('.pc').querySelector('.pc-t'), 'hist');
-      add($('c-qq').closest('.pc').querySelector('.pc-t'), 'qq');
     }
-  }
-
-  /* ---------- 02 · the three tools: Tobler, Student, maximum likelihood ---------- */
-  function drawTools() {
-    const S = R.series, mm = D.mode_mu || R.dist.mode_mu, tob = sl => 6 * Math.exp(-3.5 * Math.abs(sl / 100 + .05));
-    {
-      const f = frame('c-tobler', { t: 8, r: 40, b: 26, l: 6 });
-      const x = d3.scaleLinear().domain([-40, 40]).range([0, f.w]), y = d3.scaleLinear().domain([0, 7]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 3, v => `${v} km/h`);
-      xAxis(f.g, x, f.h, 4, v => `${v > 0 ? '+' : ''}${v} %`);
-      const xs = d3.range(-40, 40.5, .5), ln = k => d3.line().x(v => x(v)).y(v => y(tob(v) * k))(xs);
-      f.g.append('path').attr('d', ln(1)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3');
-      f.g.append('path').attr('d', ln(Math.exp(-mm.avec))).attr('fill', 'none').attr('stroke', C('--series-avec')).attr('stroke-width', 1.8);
-      f.g.append('path').attr('d', ln(Math.exp(-mm.sans))).attr('fill', 'none').attr('stroke', C('--series-sans')).attr('stroke-width', 1.8).attr('opacity', .8);
-      // my real speed: median per 5 % slope class
-      const pts = [];
-      [1, 0].forEach(sac => d3.range(-35, 36, 5).forEach(c => {
-        const v = S.map((s, i) => [s, i]).filter(([s]) => s.sac === sac && Math.abs(s.slope) <= 60 && s.slope >= c - 2.5 && s.slope < c + 2.5)
-          .map(([s, i]) => (s.km - (i ? S[i - 1].km : 0)) / (EP.seg_t[i] / 3600)).filter(v => isFinite(v) && v > 0);
-        if (v.length >= 5) pts.push({ sac, c, v: d3.median(v), n: v.length });
-      }));
-      hover(f.g.selectAll(null).data(pts).join('circle').attr('cx', d => x(d.c)).attr('cy', d => y(Math.min(7, d.v))).attr('r', 3)
-        .attr('fill', d => d.sac ? C('--series-avec') : C('--series-sans')).attr('stroke', C('--bg')),
-        d => `<b>pente ${d.c > 0 ? '+' : ''}${d.c} % · ${d.sac ? 'avec sac' : 'trail'}</b>${row('ma vitesse (médiane)', `${f1(d.v)} km/h`)}${row('Tobler', `${f1(tob(d.c))} km/h`)}${row('tronçons', d.n)}`);
-    }
-    {
-      const T = D.tails, f = frame('c-student', { t: 8, r: 40, b: 26, l: 6 });
-      const x = d3.scaleLinear().domain([1, 3.5]).range([0, f.w]), y = d3.scaleLog().domain([.0004, .4]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 3, v => `${F('.2~f')(v * 100)} %`);
-      f.g.select('.axis').selectAll('.tick').filter(v => ![.001, .01, .1].some(k => Math.abs(v - k) < 1e-9)).remove();
-      f.g.select('.gridl').selectAll('.tick').filter(v => ![.001, .01, .1].some(k => Math.abs(v - k) < 1e-9)).remove();
-      xAxis(f.g, x, f.h, 5, v => `${v}σ`);
-      const ln = k => d3.line().x(d => x(d.k)).y(d => y(Math.max(.0004, d[k]))).curve(d3.curveMonotoneX)(T);
-      f.g.append('path').attr('d', ln('t4')).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
-      f.g.append('path').attr('d', ln('normal')).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.4);
-      hover(f.g.selectAll(null).data(T.filter(d => d.obs > 0)).join('circle').attr('cx', d => x(d.k)).attr('cy', d => y(d.obs)).attr('r', 3.6).attr('fill', C('--accent')).attr('stroke', C('--bg')),
-        d => `<b>écarts au-delà de ${f1(d.k)}σ</b>${row('mes tronçons', `${f2(d.obs * 100)} %`)}${row('loi normale', `${f2(d.normal * 100)} %`)}${row('Student, 4 ddl', `${f2(d.t4 * 100)} %`)}`);
-    }
-    const t3 = D.tails.find(d => d.k === 3), eUp = d3.mean(R.series.filter(s => s.slope > 15 && s.slope <= 60), s => s.e), eDn = d3.mean(R.series.filter(s => s.slope <= -5 && s.slope >= -15), s => s.e);
-    const st = R.series[539], stT = EP.seg_t[539] / 60, stX = stT * Math.exp(-st.e), mn2 = v => { const t = Math.round(v * 60); return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')}`; };
-    $('x-tobler').innerHTML = `<b>Sert à :</b> fixer le temps attendu de chaque tronçon. Exemple : sur la barre du Støvla (${st.slope > 0 ? '+' : ''}${f0(st.slope)} %), le temps attendu était ${mn2(stX)} ; j’ai mis ${mn2(stT)}, soit e = ${fs2(st.e)}, ×${f1(Math.exp(st.e))}.<br>Waldo Tobler a résumé en 1993 la vitesse de marche selon la pente (pointillés) : <b>v = 6 · e<sup>−3,5 · |pente + 0,05|</sup> km/h</b>. Maximum en légère descente (6 km/h à −5 %), 5 km/h sur le plat, 2,5 km/h à +20 %. Recalée sur mon allure : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac (bleu), à peu près sa vitesse en trail (orange). Les points sont ma vitesse réelle : ${f0((1 - Math.exp(eUp)) * 100)} % plus rapide que prévu dans les montées de plus de 15 %, ${f0((Math.exp(eDn) - 1) * 100)} % plus lente dans les descentes douces, où Tobler suppose qu’on court. Tobler ne connaît ni le terrain ni mon entraînement : c’est ce qui reste dans l’écart e.`;
-    $('x-student').innerHTML = `<b>Sert à :</b> vérifier si les grosses surprises sont plus fréquentes que la loi normale ne le dit, ce qui obligerait à prévoir plus de marge.<br>Une cloche comme la loi normale, avec un réglage en plus : les <b>degrés de liberté</b>. Peu de degrés, et les queues s’épaississent : avec 4 (pointillés), un écart au-delà de 3σ arrive <b>${f0(t3.t4 / t3.normal)} fois</b> plus souvent qu’avec la loi normale (trait plein). Beaucoup, et elle redevient la normale. Les points sont mes tronçons : ils suivent la loi normale. Ajustée sur eux, la Student prend <b>${f0(D.t_df)} degrés</b>, presque une normale.`;
-    $('c-ml').innerHTML = [['Loi normale', '2 réglages', 'centre, largeur'], ['Loi de Student', '3 réglages', '+ degrés de liberté'], ['Gain de la Student', `+${f1(D.ll_gain)}`, 'log-vraisemblance'], ['Bilan (critère d’Akaike)', Math.abs(D.d_aic) < 2 ? 'égalité' : D.d_aic < 0 ? 'Student' : 'normale', 'la plus simple l’emporte']]
-      .map(([a, b, c], i) => `<div class="ml-row${i === 3 ? ' hl' : ''}"><span>${a} <span class="muted">· ${c}</span></span><b>${b}</b></div>`).join('');
-    $('x-ml').innerHTML = `<b>Sert à :</b> régler la loi de Student sur mes tronçons, puis départager la Student et la normale.<br>Pour régler une loi, on essaie toutes les valeurs de ses réglages et on garde celles qui rendent les ${f0(D.n)} écarts observés <b>les plus probables</b> : c’est le maximum de vraisemblance. Pour départager deux lois, on compare cette probabilité en pénalisant chaque réglage en plus. Ici la Student ne gagne presque rien : <b>la loi normale suffit</b>.`;
   }
 
   /* ---------- 03 · tail table ---------- */
@@ -537,7 +473,6 @@
     });
     g2.g.append('line').attr('x1', 0).attr('x2', g2.w).attr('y1', y2(thr)).attr('y2', y2(thr)).attr('stroke', C('--down')).attr('stroke-dasharray', '4 3');
     axTag(g2.g, g2.w + 2, y2(thr), `P90 ${f2(thr)}`).select('rect').attr('fill', C('--down'));
-    R.alerts.forEach(a => { const t = warnTri(g2.g, x2(a.km), 8, .8); t.on('pointermove', ev => showTip(ev, `<b>${a.titre}</b>${row('km', f1(a.km))}${row('σ₂ₖₘ', a.sd == null ? '–' : f2(a.sd))}`)).on('pointerleave', hideTip); });
     const above = S2.filter(s => s.sd > thr).length;
     const def = `${slow.length} épisodes lents · <b>${f0(d3.sum(slow, d => d.lost_min))} min</b> perdues sur ${f0(d3.sum(slow, d => d.len))} km`;
     readout('r-roll', def);
@@ -551,7 +486,7 @@
     const leave = () => { c1.hide(); c2.hide(); hideTip(); readout('r-roll', def); };
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h).on('pointermove', ev => move(ev, x)).on('pointerleave', leave);
     g2.g.append('rect').attr('class', 'hit').attr('y', 16).attr('width', g2.w).attr('height', g2.h - 16).on('pointermove', ev => move(ev, x2)).on('pointerleave', leave);
-    legend('l-roll', [['ln', C('--text-muted'), 'tronçon'], ['ln', C('--accent'), 'moyenne glissante 2 km'], ['', C('--down'), 'épisode lent / irrégularité > P90'], ['', C('--up'), 'épisode rapide'], ['', C('--warning'), 'alerte']]);
+    legend('l-roll', [['ln', C('--text-muted'), 'tronçon'], ['ln', C('--accent'), 'moyenne glissante 2 km'], ['', C('--down'), 'épisode lent / irrégularité > P90'], ['', C('--up'), 'épisode rapide']]);
 
     // table of the costly slow episodes (>= 10 min), with their causes
     const RS = window.RESSENTIS_EPISODES || {};
@@ -1494,7 +1429,7 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawTools, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, () => drawMc(false), drawPlanCharts, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, () => drawMc(false), drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;

@@ -447,3 +447,24 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .toc-act { flex: 0 0 100%; font: 700 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-top: 6px; }
 .toc-act:first-child { margin-top: 0; }
 @media print { .act { break-before: page; } }
+
+/* partie 02 : carte « Ce que montre le graphique » */
+.dist-key { display: flex; flex-direction: column; }
+.dist-key .dk-body { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+.dist-key .dk-body p { margin: 0; }
+.dist-key .dk-v { display: block; font: 650 22px var(--mono); color: var(--text-primary); margin-bottom: 2px; }
+.dist-key .dk-btns { gap: 8px; }
+
+/* partie 03 : bloc dépliable, même allure que les bandeaux d'acte */
+.fold-sec { margin: 0; }
+.fold > summary { list-style: none; cursor: pointer; align-items: center; margin: 22px 0; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold-bar .num { font: 700 12px var(--mono); padding: 2px 6px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair)); color: var(--accent); }
+.fold-bar .act-t { font-size: 18px; }
+.fold-i { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); position: relative; flex: 0 0 auto; }
+.fold-i::before, .fold-i::after { content: ''; position: absolute; left: 7px; right: 7px; top: 12px; height: 2px; background: var(--bg); transition: transform .2s; }
+.fold-i::after { transform: rotate(90deg); }
+.fold[open] .fold-i::after { transform: rotate(0); }
+.fold > summary:hover { border-color: var(--accent); }
+.fold[open] > summary { margin-bottom: 14px; }
+@media print { .fold-sec .act { break-before: auto; } }
