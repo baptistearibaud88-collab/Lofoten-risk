@@ -486,3 +486,4 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 @media (max-width: 900px) { .problem { font-size: 18px; padding: 16px 18px; } }
 .risk-def { margin: 4px 0 16px; }
 .risk-def > div p { margin: 0; font-size: 14px; line-height: 1.5; }
+.facts-wide dd { flex: 0 0 92px; }

@@ -600,7 +600,14 @@
       <div class="table-wrap flat"><table class="data"><tbody>${SY.tried.map(t => `<tr><td>${t.l}</td><td class="n mono">p = ${f2(t.p)}</td></tr>`).join('')}</tbody></table></div>
       <p class="muted">La température ressort le plus, mais elle va avec la pluie : sur 9 jours, froid et pluie arrivent ensemble, on ne peut pas les séparer. Disons « la météo ». La VFC ressort aussi, mais sur six facteurs essayés, l’un ressort souvent par hasard, et la partie 04 ne trouve pas d’effet de la fatigue sur les tronçons : une piste, pas un résultat. Avec ${SY.n_wet} massifs sous la pluie, l’effet est un ordre de grandeur ; la simulation (partie 07) le mesure sur tous les tronçons et trouve un effet du même ordre.</p>
       <p class="muted">Repères : si les tronçons étaient indépendants, on aurait ± ${f0(T.agg.seg)} min ; si tous les massifs l’étaient, pluie comprise, ± ${f0(AG.indep)} min. Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Chaque massif pèse les minutes réellement perdues ou gagnées.</p>` };
-    $('t-acf').innerHTML = `<b>± ${f0(AG.spec)} min</b> au lieu de ± ${f0(AG.block)} : l’indépendance des massifs est un bénéfice. Chaque retour à la mer efface une partie du risque propre au massif, le pierrier, le sentier invisible, la barre rocheuse. Mais elle a une limite : la pluie touche tous les massifs à la fois, et ses <b>${fs0(AG.sys)} min</b> restent entières (± ${f0(AG.total)} au total). Et le relief est raide : <b>${f0(steepG * 100)} %</b> du D+ au-dessus de 20 %.<br><br>Décider massif par massif, et garder la marge pour la météo.`;
+    $('facts-3').innerHTML = [
+      [`± ${f0(AG.block)} min`, 'un seul bloc sans sortie : les deux risques s’additionnent'],
+      [`± ${f0(AG.spec)} min`, 'massifs indépendants : le risque spécifique se dilue'],
+      [`${fs0(AG.sys)} min`, `la pluie, commune aux ${SY.n_wet} derniers massifs (${fs0(rainPct)} % à terrain égal)`],
+      [`± ${f0(AG.total)} min`, 'le total, pluie comprise'],
+      [`${f0(steepG * 100)} %`, 'du D+ au-dessus de 20 % de pente'],
+    ].map(([v, t]) => `<div><dd><b>${v}</b></dd><dt>${t}</dt></div>`).join('');
+    $('t-acf').innerHTML = `L’indépendance des massifs est un bénéfice : chaque retour à la mer efface une partie du risque propre au massif, le pierrier, le sentier invisible, la barre rocheuse. Mais elle a une limite : la pluie touche tous les massifs à la fois, et rien ne la dilue. Et le relief est raide : le risque se joue sur de courts passages.<br><br>Décider massif par massif, et garder la marge pour la météo.`;
   }
 
 
