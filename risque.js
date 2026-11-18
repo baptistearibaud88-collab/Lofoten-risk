@@ -215,7 +215,7 @@
         [`${f0(upMean * 10)} m`, `de D+ en moyenne par kilomètre de montée`],
         [`${f0(top1.slope)} %`, `sur les 250 m les plus raides (${nameOf(top1.act).name.split(' / ')[0]}, ${dayLbl(top1.day)})`],
       ].map(([v, k]) => `<div><dd><b>${v}</b></dd><dt>${k}</dt></div>`).join(''); }
-    $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (${f0(big.dplus)} m). <b>J8</b> : le campement n’a pas bougé, d’où la bougie plate.<br><br>Ce relief n’est pas qu’un décor : avec ou sans le sac, en traversée ou en sommet, chaque sortie expose à un risque différent. Première étape : qualifier le terrain.`;
+    $('t-candles').innerHTML = `<b>${f0(sansShare * 100)} %</b> du D+ monté sans le sac. <b>${dayLbl(big.day)}</b>, la journée la plus chargée (<b>${f0(big.dplus)} m</b>).<br><br>Ce relief n’est pas qu’un décor : avec ou sans le sac, chaque sortie expose à un risque différent. Reste à qualifier le terrain.`;
   }
 
   /* ---------- 01 · terrain grading ---------- */
@@ -279,7 +279,7 @@
     { const pt = $('c-terrain').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('cotation')); }
     const BG = window.RISK_BOUGIES, sansShare = d3.sum(BG.filter(d => !d.sac), d => d.dplus) / d3.sum(BG, d => d.dplus);
     $('t-terrain').innerHTML = `<b>${f0(share(3) * 100)} %</b> de la distance en terrain exigeant ou expert. Chaque niveau de cote ajoute <b>${fs0(sens['terrain (+1 niveau)'].pct)} %</b> au temps de passage.`;
-    $('t-terrain-b').innerHTML = `Cette cotation est déjà une analyse de risque en soi : elle combine des facteurs mesurables (pente, D+, longueur, exposition) et l’évaluation de guides qui connaissent le terrain. La traversée est maintenant découpée et cotée : on peut mesurer la prise de risque, tronçon par tronçon.`;
+    $('t-terrain-b').innerHTML = `La cote est déjà une analyse de risque : pente, dénivelé, exposition et avis des guides. Le terrain est découpé et coté : on peut mesurer, tronçon par tronçon.`;
   }
 
   /* ---------- 02 · distribution ---------- */
