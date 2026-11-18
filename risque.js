@@ -789,7 +789,7 @@
       return { up: v(15, 25), dn: v(-25, -15) };
     };
     const vT = spd(0), vS = spd(1);
-    $('t-sens').innerHTML = `<b>Surprise : en pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h entre 15 et 25 %), l’inverse de Tobler. Passé un certain seuil, ce n’est plus la pente qui commande, mais le terrain : dans les Lofoten, peu de larges sentiers, surtout des pierriers, de la roche et parfois de l’escalade. En montée, mains et bâtons aident ; en descente, chaque appui se cherche (${fs0(desc.pct)} %). Le sac reste le premier frein (<b>${fs0(sacS.pct)} %</b>). La fatigue, elle, ne se voit pas dans l’allure : elle agit ailleurs, comme le montre la suite.`;
+    $('t-sens').innerHTML = `<b>En pente raide, sans le sac, je monte plus vite que je ne descends</b> (${f1(vT.up.v)} contre ${f1(vT.dn.v)} km/h), l’inverse de Tobler. La raison, c’est le terrain : dans les Lofoten, surtout des pierriers et des passages techniques avec de l’escalade. En montée, les bâtons aident ; en descente, la prudence est nécessaire (${fs0(desc.pct)} %). Le sac reste le premier facteur (<b>${fs0(sacS.pct)} %</b>). Nous allons voir la fatigue juste après.`;
   }
 
   /* ---------- 06 · physical reserve (underwater curve) ---------- */
