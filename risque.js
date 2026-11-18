@@ -137,20 +137,8 @@
   const lateRain = d3.sum(W_.days.filter(d => d.day >= 7), d => d.rain);
   const worstN = R.nights.reduce((a, b) => b.hrv < a.hrv ? b : a), HRV_USUAL = 45;
   const totKm = d3.sum(R.rows, r => r.km), totDp = d3.sum(R.rows, r => r.dplus);
-  $('ticker').innerHTML = [
-    ['Tronçons', f0(D.n), ''], ['σ écart', f2(D.sd), ''], ['Kurtosis', fs2(D.kurt), 'up'],
-    ['Au-delà de 3σ', `${D.n3}`, `${f1(D.exp3)} attendus`], ['ρ₁ autocorr.', f2(SX ? SX.acf1 : R.acf_r[0]), ''],
-    ['Pluie · 9 jours', `${f1(W_.total_rain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${fs0((worstN.hrv / HRV_USUAL - 1) * 100)} %`, ''],
-    ['σ prévision MC', hm(BS_.term_sd), `${fs0((BS_.term_sd / NS_.term_sd - 1) * 100)} %`],
-  ].map(([k, v, e]) => `<div><span>${k}</span><b>${v}</b>${e && e !== 'up' ? `<em class="up">${e}</em>` : ''}</div>`).join('');
-  $('scope').innerHTML = [['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
+  $('scope').innerHTML = [['Période', '14–22 juin 2026'], ['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-  $('kpis').innerHTML = [
-    ['Enchaînement', `×${f1(EP.topo.agg.massif / EP.topo.agg.seg)}`, 'd’incertitude sur le temps total : les écarts s’additionnent dans un massif', `± ${f0(EP.topo.agg.massif)} min contre ± ${f0(EP.topo.agg.seg)} min tronçon par tronçon`],
-    ['Effet du sac', `${fs0(sacS.pct)} %`, 'de temps par tronçon, à pente et terrain égaux', `IC 95 % : ${fs0(sacS.lo)} à ${fs0(sacS.hi)} %`],
-    ['Effet du terrain', `${fs0(sens['terrain (+1 niveau)'].pct)} %`, 'de temps par niveau de difficulté du sentier', `descente raide : ${fs0(sens['descente raide (> 15 %)'].pct)} % · IC 95 % : ${fs0(sens['terrain (+1 niveau)'].lo)} à ${fs0(sens['terrain (+1 niveau)'].hi)} %`],
-    ['Monte Carlo', `+${hm(mcLate)}`, 'de retard sur la prévision faite au soir du J2 : hors du modèle normal, dans le modèle par blocs', `centile ${cL(NS_.real_pct)} contre ${cL(BS_.real_pct)}`],
-  ].map(([l, b, s, sm]) => `<div class="kpi"><span class="kl">${l}</span><b>${b}</b><span class="kd">${s}</span><small>${sm}</small></div>`).join('');
   if ($('n-seg')) $('n-seg').textContent = D.n;
 
   /* ---------- 01 · OHLC candles + D+ ---------- */
@@ -548,7 +536,6 @@
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeDef(); });
   addEventListener('scroll', () => { if (!pop.classList.contains('sheet')) closeDef(); }, { passive: true });
 
-  let divMode = 'sys';   // diversification chart: 'block' | 'spec' | 'sys'
   function drawAcf() {
     const T = EP.topo, M = T.massifs, SY = EP.sys, AG = SY.agg, sig = t => Math.abs(t.r) > t.crit;
     const med = k => d3.median(M, m => m[k]), steepD = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.dist), steepG = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.gain);
@@ -570,90 +557,37 @@
       readout(rid, rd);
     });
 
-    // 2. risk sheet, short
+    // 2. full risk sheet
+    const T2 = T.agg, wi = M.indexOf(worst), topI = T.intens[T.intens.length - 1], flatI = T.intens[0];
+    const steepT = d3.sum(T.intens.filter((c, k) => T.slope[k].lo >= 20), c => c.time);
     const rows = [
-      ['Levier', `> 20 % de pente : ${f0(steepD * 100)} % de la distance, ${f0(steepG * 100)} % du D+`, 'Le risque se concentre sur de courts passages très raides, où une erreur se paie cher.'],
-      ['Engagement', `montée → descente d’un même massif : allure r = ${f2(T.pace_same.r)}`, 'Une fois engagé, les écarts s’additionnent jusqu’en bas : on ne se rattrape pas dans le massif.'],
-      ['Indépendance', `terrain d’un massif au suivant : r = ${f2(T.grad_next.r)} (${sig(T.grad_next) ? 'significatif' : 'non significatif'})`, 'Un sommet difficile n’en annonce pas un autre.'],
-      ['Risque spécifique', `± ${f0(AG.spec)} min sur les ${M.length} massifs`, 'Le terrain propre à chaque massif : les retours à la mer le diversifient.'],
-      [`Risque systématique${defBtn('sysspec')}`, `pluie : ${fs0(rainPct)} % à terrain égal · ${SY.n_wet} massifs · ${fs0(AG.sys)} min`, 'Commune à tous les massifs du moment : aucun retour à la mer ne la diversifie.'],
-      ['Option de sortie', `retour à la mer ${f0(med('t_exit'))} min médianes après le sommet · ${M.length} points de décision`, 'Perte bornée, comme un stop-loss ; on peut renoncer au pied de chaque massif sans compromettre la suite.'],
+      ['Corrélation du terrain d’un massif au suivant', `raideur r = ${f2(T.grad_next.r)} · ${sig(T.grad_next) ? 'significatif' : 'non significatif'} (seuil ${f2(T.grad_next.crit)}, ${T.grad_next.n} paires)`,
+        'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs écarts se compensent d’un massif à l’autre.'],
+      ['Corrélation à l’intérieur d’un massif', `montée → descente : raideur r = ${f2(T.grad_same.r)} · allure r = ${f2(T.pace_same.r)}`,
+        'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Compter les écarts massif par massif, pas tronçon par tronçon : l’incertitude est ${f1(T2.massif / T2.seg)} fois plus grande.`],
+      [`Risque systématique${defBtn('sysspec')}`, `pluie : ${fs0(rainPct)} % à terrain égal · ${SY.n_wet} massifs · ${fs0(AG.sys)} min`,
+        'La pluie pèse sur tous les massifs du moment, quel que soit leur terrain : elle ne s’efface pas.', 'Ajouter un facteur météo commun : ses minutes s’ajoutent bout à bout, massif après massif.'],
+      ['Risque spécifique', `± ${f0(AG.spec)} min sur les ${M.length} massifs · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
+        'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les retours à la mer effacent : il passe de ± ${f0(AG.block)} à ± ${f0(AG.spec)} min.`],
+      ['Option de sortie', `retour à la mer en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
+        `Chaque massif se termine au niveau de la mer : la perte est bornée. Pire massif : ${fs0(worst.lost)} min (${mName(worst)}).`, 'Un massif raté ne se propage pas au reste de la traversée.'],
+      ['Durée d’engagement', `${f0(med('t_tot'))} min médianes par massif, dont ${f0(med('t_engage'))} min de montée à partir de 15 %`,
+        `Des engagements courts : la décision d’y aller ou de renoncer se reprend au pied de chacun des ${M.length} massifs.`, 'Renoncer garde de la valeur, parce qu’on peut le faire sans compromettre la suite.'],
+      ['Intensité', `> 20 % : ${f0(steepD * 100)} % de la distance, ${f0(steepT * 100)} % du temps, ${f0(steepG * 100)} % du D+ · ${f0(topI.vr)} m/h et ${topI.hr} bpm au-dessus de 30 %, contre ${f0(flatI.vr)} m/h et ${flatI.hr} bpm sur le plat`,
+        'Le risque n’est pas réparti : il se concentre sur de courts passages très raides, où l’effort est maximal et où une erreur se paie cher.', 'La pente moyenne ne suffit pas : compter la part du massif au-dessus de 20 % et l’effet propre des descentes raides (partie 04).'],
     ];
-    $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th></tr></thead><tbody>${rows.map(r => `<tr><td${/def-btn/.test(r[0]) ? ' class="def-mid"' : ''}><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody>`;
+    $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th><th>Conséquence pour le modèle</th></tr></thead><tbody>${rows.map(r => `<tr><td${/def-btn/.test(r[0]) ? ' class="def-mid"' : ''}><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join('')}</tbody>`;
     readout('r-sheet', `${M.length} massifs · ${M.length - 1} retours à la mer`);
 
-    // 3. the 15 trades: specific part (red / green) + rain part (blue), rainy days shaded
-    {
-      const f = frame('c-trades', { t: 14, r: 58, b: 58, l: 46 });
-      const x = d3.scaleBand().domain(M.map((m, k) => k)).range([0, f.w]).padding(.28);
-      const lo = Math.min(0, d3.min(M, (m, k) => Math.min(SY.spec_min[k], m.lost))), hi = d3.max(M, (m, k) => Math.max(SY.spec_min[k] + SY.sys_min[k], m.lost, SY.sys_min[k]));
-      const y = d3.scaleLinear().domain([lo * 1.15, hi * 1.12]).nice().range([f.h, 0]);
-      const wetK = M.map((m, k) => k).filter(k => SY.wet[k]);
-      if (wetK.length) { const xa = x(wetK[0]) - x.step() * x.paddingInner() / 2, xb = x(wetK[wetK.length - 1]) + x.bandwidth() + x.step() * x.paddingInner() / 2;
-        f.g.append('rect').attr('x', xa).attr('width', xb - xa).attr('y', 0).attr('height', f.h).attr('fill', C('--series-avec')).attr('opacity', .08);
-        f.g.append('text').attr('class', 'lbl tagt').attr('x', xa + 6).attr('y', 11).text('pluie'); }
-      yGrid(f.g, y, f.w, 4, v => `${v > 0 ? '+' : ''}${v} min`);
-      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C('--text-muted'));
-      M.forEach((m, k) => {
-        const sp = SY.spec_min[k], sy = SY.sys_min[k], bx = x(k), bw = x.bandwidth();
-        f.g.append('rect').attr('x', bx).attr('width', bw).attr('y', y(Math.max(0, sp))).attr('height', Math.abs(y(sp) - y(0))).attr('fill', sp > 0 ? C('--down') : C('--up')).attr('opacity', .85).attr('rx', 2);
-        if (sy > 0) { const base = Math.max(0, sp); f.g.append('rect').attr('x', bx).attr('width', bw).attr('y', y(base + sy)).attr('height', y(base) - y(base + sy)).attr('fill', C('--series-avec')).attr('opacity', .9).attr('rx', 2); }
-        const nm = `${dayLbl(m.day)} ${mName(m).replace(/^.*→\s*/, '').replace(/\s*\(.*?\)/g, '')}`, lbl = f.narrow ? `J${m.day}` : nm;
-        f.g.append('text').attr('class', 'lbl').attr('transform', `translate(${bx + bw / 2},${f.h + 10}) rotate(${f.narrow ? 0 : -35})`).attr('text-anchor', f.narrow ? 'middle' : 'end').text(lbl.length > 16 ? lbl.slice(0, 15) + '…' : lbl);
-      });
-      hover(f.g.selectAll(null).data(M).join('rect').attr('class', 'hit').attr('x', (m, k) => x(k) - x.step() * .14).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-        (m, k) => `<b>${mName(m)} · ${dayLbl(m.day)}</b>${row('écart sur le massif', `${fs0(m.lost)} min`)}${SY.wet[k] ? `${row('dont pluie (systématique)', `${fs0(SY.sys_min[k])} min`)}${row('dont terrain (spécifique)', `${fs0(SY.spec_min[k])} min`)}` : row('spécifique', `${fs0(m.lost)} min`)}`);
-      legend('l-trades', [['', C('--down'), 'temps perdu (spécifique)'], ['', C('--up'), 'temps gagné (spécifique)'], ['', C('--series-avec'), 'part due à la pluie (systématique)']]);
-      readout('r-trades', `pire trade : <b>${mName(worst)} ${fs0(worst.lost)} min</b>`);
-    }
-
-    // 4. how risks add up: end to end (one block), as squares (independent), squares + rain (Pythagoras)
-    {
-      const MODES = [['block', 'Un seul bloc', AG.block], ['spec', 'Massifs indépendants', AG.spec], ['sys', 'Avec la pluie', AG.total]];
-      $('div-btns').innerHTML = MODES.map(([k, l, v]) => `<button type="button" data-m="${k}" aria-pressed="${k === divMode}">${l}<b>± ${f0(v)} min</b></button>`).join('');
-      $('div-btns').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; divMode = b.dataset.m; drawAcf(); };
-      const f = frame('c-acf2', { t: 14, r: 14, b: 14, l: 14 });
-      const spec = SY.spec_min, sysT = AG.sys, sT = AG.spec, tot = AG.total;
-      const sorted = M.map((m, k) => ({ m, k, v: Math.abs(spec[k]) })).sort((a, b) => b.v - a.v);
-      // one scale for the three views, so the lengths compare
-      const kpx = Math.min((f.w - 30) / (AG.block * 1.02), (f.h - 40) / (sT + 6));
-      const g = f.g.append('g');
-      const colOf = d => spec[d.k] > 0 ? C('--down') : C('--up');
-      if (divMode === 'block') {
-        let cx = 0; const yb = f.h / 2 - 12;
-        M.forEach((m, k) => { const w = Math.abs(m.lost) * kpx;
-          g.append('rect').attr('x', cx).attr('y', yb).attr('width', Math.max(1, w - 1)).attr('height', 24).attr('fill', m.lost > 0 ? C('--down') : C('--up')).attr('opacity', .85);
-          if (w > 34) g.append('text').attr('class', 'lbl').attr('x', cx + w / 2).attr('y', yb + 40).attr('text-anchor', 'middle').text(f.narrow ? '' : `${f0(Math.abs(m.lost))}`);
-          cx += w; });
-        g.append('line').attr('x1', 0).attr('x2', cx).attr('y1', yb - 12).attr('y2', yb - 12).attr('stroke', C('--text-primary'));
-        g.append('text').attr('class', 'lbl-strong').attr('x', cx).attr('y', yb - 18).attr('text-anchor', 'end').text(`± ${f0(AG.block)} min`);
-        $('div-cap').innerHTML = `<b>Un seul bloc sans sortie</b> (cas alpin, fictif) : toute la traversée comme une arête sans retour en bas. Les écarts des ${M.length} massifs se mettent bout à bout, sans jamais se compenser : <b>± ${f0(AG.block)} min</b>.`;
-      } else {
-        // small squares on the left (side = specific minutes), the resulting big square on the right
-        const big = sT * kpx, x0 = f.w - big - sysT * kpx - (f.narrow ? 30 : 70), y0 = f.h - big - (f.narrow ? 22 : 6);
-        let cx = 0, cy = f.h - 6, rowH = 0; const maxW = Math.max(60, x0 - 40);
-        sorted.forEach(d => { const s = Math.max(2, d.v * kpx); if (cx + s > maxW) { cx = 0; cy -= rowH + 6; rowH = 0; }
-          g.append('rect').attr('x', cx).attr('y', cy - s).attr('width', s).attr('height', s).attr('fill', colOf(d)).attr('opacity', .8);
-          cx += s + 6; rowH = Math.max(rowH, s); });
-        g.append('text').attr('class', 'lbl').attr('x', 0).attr('y', 12).text(f.narrow ? 'un carré par massif' : `${M.length} carrés, un par massif : côté = minutes propres au massif`);
-        g.append('text').attr('class', 'lbl-strong').attr('x', x0 - 24).attr('y', y0 + big / 2 + 7).attr('text-anchor', 'middle').style('font-size', '22px').text('→');
-        g.append('rect').attr('x', x0).attr('y', y0).attr('width', big).attr('height', big).attr('fill', C('--down')).attr('opacity', .14).attr('stroke', C('--down'));
-        g.append('text').attr('class', 'lbl-strong').attr('x', x0 + big / 2).attr('y', f.narrow ? y0 - 8 : y0 + big / 2).attr('text-anchor', 'middle').text(`spécifique ± ${f0(sT)}${f.narrow ? '' : ' min'}`);
-        if (divMode === 'sys') {
-          const s = sysT * kpx, xr = x0 + big, yr = y0 + big;
-          g.append('rect').attr('x', xr).attr('y', yr - 10).attr('width', s).attr('height', 10).attr('fill', C('--series-avec')).attr('opacity', .9);
-          g.append('text').attr('class', 'lbl-strong').attr('x', xr + s / 2).attr('y', f.narrow ? yr + 16 : yr - 16).attr('text-anchor', 'middle').text(`pluie ${fs0(sysT)}`);
-          g.append('path').attr('d', `M${xr},${y0}L${xr + s},${yr}L${xr},${yr}Z`).attr('fill', C('--text-primary')).attr('opacity', .05);
-          g.append('line').attr('x1', xr).attr('y1', y0).attr('x2', xr + s).attr('y2', yr).attr('stroke', C('--text-primary')).attr('stroke-width', 2.4);
-          const ang = Math.atan2(big, s) * 180 / Math.PI;
-          g.append('text').attr('class', 'lbl-strong').attr('transform', `translate(${xr + s / 2 + 10},${y0 + big / 2}) rotate(${ang})`).attr('text-anchor', 'middle').text(`total ± ${f0(tot)} min`);
-          $('div-cap').innerHTML = `<b>Avec la pluie</b> : le spécifique se diversifie, la pluie non. Elle a frappé les ${SY.n_wet} massifs des derniers jours en même temps (${fs0(rainPct)} % à terrain égal), et ses minutes s’ajoutent bout à bout : ${fs0(sysT)} min. Les deux se combinent comme les côtés d’un triangle rectangle : √(${f0(sT)}² + ${f0(sysT)}²) = <b>± ${f0(tot)} min</b>.`;
-        } else {
-          $('div-cap').innerHTML = `<b>Massifs indépendants</b> : chaque retour à la mer remet le compteur à zéro. Les écarts ne s’additionnent plus bout à bout mais en surface : le grand carré a la surface de tous les petits réunis. Résultat : <b>± ${f0(sT)} min</b>, ${f1(AG.block / sT)} fois moins qu’un seul bloc.`;
-        }
-      }
-      readout('r-acf2', `bloc <b>± ${f0(AG.block)}</b> · indépendants <b>± ${f0(sT)}</b> · avec la pluie <b>± ${f0(tot)}</b>`);
-    }
+    // 3. diversification, in words: one block, independent massifs, with the rain
+    $('ex-intro').innerHTML = `<b>Indépendants, les écarts des massifs s’additionnent en racine de la somme des carrés et se compensent en partie ; liés, ils s’additionnent bout à bout.</b>`;
+    $('ex-cols').innerHTML = [
+      [C('--down'), 'Alpin, fictif', 'Un seul bloc sans sortie', AG.block, `Toute la traversée comme une seule arête, sans jamais redescendre : les écarts des ${M.length} massifs s’additionnent bout à bout, aucun ne compense l’autre.`],
+      [C('--accent'), 'Lofoten, mesuré', 'Massifs indépendants', AG.spec, 'Chaque retour à la mer remet le compteur à zéro : un massif difficile est compensé par un autre facile. Il ne reste que le risque propre à chacun.'],
+      [C('--series-avec'), 'Lofoten, avec la météo', 'Plus la pluie', AG.total, `La pluie a touché les ${SY.n_wet} derniers massifs en même temps : ses ${fs0(AG.sys)} min s’ajoutent bout à bout, sans compensation. √(${f0(AG.spec)}² + ${f0(AG.sys)}²) = ± ${f0(AG.total)}.`],
+    ].map(([c, s_, t, v, p]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">± ${f0(v)} min</b><p>${p}</p></div>`).join('');
+    $('ex-msg').innerHTML = `<b>La mer efface le risque propre à chaque massif, pas celui de la météo.</b> Sans retour à la mer, l’incertitude serait ${f1(AG.block / AG.total)} fois plus grande ; sans la pluie, elle serait de ± ${f0(AG.spec)} min au lieu de ± ${f0(AG.total)}.`;
+    readout('r-acf2', `bloc <b>± ${f0(AG.block)}</b> · indépendants <b>± ${f0(AG.spec)}</b> · avec la pluie <b>± ${f0(AG.total)}</b>`);
 
     // the « ? » button: systematic and specific risk, how the rain effect is measured
     DEFS.sysspec = { t: 'Risque spécifique et risque systématique', html: () => `
@@ -666,7 +600,7 @@
       <div class="table-wrap flat"><table class="data"><tbody>${SY.tried.map(t => `<tr><td>${t.l}</td><td class="n mono">p = ${f2(t.p)}</td></tr>`).join('')}</tbody></table></div>
       <p class="muted">La température ressort le plus, mais elle va avec la pluie : sur 9 jours, froid et pluie arrivent ensemble, on ne peut pas les séparer. Disons « la météo ». La VFC ressort aussi, mais sur six facteurs essayés, l’un ressort souvent par hasard, et la partie 04 ne trouve pas d’effet de la fatigue sur les tronçons : une piste, pas un résultat. Avec ${SY.n_wet} massifs sous la pluie, l’effet est un ordre de grandeur ; la simulation (partie 07) le mesure sur tous les tronçons et trouve un effet du même ordre.</p>
       <p class="muted">Repères : si les tronçons étaient indépendants, on aurait ± ${f0(T.agg.seg)} min ; si tous les massifs l’étaient, pluie comprise, ± ${f0(AG.indep)} min. Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Chaque massif pèse les minutes réellement perdues ou gagnées.</p>` };
-    $('t-acf').innerHTML = `<b>± ${f0(AG.spec)} min</b> de risque spécifique au lieu de ± ${f0(AG.block)} : la mer le diversifie. La pluie frappe tous les massifs à la fois : <b>${fs0(AG.sys)} min</b> qui ne se diversifient pas. Chaque trade est à fort levier : <b>${f0(steepG * 100)} %</b> du D+ au-dessus de 20 %.<br><br>Décider massif par massif, garder la marge pour la météo.`;
+    $('t-acf').innerHTML = `<b>± ${f0(AG.spec)} min</b> au lieu de ± ${f0(AG.block)} : chaque retour à la mer efface le risque propre au massif. La pluie touche tous les massifs à la fois : <b>${fs0(AG.sys)} min</b> qui restent. Et le relief est raide : <b>${f0(steepG * 100)} %</b> du D+ au-dessus de 20 %.<br><br>Décider massif par massif, garder la marge pour la météo.`;
   }
 
 

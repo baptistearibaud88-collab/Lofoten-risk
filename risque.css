@@ -476,3 +476,13 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .seg-btns button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .seg-btns button[aria-pressed="true"] b { color: var(--bg); }
 .div-cap { margin: 0; padding: 4px 16px 14px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 980px; }
+
+/* introduction : problématique et périmètre seuls, sans bandeaux de chiffres */
+.hero-grid { margin-top: 8px; margin-bottom: 4px; align-items: stretch; }
+.problem { display: flex; flex-direction: column; justify-content: center; padding: 22px 26px; font-size: 22px; line-height: 1.45; font-weight: 500; color: var(--text-primary); }
+.problem > span { margin-bottom: 12px; }
+.scope { padding: 16px 18px; }
+.scope dl { gap: 6px 14px; }
+@media (max-width: 900px) { .problem { font-size: 18px; padding: 16px 18px; } }
+.risk-def { margin: 4px 0 16px; }
+.risk-def > div p { margin: 0; font-size: 14px; line-height: 1.5; }

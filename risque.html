@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261118-3">
+<link rel="stylesheet" href="risque.css?v=20261118-4">
 </head>
 <body>
 <div class="viz-root">
@@ -26,7 +26,7 @@
     <div>
       <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.3 · 10/11/2026</span><span>Période : 14–22 juin 2026</span></div>
       <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
-      <p class="sub">Allure, terrain, météo et récupération sur 9 jours : distribution des écarts, dispersion glissante, sensibilités, simulation Monte Carlo et part de chance.</p>
+      <p class="sub">Allure, terrain, météo et récupération sur 9 jours, en trois actes : mesurer, expliquer, piloter.</p>
     </div>
     <a class="map-card" href="index.html" aria-label="Revenir à la carte 3D">
       <span class="mc-k">Carte 3D</span>
@@ -34,7 +34,6 @@
       <span class="mc-foot"><span class="mc-go">‹ Revenir à la carte</span><span class="mc-meta">159 km · 9 jours</span></span>
     </a>
   </div>
-  <div class="ticker" id="ticker" aria-label="Indicateurs clés"></div>
   <div class="hero-grid">
     <div class="problem"><span>Problématique</span>Seul, en autonomie, sous le soleil de minuit : où le risque s’est-il réellement concentré pendant la traversée, et le plan l’avait-il anticipé ?</div>
     <div class="scope">
@@ -42,7 +41,6 @@
       <dl id="scope"></dl>
     </div>
   </div>
-  <div class="kpis" id="kpis"></div>
 </header>
 
 <main>
@@ -156,7 +154,11 @@
 
   <section id="s3">
     <header class="sh"><span class="num">03</span><h2>Des sommets indépendants, une météo commune</h2></header>
-    <p class="lede">Chaque massif monte de la mer et y redescend : la traversée est un portefeuille de 15 trades courts, chacun avec sa sortie. Leur risque se coupe en deux : le spécifique (le terrain de chaque massif) et le systématique (la météo, commune à tous).</p>
+    <p class="lede">Chaque massif monte de la mer et y redescend : entre deux sommets, on repasse au bord d’un fjord, d’une route ou d’un village. La traversée est une suite de 15 ascensions courtes et indépendantes, chacune avec sa sortie.</p>
+    <div class="notes two risk-def">
+      <div><h4>Risque spécifique</h4><p>Propre à un massif : un pierrier, un sentier invisible, une barre rocheuse. Il ne dit rien du massif suivant.</p></div>
+      <div><h4>Risque systématique</h4><p>Commun à tous les massifs du moment : la météo. Aucun retour à la mer ne l’efface.</p></div>
+    </div>
     <div class="grid-2">
       <div class="pc"><div class="pc-head"><span class="pc-t">Distance par classe de pente</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="190"></div></div>
       <div class="pc"><div class="pc-head"><span class="pc-t">Dénivelé positif par classe de pente</span><span class="pc-r mono" id="r-acf1b"></span></div><div class="chart" id="c-acf1b" data-h="190"></div></div>
@@ -165,19 +167,16 @@
       <div class="pc-head"><span class="pc-t">Fiche de risque · structure des massifs</span><span class="pc-r mono" id="r-sheet"></span></div>
       <div class="table-wrap flat"><table class="data risk-sheet" id="risk-sheet"></table></div>
     </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Les 15 trades · minutes perdues ou gagnées par massif</span><span class="pc-r mono" id="r-trades"></span></div>
-      <div class="chart" id="c-trades" data-h="260"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-trades"></span></div>
-    </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Comment les risques s’additionnent</span><span class="pc-r mono" id="r-acf2"></span></div>
-      <div class="seg-btns" id="div-btns" role="group" aria-label="Façon d’additionner les risques"></div>
-      <div class="chart" id="c-acf2" data-h="330"></div>
-      <p class="div-cap" id="div-cap"></p>
+    <div class="pc mt explain">
+      <div class="pc-head"><span class="pc-t">La diversification · ce que les retours à la mer changent</span><span class="pc-r mono" id="r-acf2"></span></div>
+      <div class="ex-body">
+        <p class="ex-intro" id="ex-intro"></p>
+        <div class="ex-cols" id="ex-cols"></div>
+        <p class="ex-msg" id="ex-msg"></p>
+      </div>
     </div>
     <div class="notes two kr">
-      <div><h4>Comment lire</h4><p>Une barre par massif : rouge, du temps perdu ; vert, du temps gagné ; bleu, la part due à la pluie. En bas, le côté d’un carré compte des minutes.</p></div>
+      <div><h4>Comment lire</h4><p>Chaque barre donne la part de la distance (à gauche) ou du dénivelé (à droite) parcourue dans une classe de pente. En rouge, au-delà de 20 %.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-acf"></p></div>
     </div>
   </section>
@@ -445,6 +444,6 @@
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261118-2"></script>
-<script src="risque.js?v=20261118-6"></script>
+<script src="risque.js?v=20261118-7"></script>
 </body>
 </html>
