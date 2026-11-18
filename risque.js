@@ -485,8 +485,15 @@
     const epPause = `${PAU.length} épisodes plus courts, de 5 à 10 min chacun (${f0(pauMin)} min au total), ne sont pas détaillés : ce sont très probablement des pauses. Ils sont comptés dans le bilan sous « Autre · pause probable ».`;
     // minutes lost by main cause (costly episodes) + the probable pauses
     const mainOf = d => RS[d.id] ? RS[d.id].causes[0] : null;
-    const groups = Object.keys(CAUSE).filter(k => k !== 'pause').map(k => ({ k, eps: MAJ.filter(d => mainOf(d) === k) })).filter(c => c.eps.length)
-      .map(c => ({ k: c.k, min: d3.sum(c.eps, d => d.lost_min), n: c.eps.length })).sort((a, b) => b.min - a.min);
+    // minutes of each episode by cause: all to the main cause, unless a share is set (Støvla: weather share from the stress test)
+    const stressPct = MC && MC.stress ? MC.stress.pct / 100 : 0;
+    const shareOf = d => { const rs = RS[d.id], out = {}; if (!rs) return out;
+      let rest = d.lost_min;
+      Object.entries(rs.partage || {}).forEach(([k, v]) => { if (v === 'stress') { const m = Math.min(rest, (d.real_min - d.lost_min) * stressPct); out[k] = m; rest -= m; } });
+      out[rs.causes[0]] = (out[rs.causes[0]] || 0) + rest; return out; };
+    const groups = Object.keys(CAUSE).filter(k => k !== 'pause').map(k => ({ k, eps: MAJ.filter(d => shareOf(d)[k] > 0) })).filter(c => c.eps.length)
+      .map(c => ({ k: c.k, min: d3.sum(c.eps, d => shareOf(d)[c.k]), n: c.eps.length })).sort((a, b) => b.min - a.min);
+    const stv = MAJ.find(d => RS[d.id] && RS[d.id].partage), stvS = stv ? shareOf(stv) : null;
     const unq = MAJ.filter(d => !mainOf(d));
     const bars = groups.concat(unq.length ? [{ k: null, min: d3.sum(unq, d => d.lost_min), n: unq.length }] : [], PAU.length ? [{ k: 'pause', min: pauMin, n: PAU.length }] : []);
     const totMin = majMin + pauMin, col = c => c.k ? C(CAUSE[c.k][1]) : 'var(--surface-3)', lab = c => c.k ? CAUSE[c.k][0] : 'Non qualifié';
@@ -497,7 +504,7 @@
     readout('r-cause', `${slow.length} épisodes · ${f0(totMin)} min`);
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
     const epFast = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${(g => g.length ? `${g.join(' et ')} ${g.length > 1 ? 'sont écartés' : 'est écarté'} : une pente GPS de plus de 60 % fausse le temps attendu.` : '')(fast.filter(d => d.gps).map(d => actName(d.act)))}`;
-    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(majMin)} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p><div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
+    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(majMin)} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p>${stv ? `<div class="def-ex"><b>La Støvla (${dayLbl(stv.day)}), un épisode à deux causes.</b> ${f0(stv.real_min)} min au lieu de ${f0(stv.real_min - stv.lost_min)} prévues : ${f0(stv.lost_min)} min perdues. Je ne trouvais pas le passage de la barre rocheuse : névé, pierrier, rocher glissant, et le vide pas loin. Et il pleuvait, donc j’avançais très prudemment. Pour faire la part des deux, j’applique la règle mesurée par le test de résistance de la simulation (partie 07) : sous la pluie, mes tronçons ont été en moyenne <b>${f0(stressPct * 100)} %</b> plus lents. Sur les ${f0(stv.real_min - stv.lost_min)} min prévues, cela fait <b>${f0(stvS.meteo || 0)} min</b> pour la météo ; les <b>${f0(stvS.sentier || 0)} min</b> restantes reviennent au sentier. Même par beau temps, je n’aurais donc pas été beaucoup plus rapide : c’est le passage lui-même qui a coûté. L’éboulement survenu au retour en est la meilleure illustration : ce terrain n’était pas seulement difficile, il était dangereux.</div>` : ''}<div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
     $('ep-btn').innerHTML = defBtn('episodes', `Les ${MAJ.length} épisodes lents, un par un`);
     const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
     const CL = EP.cluster;
