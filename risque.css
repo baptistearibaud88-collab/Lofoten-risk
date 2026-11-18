@@ -447,3 +447,43 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .toc-act { flex: 0 0 100%; font: 700 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-top: 6px; }
 .toc-act:first-child { margin-top: 0; }
 @media print { .act { break-before: page; } }
+
+/* partie 02 : carte « Ce que montre le graphique » */
+.dist-key { display: flex; flex-direction: column; }
+.dist-key .dk-body { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+.dist-key .dk-body p { margin: 0; }
+.dist-key .dk-v { display: block; font: 650 22px var(--mono); color: var(--text-primary); margin-bottom: 2px; }
+.dist-key .dk-btns { gap: 8px; }
+
+/* partie 03 : bloc dépliable, même allure que les bandeaux d'acte */
+.fold-sec { margin: 0; }
+.fold > summary { list-style: none; cursor: pointer; align-items: center; margin: 22px 0; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold-bar .num { font: 700 12px var(--mono); padding: 2px 6px; border-radius: 4px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair)); color: var(--accent); }
+.fold-bar .act-t { font-size: 18px; }
+.fold-i { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); position: relative; flex: 0 0 auto; }
+.fold-i::before, .fold-i::after { content: ''; position: absolute; left: 7px; right: 7px; top: 12px; height: 2px; background: var(--bg); transition: transform .2s; }
+.fold-i::after { transform: rotate(90deg); }
+.fold[open] .fold-i::after { transform: rotate(0); }
+.fold > summary:hover { border-color: var(--accent); }
+.fold[open] > summary { margin-bottom: 14px; }
+@media print { .fold-sec .act { break-before: auto; } }
+
+/* partie 03 : boutons du graphique de diversification */
+.seg-btns { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px 0; }
+.seg-btns button { border: 1px solid var(--hair); background: var(--surface-1); color: var(--text-secondary); border-radius: 999px; padding: 6px 14px; font: 600 12.5px var(--font); cursor: pointer; }
+.seg-btns button b { font-family: var(--mono); color: var(--text-primary); margin-left: 6px; }
+.seg-btns button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.seg-btns button[aria-pressed="true"] b { color: var(--bg); }
+.div-cap { margin: 0; padding: 4px 16px 14px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 980px; }
+
+/* introduction : problématique et périmètre seuls, sans bandeaux de chiffres */
+.hero-grid { margin-top: 8px; margin-bottom: 4px; align-items: stretch; }
+.problem { display: flex; flex-direction: column; justify-content: center; padding: 22px 26px; font-size: 22px; line-height: 1.45; font-weight: 500; color: var(--text-primary); }
+.problem > span { margin-bottom: 12px; }
+.scope { padding: 16px 18px; }
+.scope dl { gap: 6px 14px; }
+@media (max-width: 900px) { .problem { font-size: 18px; padding: 16px 18px; } }
+.risk-def { margin: 4px 0 16px; }
+.risk-def > div p { margin: 0; font-size: 14px; line-height: 1.5; }
+.facts-wide dd { flex: 0 0 92px; }

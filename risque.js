@@ -137,20 +137,8 @@
   const lateRain = d3.sum(W_.days.filter(d => d.day >= 7), d => d.rain);
   const worstN = R.nights.reduce((a, b) => b.hrv < a.hrv ? b : a), HRV_USUAL = 45;
   const totKm = d3.sum(R.rows, r => r.km), totDp = d3.sum(R.rows, r => r.dplus);
-  $('ticker').innerHTML = [
-    ['Tronçons', f0(D.n), ''], ['σ écart', f2(D.sd), ''], ['Kurtosis', fs2(D.kurt), 'up'],
-    ['Au-delà de 3σ', `${D.n3}`, `${f1(D.exp3)} attendus`], ['ρ₁ autocorr.', f2(SX ? SX.acf1 : R.acf_r[0]), ''],
-    ['Pluie · 9 jours', `${f1(W_.total_rain)} mm`, `${fs0((W_.total_rain / W_.climato.pluie_mm - 1) * 100)} %`], ['VFC min', `${fs0((worstN.hrv / HRV_USUAL - 1) * 100)} %`, ''],
-    ['σ prévision MC', hm(BS_.term_sd), `${fs0((BS_.term_sd / NS_.term_sd - 1) * 100)} %`],
-  ].map(([k, v, e]) => `<div><span>${k}</span><b>${v}</b>${e && e !== 'up' ? `<em class="up">${e}</em>` : ''}</div>`).join('');
-  $('scope').innerHTML = [['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
+  $('scope').innerHTML = [['Période', '14–22 juin 2026'], ['Distance', `${f1(totKm)} km`], ['Dénivelé positif', `${f0(totDp)} m`], ['Jours de marche', '9'], ['Sorties', R.rows.length], ['Tronçons de 250 m', D.n], ['Nuits suivies', R.nights.length]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-  $('kpis').innerHTML = [
-    ['Enchaînement', `×${f1(EP.topo.agg.massif / EP.topo.agg.seg)}`, 'd’incertitude sur le temps total : les écarts s’additionnent dans un massif', `± ${f0(EP.topo.agg.massif)} min contre ± ${f0(EP.topo.agg.seg)} min tronçon par tronçon`],
-    ['Effet du sac', `${fs0(sacS.pct)} %`, 'de temps par tronçon, à pente et terrain égaux', `IC 95 % : ${fs0(sacS.lo)} à ${fs0(sacS.hi)} %`],
-    ['Effet du terrain', `${fs0(sens['terrain (+1 niveau)'].pct)} %`, 'de temps par niveau de difficulté du sentier', `descente raide : ${fs0(sens['descente raide (> 15 %)'].pct)} % · IC 95 % : ${fs0(sens['terrain (+1 niveau)'].lo)} à ${fs0(sens['terrain (+1 niveau)'].hi)} %`],
-    ['Monte Carlo', `+${hm(mcLate)}`, 'de retard sur la prévision faite au soir du J2 : hors du modèle normal, dans le modèle par blocs', `centile ${cL(NS_.real_pct)} contre ${cL(BS_.real_pct)}`],
-  ].map(([l, b, s, sm]) => `<div class="kpi"><span class="kl">${l}</span><b>${b}</b><span class="kd">${s}</span><small>${sm}</small></div>`).join('');
   if ($('n-seg')) $('n-seg').textContent = D.n;
 
   /* ---------- 01 · OHLC candles + D+ ---------- */
@@ -303,86 +291,76 @@
     });
     const ln = d3.line().x((d, i) => x(D.xs[i])).y(d => y(d)).curve(d3.curveBasis);
     f.g.append('path').attr('d', ln(D.pdf)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.6).attr('stroke-dasharray', '5 4');
-    f.g.append('path').attr('d', ln(D.pdf_t)).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.4).attr('opacity', .8);
     hover(f.g.selectAll('.hh').data(bins).join('rect').attr('class', 'hit').attr('x', d => x(d.a)).attr('width', d => x(d.b) - x(d.a)).attr('y', 0).attr('height', f.h),
       d => { const mid = (d.a + d.b) / 2, i = d3.minIndex(D.xs, v => Math.abs(v - mid)); return `<b>e entre ${f2(d.a)} et ${f2(d.b)}</b>${row('temps réel / attendu', `×${f2(Math.exp(d.a))} à ×${f2(Math.exp(d.b))}`)}${row('tronçons observés', d.n)}${row('attendus si loi normale', f1(D.pdf[i]))}`; });
-    legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale'], ['ln', C('--warning'), 'loi de Student ajustée']]);
+    legend('l-hist', [['', C('--accent'), 'tronçons'], ['', C('--down'), 'au-delà de ±2σ'], ['dash', '', 'loi normale']]);
     readout('r-hist', `${f0(D.n)} tronçons · σ <b>${f2(D.sd)}</b>`);
 
-    // indicators, each one explained on the walk itself, with a verdict
+    // ---------- the key numbers, the indicators (in a button), the « ? » buttons ----------
     const SS = R.series, okI = SS.map((q, i) => i).filter(i => Math.abs(SS[i].slope) <= 60);
     const base = Math.round(d3.median(okI, i => EP.seg_t[i] * Math.exp(-SS[i].e) / 60) * 2) / 2;   // typical expected time of a piece
     const mn = v => { const t = Math.round(v * 60); return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')}`; };
-    const cnt = f => okI.filter(i => f(SS[i].e)).length, l2 = Math.log(2);
-    const nSlow2 = cnt(v => v > l2), nFast2 = cnt(v => v < -l2);
-    const Phi_ = x => { const t = 1 / (1 + .3275911 * Math.abs(x) / Math.SQRT2), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-x * x / 2); return .5 * (1 + (x >= 0 ? y : -y)); };
-    const exp2 = D.n * (1 - Phi_((l2 - D.mu) / D.sd));
+    const lo1 = base * Math.exp(-D.sd), hi1 = base * Math.exp(D.sd);
     const ex3 = (D.extremes || []).map(e => ({ ...e, t: EP.seg_t[e.i] / 60, x: EP.seg_t[e.i] * Math.exp(-SS[e.i].e) / 60 }));
     const NM = { bunes_munkebu: 'le sentier fantôme', reinebringen_helvete: 'l’arête de Reinebringen', stuvla: 'la barre du Støvla', ryten: 'la descente du Ryten' };
     const ex3txt = [...ex3].sort((a, b) => b.z - a.z).map(e => e.act === 'stuvla' || e.act === 'ryten' ? `${NM[e.act] || actName(e.act)} (prévu ${mn(e.x)}, fait en ${mn(e.t)})` : (NM[e.act] || actName(e.act))).join(', ');
-    const t3 = D.tails.find(d => d.k === 3), allJB = R.dist;
+    const art = (D.artefacts || [])[0], w = D.edges[1] - D.edges[0];
     const V = { ok: ['c-ok', 'normal'], warn: ['c-sub', 'à surveiller'], info: ['c-av', 'repère'] };
     const rows = [
       ['Écart-type σ', 'La largeur de la cloche : de combien on s’écarte d’habitude.',
-        `<b>${f2(D.sd)}</b>. Sur un tronçon prévu en ${mn(base)}, deux fois sur trois je mets entre ${mn(base * Math.exp(-D.sd))} et ${mn(base * Math.exp(D.sd))}.`, 'info'],
-      ['Asymétrie', 'Les deux côtés sont-ils pareils ? Positive si les lents s’éloignent plus que les rapides.',
-        `<b>${fs2(D.skew)}</b>. ${nSlow2} tronçons deux fois plus lents que prévu, ${nFast2} deux fois plus rapides ; une loi normale en attend ${f0(exp2)} de chaque côté.`, Math.abs(D.skew) < .3 ? 'ok' : 'warn'],
-      ['Kurtosis', 'L’épaisseur des queues : les très gros écarts sont-ils fréquents ? 0 pour une loi normale.',
-        `<b>${fs2(D.kurt)}</b>. Seuls ${D.n3} tronçons sur ${f0(D.n)} sont trois fois plus lents ou plus rapides que prévu. Avec des queues épaisses, il y en aurait environ ${f0(t3.t4 * D.n)}.`, D.kurt < 1 ? 'ok' : 'warn'],
-      ['Test de Jarque-Bera', 'Réunit asymétrie et kurtosis en un score : plus il est grand, moins la loi normale est crédible. Au-delà de 6, on la rejette.',
-        `<b>${f1(D.jb)}</b>, un score qu’une vraie loi normale donne ${f0(D.jb_p * 100)} fois sur 100 par hasard : rien d’anormal. Avec l’erreur GPS de Kvalvika gardée, il montait à ${f0(allJB.n / 6 * (allJB.skew ** 2 + allJB.kurt ** 2 / 4))} : un seul tronçon faux faisait croire à des queues épaisses.`, D.jb_p > .05 ? 'ok' : 'warn'],
-      ['Au-delà de 2σ', 'Les écarts marqués.',
-        `<b>${D.n2} tronçons</b> au moins ${f1(Math.exp(2 * D.sd))} fois plus lents ou ${f1(Math.exp(2 * D.sd))} fois plus rapides ; une loi normale en attend ${f0(D.n * D.norm2)}. Ce sont surtout les passages techniques et les descentes courues (partie 03).`, 'ok'],
+        `<b>${f2(D.sd)}</b>. Sur un tronçon prévu en ${mn(base)}, deux fois sur trois je mets entre ${mn(lo1)} et ${mn(hi1)}.`, 'info'],
+      ['Test de Jarque-Bera', 'Regarde si la cloche penche d’un côté (asymétrie) et si ses bords sont trop épais (kurtosis). Plus le score est grand, moins la loi normale est crédible ; au-delà de 6, on la rejette.',
+        `<b>${f1(D.jb)}</b> (asymétrie ${fs2(D.skew)}, kurtosis ${fs2(D.kurt)}), un score qu’une vraie loi normale donne ${f0(D.jb_p * 100)} fois sur 100 par hasard : rien d’anormal.`, D.jb_p > .05 ? 'ok' : 'warn'],
       ['Au-delà de 3σ', 'Les vraies surprises.',
         `<b>${D.n3} tronçons</b> : ${ex3txt}. Une loi normale en attend ${f1(D.exp3)} : léger excès, qu’on obtiendrait par hasard ${f0(D.p_pois3 * 100)} fois sur 100.`, 'warn'],
-      ['Loi de Student', 'Une cloche à queues réglables (outil 2). Peu de degrés de liberté, queues épaisses ; beaucoup, loi normale.',
-        `<b>${f0(D.t_df)} degrés</b> une fois ajustée sur mes tronçons : presque la normale. À 4 degrés, on aurait eu environ ${f0(t3.t4 * D.n)} tronçons au-delà de 3σ ; j’en ai ${D.n3}.`, D.t_df > 20 ? 'ok' : 'warn'],
       ['Avec ou sans sac', 'La largeur σ, mesurée séparément avec et sans le sac.',
         `Sur un tronçon prévu en ${mn(base)} : avec le sac, entre ${mn(base * Math.exp(-D.sd_avec))} et ${mn(base * Math.exp(D.sd_avec))} ; en trail, entre ${mn(base * Math.exp(-D.sd_sans))} et ${mn(base * Math.exp(D.sd_sans))}. Sans le sac, on pousse, on court, on s’arrête.`, 'info'],
     ];
-    $('dist-stats').innerHTML = `<thead><tr><th>Indicateur</th><th>Ce que ça mesure</th><th>Sur ma traversée</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, m, t, k]) => `<tr><td><b>${a}</b></td><td class="muted">${m}</td><td>${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody>`;
-    readout('r-dstats', D.jb_p > .05 ? 'normalité <b>non rejetée</b>' : 'normalité <b>rejetée</b>');
+    DEFS.indicateurs = { t: 'Les indicateurs, un par un', wide: true, html: () => `
+      <div class="table-wrap flat"><table class="data dstats"><thead><tr><th>Indicateur</th><th>Ce que ça mesure</th><th>Sur ma traversée</th><th>Verdict</th></tr></thead><tbody>${rows.map(([a, m, t, k]) => `<tr><td><b>${a}</b></td><td class="muted">${m}</td><td>${t}</td><td><span class="chip ${V[k][0]}">${V[k][1]}</span></td></tr>`).join('')}</tbody></table></div>
+      <p class="muted">${f0(D.n)} tronçons de 250 m.${art ? ` Un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée.` : ''}</p>` };
 
-    const q = frame('c-qq', { t: 14, r: 46, b: 32, l: 8 });
-    const ext = d3.extent(D.qq.flat()), lim = [Math.floor(ext[0] - .2), Math.ceil(ext[1] + .2)];
-    const xq = d3.scaleLinear().domain(lim).range([0, q.w]), yq = d3.scaleLinear().domain(lim).range([q.h, 0]);
-    yGrid(q.g, yq, q.w, 6, F('+d'));
-    xAxis(q.g, xq, q.h, 8, F('+d'));
-    axTitle(q.g, 'position attendue si loi normale (en σ)', 0, q.h + 28);
-    [[lim[0], -3], [3, lim[1]]].forEach(([a, b]) => q.g.append('rect').attr('x', xq(a)).attr('width', xq(b) - xq(a)).attr('y', 0).attr('height', q.h).attr('fill', C('--down')).attr('opacity', .06));
-    q.g.append('line').attr('x1', xq(lim[0])).attr('y1', yq(lim[0])).attr('x2', xq(lim[1])).attr('y2', yq(lim[1])).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2).attr('stroke-dasharray', '5 4');
-    q.g.selectAll('.qd').data(D.qq).join('circle').attr('cx', d => xq(d[0])).attr('cy', d => yq(d[1])).attr('r', 2.6)
-      .attr('fill', d => Math.abs(d[1]) > 3 ? C('--down') : C('--accent')).attr('fill-opacity', d => Math.abs(d[1]) > 3 ? 1 : .7);
-    // name the extremes
-    const LBL = { bunes_munkebu: 'le sentier fantôme vers Munkebu', reinebringen_helvete: 'l’arête de Reinebringen', stuvla: 'la barre du Støvla', ryten: 'la descente du Ryten' };
-    const nm = e => LBL[e.act] || actName(e.act);
-    const ex = (D.extremes || []).map(e => ({ ...e, q: D.qq.find(p => Math.abs(p[1] - e.z) < .002) })).filter(e => e.q);
-    // labels stacked so they never overlap: slow ones down the left of their point, fast ones to the right
-    const hiEx = ex.filter(e => e.z > 0).sort((a, b) => b.z - a.z), loEx = ex.filter(e => e.z < 0);
-    hiEx.forEach((e, k) => { const ty = yq(e.q[1]) + k * 15 + 4, tx = xq(e.q[0]) - 34;
-      q.g.append('line').attr('x1', tx + 3).attr('y1', ty - 4).attr('x2', xq(e.q[0]) - 3).attr('y2', yq(e.q[1])).attr('stroke', C('--text-muted')).attr('stroke-width', .8);
-      q.g.append('text').attr('class', 'lbl-strong').attr('x', tx).attr('y', ty).attr('text-anchor', 'end').text(`${nm(e)} · ${dayLbl(e.day)}`); });
-    loEx.forEach(e => q.g.append('text').attr('class', 'lbl-strong').attr('x', xq(e.q[0]) + 8).attr('y', yq(e.q[1]) + 4).text(`${nm(e)} · ${dayLbl(e.day)}`));
-    q.g.append('text').attr('class', 'ax-title').attr('x', 4).attr('y', 10).text('écart observé (en σ)');
-    hover(q.g.selectAll('.qh').data(D.qq).join('circle').attr('class', 'hit').attr('cx', d => xq(d[0])).attr('cy', d => yq(d[1])).attr('r', 8),
-      d => `<b>écart observé ${fs2(d[1])} σ</b>${row('attendu si loi normale', `${fs2(d[0])} σ`)}`);
-    readout('r-qq', `${D.n3} tronçons au-delà de 3σ`);
-
-    const art = (D.artefacts || [])[0];
-    $('n-dist-read').textContent = 'Si les écarts sont ordinaires, les barres suivent la courbe en pointillés et les points restent sur la diagonale. Seuls les points tout au bout s’en écartent ici.';
-    $('n-dist-meth').textContent = `${f0(D.n)} tronçons de 250 m.${art ? ` Un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée.` : ''} Loi normale ajustée par la moyenne et l’écart-type, loi de Student par maximum de vraisemblance.`;
-    const slow = ex.filter(e => e.z > 0).map(nm), fast = ex.filter(e => e.z < 0).map(nm);
-    $('t-dist').innerHTML = `Pris un par un, les tronçons sont <b>ordinaires</b> : la loi normale les décrit bien (Jarque-Bera p = ${f2(D.jb_p)}). Seuls <b>${D.n3}</b> s’en échappent : ${slow.join(', ')} en lent, ${fast.join(', ')} en rapide.<br><br>Le danger ne vient donc pas d’un pas isolé. La partie 03 regarde ces quelques extrêmes, puis la suite montre où le risque se construit vraiment : dans l’enchaînement.`;
+    $('dist-key').innerHTML = `
+      <p><span class="dk-v">${mn(lo1)} – ${mn(hi1)}</span>Deux fois sur trois, pour un tronçon prévu en ${mn(base)}. Chaque pas est imprévisible.</p>
+      <p><span class="dk-v">${D.n3} sur ${f0(D.n)}</span>tronçons au-delà de 3σ ; une loi normale en attend ${f1(D.exp3)}. Les grosses surprises sont rares.</p>
+      <p>La cloche suit les barres : la loi normale décrit bien mes écarts.</p>`;
+    $('dist-btns').innerHTML = defBtn('indicateurs', 'Les indicateurs') + defBtn('student', 'Loi de Student') + defBtn('vraisemblance', 'Maximum de vraisemblance');
 
     /* boutons « ? » de la partie 02 : d'où viennent les outils et les graphiques, façon cours */
     {
-      const mm = D.mode_mu || R.dist.mode_mu, q0 = D.qq[0], qN = D.qq[D.qq.length - 1], w = D.edges[1] - D.edges[0];
+      const mm = D.mode_mu || R.dist.mode_mu;
+      const tob = sl => 6 * Math.exp(-3.5 * Math.abs(sl / 100 + .05));
+      const eUp = d3.mean(SS.filter(q => q.slope > 15 && q.slope <= 60), q => q.e), eDn = d3.mean(SS.filter(q => q.slope <= -5 && q.slope >= -15), q => q.e);
+      const st = SS[539], stT = EP.seg_t[539] / 60, stX = stT * Math.exp(-st.e);
+      // small chart of the rule, drawn as a static SVG for the pop-up
+      const tobSvg = () => {
+        const W = 400, H = 170, m = { t: 8, r: 46, b: 24, l: 20 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+        const x = d3.scaleLinear().domain([-40, 40]).range([0, iw]), y = d3.scaleLinear().domain([0, 7]).range([ih, 0]);
+        const xs = d3.range(-40, 40.5, .5), ln = k => d3.line().x(v => x(v)).y(v => y(tob(v) * k))(xs);
+        const pts = [];
+        [1, 0].forEach(sac => d3.range(-35, 36, 5).forEach(c => {
+          const v = SS.map((q, i) => [q, i]).filter(([q]) => q.sac === sac && Math.abs(q.slope) <= 60 && q.slope >= c - 2.5 && q.slope < c + 2.5)
+            .map(([q, i]) => (q.km - (i ? SS[i - 1].km : 0)) / (EP.seg_t[i] / 3600)).filter(v => isFinite(v) && v > 0);
+          if (v.length >= 5) pts.push({ sac, c, v: d3.median(v) });
+        }));
+        const grid = [0, 2, 4, 6].map(v => `<line x1="0" x2="${iw}" y1="${y(v)}" y2="${y(v)}" stroke="${C('--grid')}"/><text x="${iw + 6}" y="${y(v) + 4}" class="lbl">${v} km/h</text>`).join('');
+        const xt = [-40, -20, 0, 20, 40].map(v => `<text x="${x(v)}" y="${ih + 16}" text-anchor="middle" class="lbl">${v > 0 ? '+' : ''}${v} %</text>`).join('');
+        return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;margin:4px 0 6px"><g transform="translate(${m.l},${m.t})">${grid}${xt}
+          <path d="${ln(1)}" fill="none" stroke="${C('--text-primary')}" stroke-width="1.4" stroke-dasharray="4 3"/>
+          <path d="${ln(Math.exp(-mm.avec))}" fill="none" stroke="${C('--series-avec')}" stroke-width="1.8"/>
+          <path d="${ln(Math.exp(-mm.sans))}" fill="none" stroke="${C('--series-sans')}" stroke-width="1.8" opacity=".8"/>
+          ${pts.map(d => `<circle cx="${x(d.c)}" cy="${y(Math.min(7, d.v))}" r="3" fill="${d.sac ? C('--series-avec') : C('--series-sans')}" stroke="${C('--bg')}"/>`).join('')}</g></svg>
+          <p class="muted">Pointillés : Tobler. Traits : Tobler recalé, avec le sac (bleu) et sans (orange). Points : ma vitesse réelle, médiane par classe de pente.</p>`;
+      };
       DEFS.tobler = { t: 'D’où vient la règle de Tobler', html: () => `
         <p>En 1950, le cartographe suisse <b>Eduard Imhof</b> publie des tables de vitesse de marche mesurées sur les sentiers de montagne, selon la pente. En 1993, le géographe <b>Waldo Tobler</b> cherche une formule simple qui passe par ces mesures. Il retient une exponentielle de la pente :</p>
         <p class="def-f">v = 6 · e<sup>−3,5 · |s + 0,05|</sup> km/h, où s est la pente (0,10 pour +10 %)</p>
-        <p>Trois choix de construction : le <b>6</b> est la vitesse maximale ; le <b>+0,05</b> place ce maximum en légère descente (−5 %), parce qu’on y marche plus vite que sur le plat ; le <b>3,5</b> règle la vitesse à laquelle on ralentit quand la pente s’éloigne de −5 %, dans un sens comme dans l’autre. La valeur absolue rend la courbe symétrique autour de −5 %.</p>
-        <p class="def-ex">Sur le plat : 6 · e<sup>−3,5 × 0,05</sup> = <b>5,0 km/h</b>. À +20 % : 6 · e<sup>−3,5 × 0,25</sup> = <b>2,5 km/h</b>. Le temps attendu d’un tronçon de 250 m est sa longueur divisée par cette vitesse.</p>
-        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge. Je multiplie donc sa vitesse par un facteur unique, avec le sac et sans le sac, choisi pour que l’écart moyen e soit nul dans chaque groupe : avec le sac, ce facteur vaut e<sup>−${f2(mm.avec)}</sup> = ${f2(Math.exp(-mm.avec))}.</p>` };
+        <p>Le <b>6</b> est la vitesse maximale ; le <b>+0,05</b> place ce maximum en légère descente (−5 %) ; le <b>3,5</b> règle la vitesse à laquelle on ralentit quand la pente s’éloigne de −5 %, dans un sens comme dans l’autre. Sur le plat : <b>5,0 km/h</b> ; à +20 % : <b>2,5 km/h</b>.</p>
+        ${tobSvg()}
+        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge, mesuré par d’autres, il y a 70 ans : c’est la seule pièce de l’analyse qui ne vient pas de mon trek. Je ne prends dans mes données que deux nombres, mon allure moyenne avec et sans le sac : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac, à peu près sa vitesse sans.</p>
+        <p class="def-ex"><b>Exemple.</b> Sur la barre du Støvla (${st.slope > 0 ? '+' : ''}${f0(st.slope)} %), le temps attendu était ${mn(stX)} ; j’ai mis ${mn(stT)}, soit un écart e = ${fs2(st.e)} : <b>×${f1(Math.exp(st.e))}</b> le temps attendu. e = 0 : dans mon allure ; +0,4 : environ 1,5 fois plus lent.</p>
+        <p><b>Ma façon de marcher.</b> Par rapport à Tobler, je vais ${f0((1 - Math.exp(eUp)) * 100)} % plus vite dans les montées de plus de 15 %, et ${f0((Math.exp(eDn) - 1) * 100)} % plus lentement dans les descentes douces, où Tobler suppose qu’on court. Ces écarts restent des surprises : je ne les connaissais pas avant de partir.</p>
+        <p class="muted"><b>Test de solidité.</b> Pas de sortie témoin : l’étalon est une convention. J’en ai essayé cinq autres (allure calée sur le plat, sur le plat facile, une voix par sortie, médiane, jour mesuré mis de côté). Les extrêmes restent les mêmes passages, et 3 à 6 tronçons dépassent 3σ quand la loi normale en attend 1,6. Seul le verdict « loi normale acceptée ou non » change selon l’étalon : il est à la limite.</p>` };
       DEFS.student = { t: 'D’où vient la loi de Student', html: () => `
         <p>En 1908, <b>William Gosset</b>, chimiste à la brasserie Guinness à Dublin, contrôle la qualité de l’orge sur de <b>petits échantillons</b>. Il remarque que si l’on estime la moyenne et l’écart-type sur peu de mesures, les écarts extrêmes sortent plus souvent que la loi normale ne le prévoit. Guinness interdisant de publier sous son nom, il signe <b>« Student »</b>.</p>
         <p><b>La construction.</b> On prend une variable normale Z et on la divise par une estimation bruitée de son écart-type, construite à partir de ν autres variables normales (une loi du χ² à ν degrés de liberté) :</p>
@@ -403,66 +381,11 @@
         <p><b>1. Les classes.</b> On découpe l’axe des écarts e en intervalles de même largeur, ici ${f1(w)} (de ${f1(D.edges[0])} à ${f1(D.edges[D.edges.length - 1])}).</p>
         <p><b>2. Le comptage.</b> On range chacun des ${f0(D.n)} tronçons dans sa classe ; la hauteur de chaque barre est le nombre de tronçons de la classe.</p>
         <p><b>3. La courbe de comparaison.</b> On calcule la moyenne (${F('+.3f')(D.mu)}) et l’écart-type (${f2(D.sd)}) des écarts, et on trace la loi normale qui a ces deux valeurs. Pour la mettre à la même échelle que les barres, on multiplie sa densité par le nombre de tronçons et par la largeur d’une classe : ${f0(D.n)} × ${f1(w)}. La courbe donne alors le nombre de tronçons qu’une loi normale mettrait dans chaque classe.</p>
-        <p class="def-ex">La courbe orange est la loi de Student, réglée par maximum de vraisemblance et mise à l’échelle de la même façon. Les barres rouges sont les classes au-delà de ±2σ, soit ±${f2(2 * D.sd)} en e.</p>` };
-      DEFS.qq = { t: 'Comment on construit le diagramme quantile-quantile', html: () => `
-        <p>Méthode décrite par <b>Wilk et Gnanadesikan</b> en 1968. L’idée : comparer mes tronçons à une loi normale rang par rang, au lieu de les regrouper en classes comme l’histogramme.</p>
-        <p><b>1. Centrer et réduire.</b> Chaque écart devient z = (e − moyenne) / écart-type : il est compté en σ.</p>
-        <p><b>2. Trier.</b> On range les ${f0(D.n)} valeurs de z de la plus petite à la plus grande. La i<sup>e</sup> a une fraction (i − 0,5) / ${f0(D.n)} des tronçons en dessous d’elle.</p>
-        <p><b>3. Chercher la valeur attendue.</b> Pour cette même fraction, on lit dans la table de la loi normale la valeur qu’elle donnerait : c’est le quantile théorique, Φ<sup>−1</sup>((i − 0,5) / ${f0(D.n)}).</p>
-        <p><b>4. Placer le point.</b> Abscisse : la valeur attendue ; ordonnée : la valeur observée. Si mes tronçons suivaient exactement la loi normale, chaque point tomberait sur la diagonale.</p>
-        <p class="def-ex"><b>Exemple.</b> Le tronçon le plus rapide est le 1<sup>er</sup> sur ${f0(D.n)} : fraction 0,5 / ${f0(D.n)} = ${F('.4f')(0.5 / D.n)}. La loi normale attend à ce rang <b>${fs2(q0[0])} σ</b> ; j’ai mesuré <b>${fs2(q0[1])} σ</b>. Le point est sous la diagonale : ce tronçon est plus extrême que prévu. Au milieu, le 302<sup>e</sup> tombe à la fraction 0,5, où la normale attend 0 : le point est sur la diagonale. Le plus lent : attendu ${fs2(qN[0])} σ, observé ${fs2(qN[1])} σ.</p>
-        <p class="muted">Lecture : des points qui s’écartent seulement aux deux bouts, et vers l’extérieur, signalent quelques extrêmes de trop ; une courbe en S sur toute la longueur signalerait des queues épaisses.</p>` };
+        <p class="def-ex">Les barres rouges sont les classes au-delà de ±2σ, soit ±${f2(2 * D.sd)} en e. ${f0(D.n)} tronçons de 250 m${art ? ` ; un tronçon retiré : ${actName(art.act)}, pente GPS de ${f0(art.slope)} %, altitude erronée` : ''}.</p>` };
       const add = (el, k) => el && !el.querySelector('.def-btn') && el.insertAdjacentHTML('beforeend', defBtn(k));
-      const h5 = document.querySelectorAll('#s3 .tool h5');
-      add(h5[0], 'tobler'); add(h5[1], 'student'); add(h5[2], 'vraisemblance');
+      add($('lede-dist'), 'tobler');
       add($('c-hist').closest('.pc').querySelector('.pc-t'), 'hist');
-      add($('c-qq').closest('.pc').querySelector('.pc-t'), 'qq');
     }
-  }
-
-  /* ---------- 02 · the three tools: Tobler, Student, maximum likelihood ---------- */
-  function drawTools() {
-    const S = R.series, mm = D.mode_mu || R.dist.mode_mu, tob = sl => 6 * Math.exp(-3.5 * Math.abs(sl / 100 + .05));
-    {
-      const f = frame('c-tobler', { t: 8, r: 40, b: 26, l: 6 });
-      const x = d3.scaleLinear().domain([-40, 40]).range([0, f.w]), y = d3.scaleLinear().domain([0, 7]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 3, v => `${v} km/h`);
-      xAxis(f.g, x, f.h, 4, v => `${v > 0 ? '+' : ''}${v} %`);
-      const xs = d3.range(-40, 40.5, .5), ln = k => d3.line().x(v => x(v)).y(v => y(tob(v) * k))(xs);
-      f.g.append('path').attr('d', ln(1)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3');
-      f.g.append('path').attr('d', ln(Math.exp(-mm.avec))).attr('fill', 'none').attr('stroke', C('--series-avec')).attr('stroke-width', 1.8);
-      f.g.append('path').attr('d', ln(Math.exp(-mm.sans))).attr('fill', 'none').attr('stroke', C('--series-sans')).attr('stroke-width', 1.8).attr('opacity', .8);
-      // my real speed: median per 5 % slope class
-      const pts = [];
-      [1, 0].forEach(sac => d3.range(-35, 36, 5).forEach(c => {
-        const v = S.map((s, i) => [s, i]).filter(([s]) => s.sac === sac && Math.abs(s.slope) <= 60 && s.slope >= c - 2.5 && s.slope < c + 2.5)
-          .map(([s, i]) => (s.km - (i ? S[i - 1].km : 0)) / (EP.seg_t[i] / 3600)).filter(v => isFinite(v) && v > 0);
-        if (v.length >= 5) pts.push({ sac, c, v: d3.median(v), n: v.length });
-      }));
-      hover(f.g.selectAll(null).data(pts).join('circle').attr('cx', d => x(d.c)).attr('cy', d => y(Math.min(7, d.v))).attr('r', 3)
-        .attr('fill', d => d.sac ? C('--series-avec') : C('--series-sans')).attr('stroke', C('--bg')),
-        d => `<b>pente ${d.c > 0 ? '+' : ''}${d.c} % · ${d.sac ? 'avec sac' : 'trail'}</b>${row('ma vitesse (médiane)', `${f1(d.v)} km/h`)}${row('Tobler', `${f1(tob(d.c))} km/h`)}${row('tronçons', d.n)}`);
-    }
-    {
-      const T = D.tails, f = frame('c-student', { t: 8, r: 40, b: 26, l: 6 });
-      const x = d3.scaleLinear().domain([1, 3.5]).range([0, f.w]), y = d3.scaleLog().domain([.0004, .4]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 3, v => `${F('.2~f')(v * 100)} %`);
-      f.g.select('.axis').selectAll('.tick').filter(v => ![.001, .01, .1].some(k => Math.abs(v - k) < 1e-9)).remove();
-      f.g.select('.gridl').selectAll('.tick').filter(v => ![.001, .01, .1].some(k => Math.abs(v - k) < 1e-9)).remove();
-      xAxis(f.g, x, f.h, 5, v => `${v}σ`);
-      const ln = k => d3.line().x(d => x(d.k)).y(d => y(Math.max(.0004, d[k]))).curve(d3.curveMonotoneX)(T);
-      f.g.append('path').attr('d', ln('t4')).attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
-      f.g.append('path').attr('d', ln('normal')).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.4);
-      hover(f.g.selectAll(null).data(T.filter(d => d.obs > 0)).join('circle').attr('cx', d => x(d.k)).attr('cy', d => y(d.obs)).attr('r', 3.6).attr('fill', C('--accent')).attr('stroke', C('--bg')),
-        d => `<b>écarts au-delà de ${f1(d.k)}σ</b>${row('mes tronçons', `${f2(d.obs * 100)} %`)}${row('loi normale', `${f2(d.normal * 100)} %`)}${row('Student, 4 ddl', `${f2(d.t4 * 100)} %`)}`);
-    }
-    const t3 = D.tails.find(d => d.k === 3), eUp = d3.mean(R.series.filter(s => s.slope > 15 && s.slope <= 60), s => s.e), eDn = d3.mean(R.series.filter(s => s.slope <= -5 && s.slope >= -15), s => s.e);
-    const st = R.series[539], stT = EP.seg_t[539] / 60, stX = stT * Math.exp(-st.e), mn2 = v => { const t = Math.round(v * 60); return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')}`; };
-    $('x-tobler').innerHTML = `<b>Sert à :</b> fixer le temps attendu de chaque tronçon. Exemple : sur la barre du Støvla (${st.slope > 0 ? '+' : ''}${f0(st.slope)} %), le temps attendu était ${mn2(stX)} ; j’ai mis ${mn2(stT)}, soit e = ${fs2(st.e)}, ×${f1(Math.exp(st.e))}.<br>Waldo Tobler a résumé en 1993 la vitesse de marche selon la pente (pointillés) : <b>v = 6 · e<sup>−3,5 · |pente + 0,05|</sup> km/h</b>. Maximum en légère descente (6 km/h à −5 %), 5 km/h sur le plat, 2,5 km/h à +20 %. Recalée sur mon allure : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac (bleu), à peu près sa vitesse en trail (orange). Les points sont ma vitesse réelle : ${f0((1 - Math.exp(eUp)) * 100)} % plus rapide que prévu dans les montées de plus de 15 %, ${f0((Math.exp(eDn) - 1) * 100)} % plus lente dans les descentes douces, où Tobler suppose qu’on court. Tobler ne connaît ni le terrain ni mon entraînement : c’est ce qui reste dans l’écart e.`;
-    $('x-student').innerHTML = `<b>Sert à :</b> vérifier si les grosses surprises sont plus fréquentes que la loi normale ne le dit, ce qui obligerait à prévoir plus de marge.<br>Une cloche comme la loi normale, avec un réglage en plus : les <b>degrés de liberté</b>. Peu de degrés, et les queues s’épaississent : avec 4 (pointillés), un écart au-delà de 3σ arrive <b>${f0(t3.t4 / t3.normal)} fois</b> plus souvent qu’avec la loi normale (trait plein). Beaucoup, et elle redevient la normale. Les points sont mes tronçons : ils suivent la loi normale. Ajustée sur eux, la Student prend <b>${f0(D.t_df)} degrés</b>, presque une normale.`;
-    $('c-ml').innerHTML = [['Loi normale', '2 réglages', 'centre, largeur'], ['Loi de Student', '3 réglages', '+ degrés de liberté'], ['Gain de la Student', `+${f1(D.ll_gain)}`, 'log-vraisemblance'], ['Bilan (critère d’Akaike)', Math.abs(D.d_aic) < 2 ? 'égalité' : D.d_aic < 0 ? 'Student' : 'normale', 'la plus simple l’emporte']]
-      .map(([a, b, c], i) => `<div class="ml-row${i === 3 ? ' hl' : ''}"><span>${a} <span class="muted">· ${c}</span></span><b>${b}</b></div>`).join('');
-    $('x-ml').innerHTML = `<b>Sert à :</b> régler la loi de Student sur mes tronçons, puis départager la Student et la normale.<br>Pour régler une loi, on essaie toutes les valeurs de ses réglages et on garde celles qui rendent les ${f0(D.n)} écarts observés <b>les plus probables</b> : c’est le maximum de vraisemblance. Pour départager deux lois, on compare cette probabilité en pénalisant chaque réglage en plus. Ici la Student ne gagne presque rien : <b>la loi normale suffit</b>.`;
   }
 
   /* ---------- 03 · tail table ---------- */
@@ -485,7 +408,7 @@
     $('tail-table').innerHTML = head + `<tbody>${slow.map(rowT).join('')}</tbody>`;
     $('tail-fast').innerHTML = head + `<tbody>${fast.map(rowT).join('')}</tbody>`;
     readout('r-tail', `${T.slow.length} tronçons au-delà de +2σ`); readout('r-tail-f', `${T.fast.length} tronçons au-delà de −2σ`);
-    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons de la partie 02, triés par z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. Les tronçons voisins d’une même sortie forment un passage ; z est celui du pire tronçon. Trois passages de chaque côté.`;
+    $('n-tail-meth').textContent = `Les ${f0(D.n)} tronçons, triés par z = (e − moyenne) / σ, avec σ = ${f2(D.sd)}. Les tronçons voisins d’une même sortie forment un passage ; z est celui du pire tronçon. Trois passages de chaque côté.`;
     const rep = d3.rollups([...T.slow, ...T.fast], v => v.length, t => t.act).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]);
     $('t-tail').innerHTML = `Lents : les passages du récit, en terrain exigeant ou expert. Rapides : des descentes courues en trail, et la route plate vers Reine.<br><br>Rares (${T.slow.length + T.fast.length} sur ${f0(D.n)}), ces extrêmes reviennent pourtant aux mêmes endroits : <b>${d3.sum(rep, r => r[1])} sur ${T.slow.length + T.fast.length}</b> dans ${rep.length} passages, de l’arête de Reinebringen à la descente du Ryten. Les écarts arrivent par passages entiers.`;
   }
@@ -495,63 +418,36 @@
   function drawRoll() {
     const S = R.series, maxKm = S[S.length - 1].km, S2 = S.filter(s => s.sd != null);
     const EPS = EP.episodes.filter(d => d.sign < 0 || Math.round(d.lost_min) >= 5), pc = v => Math.exp(v) - 1, fpc = v => `${v >= 0 ? '+' : '−'}${f0(Math.abs(pc(v)) * 100)} %`;
-    const epAt = i => EPS.find(x => i >= x.i0 && i <= x.i1);
-    const m = { t: 22, r: 62, b: 6, l: 8 };
+    const epAt = i => MAJ.find(x => i >= x.i0 && i <= x.i1);
+    const slow = EPS.filter(d => d.sign > 0).sort((a, b) => b.lost_min - a.lost_min);
+    const MAJ = slow.filter(d => Math.round(d.lost_min) >= 10), PAU = slow.filter(d => Math.round(d.lost_min) < 10);
+    const m = { t: 10, r: 62, b: 30, l: 8 };
     const f = frame('c-bands', m);
     const x = d3.scaleLinear().domain([0, maxKm]).range([0, f.w]);
-    const y = d3.scaleLinear().domain([-1.1, 1.3]).range([f.h, 0]);
+    const y = d3.scaleLinear().domain([-.8, 1]).range([f.h, 0]);
     yGrid(f.g, y, f.w, 5, fpc);
     dayBands(f.g, x, f.h);
     const cg = clip(f);
     const x0 = i => x(i ? S[i - 1].km : 0);
     // episodes as shaded bands behind the curves
-    cg.selectAll('.ep').data(EPS).join('rect').attr('x', d => x0(d.i0)).attr('width', d => Math.max(1.5, x(S[d.i1].km) - x0(d.i0))).attr('y', 0).attr('height', f.h)
-      .attr('fill', d => d.sign > 0 ? C('--down') : C('--up')).attr('opacity', d => d.gps ? .07 : .17);
+    cg.selectAll('.ep').data(MAJ).join('rect').attr('x', d => x0(d.i0)).attr('width', d => Math.max(1.5, x(S[d.i1].km) - x0(d.i0))).attr('y', 0).attr('height', f.h)
+      .attr('fill', C('--down')).attr('opacity', .2);
+    xAxis(f.g, x, f.h, f.narrow ? 4 : 8, v => `${v} km`);
     cg.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
-    const cl = v => Math.max(-1.1, Math.min(1.3, v));
-    d3.groups(S, s => s.day).forEach(([, v]) => cg.append('path').attr('d', d3.line().x(s => x(s.km)).y(s => y(cl(s.e)))(v)).attr('fill', 'none').attr('stroke', C('--text-muted')).attr('stroke-width', .8).attr('opacity', .8));
+    const cl = v => Math.max(-.8, Math.min(1, v));
     d3.groups(S2, s => s.day).forEach(([, v]) => cg.append('path').attr('d', d3.line().x(s => x(s.km)).y(s => y(cl(s.m))).curve(d3.curveMonotoneX)(v)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 1.8));
-    // labels on the three costliest slow episodes
-    const slow = EPS.filter(d => d.sign > 0).sort((a, b) => b.lost_min - a.lost_min);
-    const MAJ = slow.filter(d => Math.round(d.lost_min) >= 10), PAU = slow.filter(d => Math.round(d.lost_min) < 10);
-    slow.slice(0, f.narrow ? 2 : 4).forEach(d => {
-      const cx = (x0(d.i0) + x(S[d.i1].km)) / 2;
-      f.g.append('text').attr('class', 'lbl-strong').attr('x', cx).attr('y', y(1.3) + 12).attr('text-anchor', cx > f.w - 60 ? 'end' : 'middle').text(`${f0(d.lost_min)} min`);
-    });
-
-    const m2 = { t: 8, r: 62, b: 30, l: 8 };
-    const g2 = frame('c-roll', m2);
-    const x2 = x.copy().range([0, g2.w]);
-    const y2 = d3.scaleLinear().domain([0, d3.max(S2, s => s.sd) * 1.08]).nice().range([g2.h, 0]);
-    yGrid(g2.g, y2, g2.w, 3, F('.1f'));
-    dayBands(g2.g, x2, g2.h, false);
-    xAxis(g2.g, x2, g2.h, g2.narrow ? 4 : 8, v => `${v} km`);
-    const thr = R.reg_thr;
-    const idc = `rc${Math.random().toString(36).slice(2, 7)}`;
-    g2.svg.append('defs').append('clipPath').attr('id', idc).append('rect').attr('width', g2.w).attr('height', y2(thr));
-    d3.groups(S2, s => s.day).map(([, v]) => v).forEach(v => {
-      const a = d3.area().x(s => x2(s.km)).y0(g2.h).y1(s => y2(s.sd)).curve(d3.curveMonotoneX)(v);
-      g2.g.append('path').attr('d', a).attr('fill', C('--accent')).attr('opacity', .14);
-      g2.g.append('path').attr('d', a).attr('fill', C('--down')).attr('opacity', .45).attr('clip-path', `url(#${idc})`);
-      g2.g.append('path').attr('d', d3.line().x(s => x2(s.km)).y(s => y2(s.sd)).curve(d3.curveMonotoneX)(v)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 1.4);
-    });
-    g2.g.append('line').attr('x1', 0).attr('x2', g2.w).attr('y1', y2(thr)).attr('y2', y2(thr)).attr('stroke', C('--down')).attr('stroke-dasharray', '4 3');
-    axTag(g2.g, g2.w + 2, y2(thr), `P90 ${f2(thr)}`).select('rect').attr('fill', C('--down'));
-    R.alerts.forEach(a => { const t = warnTri(g2.g, x2(a.km), 8, .8); t.on('pointermove', ev => showTip(ev, `<b>${a.titre}</b>${row('km', f1(a.km))}${row('σ₂ₖₘ', a.sd == null ? '–' : f2(a.sd))}`)).on('pointerleave', hideTip); });
-    const above = S2.filter(s => s.sd > thr).length;
     const def = `${slow.length} épisodes lents · <b>${f0(d3.sum(slow, d => d.lost_min))} min</b> perdues sur ${f0(d3.sum(slow, d => d.len))} km`;
     readout('r-roll', def);
-    const c1 = crossH(f), c2 = crossH(g2);
+    const c1 = crossH(f);
     const move = (ev, xs) => {
       const s = nearest(xs.invert(d3.pointer(ev)[0])), i = S.indexOf(s), ep = epAt(i);
-      c1.show(x(s.km), y(cl(s.e)), fpc(s.e)); c2.show(x2(s.km), s.sd == null ? null : y2(s.sd), s.sd == null ? '' : f2(s.sd), `${f1(s.km)} km`);
+      c1.show(x(s.km), y(cl(s.m == null ? s.e : s.m)), s.m == null ? '' : fpc(s.m), `${f1(s.km)} km`);
       readout('r-roll', `<b>${dayLbl(s.day)}</b> ${actName(s.act)} · tronçon <b>${fpc(s.e)}</b> · 2 km <b>${s.m == null ? '–' : fpc(s.m)}</b>${ep ? ` · épisode <b>${ep.lost_min > 0 ? '+' : '−'}${f0(Math.abs(ep.lost_min))} min</b>` : ''}`);
       if (ep) showTip(ev, `<b>${actName(ep.act)} · ${dayLbl(ep.day)}</b>${row('épisode', `km ${f1(ep.km0)} → ${f1(ep.km1)}`)}${row(ep.sign > 0 ? 'plus lent' : 'plus rapide', `${f0(Math.abs(ep.pct))} %`)}${row(ep.sign > 0 ? 'temps perdu' : 'temps gagné', `${f0(Math.abs(ep.lost_min))} min`)}${ep.gps ? row('attention', 'pente GPS douteuse') : ''}`); else hideTip();
     };
-    const leave = () => { c1.hide(); c2.hide(); hideTip(); readout('r-roll', def); };
+    const leave = () => { c1.hide(); hideTip(); readout('r-roll', def); };
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h).on('pointermove', ev => move(ev, x)).on('pointerleave', leave);
-    g2.g.append('rect').attr('class', 'hit').attr('y', 16).attr('width', g2.w).attr('height', g2.h - 16).on('pointermove', ev => move(ev, x2)).on('pointerleave', leave);
-    legend('l-roll', [['ln', C('--text-muted'), 'tronçon'], ['ln', C('--accent'), 'moyenne glissante 2 km'], ['', C('--down'), 'épisode lent / irrégularité > P90'], ['', C('--up'), 'épisode rapide'], ['', C('--warning'), 'alerte']]);
+    legend('l-roll', [['ln', C('--accent'), 'moyenne glissante 2 km'], ['', C('--down'), 'épisode lent de 10 min ou plus']]);
 
     // table of the costly slow episodes (>= 10 min), with their causes
     const RS = window.RESSENTIS_EPISODES || {};
@@ -577,8 +473,15 @@
     const epPause = `${PAU.length} épisodes plus courts, de 5 à 10 min chacun (${f0(pauMin)} min au total), ne sont pas détaillés : ce sont très probablement des pauses. Ils sont comptés dans le bilan sous « Autre · pause probable ».`;
     // minutes lost by main cause (costly episodes) + the probable pauses
     const mainOf = d => RS[d.id] ? RS[d.id].causes[0] : null;
-    const groups = Object.keys(CAUSE).filter(k => k !== 'pause').map(k => ({ k, eps: MAJ.filter(d => mainOf(d) === k) })).filter(c => c.eps.length)
-      .map(c => ({ k: c.k, min: d3.sum(c.eps, d => d.lost_min), n: c.eps.length })).sort((a, b) => b.min - a.min);
+    // minutes of each episode by cause: all to the main cause, unless a share is set (Støvla: weather share from the stress test)
+    const rainPct = EP.sys ? EP.sys.rain_pct : 0;   // rain effect at equal terrain, measured on the massifs (part 03)
+    const shareOf = d => { const rs = RS[d.id], out = {}; if (!rs) return out;
+      let rest = d.lost_min;
+      Object.entries(rs.partage || {}).forEach(([k, v]) => { if (v === 'pluie') { const m = Math.min(rest, (d.real_min - d.lost_min) * rainPct); out[k] = m; rest -= m; } });
+      out[rs.causes[0]] = (out[rs.causes[0]] || 0) + rest; return out; };
+    const groups = Object.keys(CAUSE).filter(k => k !== 'pause').map(k => ({ k, eps: MAJ.filter(d => shareOf(d)[k] > 0) })).filter(c => c.eps.length)
+      .map(c => ({ k: c.k, min: d3.sum(c.eps, d => shareOf(d)[c.k]), n: c.eps.length })).sort((a, b) => b.min - a.min);
+    const stv = MAJ.find(d => RS[d.id] && RS[d.id].partage), stvS = stv ? shareOf(stv) : null;
     const unq = MAJ.filter(d => !mainOf(d));
     const bars = groups.concat(unq.length ? [{ k: null, min: d3.sum(unq, d => d.lost_min), n: unq.length }] : [], PAU.length ? [{ k: 'pause', min: pauMin, n: PAU.length }] : []);
     const totMin = majMin + pauMin, col = c => c.k ? C(CAUSE[c.k][1]) : 'var(--surface-3)', lab = c => c.k ? CAUSE[c.k][0] : 'Non qualifié';
@@ -589,12 +492,12 @@
     readout('r-cause', `${slow.length} épisodes · ${f0(totMin)} min`);
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
     const epFast = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${(g => g.length ? `${g.join(' et ')} ${g.length > 1 ? 'sont écartés' : 'est écarté'} : une pente GPS de plus de 60 % fausse le temps attendu.` : '')(fast.filter(d => d.gps).map(d => actName(d.act)))}`;
-    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(majMin)} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p><div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
+    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(majMin)} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p>${stv ? `<div class="def-ex"><b>La Støvla (${dayLbl(stv.day)}), un épisode à deux causes.</b> ${f0(stv.real_min)} min au lieu de ${f0(stv.real_min - stv.lost_min)} prévues : ${f0(stv.lost_min)} min perdues. Je ne trouvais pas le passage de la barre rocheuse : névé, pierrier, rocher glissant, et le vide pas loin. Et il pleuvait, donc j’avançais très prudemment. Pour faire la part des deux, j’applique la règle mesurée sur les 15 massifs (partie 03) : à terrain égal, la pluie m’a rendu <b>${f0(rainPct * 100)} %</b> plus lent. Sur les ${f0(stv.real_min - stv.lost_min)} min prévues, cela fait <b>${f0(stvS.meteo || 0)} min</b> pour la météo ; les <b>${f0(stvS.sentier || 0)} min</b> restantes reviennent au sentier. Même par beau temps, je n’aurais donc pas été beaucoup plus rapide : c’est le passage lui-même qui a coûté. L’éboulement survenu au retour en est la meilleure illustration : ce terrain n’était pas seulement difficile, il était dangereux.</div>` : ''}<div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
     $('ep-btn').innerHTML = defBtn('episodes', `Les ${MAJ.length} épisodes lents, un par un`);
     const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
     const CL = EP.cluster;
-    if (CL) $('lede-roll').innerHTML = `Chaque tronçon, pris seul, est ordinaire (partie 02). Ce qui compte, c’est leur ordre. Mélangés au hasard, mes écarts donneraient environ ${f0(CL.all.n)} épisodes lents, pour ${f0(CL.all.min)} min. Il y en a <b>${CL.obs_n}</b>, qui coûtent <b>${f0(CL.obs_min)} min</b> : les tronçons lents s’enchaînent.`;
-    $('t-roll').innerHTML = `<b>${MAJ.length}</b> épisodes de 10 min ou plus coûtent <b>${f0(majMin)} min</b>. Première cause : ${CAUSE[top.k][0].toLowerCase()}. <b>${f0(subi / totMin * 100)} %</b> du temps perdu est subi.<br><br>Un passage difficile ne dure pas un pas : il dure toute une montée ou toute une descente, et on ne peut pas en sortir au milieu. C’est la forme du relief qui fabrique ces enchaînements.`;
+    if (CL) $('lede-roll').innerHTML = `Pris seuls, mes pas sont ordinaires. Mais ils arrivent dans un ordre. Mélangés au hasard, mes écarts donneraient environ ${f0(CL.all.n)} épisodes lents, pour ${f0(CL.all.min)} min. Il y en a <b>${CL.obs_n}</b>, qui coûtent <b>${f0(CL.obs_min)} min</b> : les tronçons lents s’enchaînent.`;
+    $('t-roll').innerHTML = `<b>${slow.length}</b> épisodes lents, <b>${f0(totMin)} min</b>, dont <b>${MAJ.length}</b> de 10 min ou plus qui en font l’essentiel ; <b>${f0(subi / totMin * 100)} %</b> du temps perdu est subi.<br><br>Un pas seul est ordinaire ; c’est l’enchaînement qui coûte. Un passage difficile dure toute une montée : c’est le relief qui fabrique ces séries (partie 03).`;
     DEFS.enchainement = { t: 'Comment on repère un épisode', html: () => `
       <p><b>La mesure.</b> Sur chaque tronçon de 250 m, l’écart e compare le temps réel au temps attendu : e = ln(temps réel ÷ temps attendu), sur le temps en mouvement de la montre.</p>
       <p><b>L’épisode.</b> Au moins 3 tronçons de suite (750 m) dont l’écart moyen dépasse ±0,20, soit 22 % plus lent ou 18 % plus rapide que prévu.</p>
@@ -634,103 +537,79 @@
   addEventListener('scroll', () => { if (!pop.classList.contains('sheet')) closeDef(); }, { passive: true });
 
   function drawAcf() {
-    const T = EP.topo, M = T.massifs, A = T.agg, sig = t => Math.abs(t.r) > t.crit;
+    const T = EP.topo, M = T.massifs, SY = EP.sys, AG = SY.agg, sig = t => Math.abs(t.r) > t.crit;
     const med = k => d3.median(M, m => m[k]), steepD = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.dist), steepG = d3.sum(T.slope.filter(b => b.lo >= 20), b => b.gain);
-    const steepT = d3.sum(T.intens.filter((c, k) => T.slope[k].lo >= 20), c => c.time), flatI = T.intens[0], topI = T.intens[T.intens.length - 1];
-    const worst = M.reduce((b, m) => m.lost > b.lost ? m : b, M[0]);
-    // part de l'écart de temps perdu qui vient de la journée (systématique) ou du massif (spécifique),
-    // sur les jours qui comptent au moins deux massifs
-    const byDay = d3.groups(M, m => m.day).filter(([, a]) => a.length > 1), inD = byDay.flatMap(([, a]) => a);
-    const muL = d3.mean(inD, m => m.lost), totV = d3.sum(inD, m => (m.lost - muL) ** 2);
-    const sysShare = d3.sum(byDay, ([, a]) => a.length * (d3.mean(a, m => m.lost) - muL) ** 2) / totV;
     const SPLIT = { reinebringen_helvete: ['Reinebringen', 'Helvete'] };   // une sortie, deux massifs
-    const ex = d => M.filter(m => m.day === d), mName = m => { const same = M.filter(x => x.act === m.act), k = same.indexOf(m); return same.length < 2 ? actName(m.act) : SPLIT[m.act] ? SPLIT[m.act][k] : `${actName(m.act)} (${k + 1})`; };
-    const exT = d => ex(d).map(m => `${mName(m)} ${fs0(m.lost)} min`).join(', ');
-    DEFS.sysspec = { t: 'Risque systématique et risque spécifique', html: () => `
-      <p>En finance, le risque d’un portefeuille se coupe en deux. Le <b>risque systématique</b> touche tout le marché en même temps (une crise, une hausse des taux) : détenir plus de titres n’y change rien. On le mesure par le <i>bêta</i>. Le <b>risque spécifique</b> n’appartient qu’à une entreprise (un produit raté, un procès) : en détenant beaucoup de titres indépendants, il se dilue. C’est le principe de la diversification.</p>
-      <p>Sur la traversée, les massifs sont les titres et la journée est le marché. <b>Systématique</b> : la météo, la forme, la nuit précédente, qui pèsent sur tous les massifs du jour. <b>Spécifique</b> : le terrain propre à chaque massif, un pierrier, un sentier invisible, une barre rocheuse.</p>
-      <p class="def-ex"><b>J2</b>, lendemain de la meilleure nuit : ${exT(2)}. Les deux vont dans le même sens : c’est la journée (systématique).<br><b>J6</b> : ${exT(6)}. Même journée, résultats opposés : c’est le massif (spécifique).</p>
-      <p class="muted">Sur les ${byDay.length} jours à au moins deux massifs (${inD.length} massifs), environ ${f0(sysShare * 100)} % de l’écart vient de la journée et ${f0((1 - sysShare) * 100)} % du massif. Petit échantillon : un ordre de grandeur.</p>` };
-    {
+    const mName = m => { const same = M.filter(x => x.act === m.act), k = same.indexOf(m); return same.length < 2 ? actName(m.act) : SPLIT[m.act] ? SPLIT[m.act][k] : `${actName(m.act)} (${k + 1})`; };
+    const rainPct = SY.rain_pct * 100, worst = M.reduce((b, m) => m.lost > b.lost ? m : b, M[0]);
+
+    // 1. exposure: two small charts with their own scale, steep classes (> 20 %) highlighted
+    [['c-acf1', 'dist', 'r-acf1', `> 20 % : <b>${f0(steepD * 100)} %</b> de la distance`], ['c-acf1b', 'gain', 'r-acf1b', `> 20 % : <b>${f0(steepG * 100)} %</b> du D+`]].forEach(([id, k, rid, rd]) => {
       const B = T.slope, lab = b => b.hi == null ? `> ${b.lo} %` : `${b.lo}–${b.hi} %`;
-      const f = frame('c-acf1', { t: 12, r: 44, b: 40, l: 8 });
-      const x0 = d3.scaleBand().domain(B.map(lab)).range([0, f.w]).padding(.22);
-      const x1 = d3.scaleBand().domain(['dist', 'gain']).range([0, x0.bandwidth()]).padding(.08);
-      const y = d3.scaleLinear().domain([0, d3.max(B, b => Math.max(b.dist, b.gain)) * 1.1]).nice().range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => `${f0(v * 100)} %`);
-      const col = { dist: C('--text-muted'), gain: C('--down') };
-      const gb = f.g.selectAll(null).data(B).join('g').attr('transform', b => `translate(${x0(lab(b))},0)`);
-      ['dist', 'gain'].forEach(k => gb.append('path').attr('d', b => barPath(x1(k), f.h, x1.bandwidth(), y(b[k]))).attr('fill', col[k]).attr('opacity', k === 'dist' ? .55 : .9));
-      hover(gb.append('rect').attr('class', 'hit').attr('width', x0.bandwidth()).attr('height', f.h), (b, k) => `<b>pente ${lab(b)}</b>${row('distance', `${f0(b.dist * 100)} %`)}${row('dénivelé positif', `${f0(b.gain * 100)} %`)}${row('vitesse verticale', `${f0(T.intens[B.indexOf(b)].vr)} m/h`)}${row('fréquence cardiaque', `${T.intens[B.indexOf(b)].hr} bpm`)}`);
-      xAxis(f.g, x0, f.h, 7, d => f.narrow ? d.replace(' %', '').replace('> ', '>') : d);
-      axTitle(f.g, f.narrow ? 'pente du tronçon (%)' : 'pente du tronçon', 0, f.h + 36);
-      readout('r-acf1', `> 20 % : <b>${f0(steepD * 100)} %</b> de la distance · <b>${f0(steepG * 100)} %</b> du D+`);
-      legend('l-acf1', [['', C('--text-muted'), 'part de la distance'], ['', C('--down'), 'part du dénivelé positif']]);
-    }
-    {
-      const D = [
-        { k: 'seg', l: 'Tronçons indépendants', s: 'hypothèse naïve', v: A.seg, c: C('--text-muted') },
-        { k: 'massif', l: 'Massifs indépendants', s: 'Lofoten, mesuré', v: A.massif, c: C('--accent') },
-        { k: 'block', l: 'Un seul bloc sans sortie', s: 'alpin, contrefactuel', v: A.block, c: C('--down') },
-      ];
-      const f = frame('c-acf2', { t: 16, r: 18, b: 34, l: 8 });
-      const lw = Math.min(190, f.w * .42);
-      const x = d3.scaleLinear().domain([0, A.block * 1.28]).range([0, f.w - lw]);
-      const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.38);
-      const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
-      g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(4).tickSize(f.h).tickFormat('')).lower();
-      g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(f.narrow ? 2 : 4).tickSize(0).tickPadding(8).tickFormat(v => `${v} min`));
-      D.forEach(d => {
-        f.g.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2 - 3).text(d.l);
-        f.g.append('text').attr('class', 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2 + 11).text(d.s);
-        g.append('rect').attr('x', 0).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('width', x(d.v)).attr('rx', 3).attr('fill', d.c).attr('opacity', d.k === 'massif' ? .95 : .6);
-        g.append('text').attr('class', 'lbl-strong').attr('x', x(d.v) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(`± ${f0(d.v)} min`);
-      });
-      // bloc d'explication en longueur, sous les deux graphiques
-      const big = [...M].sort((a, b) => Math.abs(b.lost) - Math.abs(a.lost)).slice(0, 3);
-      $('ex-intro').innerHTML = `On repart des minutes de la partie 04 : sur chaque tronçon, le temps réel moins le temps prévu par Tobler, en retard (+) ou en avance (−). Additionnées sur tout un massif, avances comprises, elles donnent par exemple ${big.map(m => `<b>${fs0(m.lost)} min</b> sur ${actName(m.act)}`).join(', ')} ${(() => { const ep = EP.episodes.filter(x => x.act === big[0].act && x.sign > 0).sort((a, b) => b.lost_min - a.lost_min)[0]; return ep ? `(sur ${actName(big[0].act)}, l’épisode lent de la partie 04 compte ${fs0(ep.lost_min)} min : il ne retient que la portion lente)` : ''; })()}. Le graphique ne montre pas du temps perdu, mais une <b>incertitude</b> : de combien le temps total de la traversée peut s’écarter du prévu, selon la façon dont ces retards s’additionnent.`;
-      $('ex-cols').innerHTML = D.map(d => `<div style="--c:${d.c}"><span class="s">${d.s}</span><div class="t">${d.l}</div><b class="v">± ${f0(d.v)} min</b><p>${{
-        seg: 'Chaque tronçon est un tirage à part : un retard ici est compensé par une avance là. C’est l’hypothèse naïve, et elle est fausse : dans une même montée, si je suis lent sur un tronçon, je le suis aussi sur le suivant.',
-        massif: 'Dans un massif, les retards s’accumulent sans se compenser : montée et descente vont dans le même sens. D’un massif à l’autre, ils se compensent : un sommet difficile n’en annonce pas un autre. C’est la structure réelle, mesurée.',
-        block: 'Toute la traversée comme une seule arête sans retour en bas : les retards s’additionnent tous, sans aucune compensation. C’est un cas fictif, construit sur les mêmes minutes, pour comparer avec un enchaînement alpin.',
-      }[d.k]}</p></div>`).join('');
-      $('ex-msg').innerHTML = `<b>Les Lofoten sont un juste milieu.</b> Mieux que des tirages tous liés : chaque retour à la mer remet le compteur à zéro, et l’incertitude est ${f1(A.block / A.massif)} fois plus petite qu’un enchaînement sans sortie. Mais pas des tirages indépendants non plus : une fois dans un massif, on est engagé, et le modèle naïf sous-estime l’incertitude d’un facteur ${f1(A.massif / A.seg)}.`;
-      readout('r-acf2', `sous-estimation naïve <b>×${f1(A.massif / A.seg)}</b> · diversification <b>×${f1(A.block / A.massif)}</b>`);
-    }
-    // risk sheet
+      const f = frame(id, { t: 10, r: 40, b: 26, l: 6 });
+      const x = d3.scaleBand().domain(B.map(lab)).range([0, f.w]).padding(.25);
+      const y = d3.scaleLinear().domain([0, d3.max(B, b => b[k]) * 1.12]).nice().range([f.h, 0]);
+      yGrid(f.g, y, f.w, 3, v => `${f0(v * 100)} %`);
+      f.g.selectAll(null).data(B).join('path').attr('d', b => barPath(x(lab(b)), f.h, x.bandwidth(), y(b[k]), 2))
+        .attr('fill', b => b.lo >= 20 ? C('--down') : C('--text-muted')).attr('opacity', b => b.lo >= 20 ? .9 : .45);
+      f.g.selectAll(null).data(B).join('text').attr('class', 'lbl').attr('x', b => x(lab(b)) + x.bandwidth() / 2).attr('y', b => y(b[k]) - 4).attr('text-anchor', 'middle').text(b => `${f0(b[k] * 100)}`);
+      xAxis(f.g, x, f.h, 7, d => f.narrow ? d.replace(' %', '').replace('> ', '>') : d);
+      readout(rid, rd);
+    });
+
+    // 2. full risk sheet
+    const T2 = T.agg, wi = M.indexOf(worst), topI = T.intens[T.intens.length - 1], flatI = T.intens[0];
+    const steepT = d3.sum(T.intens.filter((c, k) => T.slope[k].lo >= 20), c => c.time);
     const rows = [
       ['Corrélation du terrain d’un massif au suivant', `raideur r = ${f2(T.grad_next.r)} · ${sig(T.grad_next) ? 'significatif' : 'non significatif'} (seuil ${f2(T.grad_next.crit)}, ${T.grad_next.n} paires)`,
-        'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs risques se diversifient.'],
+        'Le terrain du massif suivant ne se déduit pas du précédent : un sommet difficile n’en annonce pas un autre.', 'Les massifs se tirent indépendamment : leurs écarts se compensent d’un massif à l’autre.'],
       ['Corrélation à l’intérieur d’un massif', `montée → descente : raideur r = ${f2(T.grad_same.r)} · allure r = ${f2(T.pace_same.r)}`,
-        'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Tirer les erreurs par massif, pas par tronçon : l’écart-type du temps total passe de ± ${f0(A.seg)} à ± ${f0(A.massif)} min (×${f1(A.massif / A.seg)}). Les blocs de 2 km de la partie 09 vont dans ce sens.`],
-      [`Risque systématique${defBtn('sysspec')}`, `allure d’un massif au suivant r = ${f2(T.pace_next.r)}${sig(T.pace_next) ? ' · significatif' : ''} · ≈ ${f0(sysShare * 100)} % de l’écart vient de la journée`,
-        'Météo et forme du jour pèsent sur tous les massifs de la journée : il ne se diversifie pas.', 'Ajouter un facteur journée commun à tous les massifs du jour, l’équivalent d’un bêta de marché.'],
-      ['Risque spécifique', `≈ ${f0((1 - sysShare) * 100)} % de l’écart propre au massif · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
-        'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les retours à la mer diversifient : il fait passer l’incertitude de ± ${f0(A.block)} à ± ${f0(A.massif)} min.`],
+        'Une fois engagé, tout le massif va dans le même sens : les écarts ne se compensent pas, ils s’additionnent jusqu’en bas.', `Compter les écarts massif par massif, pas tronçon par tronçon : l’incertitude est ${f1(T2.massif / T2.seg)} fois plus grande.`],
+      [`Risque systématique${defBtn('sysspec')}`, `pluie : ${fs0(rainPct)} % à terrain égal · ${SY.n_wet} massifs · ${fs0(AG.sys)} min`,
+        'La pluie pèse sur tous les massifs du moment, quel que soit leur terrain : elle ne s’efface pas.', 'Ajouter un facteur météo commun : ses minutes s’ajoutent bout à bout, massif après massif.'],
+      ['Risque spécifique', `± ${f0(AG.spec)} min sur les ${M.length} massifs · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
+        'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les retours à la mer effacent : il passe de ± ${f0(AG.block)} à ± ${f0(AG.spec)} min.`],
       ['Option de sortie', `retour à la mer en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
-        `Chaque massif se termine au niveau de la mer : la perte d’une position est bornée, comme un stop-loss intégré. Pire massif : ${f0(worst.lost)} min perdues (${actName(worst.act)}).`, 'La queue de distribution se coupe massif par massif : une perte ne se propage pas au reste de la traversée.'],
+        `Chaque massif se termine au niveau de la mer : la perte est bornée. Pire massif : ${fs0(worst.lost)} min (${mName(worst)}).`, 'Un massif raté ne se propage pas au reste de la traversée.'],
       ['Durée d’engagement', `${f0(med('t_tot'))} min médianes par massif, dont ${f0(med('t_engage'))} min de montée à partir de 15 %`,
-        `Positions courtes : la décision d’y aller ou de renoncer se reprend au pied de chacun des ${M.length} massifs.`, 'Renoncer est une option réelle, renouvelée à chaque massif : elle a de la valeur parce qu’on peut l’exercer sans compromettre la suite.'],
-      ['Intensité (levier)', `> 20 % : ${f0(steepD * 100)} % de la distance, ${f0(steepT * 100)} % du temps, ${f0(steepG * 100)} % du D+ · ${f0(topI.vr)} m/h et ${topI.hr} bpm au-dessus de 30 %, contre ${f0(flatI.vr)} m/h et ${flatI.hr} bpm sur le plat`,
-        'Le risque n’est pas réparti : il se concentre sur de courts passages très raides, où l’effort est maximal et où une erreur se paie cher.', 'La pente moyenne ne suffit pas : il faut modéliser la part du massif au-dessus de 20 % et l’effet propre des descentes raides (partie 06).'],
+        `Des engagements courts : la décision d’y aller ou de renoncer se reprend au pied de chacun des ${M.length} massifs.`, 'Renoncer garde de la valeur, parce qu’on peut le faire sans compromettre la suite.'],
+      ['Intensité', `> 20 % : ${f0(steepD * 100)} % de la distance, ${f0(steepT * 100)} % du temps, ${f0(steepG * 100)} % du D+ · ${f0(topI.vr)} m/h et ${topI.hr} bpm au-dessus de 30 %, contre ${f0(flatI.vr)} m/h et ${flatI.hr} bpm sur le plat`,
+        'Le risque n’est pas réparti : il se concentre sur de courts passages très raides, où l’effort est maximal et où une erreur se paie cher.', 'La pente moyenne ne suffit pas : compter la part du massif au-dessus de 20 % et l’effet propre des descentes raides (partie 04).'],
     ];
     $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th><th>Conséquence pour le modèle</th></tr></thead><tbody>${rows.map(r => `<tr><td${/def-btn/.test(r[0]) ? ' class="def-mid"' : ''}><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join('')}</tbody>`;
     readout('r-sheet', `${M.length} massifs · ${M.length - 1} retours à la mer`);
-    const li = a => a.map(([h, p]) => `<li><b>${h}</b><span>${p}</span></li>`).join('');
-    $('pc-pro').innerHTML = li([
-      ['Diversification', `Des massifs indépendants s’additionnent en racine de la somme des carrés : ± ${f0(A.massif)} min sur la traversée, contre ± ${f0(A.block)} min si tout formait un seul bloc sans sortie.`],
-      ['Perte bornée', `Chaque massif se solde au bord de la mer, ${f0(med('t_exit'))} min médianes après le sommet, avant d’engager le suivant.`],
-      ['Décision renouvelée', `${M.length} points de décision : on peut renoncer au pied d’un massif sans compromettre le reste de l’itinéraire.`],
-      ['Repli facile', 'Le niveau de la mer offre un terrain plat, des routes et des villages : se replier ne demande ni altitude ni col à franchir.'],
-    ]);
-    $('pc-con').innerHTML = li([
-      ['Pas de compensation dans un massif', `Montée et descente vont dans le même sens (r = ${f2(T.pace_same.r)}) : les écarts s’additionnent jusqu’en bas, et l’incertitude sur la traversée est ${f1(A.massif / A.seg)} fois celle d’un modèle tronçon par tronçon.`],
-      ['Risque systématique', `La journée reste un facteur commun (r = ${f2(T.pace_next.r)} d’un massif au suivant) : la météo ne se diversifie pas.`],
-      ['Levier élevé', `${f0(steepG * 100)} % du dénivelé se gagne au-dessus de 20 %, sur ${f0(steepD * 100)} % de la distance : l’exposition est courte, mais concentrée.`],
-      ['La sortie n’est pas gratuite', `On sort d’un massif par une descente aussi raide que la montée (r = ${f2(T.grad_same.r)}). La plus grosse perte de la traversée, ${actName(worst.act)}, s’est faite en descente.`],
-    ]);
-    $('t-acf').textContent = `La topographie des Lofoten transforme la traversée en une série de paris courts et indépendants. Le risque total se diversifie : ± ${f0(A.massif)} min sur l’ensemble, ${f1(A.block / A.massif)} fois moins qu’un enchaînement sans sortie, et chaque retour à la mer borne la perte. Mais chaque pari est à fort levier : ${f0(steepG * 100)} % du dénivelé au-dessus de 20 %, et une fois engagé, les écarts s’additionnent jusqu’en bas. La règle qui en découle : décider massif par massif, garder la marge pour la descente, et traiter la journée comme un facteur commun.`;
+
+    // 3. diversification, in words: one block, independent massifs, with the rain
+    $('ex-intro').innerHTML = `<b>Indépendants, les écarts des massifs s’additionnent en racine de la somme des carrés et se compensent en partie ; liés, ils s’additionnent bout à bout.</b>`;
+    $('ex-cols').innerHTML = [
+      [C('--down'), 'Sans indépendance', 'Un seul bloc sans sortie', AG.block, `Toute la traversée comme une seule arête, sans jamais redescendre : les deux risques s’additionnent bout à bout, le terrain de chaque massif comme la météo. Aucun écart ne compense l’autre.`],
+      [C('--accent'), 'Le bénéfice : le risque spécifique se dilue', 'Massifs indépendants', AG.spec, `Chaque retour à la mer remet le compteur à zéro : un pierrier sur un massif ne dit rien du suivant, et un massif difficile est compensé par un plus facile. Sur ${M.length} massifs, le risque propre à chacun est divisé par ${f0(AG.block / AG.spec)}.`],
+      [C('--series-avec'), 'La limite : le risque systématique reste', 'Plus la pluie', AG.total, `La pluie ne connaît pas les retours à la mer : elle a touché les ${SY.n_wet} derniers massifs en même temps, et ses ${fs0(AG.sys)} min s’ajoutent bout à bout. √(${f0(AG.spec)}² + ${f0(AG.sys)}²) = ± ${f0(AG.total)}.`],
+    ].map(([c, s_, t, v, p]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">± ${f0(v)} min</b><p>${p}</p></div>`).join('');
+    $('ex-msg').innerHTML = `<b>L’indépendance est un bénéfice, pas une protection totale.</b> Plus il y a de massifs indépendants, plus le risque propre à chacun se dilue ; le risque commun, lui, reste entier. Sans retour à la mer : ± ${f0(AG.block)} min. Avec : ± ${f0(AG.spec)}. Mais la pluie remet ${fs0(AG.sys)} min que rien ne dilue : ± ${f0(AG.total)}.`;
+    readout('r-acf2', `bloc <b>± ${f0(AG.block)}</b> · indépendants <b>± ${f0(AG.spec)}</b> · avec la pluie <b>± ${f0(AG.total)}</b>`);
+
+    // the « ? » button: systematic and specific risk, how the rain effect is measured
+    DEFS.sysspec = { t: 'Risque spécifique et risque systématique', html: () => `
+      <p>En finance, le risque d’un portefeuille se coupe en deux. Le <b>risque spécifique</b> n’appartient qu’à une entreprise (un produit raté, un procès) : en détenant beaucoup de titres indépendants, il se dilue. Le <b>risque systématique</b> touche tout le marché en même temps (une crise, une hausse des taux) : détenir plus de titres n’y change rien.</p>
+      <p>Ici, les massifs sont les titres. <b>Spécifique</b> : le terrain propre à chaque massif, un pierrier, un sentier invisible, une barre rocheuse. <b>Systématique</b> : la météo, qui pèse sur tous les massifs du moment.</p>
+      <p class="def-f">risque total = √(spécifique² + systématique²)</p>
+      <p><b>La mesure.</b> On compare les ${M.length} massifs à terrain égal (même cote) : sous la pluie (un jour à 1 mm ou plus, ${SY.n_wet} massifs), l’allure est <b>${fs0(rainPct)} %</b> plus lente. Sans tenir compte du terrain, on trouverait ${fs0(SY.raw_pct * 100)} % : les massifs sous la pluie étaient aussi plus durs. Pour chaque massif sous la pluie, la part systématique vaut son temps prévu × ${f0(rainPct)} % ; le reste est spécifique.</p>
+      <div class="def-ex"><b>Exemple.</b> ${mName(worst)} (${dayLbl(worst.day)}) : ${fs0(worst.lost)} min sur le massif, dont ${fs0(SY.sys_min[M.indexOf(worst)])} min de pluie et ${fs0(SY.spec_min[M.indexOf(worst)])} min propres au massif.</div>
+      <p><b>Les autres facteurs communs essayés</b>, à terrain égal (p : part des tirages au hasard qui font aussi bien) :</p>
+      <div class="table-wrap flat"><table class="data"><tbody>${SY.tried.map(t => `<tr><td>${t.l}</td><td class="n mono">p = ${f2(t.p)}</td></tr>`).join('')}</tbody></table></div>
+      <p class="muted">La température ressort le plus, mais elle va avec la pluie : sur 9 jours, froid et pluie arrivent ensemble, on ne peut pas les séparer. Disons « la météo ». La VFC ressort aussi, mais sur six facteurs essayés, l’un ressort souvent par hasard, et la partie 04 ne trouve pas d’effet de la fatigue sur les tronçons : une piste, pas un résultat. Avec ${SY.n_wet} massifs sous la pluie, l’effet est un ordre de grandeur ; la simulation (partie 07) le mesure sur tous les tronçons et trouve un effet du même ordre.</p>
+      <p class="muted">Repères : si les tronçons étaient indépendants, on aurait ± ${f0(T.agg.seg)} min ; si tous les massifs l’étaient, pluie comprise, ± ${f0(AG.indep)} min. Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Chaque massif pèse les minutes réellement perdues ou gagnées.</p>` };
+    $('facts-3').innerHTML = [
+      [`± ${f0(AG.block)} min`, 'un seul bloc sans sortie : les deux risques s’additionnent'],
+      [`± ${f0(AG.spec)} min`, 'massifs indépendants : le risque spécifique se dilue'],
+      [`${fs0(AG.sys)} min`, `la pluie, commune aux ${SY.n_wet} derniers massifs (${fs0(rainPct)} % à terrain égal)`],
+      [`± ${f0(AG.total)} min`, 'le total, pluie comprise'],
+      [`${f0(steepG * 100)} %`, 'du D+ au-dessus de 20 % de pente'],
+    ].map(([v, t]) => `<div><dd><b>${v}</b></dd><dt>${t}</dt></div>`).join('');
+    $('t-acf').innerHTML = `L’indépendance des massifs est un bénéfice : chaque retour à la mer efface une partie du risque propre au massif, le pierrier, le sentier invisible, la barre rocheuse. Mais elle a une limite : la pluie touche tous les massifs à la fois, et rien ne la dilue. Et le relief est raide : le risque se joue sur de courts passages.<br><br>Décider massif par massif, et garder la marge pour la météo.`;
   }
+
 
   /* ---------- 06 · sensitivities (tornado) + correlation matrix ---------- */
   function drawSens() {
@@ -903,7 +782,7 @@
     });
     legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026'], ['dash', '', 'médiane']]);
     readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(lateRain)} mm en trois jours</b>, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 11.`;
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(lateRain)} mm en trois jours</b>, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 09.`;
   }
 
   /* ---------- 07 · weather vs benchmark ---------- */
@@ -1114,8 +993,8 @@
     $('mc-story').innerHTML = `
       <p><b>1. Le modèle prévoit.</b> Il ne connaît que deux jours de beau temps, où j’étais en forme : c’est tout ce que je savais au soir du J2, et c’est sa limite. Il annonce la durée de la suite, avec une fourchette.</p>
       <p><b>2. Tant qu’il fait sec, il voit juste.</b> Du J3 au J6, les ${dryN} journées tombent dans la fourchette prévue la veille${dryOk === dryN ? '' : ` (${dryOk} sur ${dryN})`} ; sortie par sortie, ${SM.blocs.dry.in90} sur ${SM.blocs.dry.n}. À condition de garder l’enchaînement des écarts : la loi normale, trop sûre d’elle, n’en contient que ${SM.normal.dry.in90}.</p>
-      <p><b>3. La pluie le prend de court.</b> ${wetOut.join(' et ')} dépassent le seuil. Ce n’est pas un événement imprévisible : aux Lofoten, il pleut un jour sur trois (partie 07). C’est un régime que le modèle n’a jamais vu, comme un modèle de marché calé sur des années calmes qui rencontre son premier krach.</p>
-      <p class="ex-msg"><b>Le modèle n’est pas celui qui le pilote.</b> Une valeur à risque ne prévoit pas la crise ; ce qui protège la banque, c’est le capital qu’elle a mis de côté. Moi, j’avais prévu le mauvais temps autrement que par un calcul d’allure : un jour de marge dans le plan, de l’avance prise tant qu’il faisait beau, un camp fixe quand la pluie est arrivée. Mon capital, c’était la marge. La simulation dit ce que le choc coûte ; les parties 10 et 11 diront si le plan et mes décisions pouvaient l’absorber.</p>`;
+      <p><b>3. La pluie le prend de court.</b> ${wetOut.join(' et ')} dépassent le seuil. Ce n’est pas un événement imprévisible : aux Lofoten, il pleut un jour sur trois (partie 05). C’est un régime que le modèle n’a jamais vu, comme un modèle de marché calé sur des années calmes qui rencontre son premier krach.</p>
+      <p class="ex-msg"><b>Le modèle n’est pas celui qui le pilote.</b> Une valeur à risque ne prévoit pas la crise ; ce qui protège la banque, c’est le capital qu’elle a mis de côté. Moi, j’avais prévu le mauvais temps autrement que par un calcul d’allure : un jour de marge dans le plan, de l’avance prise tant qu’il faisait beau, un camp fixe quand la pluie est arrivée. Mon capital, c’était la marge. La simulation dit ce que le choc coûte ; les parties 08 et 09 diront si le plan et mes décisions pouvaient l’absorber.</p>`;
 
     // stress test
     const sc = Object.fromEntries(ST.scen.map(x => [x.label, x]));
@@ -1132,9 +1011,9 @@
       <p><b>L’origine.</b> En 1946, à Los Alamos, le mathématicien <b>Stanislaw Ulam</b>, convalescent, se demande quelle est la chance de réussir une patience. Le calcul exact est impossible ; il a l’idée de jouer la partie des centaines de fois et de compter les réussites. Avec <b>John von Neumann</b>, il applique l’idée au trajet des neutrons, sur les premiers ordinateurs. Le nom de code vient du casino de Monte-Carlo, où l’oncle d’Ulam allait jouer.</p>
       <p><b>Le principe.</b> Quand un résultat dépend de beaucoup de petits hasards qui s’additionnent, on ne le calcule pas : on le <b>rejoue</b> des milliers de fois, et on regarde la répartition des résultats.</p>
       <p><b>Ici, trois étages.</b></p>
-      <p><b>1. Un modèle à facteurs</b>, calé sur les ${MC.cal_n} tronçons des J1–J${MC.origin} (la méthode de la partie 06, mais avec les seules données connues ce soir-là) :</p>
+      <p><b>1. Un modèle à facteurs</b>, calé sur les ${MC.cal_n} tronçons des J1–J${MC.origin} (la méthode de la partie 04, mais avec les seules données connues ce soir-là) :</p>
       <p class="def-f">temps = Tobler × sac × terrain × pente × e<sup>u</sup></p>
-      <p>Ce soir-là, il estime : sac ${fs0(cf['sac sur le dos'].pct)} %, terrain ${fs0(cf['terrain (+1 niveau)'].pct)} % par niveau. Ces valeurs diffèrent de celles de la partie 06, calculées après coup sur neuf jours : c’est le prix d’une vraie prévision, et cette incertitude est simulée elle aussi (le modèle est réestimé à chaque tirage).</p>
+      <p>Ce soir-là, il estime : sac ${fs0(cf['sac sur le dos'].pct)} %, terrain ${fs0(cf['terrain (+1 niveau)'].pct)} % par niveau. Ces valeurs diffèrent de celles de la partie 04, calculées après coup sur neuf jours : c’est le prix d’une vraie prévision, et cette incertitude est simulée elle aussi (le modèle est réestimé à chaque tirage).</p>
       <p><b>2. L’aléa u</b>, ce que les facteurs n’expliquent pas, tiré de deux façons. <b>Loi normale</b> : chaque tronçon tire son écart seul, sans mémoire. <b>Blocs</b> : le <i>bootstrap</i>, inventé par <b>Bradley Efron</b> en 1979, retire au hasard dans ses propres données au lieu de supposer une loi ; en 1989, <b>Hans Künsch</b> propose de tirer des <b>blocs</b> de valeurs consécutives pour garder leur enchaînement. Ici : des morceaux réels de ${MC.block} tronçons (2 km), mis bout à bout.</p>
       <p><b>3. La simulation</b> : les ${MC.fut_n} tronçons des J3 à J9 sont rejoués ${f0(MC.ns)} fois sur le parcours réellement suivi. L’itinéraire est une décision ; le temps est le risque.</p>
       <p class="def-ex"><b>Pourquoi deux modèles.</b> Ils partagent tout, sauf l’enchaînement des écarts. Résultat : ${hm(N_.term_sd)} d’incertitude pour la loi normale, ${hm(B_.term_sd)} pour les blocs. La traversée réelle, qui n’a pas servi au calage, tranche : elle arrive ${shm(mcLate)} après la prévision, au centile ${cL(N_.real_pct)} du premier et ${cL(B_.real_pct)} du second.</p>
@@ -1198,7 +1077,7 @@
     const M = PL.match, P_ = PL.plan, Rl = PL.real;
     const totR = M.bridge.find(b => b.k === 'real').v, dpR = totDp;
     const MO = PL.modes;
-    $('plan-lede').innerHTML = `J’avais deux façons d’avancer. Avec le sac : ${f0(MO.sac_pct)} % de temps en plus (partie 06), mais le camp suit. En trail : plus vite, mais sur le terrain le plus exposé (${physIds.filter(id => !rowOf(id).sac).length} alertes de terrain sur ${physIds.length}), et il faut revenir au camp. Un plan répartit l’effort entre les deux. Le mien tenait en 8 jours tracés avant le départ, plus 1 jour de marge, et presque rien ne s’est passé comme prévu : seuls ${f0(MO.track_done)} km des ${f0(P_.km8)} km du tracé ont été parcourus, ${MO.camps_same} campements sur ${MO.camps_n} sont à l’endroit prévu, ${M.abandoned.length - 1} sommets et le tour du lac ont sauté. Mais en finance, on ne juge pas un gérant sur sa fidélité à l’indice de référence : on regarde ce que ses écarts ont coûté. La question n’est donc pas « ai-je suivi le plan ? », mais « le budget prévu a-t-il tenu ? ».`;
+    $('plan-lede').innerHTML = `J’avais deux façons d’avancer. Avec le sac : ${f0(MO.sac_pct)} % de temps en plus (partie 04), mais le camp suit. En trail : plus vite, mais sur le terrain le plus exposé (${physIds.filter(id => !rowOf(id).sac).length} alertes de terrain sur ${physIds.length}), et il faut revenir au camp. Un plan répartit l’effort entre les deux. Le mien tenait en 8 jours tracés avant le départ, plus 1 jour de marge, et presque rien ne s’est passé comme prévu : seuls ${f0(MO.track_done)} km des ${f0(P_.km8)} km du tracé ont été parcourus, ${MO.camps_same} campements sur ${MO.camps_n} sont à l’endroit prévu, ${M.abandoned.length - 1} sommets et le tour du lac ont sauté. Mais en finance, on ne juge pas un gérant sur sa fidélité à l’indice de référence : on regarde ce que ses écarts ont coûté. La question n’est donc pas « ai-je suivi le plan ? », mais « le budget prévu a-t-il tenu ? ».`;
   }
   function drawPlanCharts() {
     if (!PL) return;
@@ -1309,7 +1188,7 @@
     const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), slow = MO.speed.trail / MO.speed.sac - 1;
     $('plan-cols').innerHTML = [
       [C('--down'), 'la trajectoire', 'Le plan n’a pas été suivi', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `Seuls ${f0(MO.track_done / P_.km8 * 100)} % du tracé prévu ont été parcourus. ${f0(-(B.ab + B.nd))} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac), ${f0(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
-      [C('--accent'), 'l’échange', 'Du sac contre du trail', `${fs0(rS.km - pS.km)} km · ${fs0(rT.km - pT.km)} km`, `Le tour du lac était prévu avec le sac. En fixant le camp à Sørvågen, j’ai remplacé ${f0(pS.km - rS.km)} km portés par ${f0(rT.km - pT.km)} km en trail. Ces kilomètres ne se valent pas. À terrain égal, le sac ajoute ${f0(MO.sac_pct)} % de temps (partie 06). Sur les ${hm(pS.h)} prévues avec le sac, ${hm(MO.carry.plan)} étaient son surcoût ; en réel, ${hm(MO.carry.real)} sur ${hm(rS.h)}.`],
+      [C('--accent'), 'l’échange', 'Du sac contre du trail', `${fs0(rS.km - pS.km)} km · ${fs0(rT.km - pT.km)} km`, `Le tour du lac était prévu avec le sac. En fixant le camp à Sørvågen, j’ai remplacé ${f0(pS.km - rS.km)} km portés par ${f0(rT.km - pT.km)} km en trail. Ces kilomètres ne se valent pas. À terrain égal, le sac ajoute ${f0(MO.sac_pct)} % de temps (partie 04). Sur les ${hm(pS.h)} prévues avec le sac, ${hm(MO.carry.plan)} étaient son surcoût ; en réel, ${hm(MO.carry.real)} sur ${hm(rS.h)}.`],
       [C('--up'), 'le budget', 'Le budget a tenu', `${hm(hP)} → ${hm(hR)}`, `Plus de kilomètres, mais plus légers : le dénivelé est le même à ${f0(Math.abs(dpR / dpP - 1) * 100)} % près, le temps de marche aussi. Le jour de marge a été utilisé, ni plus ni moins. La recherche de bivouac a coûté ${f1(MO.biv.km)} km et ${f0(MO.biv.up)} m en ${MO.biv.n} détours.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
     $('plan-msg').innerHTML = `<b>Ni sous-estimé, ni surestimé.</b> Le plan n’a pas servi de trajectoire : il a servi de budget. L’effort total était bien estimé, si bien que les écarts, tous de sens contraires, se sont compensés : comme un portefeuille dont on change la composition sans changer le risque total.`;
@@ -1319,10 +1198,10 @@
       <p><b>Le budget de risque.</b> Dans les années 1990, les gérants généralisent l’idée : on ne fixe plus seulement une composition, mais une quantité totale de risque à ne pas dépasser, que l’on répartit librement.</p>
       <p class="def-ex"><b>Ici.</b> Le plan est l’indice de référence. Le « pont » est une attribution : il part des ${f0(P_.km8)} km du tracé, les convertit à la mesure de la montre (${f0(B.plan_eq)} km avec le jour de marge), puis ajoute chaque écart, classé en décision, terrain ou mesure, jusqu’aux ${f0(B.real)} km réels. Le graphique par mode montre l’allocation : moins de sac, plus de trail. Et le budget, c’est l’effort total : ${hm(hP)} prévues à mon allure réelle, ${hm(hR)} marchées.</p>
       <p><b>Le coût de portage.</b> En finance, détenir une position coûte : financement, stockage, assurance. C’est le <i>cost of carry</i>. Ici, le sac est la position : il permet d’avancer avec son camp, mais il ajoute ${f0(MO.sac_pct)} % de temps à terrain égal. Fixer le camp, c’est arrêter de payer ce coût.</p>
-      <p><b>Comment il se calcule.</b> Ce n’est pas le temps passé avec le sac : c’est la part de ce temps qui vient du sac. La régression de la partie 06 dit qu’un trajet porté dure ${f0(MO.sac_pct)} % de plus que le même trajet fait léger. On retrouve donc le temps « léger » en divisant, et le surcoût est la différence.</p>
+      <p><b>Comment il se calcule.</b> Ce n’est pas le temps passé avec le sac : c’est la part de ce temps qui vient du sac. La régression de la partie 04 dit qu’un trajet porté dure ${f0(MO.sac_pct)} % de plus que le même trajet fait léger. On retrouve donc le temps « léger » en divisant, et le surcoût est la différence.</p>
       <div class="def-f">surcoût = temps porté − temps porté ÷ ${f2(1 + MO.sac_pct / 100)}</div>
       <div class="def-ex"><b>Plan.</b> ${hm(pS.h)} prévues avec le sac ÷ ${f2(1 + MO.sac_pct / 100)} = ${hm(pS.h - MO.carry.plan)} si le même trajet était fait léger. Surcoût : ${hm(MO.carry.plan)}.<br><b>Réel.</b> ${hm(rS.h)} portées ÷ ${f2(1 + MO.sac_pct / 100)} = ${hm(rS.h - MO.carry.real)}. Surcoût : ${hm(MO.carry.real)}.</div>
-      <p>Le plan prévoyait donc bien ${hm(pS.h)} avec le sac sur ${hm(pS.h + pT.h)}, dont ${hm(MO.carry.plan)} dues au sac lui-même. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de ce surcoût. La partie 11 demande si cette économie était une décision ou une chance.</p>
+      <p>Le plan prévoyait donc bien ${hm(pS.h)} avec le sac sur ${hm(pS.h + pT.h)}, dont ${hm(MO.carry.plan)} dues au sac lui-même. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de ce surcoût. La partie 09 demande si cette économie était une décision ou une chance.</p>
       <p class="muted">Précautions. Un point réel est compté « sur le plan » à moins de 60 m du tracé ; le dénivelé du plan vient du modèle de terrain de Strava, le réel de la montre. Le tracé Strava est lissé : sur le parcours commun, la montre mesure ${f0((MO.ratio - 1) * 100)} % de plus. Les distances du plan sont donc converties à la mesure de la montre ; sans cette conversion, le plan vaudrait ${hm(MO.plan_h_raw)}. Et le temps du plan est calculé avec mes vitesses réelles (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail) : il mesure ce que le plan demandait, pas ce que j’avais estimé avant de partir.</p>` };
     const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
     const N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km), ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5);
@@ -1462,9 +1341,9 @@
     readout('r-dec', `${CD.n} décisions`);
     // texts
     const P = MG.scen.find(d => d.key === 'plan'), Rl = MG.scen.find(d => d.key === 'reel');
-    $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 10), alors que la pluie a pris le modèle de court (partie 09). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
+    $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 08), alors que la pluie a pris le modèle de court (partie 07). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
     $('cf-bilan').innerHTML = [
-      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(R.weather.total_rain)} mm en 9 jours : plus arrosé que ${f0(MM.tot.pct)} % des départs possibles (partie 07)`],
+      ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(R.weather.total_rain)} mm en 9 jours : plus arrosé que ${f0(MM.tot.pct)} % des départs possibles (partie 05)`],
       ['Chance · pour moi', 'J7', 'la pluie arrive quand la traversée se termine'],
       ['Décision · l’avance', `${f0(P.free)} → ${f0(Rl.free)} %`, 'des mondes météo sans aucune étape mouillée'],
       ['Verdict', `${CD.quad.merite} sur ${CD.n}`, 'décisions au résultat mérité'],
@@ -1472,7 +1351,7 @@
     $('cf-cols').innerHTML = [
       [C('--warning'), 'la chance', 'Le moment', 'J7', `Les ${X.episode.length} jours de pluie sont tombés quand il ne restait plus d’étape. Arrivés plus tôt, j’aurais attendu sous la tente et perdu mes ${SR.slack} jours libres : les sorties des J7 à J9, ${f0(FR.km)} km et ${f0(FR.dplus)} m de D+.`],
       [C('--up'), 'la décision', 'L’avance', `${SP.slack} → ${SR.slack} jours`, `Avec la marge du plan, un seul jour d’attente possible : ensuite, ${SP.rows[0].wet} étapes se font sous la pluie, avec le sac. L’avance prise aux J2 et J3 porte la réserve à ${SR.slack} jours : plus aucune étape forcée.`],
-      [C('--accent'), 'l’option exercée', 'Le camp fixe', `−${hm(save)}`, `Fixer le camp, c’est passer du sac au trail : matériel au sec et ${hm(save)} de portage en moins (partie 10). Le mauvais temps a quand même coûté ${f0(MC.stress.pct)} % d’allure (partie 09), mais aucune étape.`],
+      [C('--accent'), 'l’option exercée', 'Le camp fixe', `−${hm(save)}`, `Fixer le camp, c’est passer du sac au trail : matériel au sec et ${hm(save)} de portage en moins (partie 08). Le mauvais temps a quand même coûté ${f0(MC.stress.pct)} % d’allure (partie 07), mais aucune étape.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
     $('cf-msg').innerHTML = `<b>La chance a décidé quand la pluie tombait. Mes décisions ont décidé ce qu’elle coûtait.</b> Sans l’avance, la même pluie au même moment aurait coûté ${SP.rows[SP.rows.length - 1].wet} étapes mouillées. Sans la chance, l’avance aurait quand même tout absorbé, au prix des ${SR.slack} jours libres.`;
     const lucky = I.find(d => d.quad === 'chance');
@@ -1494,7 +1373,7 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawTools, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, () => drawMc(false), drawPlanCharts, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, () => drawMc(false), drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
