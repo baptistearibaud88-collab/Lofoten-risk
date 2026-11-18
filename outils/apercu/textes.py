@@ -36,7 +36,7 @@ LIM = {'Introduction': 45, 'Comment lire': 35, 'À retenir': 55, 'Méthode': 0}
 def main():
     v = '-v' in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith('-')]
-    parts = args or [f's{i}' for i in range(1, 13)]
+    parts = args or [f's{i}' for i in range(1, 11)]
     s = serveur()
     d3 = next((p for p in D3_LOCAL if os.path.exists(p)), None)
     with sync_playwright() as p:

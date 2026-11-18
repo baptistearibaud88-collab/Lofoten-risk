@@ -18,7 +18,7 @@ D3_LOCAL = [
     '/opt/npm-tools/node_modules/d3/dist/d3.min.js',
     os.path.join(RACINE, 'node_modules/d3/dist/d3.min.js'),
 ]
-TOUTES = [f's{i}' for i in range(1, 13)]
+TOUTES = [f's{i}' for i in range(1, 11)]
 
 
 def serveur():

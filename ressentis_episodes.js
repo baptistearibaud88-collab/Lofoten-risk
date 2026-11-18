@@ -1,4 +1,4 @@
-// Causes des épisodes lents de la partie 05, renseignées après coup à partir du terrain.
+// Causes des épisodes lents de la partie 02, renseignées après coup à partir du terrain.
 // Clé : identifiant de l'épisode (sortie@km de début), affiché au survol du tableau.
 // causes : la première est la cause principale (seule comptée dans le bilan), les suivantes sont secondaires.
 // Catégories : sentier (peu visible, hors sentier) · terrain_instable · meteo · evaluation · arret
