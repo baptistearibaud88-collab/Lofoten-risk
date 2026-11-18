@@ -1,4 +1,4 @@
-// Épisodes d'allure (partie 04) et topographie en massifs indépendants (partie 05).
+// Épisodes d'allure (partie 02) et topographie en massifs indépendants, risque spécifique et systématique (partie 03).
 // Entrées : risque_data.js, data.js (temps réel point par point), risque_sections.js.
 // Sortie  : risque_episodes.js — à relancer après segmentation_terrain.js :
 //   node outils/episodes_allure.js
@@ -126,11 +126,44 @@ const perm = mode => { const n = [], m = []; for (let k = 0; k < 2000; k++) {
   const sm = [...m].sort((a, b) => a - b); return { n: r1(n.reduce((a, b) => a + b, 0) / n.length), min: Math.round(m.reduce((a, b) => a + b, 0) / m.length), p95: Math.round(sm[Math.floor(.95 * sm.length)]), p_obs: r3(m.filter(x => x >= obsEps.reduce((a, b) => a + b, 0)).length / m.length) }; };
 const cluster = { obs_n: obsEps.length, obs_min: Math.round(obsEps.reduce((a, b) => a + b, 0)), all: perm('all'), act: perm('act') };
 
+// systematic and specific risk of the massifs (part 03)
+// Common factor = the weather of the day: a massif is « under rain » when its day gets at least 1 mm.
+// Rain effect measured on the 15 massifs at equal terrain: e_massif = a + b·grade + c·rain (least squares).
+// Systematic part of a massif = its expected time × (e^c − 1) under rain, 0 otherwise; specific part = the rest.
+// Specific parts add up in quadrature (independent massifs), the systematic parts add up in line (same weather).
+const ols = (y, X) => { const Am = X.map(r => [1, ...r]), k = Am[0].length;
+  const m = Array.from({ length: k }, (_, i) => [...Array.from({ length: k }, (_, j) => Am.reduce((s, r) => s + r[i] * r[j], 0)), Am.reduce((s, r, n) => s + r[i] * y[n], 0)]);
+  for (let i = 0; i < k; i++) for (let j = 0; j < k; j++) if (j !== i) { const f = m[j][i] / m[i][i]; for (let c = 0; c <= k; c++) m[j][c] -= f * m[i][c]; }
+  return m.map((r, i) => r[k] / r[i]); };
+const okI = i => Math.abs(S[i].slope) <= GPS_SLOPE, mean_ = a => a.reduce((x, y) => x + y, 0) / a.length;
+const mIdx = m => { const ii = []; for (let i = m.i0; i <= m.i1; i++) if (okI(i)) ii.push(i); return ii; };
+const WD = R.weather.days, rowOf = m => R.rows.find(r => r.id === m.act);
+const mE = massifs.map(m => mean_(mIdx(m).map(i => e[i]))), mG = massifs.map(m => mean_(mIdx(m).map(i => SEC.seg_grade[i])));
+const wet = massifs.map(m => (WD[m.day - 1].rain >= 1 ? 1 : 0));
+const coefRain = ols(mE, massifs.map((m, k) => [mG[k], wet[k]]))[2], rainPct = Math.exp(coefRain) - 1;
+const permP = (z, nPerm = 5000) => { const b0 = Math.abs(ols(mE, massifs.map((m, k) => [mG[k], z[k]]))[2]); let c = 0;
+  for (let q = 0; q < nPerm; q++) { const p = z.slice(); for (let i = p.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } if (Math.abs(ols(mE, massifs.map((m, k) => [mG[k], p[k]]))[2]) >= b0) c++; }
+  return r3(c / nPerm); };
+const expMin = massifs.map(m => m.t_tot - m.lost);
+const sysM = massifs.map((m, k) => (wet[k] ? expMin[k] * rainPct : 0)), specM = massifs.map((m, k) => m.lost - sysM[k]);
+const sqr = a => Math.sqrt(a.reduce((s, v) => s + v * v, 0)), sysSum = sysM.reduce((a, b) => a + b, 0);
+// raw comparison (no terrain control), and the other common factors tried (at equal terrain)
+const rawPct = Math.exp(mean_(mE.filter((v, k) => wet[k])) - mean_(mE.filter((v, k) => !wet[k]))) - 1;
+const tried = [['pluie (jour à 1 mm ou plus)', wet], ['température maximale', massifs.map(m => WD[m.day - 1].tmax)], ['rafales', massifs.map(m => rowOf(m).gust)],
+  ['VFC de la nuit', massifs.map(m => rowOf(m).hrv)], ['sommeil', massifs.map(m => rowOf(m).sleep_h)], ['jour du trek (fatigue cumulée)', massifs.map(m => m.day)]]
+  .map(([l, z]) => ({ l, coef: r3(ols(mE, massifs.map((m, k) => [mG[k], z[k]]))[2]), p: permP(z) }));
+const sys = {
+  rain_pct: r3(rainPct), raw_pct: r3(rawPct), n_wet: wet.reduce((a, b) => a + b, 0), wet, sys_min: sysM.map(r1), spec_min: specM.map(r1), exp_min: expMin.map(r1),
+  agg: { spec: r1(sqr(specM)), sys: r1(sysSum), total: r1(Math.sqrt(sqr(specM) ** 2 + sysSum ** 2)), indep: r1(sqr(massifs.map(m => m.lost))), block: r1(massifs.reduce((s, m) => s + Math.abs(m.lost), 0)) },
+  tried,
+};
+
 const out = {
   seg_t: t.map(Math.round), seg_lost: lost.map(r2), thr: EP_THR, episodes,
-  topo, cluster,
+  topo, cluster, sys,
 };
 fs.writeFileSync(path.join(root, 'risque_episodes.js'), `// généré par outils/episodes_allure.js — ne pas modifier à la main\nwindow.RISK_EPISODES = ${JSON.stringify(out)};\n`);
 console.log(`${episodes.length} épisodes · ${massifs.length} massifs · raideur même massif r=${r2(topo.grad_same.r)} · suivant r=${r2(topo.grad_next.r)} · allure même massif r=${r2(topo.pace_same.r)} · suivant r=${r2(topo.pace_next.r)} (seuil ${r2(topo.pace_next.crit)})`);
+console.log('systématique :', JSON.stringify(sys.agg), 'pluie', sys.rain_pct, 'brut', sys.raw_pct, JSON.stringify(sys.tried));
 console.log(topo.slope.map(b => `${b.lo}%: dist ${Math.round(b.dist * 100)} D+ ${Math.round(b.gain * 100)}`).join(' | '));
 episodes.sort((a, b) => b.lost_min - a.lost_min).forEach(x => console.log(x.id.padEnd(28), x.sign > 0 ? 'lent ' : 'rapide', `${x.len} km`, `${x.lost_min} min`, `${x.pct} %`, x.gps ? 'GPS?' : '', x.alert.join(',')));

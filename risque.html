@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261118-2">
+<link rel="stylesheet" href="risque.css?v=20261118-3">
 </head>
 <body>
 <div class="viz-root">
@@ -50,7 +50,7 @@
     <span class="toc-act">Acte 1 · Mesurer</span>
     <a href="#s1"><b>01</b>Relief et cotation</a>
     <a href="#s2"><b>02</b>Écarts et temps perdu</a>
-    <a href="#s3"><b>03</b>Massifs</a>
+    <a href="#s3"><b>03</b>Massifs et météo</a>
     <span class="toc-act">Acte 2 · Expliquer</span>
     <a href="#s4"><b>04</b>Sensibilités et fatigue</a>
     <a href="#s5"><b>05</b>Météo</a>
@@ -155,31 +155,29 @@
   </section>
 
   <section id="s3">
-    <header class="sh"><span class="num">03</span><h2>Des sommets indépendants, des montées à fort levier</h2></header>
-    <p class="lede">La topographie des Lofoten impose une structure de risque particulière. Chaque massif monte directement depuis la mer et y redescend : entre deux sommets, on repasse au niveau de la mer, sur un terrain plat, au bord d’un fjord, d’une route ou d’un village. En termes de gestion du risque, la traversée est un portefeuille de positions courtes et indépendantes, avec une sortie à la fin de chacune. Un itinéraire alpin qui enchaîne les cols en altitude ressemble au contraire à une position unique, longue et corrélée : sans point de sortie, une difficulté pèse sur toute la suite. La contrepartie est l’intensité : les montées sont courtes, mais très raides.</p>
+    <header class="sh"><span class="num">03</span><h2>Des sommets indépendants, une météo commune</h2></header>
+    <p class="lede">Chaque massif monte de la mer et y redescend : la traversée est un portefeuille de 15 trades courts, chacun avec sa sortie. Leur risque se coupe en deux : le spécifique (le terrain de chaque massif) et le systématique (la météo, commune à tous).</p>
     <div class="grid-2">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Exposition · la distance est plate, le dénivelé est raide</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-acf1"></span></div></div>
-      <div class="pc"><div class="pc-head"><span class="pc-t">Diversification · incertitude sur le temps total</span><span class="pc-r mono" id="r-acf2"></span></div><div class="chart" id="c-acf2" data-h="250"></div><div class="pc-foot"><span class="src">Taille de chaque exposition : temps perdu ou gagné réellement sur le tronçon ou le massif</span></div></div>
-    </div>
-    <div class="pc mt explain">
-      <div class="pc-head"><span class="pc-t">Lire la diversification · comment les retards s’additionnent</span></div>
-      <div class="ex-body">
-        <p class="ex-intro" id="ex-intro"></p>
-        <div class="ex-cols" id="ex-cols"></div>
-        <p class="ex-msg" id="ex-msg"></p>
-      </div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Distance par classe de pente</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="190"></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Dénivelé positif par classe de pente</span><span class="pc-r mono" id="r-acf1b"></span></div><div class="chart" id="c-acf1b" data-h="190"></div></div>
     </div>
     <div class="pc mt">
       <div class="pc-head"><span class="pc-t">Fiche de risque · structure des massifs</span><span class="pc-r mono" id="r-sheet"></span></div>
       <div class="table-wrap flat"><table class="data risk-sheet" id="risk-sheet"></table></div>
     </div>
-    <div class="grid-2 mt procon">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Ce que l’indépendance apporte</span></div><ul id="pc-pro"></ul></div>
-      <div class="pc"><div class="pc-head"><span class="pc-t">Ce qu’elle ne couvre pas</span></div><ul id="pc-con"></ul></div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Les 15 trades · minutes perdues ou gagnées par massif</span><span class="pc-r mono" id="r-trades"></span></div>
+      <div class="chart" id="c-trades" data-h="260"></div>
+      <div class="pc-foot"><span class="legend-row" id="l-trades"></span></div>
     </div>
-    <div class="notes">
-      <div><h4>Comment lire</h4><p>À gauche, pour chaque classe de pente, la part de la distance et la part du dénivelé positif : le relief se gagne sur peu de distance. À droite, l’incertitude sur le temps total de la traversée selon la façon dont les écarts se combinent. Indépendants, les risques s’additionnent en racine de la somme des carrés ; parfaitement liés, ils s’additionnent directement.</p></div>
-      <div><h4>Méthode</h4><p>Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Corrélations entre la montée et la descente d’un même massif, puis d’un massif au suivant ; seuil de significativité à 5 %. Agrégation : chaque tronçon ou massif est une exposition dont la taille est le temps perdu ou gagné réellement ; écart-type total = √Σ expositions² si indépendantes, Σ |expositions| si parfaitement corrélées. Le bloc unique est un contrefactuel construit sur ces mêmes données, pas une mesure alpine.</p></div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Comment les risques s’additionnent</span><span class="pc-r mono" id="r-acf2"></span></div>
+      <div class="seg-btns" id="div-btns" role="group" aria-label="Façon d’additionner les risques"></div>
+      <div class="chart" id="c-acf2" data-h="330"></div>
+      <p class="div-cap" id="div-cap"></p>
+    </div>
+    <div class="notes two kr">
+      <div><h4>Comment lire</h4><p>Une barre par massif : rouge, du temps perdu ; vert, du temps gagné ; bleu, la part due à la pluie. En bas, le côté d’un carré compte des minutes.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-acf"></p></div>
     </div>
   </section>
@@ -438,7 +436,7 @@
 <script src="risque_data.js?v=20261105-8"></script>
 <script src="risque_dist.js?v=20261108-3"></script>
 <script src="risque_sections.js?v=20261108-1"></script>
-<script src="risque_episodes.js?v=20261108-1"></script>
+<script src="risque_episodes.js?v=20261118-1"></script>
 <script src="risque_plan.js?v=20261111-3"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
@@ -447,6 +445,6 @@
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261118-2"></script>
-<script src="risque.js?v=20261118-5"></script>
+<script src="risque.js?v=20261118-6"></script>
 </body>
 </html>

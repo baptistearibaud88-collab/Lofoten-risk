@@ -468,3 +468,11 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .fold > summary:hover { border-color: var(--accent); }
 .fold[open] > summary { margin-bottom: 14px; }
 @media print { .fold-sec .act { break-before: auto; } }
+
+/* partie 03 : boutons du graphique de diversification */
+.seg-btns { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px 0; }
+.seg-btns button { border: 1px solid var(--hair); background: var(--surface-1); color: var(--text-secondary); border-radius: 999px; padding: 6px 14px; font: 600 12.5px var(--font); cursor: pointer; }
+.seg-btns button b { font-family: var(--mono); color: var(--text-primary); margin-left: 6px; }
+.seg-btns button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.seg-btns button[aria-pressed="true"] b { color: var(--bg); }
+.div-cap { margin: 0; padding: 4px 16px 14px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); max-width: 980px; }
