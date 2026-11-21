@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261121-4">
+<link rel="stylesheet" href="risque.css?v=20261121-6">
 </head>
 <body>
 <div class="viz-root">
@@ -52,7 +52,7 @@
     <span class="toc-act">Acte 2 · Expliquer</span>
     <a href="#s4"><b>04</b>Sensibilités et fatigue</a>
     <a href="#s5"><b>05</b>Météo</a>
-    <a href="#s6"><b>06</b>Bilan</a>
+    <a href="#s6"><b>06</b>Les grecs</a>
     <span class="toc-act">Acte 3 · Piloter</span>
     <a href="#s7"><b>07</b>Monte Carlo</a>
     <a href="#s8"><b>08</b>Plan contre réel</a>
@@ -234,21 +234,12 @@
   </section>
 
   <section id="s6">
-    <header class="sh"><span class="num">06</span><h2>Ce que chaque facteur a coûté, jour par jour</h2></header>
-    <p class="lede">Les parties 04 et 05 ont mesuré chaque facteur séparément. Ici, on les remet ensemble : combien de minutes chacun a ajoutées, jour par jour, à une journée de base sans sac, sur terrain facile et par temps sec.</p>
-    <div class="pc">
-      <div class="pc-head"><span class="pc-t">Minutes ajoutées à la journée de base</span><span class="pc-r mono" id="r-attr"></span></div>
-      <div class="chart" id="c-attr" data-h="320"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-attr"></span></div>
-    </div>
-    <div class="notes eq risk-def greeks">
-      <div><h4><span class="gk">Δ</span> Delta · la sensibilité</h4><p id="t-delta"></p></div>
-      <div><h4><span class="gk">ν</span> Vega · la volatilité</h4><p id="t-vega"></p></div>
-      <div><h4><span class="gk">Θ</span> Thêta · le temps</h4><p id="t-theta"></p></div>
-    </div>
+    <header class="sh"><span class="num">06</span><h2>Les grecs du trek : ce qui fait bouger mon temps</h2></header>
+    <p class="lede">En finance, les « grecs » mesurent comment le prix d’une option réagit à chacune de ses entrées. Mon temps de marche se lit de la même façon : chaque lettre pose une question sur ce qui le fait bouger, et de combien.</p>
+    <div class="gk-grid" id="gk-grid"></div>
     <div class="notes two">
-      <div><h4>Comment lire</h4><p>Chaque barre empile les minutes ajoutées par un facteur à la journée de base. En haut, la pluie du jour ; la bande grise marque les trois jours mouillés.</p></div>
-      <div class="key"><h4>À retenir</h4><p id="t-attr"></p></div>
+      <div><h4>Comment lire</h4><p>Chaque carte : la définition en finance, l’équivalent dans le trek, puis la mesure sur les 604 tronçons. « n.s. » : effet non distinguable du hasard.</p></div>
+      <div class="key"><h4>À retenir</h4><p id="t-gk"></p></div>
     </div>
   </section>
 
@@ -407,7 +398,7 @@
           <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
           <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois par modèle (loi normale ; blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance au mauvais temps (outils/monte_carlo.js).</li>
           <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
-          <li><b>Bilan de l’acte 2</b> : temps réel de chaque tronçon partagé entre les facteurs de la partie 04 (sac, terrain, descente raide, VFC) et à la pluie de la partie 03, au prorata de leur effet, au-dessus d’une journée de base (outils/conclusion_acte2.js).</li>
+          <li><b>Grecs</b> : régression de la partie 04 plus un terme croisé à la fois (sac × cote, pluie × cote, cote × jour) ; volatilité = écart-type des résidus par groupe ; horizon tiré de la simulation (outils/conclusion_acte2.js).</li>
         </ul>
       </div>
       <div>
@@ -444,11 +435,11 @@
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261112-1"></script>
-<script src="risque_acte2.js?v=20261121-2"></script>
+<script src="risque_acte2.js?v=20261121-3"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261118-3"></script>
-<script src="risque.js?v=20261121-6"></script>
+<script src="risque.js?v=20261121-9"></script>
 </body>
 </html>

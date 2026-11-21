@@ -848,57 +848,101 @@
     $('t-wx').textContent = `Six jours secs et plus chauds que la normale (${f1(W_.tmax_mean)} °C de max moyen contre ${f1(W_.climato.tmax)}), puis ${f1(lateRain)} mm en trois jours, soit ${f0((lateRain / W_.climato.pluie_mm - 1) * 100)} % de plus que la normale de toute la période, avec des rafales jusqu’à ${W_.gust_max} km/h. Les trois incidents de terrain les plus graves (escalade, éboulement, grotte) tombent dans ces trois jours, quand la VFC était déjà sous la zone normale (environ −30 %). Le nombre de jours de pluie est normal (${W_.rainy_days}) : c’est leur regroupement en fin de séjour qui a fait le risque.`;
   }
 
-  /* ---------- 06 · bilan de l'acte 2 : ce que chaque facteur a coûté, et les grecs ---------- */
+  /* ---------- 06 · les grecs du trek ---------- */
   function drawActe2() {
-    const A = window.RISK_ACTE2; if (!A) return;
-    const KS = [['sac', 'sac sur le dos', C('--series-avec')], ['terrain', 'terrain', C('--critical')], ['desc', 'descente raide', C('--warning')], ['meteo', 'pluie (temps perdu)', C('--accent')]];
-    const D = A.days, wet = D.filter(d => d.day >= A.disp.wet_from);
-    const f = frame('c-attr', { t: 8, r: $('c-attr').clientWidth < 560 ? 34 : 58, b: 26, l: 8 });
-    const top = 62, gap = 22, hB = f.h - top - gap;
-    const x = d3.scaleBand().domain(D.map(d => d.day)).range([0, f.w]).paddingInner(.32).paddingOuter(.18);
-    const add = d => KS.reduce((s, [k]) => s + Math.max(0, d[k]), 0);
-    const y = d3.scaleLinear().domain([0, d3.max(D, add) * 1.12]).nice().range([top + gap + hB, top + gap]);
-    const yr = d3.scaleLinear().domain([0, d3.max(D, d => d.rain) * 1.25]).range([top - 4, 14]);
-    // jours mouillés : bande grise sur toute la hauteur
-    const x0 = x(wet[0].day) - x.step() * x.paddingInner() / 2, x1 = x(wet[wet.length - 1].day) + x.bandwidth() + x.step() * x.paddingInner() / 2;
-    f.g.append('rect').attr('x', x0).attr('width', x1 - x0).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .1).attr('rx', 4);
-    if (!f.narrow) f.g.append('text').attr('class', 'ax-title').attr('x', x0 + 6).attr('y', 10).text('jours mouillés');
-    // bandeau de pluie
-    f.g.append('text').attr('class', 'ax-title').attr('x', 0).attr('y', 10).text('pluie du jour (mm)');
-    f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', top - 4).attr('y2', top - 4).attr('stroke', C('--hair'));
-    const rw = Math.min(x.bandwidth(), 26);
-    f.g.selectAll('.rn').data(D).join('rect').attr('x', d => x(d.day) + (x.bandwidth() - rw) / 2).attr('width', rw).attr('y', d => yr(d.rain)).attr('height', d => yr(0) - yr(d.rain)).attr('rx', 2).attr('fill', C('--series-avec')).attr('fill-opacity', .55);
-    f.g.selectAll('.rl').data(D.filter(d => d.rain >= .5)).join('text').attr('class', 'ax-title').attr('text-anchor', 'middle').attr('x', d => x(d.day) + x.bandwidth() / 2).attr('y', d => yr(d.rain) - 4).text(d => f1(d.rain));
-    // barres empilées
-    yGrid(f.g, y, f.w, 4, v => f.narrow ? `${v}` : `${v} min`);
-    f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(dayLbl));
-    D.forEach(d => {
-      let c = 0;
-      KS.forEach(([k, , col]) => {
-        const v = Math.max(0, d[k]); if (!v) return;
-        f.g.append('rect').attr('x', x(d.day)).attr('width', x.bandwidth()).attr('y', y(c + v)).attr('height', y(c) - y(c + v)).attr('fill', col).attr('fill-opacity', .85);
-        c += v;
+    const A = window.RISK_ACTE2, box = $('gk-grid'); if (!A || !box) return;
+    const D = A.delta, G = A.gamma, V = A.vega, TH = A.theta, RH = A.rho;
+    const pct = v => `${v >= 0 ? '+' : '−'}${Math.abs(v) < 1 ? f1(Math.abs(v)) : f0(Math.abs(v))} %`, d2 = v => f2(v);
+    const GRADES = ['Facile', 'Modéré', 'Exigeant', 'Expert'];
+    const hN = TH.horizon[TH.horizon.length - 1];
+    const ns = t => Math.abs(t) < 1.96 ? ' <span class="gk-ns">n.s.</span>' : '';
+    const cards = [
+      { k: 'delta', l: 'Δ', n: 'Delta', q: 'le terrain', fi: 'De combien le prix bouge quand le sous-jacent bouge d’un cran.',
+        tr: `Le sous-jacent, c’est le terrain. Un niveau de cote en plus : <b>${pct(D.cote)}</b> de temps ; une descente raide : ${pct(D.desc)}.`, h: 110 },
+      { k: 'gamma', l: 'Γ', n: 'Gamma', q: 'le sac sur terrain dur', fi: 'De combien le delta lui-même change. Entre deux facteurs, on parle de gamma croisé.',
+        tr: `Le sac ne coûte pas pareil partout : <b>${pct(G.sac_by_grade[0])}</b> en terrain facile, <b>${pct(G.sac_by_grade[3])}</b> en expert. Les deux risques se renforcent.`, h: 110 },
+      { k: 'vega', l: 'ν', n: 'Vega', q: 'l’imprévisible', fi: 'La sensibilité à la volatilité : l’ampleur des écarts, pas leur sens.',
+        tr: `Qu’est-ce qui rend mon allure imprévisible ? Pas la pluie (${d2(V.pluie[1])} contre ${d2(V.pluie[0])} au sec). Un peu le terrain. Et le sac la <b>calme</b> (${d2(V.sac[1])} contre ${d2(V.sac[0])}).`, h: 110 },
+      { k: 'theta', l: 'Θ', n: 'Thêta', q: 'l’horizon', fi: 'L’effet du temps qui passe. L’incertitude d’un prix grandit avec le temps qui reste.',
+        tr: `Vue du soir du J${TH.origin}, la prévision se trompe de <b>± ${TH.horizon[0].half_min} min</b> pour le lendemain, de <b>± ${hm(hN.half_min / 60)}</b> pour le J${hN.day}.`, h: 110 },
+      { k: 'rho', l: 'ρ', n: 'Rho', q: 'le portage', fi: 'La sensibilité au taux d’intérêt : le coût de porter une position dans le temps.',
+        tr: `Porter son camp a un coût : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (de ${pct(RH.lo)} à ${pct(RH.hi)}).`, h: 110 },
+      { k: 'second', l: '∂²', n: 'Second ordre', q: 'les effets croisés', fi: 'Vanna : le delta change avec la volatilité. Charm : le delta change avec le temps.',
+        tr: `La pluie pèse-t-elle plus sur terrain dur ? ${pct(A.vanna.pct)} par niveau${ns(A.vanna.t)}. Ai-je appris le terrain au fil des jours ? ${pct(A.charm.pct)} par jour${ns(A.charm.t)}.`, h: 110 },
+    ];
+    box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}</span></div>
+      <div class="gk-body"><p class="gk-fi"><span class="gk-lab">Finance</span>${c.fi}</p><p class="gk-tr"><span class="gk-lab">Trek</span>${c.tr}</p></div>
+      <div class="chart gk-c" id="c-gk-${c.k}" data-h="${c.h}"></div></div>`).join('');
+    const lab = (g, x, y, t, a = 'middle', cls = 'ax-title') => g.append('text').attr('class', cls).attr('x', x).attr('y', y).attr('text-anchor', a).text(t);
+    const bars = (id, vals, names, col, ref) => {
+      const f = frame(id, { t: 16, r: 8, b: 18, l: 8 });
+      const x = d3.scaleBand().domain(names).range([0, f.w]).padding(.28), y = d3.scaleLinear().domain([0, d3.max(vals) * 1.15 || 1]).range([f.h, 0]);
+      if (ref != null) { f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(ref)).attr('y2', y(ref)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3'); lab(f.g, 0, -4, `- - sac en moyenne : +${f0(ref)} % (partie 04)`, 'start'); }
+      vals.forEach((v, i) => {
+        f.g.append('rect').attr('x', x(names[i])).attr('width', x.bandwidth()).attr('y', y(v)).attr('height', f.h - y(v)).attr('rx', 2).attr('fill', col).attr('fill-opacity', .35 + .65 * (i + 1) / vals.length);
+        const inside = f.h - y(v) > 18;
+        lab(f.g, x(names[i]) + x.bandwidth() / 2, inside ? y(v) + 12 : y(v) - 4, v ? `+${f0(v)} %` : '0', 'middle', inside ? 'ax-title gk-in' : 'ax-title');
+        lab(f.g, x(names[i]) + x.bandwidth() / 2, f.h + 13, names[i]);
       });
-      f.g.append('text').attr('class', 'ax-title').attr('text-anchor', 'middle').attr('x', x(d.day) + x.bandwidth() / 2).attr('y', y(c) - 5).style('font-size', f.narrow ? '9px' : null).text(f.narrow ? `${hm((d.real - d.base) / 60).replace(' h ', 'h')}` : `+${hm((d.real - d.base) / 60)}`);
-    });
-    hover(f.g.selectAll('.ah').data(D).join('rect').attr('class', 'hit').attr('x', d => x(d.day) - x.step() * x.paddingInner() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-      d => `<b>${dayLbl(d.day)} · ${hm(d.real / 60)} de marche</b>${row('journée de base', hm(d.base / 60))}${KS.map(([k, l]) => row(l, `${fs0(d[k])} min`)).join('')}${row('fatigue (VFC)', `${fs0(d.fatigue)} min`)}${row('pluie', `${f1(d.rain)} mm`)}`);
-    legend('l-attr', [...KS.map(([, l, col]) => ['', col, l]), ['', C('--series-avec') + '8c', 'pluie du jour (mm)']]);
-    const T = A.total, E = A.effects;
-    readout('r-attr', `sur <b>${hm(T.real / 60)}</b> de marche · fatigue <b>${fs0(T.fatigue)} min</b>`);
-    const H = A.horizon, h1 = H[0].half_min, hN = H[H.length - 1].half_min;
-    const wetAdd = d3.sum(wet, d => d.real - d.base), wetMet = d3.sum(wet, d => d.meteo);
-    $('t-delta').innerHTML = `De combien mon temps bouge quand un facteur bouge d’un cran (partie 04) : sac <b>+${f0(E.sac)} %</b>, terrain +${f0(E.terrain)} % par niveau, descente raide +${f0(E.desc)} %, pluie +${f0(E.meteo)} % (partie 03). La fatigue : 0.`;
-    $('t-vega').innerHTML = `La pluie rend-elle mes pas plus irréguliers ? Non : écart-type <b>${f2(A.disp.pluie)}</b> sous la pluie, ${f2(A.disp.sec)} au sec. Elle ne disperse pas, elle décale tout d’un coup : un risque commun (partie 03).`;
-    $('t-theta').innerHTML = `Ce que change le temps qui passe. Vue du soir du J${A.origin}, la fourchette de prévision fait <b>± ${h1} min</b> pour le lendemain, <b>± ${hm(hN / 60)}</b> pour le dernier jour : plus on vise loin, plus le risque grandit.`;
-    $('t-attr').innerHTML = `Sur ${hm(T.real / 60)} de marche, <b>${hm(T.terrain / 60)} de terrain</b>, <b>${hm(T.sac / 60)} de sac</b> et <b>${hm(T.meteo / 60)} de pluie</b>. Le sac pèse au début, le terrain partout, la pluie à la fin seulement : ${f0(wetMet / wetAdd * 100)} % du surcoût des jours mouillés, rien avant. Restait à savoir si on pouvait le prévoir : c’est la simulation.`;
-    DEFS.grecs = { t: 'Les grecs : expliquer un résultat facteur par facteur', html: () => `
-      <p><b>L’origine.</b> En 1973, <b>Fischer Black et Myron Scholes</b> donnent une formule pour le prix d’une option. Ce prix dépend de quelques entrées : le cours de l’actif, sa volatilité, le temps qui reste. Les traders nomment d’une lettre grecque la sensibilité du prix à chaque entrée : ce sont des dérivées.</p>
-      <div class="def-f">Δ = ∂prix / ∂cours · ν = ∂prix / ∂volatilité · Θ = ∂prix / ∂temps</div>
-      <p><b>À quoi ça sert.</b> Chaque soir, un desk de marché explique son résultat grec par grec (le <i>P&amp;L explain</i>) : tant venu du cours, tant de la volatilité, tant du temps qui passe. Ce qui reste est inexpliqué. Et l’incertitude d’un prix grandit avec le temps qui reste, comme σ√T : plus l’échéance est loin, plus la fourchette est large.</p>
-      <div class="def-ex"><b>Ici.</b> Le « résultat » est le temps de marche (${hm(T.real / 60)}). La journée de base est la même marche sans sac, sur terrain facile (cote ${A.base.grade}), sans descente raide, par temps sec et après une nuit ordinaire (VFC ${A.base.hrv} ms). Pour chaque tronçon, les effets de la partie 04 (sac, terrain, descente, fatigue) et celui de la pluie (partie 03, +${f0(E.meteo)} % les jours de ${A.base.wet_mm} mm ou plus) donnent un temps de base ; les minutes au-dessus sont partagées entre les facteurs au prorata de leur effet (attribution logarithmique, comme celle des fonds). Total : ${hm((T.real - T.base) / 60)} attribuées, dont ${hm(T.terrain / 60)} au terrain et ${hm(T.sac / 60)} au sac.</div>
-      <p class="muted">Limites : le vent n’est pas compté. Dans la partie 04, il porte en fait la pluie (les deux arrivent ensemble) : une fois la pluie prise en compte, son effet disparaît. Le garder aurait donné de la « météo » au J1, venteux mais sec, alors qu’elle n’y a rien coûté. La pente reste dans la base : elle corrige l’étalon de Tobler. Le thêta vient de la simulation (partie 07, modèle par blocs, fourchette à 90 %).</p>` };
-    const it = $('c-attr').closest('.pc').querySelector('.pc-t'); if (!it.querySelector('.def-btn')) it.insertAdjacentHTML('beforeend', defBtn('grecs'));
+    };
+    bars('c-gk-delta', D.by_grade, GRADES, C('--critical'));
+    bars('c-gk-gamma', G.sac_by_grade, GRADES, C('--series-avec'), RH.sac);
+    { // vega : paires d'écarts-types
+      const f = frame('c-gk-vega', { t: 8, r: 10, b: 16, l: 64 });
+      const rowsV = [['pluie', 'sec', 'pluie', V.pluie], ['sac', 'sans', 'avec', V.sac], ['terrain', 'facile', 'expert', V.terrain]];
+      const x = d3.scaleLinear().domain([.26, .38]).range([0, f.w]), y = d3.scaleBand().domain(rowsV.map(r => r[0])).range([0, f.h]).padding(.2);
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(3).tickSize(0).tickPadding(5).tickFormat(d2));
+      rowsV.forEach(([k, a, b, v]) => {
+        const cy = y(k) + y.bandwidth() / 2;
+        lab(f.g, -8, cy + 3, k, 'end');
+        f.g.append('line').attr('x1', x(v[0])).attr('x2', x(v[1])).attr('y1', cy).attr('y2', cy).attr('stroke', C('--hair')).attr('stroke-width', 3);
+        f.g.append('circle').attr('cx', x(v[0])).attr('cy', cy).attr('r', 4).attr('fill', C('--text-muted'));
+        f.g.append('circle').attr('cx', x(v[1])).attr('cy', cy).attr('r', 4).attr('fill', C('--accent'));
+        const left = v[0] < v[1];
+        lab(f.g, x(v[0]) + (left ? -7 : 7), cy - 6, a, left ? 'end' : 'start');
+        lab(f.g, x(v[1]) + (left ? 7 : -7), cy - 6, b, left ? 'start' : 'end');
+      });
+    }
+    { // thêta : la fourchette s'ouvre
+      const f = frame('c-gk-theta', { t: 10, r: 8, b: 18, l: 8 }), H = TH.horizon, mx = H[H.length - 1].half_min;
+      const x = d3.scalePoint().domain(H.map(h => h.day)).range([0, f.w]).padding(.3), y = d3.scaleLinear().domain([-mx * 1.1, mx * 1.1]).range([f.h, 0]);
+      f.g.append('path').attr('d', d3.area().x(h => x(h.day)).y0(h => y(-h.half_min)).y1(h => y(h.half_min)).curve(d3.curveMonotoneX)(H)).attr('fill', C('--accent')).attr('fill-opacity', .22);
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C('--accent'));
+      H.forEach(h => lab(f.g, x(h.day), f.h + 13, dayLbl(h.day)));
+      lab(f.g, x(H[0].day), y(H[0].half_min) - 4, `±${H[0].half_min} min`);
+      lab(f.g, x(H[H.length - 1].day), y(mx) - 2, `±${hm(mx / 60)}`, 'end');
+    }
+    { // rho : une heure sans sac, avec sac
+      const f = frame('c-gk-rho', { t: 8, r: 10, b: 8, l: 64 }), x = d3.scaleLinear().domain([0, 1 + RH.hi / 100]).range([0, f.w]);
+      const yb = d3.scaleBand().domain(['sans sac', 'avec sac']).range([0, f.h]).padding(.32);
+      [['sans sac', 1, C('--series-sans')], ['avec sac', 1 + RH.sac / 100, C('--series-avec')]].forEach(([k, v, col]) => {
+        f.g.append('rect').attr('x', 0).attr('width', x(v)).attr('y', yb(k)).attr('height', yb.bandwidth()).attr('rx', 2).attr('fill', col).attr('fill-opacity', .8);
+        lab(f.g, -8, yb(k) + yb.bandwidth() / 2 + 3, k, 'end');
+        lab(f.g, x(v) - 6, yb(k) + yb.bandwidth() / 2 + 3, hm(v), 'end', 'ax-title gk-in');
+      });
+    }
+    { // second ordre : la statistique t contre le seuil de 1,96
+      const f = frame('c-gk-second', { t: 8, r: 50, b: 16, l: 84 });
+      const T3 = [['sac × cote', G.t], ['pluie × cote', A.vanna.t], ['cote × jours', A.charm.t]];
+      const x = d3.scaleLinear().domain([0, 3]).range([0, f.w]), y = d3.scaleBand().domain(T3.map(t => t[0])).range([0, f.h]).padding(.3);
+      f.g.append('rect').attr('x', 0).attr('width', x(1.96)).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .08);
+      f.g.append('line').attr('x1', x(1.96)).attr('x2', x(1.96)).attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
+      lab(f.g, x(1.96), f.h + 12, 'seuil 1,96');
+      T3.forEach(([k, t]) => {
+        const ok = Math.abs(t) >= 1.96;
+        f.g.append('rect').attr('x', 0).attr('width', x(Math.abs(t))).attr('y', y(k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', ok ? C('--accent') : C('--text-muted')).attr('fill-opacity', ok ? .85 : .45);
+        lab(f.g, -8, y(k) + y.bandwidth() / 2 + 3, k, 'end');
+        lab(f.g, f.w + 6, y(k) + y.bandwidth() / 2 + 3, `t = ${f1(t)}`, 'start');
+      });
+    }
+    $('t-gk').innerHTML = `Le terrain fixe le prix (<b>${pct(D.cote)} par niveau</b>), le sac en est le coût de portage (<b>${pct(RH.sac)}</b>), et les deux se renforcent : <b>${pct(G.sac_by_grade[0])} → ${pct(G.sac_by_grade[3])}</b> du facile à l’expert. La pluie ralentit sans disperser. Et plus la prévision porte loin, plus la fourchette s’ouvre : c’est la simulation.`;
+    DEFS.grecs = { t: 'Les grecs : d’où ils viennent, comment on les mesure ici', html: () => `
+      <p><b>L’origine.</b> En 1973, <b>Fischer Black et Myron Scholes</b> donnent une formule pour le prix d’une option. Ce prix dépend de quelques entrées : le cours de l’actif, sa volatilité, le temps qui reste, le taux d’intérêt. Les traders nomment d’une lettre grecque la sensibilité du prix à chaque entrée : ce sont des dérivées. Chaque soir, un desk explique son résultat grec par grec.</p>
+      <div class="def-f">Δ = ∂V/∂S · Γ = ∂²V/∂S² · ν = ∂V/∂σ · Θ = ∂V/∂t · ρ = ∂V/∂r</div>
+      <p><b>Ici.</b> Le « prix » est mon temps de marche. <b>Δ</b> et <b>ρ</b> sont les effets de la partie 04 (régression sur ${A.n} tronçons) : le terrain est le sous-jacent, le sac le coût de portage. <b>Γ</b> : on ajoute à la même régression un terme sac × cote ; le coût du sac monte de ${pct(G.pct)} par niveau (t = ${f1(G.t)}). <b>ν</b> : l’écart-type de ce que la régression n’explique pas (${d2(V.all)} en tout), comparé entre groupes. <b>Θ</b> : la fourchette à 90 % de la simulation de la partie 07.</p>
+      <div class="def-ex"><b>Exemple.</b> Une heure de marche sans sac sur terrain facile devient environ ${hm(1 + G.sac_by_grade[0] / 100)} avec le sac ; en terrain expert, le seul sac la porte à ${hm(1 + G.sac_by_grade[3] / 100)}, terrain non compté.</div>
+      <p class="muted">Limites : trois effets croisés ont été testés ; seul le gamma passe le seuil, de peu. C’est une piste solide plus qu’une preuve. La pluie n’entre pas dans la régression de la partie 04 : son delta (${pct(D.pluie)}) vient de la partie 03.</p>` };
+    const first = box.querySelector('.gk-card .pc-t'); if (first && !box.querySelector('.def-btn')) first.insertAdjacentHTML('beforeend', defBtn('grecs'));
   }
 
   /* ---------- 09 · Monte Carlo ---------- */
