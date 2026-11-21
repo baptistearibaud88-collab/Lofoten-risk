@@ -492,5 +492,5 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 #s5 .grid-2 > .pc { display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
 @media (min-width: 901px) {
   #s5 .notes { grid-template-columns: 1fr 1fr calc((100% - 14px) / 2); gap: 14px; }
-  #s5 .notes.wk { grid-template-columns: calc((100% - 14px) * .35) 1fr 1.1fr; }
+  #s5 .notes.wk { grid-template-columns: calc((100% - 14px) * .35) .8fr 1.3fr; }
 }
