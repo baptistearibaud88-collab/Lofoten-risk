@@ -235,7 +235,7 @@
 
   <section id="s6">
     <header class="sh"><span class="num">06</span><h2>Ce que chaque facteur a coûté, jour par jour</h2></header>
-    <p class="lede">Les parties 04 et 05 ont mesuré chaque facteur séparément. Ici, on les remet ensemble : combien de minutes chacun a ajoutées, jour par jour, à une journée de base sans sac, sur terrain facile et par vent faible.</p>
+    <p class="lede">Les parties 04 et 05 ont mesuré chaque facteur séparément. Ici, on les remet ensemble : combien de minutes chacun a ajoutées, jour par jour, à une journée de base sans sac, sur terrain facile et par temps sec.</p>
     <div class="pc">
       <div class="pc-head"><span class="pc-t">Minutes ajoutées à la journée de base</span><span class="pc-r mono" id="r-attr"></span></div>
       <div class="chart" id="c-attr" data-h="320"></div>
@@ -407,7 +407,7 @@
           <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
           <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois par modèle (loi normale ; blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance au mauvais temps (outils/monte_carlo.js).</li>
           <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
-          <li><b>Bilan de l’acte 2</b> : temps réel de chaque tronçon partagé entre les facteurs de la partie 04 (sac, terrain, descente raide, rafales, VFC), au prorata de leur effet, au-dessus d’une journée de base (outils/conclusion_acte2.js).</li>
+          <li><b>Bilan de l’acte 2</b> : temps réel de chaque tronçon partagé entre les facteurs de la partie 04 (sac, terrain, descente raide, VFC) et à la pluie de la partie 03, au prorata de leur effet, au-dessus d’une journée de base (outils/conclusion_acte2.js).</li>
         </ul>
       </div>
       <div>
@@ -444,11 +444,11 @@
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261112-1"></script>
-<script src="risque_acte2.js?v=20261121-1"></script>
+<script src="risque_acte2.js?v=20261121-2"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261118-3"></script>
-<script src="risque.js?v=20261121-4"></script>
+<script src="risque.js?v=20261121-6"></script>
 </body>
 </html>
