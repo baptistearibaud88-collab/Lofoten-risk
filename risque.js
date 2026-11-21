@@ -56,6 +56,7 @@
     return { el, svg, g, W, H, m, w: W - m.l - m.r, h: H - m.t - m.b, narrow: W < 560 };
   }
   // value axis on the right, as on a trading screen; left variant for charts with a right margin in use
+  const hideUnder = (g, ys, gap = 11) => g.selectAll('.axis .tick').filter(function () { const m = /translate\([^,]+,([^)]+)\)/.exec(this.getAttribute('transform') || ''); return m && ys.some(y => Math.abs(+m[1] - y) < gap); }).select('text').attr('opacity', 0);
   const yGrid = (g, y, w, n = 5, fmt = f0, side = 'right') => {
     g.append('g').attr('class', 'gridl').call(d3.axisLeft(y).ticks(n).tickSize(-w).tickFormat('')).lower();
     if (side === 'right') g.append('g').attr('class', 'axis').attr('transform', `translate(${w},0)`).call(d3.axisRight(y).ticks(n).tickSize(0).tickPadding(8).tickFormat(fmt));
@@ -807,6 +808,7 @@
     const last = Dd[Dd.length - 1];
     axTag(f.g, f.w + 2, y(last.cum_rain), f1(last.cum_rain)).select('rect').attr('fill', C('--accent'));
     axTag(f.g, f.w + 2, y(last.cum_norm), f1(last.cum_norm));
+    hideUnder(f.g, [y(last.cum_rain), y(last.cum_norm)]);
     // repère sur 1 200 fenêtres de 9 jours (risque_meteo.js), dans l'espace libre en haut à gauche
     const MM = window.RISK_METEO;
     if (MM) {
@@ -838,6 +840,7 @@
     g.g.selectAll('.gd').data(Dd).join('circle').attr('cx', d => xg(d.day)).attr('cy', d => yg(d.gust)).attr('r', 3).attr('fill', d => d.gust > ref ? C('--down') : C('--accent')).attr('stroke', C('--bg')).attr('stroke-width', 1.2);
     g.g.append('line').attr('x1', 0).attr('x2', g.w).attr('y1', yg(ref)).attr('y2', yg(ref)).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2).attr('stroke-dasharray', '5 4');
     axTag(g.g, g.w + 2, yg(ref), `${ref}`);
+    hideUnder(g.g, [yg(ref)]);
     hover(g.g.selectAll('.gh').data(Dd).join('rect').attr('class', 'hit').attr('x', d => xg(d.day - .5)).attr('width', xg(1.6) - xg(.6)).attr('y', 0).attr('height', g.h),
       d => `<b>${dayLbl(d.day)} · rafale max ${d.gust} km/h</b>${row('référence de la période', `${ref} km/h`)}${row('écart', `${fs0(d.gust - ref)} km/h`)}`);
     legend('l-gust', [['ln', C('--accent'), 'rafale max du jour (km/h)'], ['dash', '', 'rafale max normale'], ['', C('--down'), 'dépassement']]);

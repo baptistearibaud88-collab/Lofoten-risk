@@ -487,3 +487,10 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .risk-def { margin: 4px 0 16px; }
 .risk-def > div p { margin: 0; font-size: 14px; line-height: 1.5; }
 .facts-wide dd { flex: 0 0 92px; }
+
+/* partie 05 (météo) : graphiques et encadrés alignés sur les mêmes colonnes */
+#s5 .grid-2 > .pc { display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
+@media (min-width: 901px) {
+  #s5 .notes { grid-template-columns: 1fr 1fr calc((100% - 14px) / 2); gap: 14px; }
+  #s5 .notes.wk { grid-template-columns: calc((100% - 14px) * .35) 1fr 1.1fr; }
+}
