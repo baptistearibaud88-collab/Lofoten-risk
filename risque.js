@@ -56,6 +56,7 @@
     return { el, svg, g, W, H, m, w: W - m.l - m.r, h: H - m.t - m.b, narrow: W < 560 };
   }
   // value axis on the right, as on a trading screen; left variant for charts with a right margin in use
+  const hideUnder = (g, ys, gap = 11) => g.selectAll('.axis .tick').filter(function () { const m = /translate\([^,]+,([^)]+)\)/.exec(this.getAttribute('transform') || ''); return m && ys.some(y => Math.abs(+m[1] - y) < gap); }).select('text').attr('opacity', 0);
   const yGrid = (g, y, w, n = 5, fmt = f0, side = 'right') => {
     g.append('g').attr('class', 'gridl').call(d3.axisLeft(y).ticks(n).tickSize(-w).tickFormat('')).lower();
     if (side === 'right') g.append('g').attr('class', 'axis').attr('transform', `translate(${w},0)`).call(d3.axisRight(y).ticks(n).tickSize(0).tickPadding(8).tickFormat(fmt));
@@ -807,6 +808,7 @@
     const last = Dd[Dd.length - 1];
     axTag(f.g, f.w + 2, y(last.cum_rain), f1(last.cum_rain)).select('rect').attr('fill', C('--accent'));
     axTag(f.g, f.w + 2, y(last.cum_norm), f1(last.cum_norm));
+    hideUnder(f.g, [y(last.cum_rain), y(last.cum_norm)]);
     // repère sur 1 200 fenêtres de 9 jours (risque_meteo.js), dans l'espace libre en haut à gauche
     const MM = window.RISK_METEO;
     if (MM) {
@@ -838,6 +840,7 @@
     g.g.selectAll('.gd').data(Dd).join('circle').attr('cx', d => xg(d.day)).attr('cy', d => yg(d.gust)).attr('r', 3).attr('fill', d => d.gust > ref ? C('--down') : C('--accent')).attr('stroke', C('--bg')).attr('stroke-width', 1.2);
     g.g.append('line').attr('x1', 0).attr('x2', g.w).attr('y1', yg(ref)).attr('y2', yg(ref)).attr('stroke', C('--text-primary')).attr('stroke-width', 1.2).attr('stroke-dasharray', '5 4');
     axTag(g.g, g.w + 2, yg(ref), `${ref}`);
+    hideUnder(g.g, [yg(ref)]);
     hover(g.g.selectAll('.gh').data(Dd).join('rect').attr('class', 'hit').attr('x', d => xg(d.day - .5)).attr('width', xg(1.6) - xg(.6)).attr('y', 0).attr('height', g.h),
       d => `<b>${dayLbl(d.day)} · rafale max ${d.gust} km/h</b>${row('référence de la période', `${ref} km/h`)}${row('écart', `${fs0(d.gust - ref)} km/h`)}`);
     legend('l-gust', [['ln', C('--accent'), 'rafale max du jour (km/h)'], ['dash', '', 'rafale max normale'], ['', C('--down'), 'dépassement']]);
@@ -845,33 +848,173 @@
     $('t-wx').textContent = `Six jours secs et plus chauds que la normale (${f1(W_.tmax_mean)} °C de max moyen contre ${f1(W_.climato.tmax)}), puis ${f1(lateRain)} mm en trois jours, soit ${f0((lateRain / W_.climato.pluie_mm - 1) * 100)} % de plus que la normale de toute la période, avec des rafales jusqu’à ${W_.gust_max} km/h. Les trois incidents de terrain les plus graves (escalade, éboulement, grotte) tombent dans ces trois jours, quand la VFC était déjà sous la zone normale (environ −30 %). Le nombre de jours de pluie est normal (${W_.rainy_days}) : c’est leur regroupement en fin de séjour qui a fait le risque.`;
   }
 
-  /* ---------- 08 · danger scorecard ---------- */
-  function drawIndex() {
-    const rows = R.rows.slice().sort((a, b) => b.score - a.score);
-    const mx = d3.max(rows, r => Math.abs(r.score));
-    const keys = [['terrain', 'Terrain'], ['pente', 'Pente'], ['meteo', 'Météo'], ['fatigue', 'Fatigue']];
-    const col = d3.scaleLinear().domain([-.4, 0, .4]).range([C('--div-neg'), C('--div-mid'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
-    const pct = r => Math.round((1 - (r.rank - 1) / (rows.length - 1)) * 100);
-    $('index-table').innerHTML = `<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th>Indice</th><th class="n">Score</th><th class="n">Centile</th><th title="${keys.map(k => k[1]).join(' · ')}">Facteurs <span class="muted">T P M F</span></th></tr></thead><tbody>${rows.map(r => {
-      const w = Math.abs(r.score) / mx * 50;
-      const bar = `<span class="sbar"><i style="${r.score >= 0 ? `left:50%;width:${w}%;background:var(--down)` : `right:50%;width:${w}%;background:var(--up)`};opacity:.8"></i></span>`;
-      return `<tr><td class="n">${r.rank}</td><td class="nw"><span class="dot" style="background:${r.sac ? C('--series-avec') : C('--series-sans')}" title="${r.sac ? 'avec le sac' : 'trail'}"></span>${r.name}${r.alert.length ? `<svg class="alt-ic" viewBox="-8 -8 16 15" role="img"><title>Alerte : ${r.alert.join(', ')}</title><path d="M0,-7 7,5.5 -7,5.5Z" fill="currentColor"/></svg>` : ''}</td><td class="mono">${dayLbl(r.day)}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td style="min-width:150px">${bar}</td><td class="n">${fs2(r.score)}</td><td class="n">${pct(r)}</td>
-        <td><span class="heat">${keys.map(([k, l]) => `<i style="background:${col(r.contrib[k])}" title="${l} ${fs2(r.contrib[k])}"></i>`).join('')}</span></td></tr>`;
-    }).join('')}</tbody>`;
-    legend('l-index', [['', C('--warning'), 'sortie avec alerte (survoler le triangle)'], ['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'trail'], ['', C('--down'), 'au-dessus de la moyenne (plus exposé)'], ['', C('--up'), 'en dessous'], ['', C('--div-pos'), 'facteur aggravant'], ['', C('--div-neg'), 'facteur atténuant']]);
-    const RD = R.idx.rand, TR = R.idx.terrain_ranks, nA = TR.length;
-    readout('r-index', `alertes de terrain aux rangs <b>${TR.join(', ')}</b> sur ${R.rows.length}`);
-    const noAlertTop = rows.filter(x => !x.alert.length).slice(0, 2);
-    $('t-index').innerHTML = `Rangs <b>${TR.join(', ')}</b> sur ${R.rows.length} pour les ${nA} alertes de terrain, toutes dans le tiers le plus exposé. Avec <b>${f0(RD.n)}</b> jeux de poids tirés au hasard, au moins ${nA - 1} y restent dans <b>${f0(RD.most * 100)} %</b> des cas.<br><br>L’indice ne prédit pas un éboulement : il dit où les signaux se cumulent avant de partir. Deux sorties très exposées n’ont d’ailleurs rien donné (${noAlertTop.map(x => `${x.name}, ${x.rank}e`).join(' ; ')}). Reste à mesurer jusqu’où une journée peut déraper.`;
-    DEFS.indice = { t: 'D’où vient un indice composite', html: () => `
-      <p><b>L’origine.</b> En 1968, <b>Edward Altman</b> veut prévoir les faillites d’entreprises. Aucun chiffre comptable n’y suffit seul. Il en combine cinq en une seule note, le <i>Z-score</i> : en dessous d’un seuil, l’entreprise est en zone de danger. Les banques notent encore leurs emprunteurs sur ce principe.</p>
-      <p><b>La construction.</b> Les facteurs n’ont pas la même unité (une cote, une pente en %, des millimètres de pluie, des millisecondes de VFC). On les ramène donc à la même échelle : l’écart à la moyenne des ${R.rows.length} sorties, divisé par l’écart-type. Puis on les additionne.</p>
-      <div class="def-f">indice = ¼ terrain + ¼ pente + ¼ météo + ¼ fatigue</div>
-      <p><b>Pourquoi ces quatre-là.</b> Ce sont les signaux connus avant de partir : la cote du sentier, la pente des passages raides, la météo du jour, la nuit précédente. L’irrégularité de l’allure n’y figure pas : elle se mesure pendant la sortie, et un incident la fait monter. Ce serait une conséquence, pas un signal.</p>
-      <p><b>Pourquoi des poids égaux.</b> Altman avait 66 entreprises pour calculer ses poids. Ici, il n’y a que ${nA} alertes de terrain : calculer des poids reviendrait à les ajuster sur le résultat. Poids égaux, donc, et un contrôle : on tire ${f0(RD.n)} jeux de poids au hasard et on regarde où tombent les alertes.</p>
-      <div class="def-ex"><b>Résultat.</b> Les ${nA} alertes sont toutes dans le tiers le plus exposé dans ${f0(RD.all * 100)} % des tirages, au moins ${nA - 1} dans ${f0(RD.most * 100)} %. Leur rang moyen est ${f1(RD.mean_rank)}, contre ${f0(RD.chance_rank)} si l’indice ne valait rien. En retirant un facteur à la fois, le plus sensible est la météo (rangs ${R.idx.loo.meteo.join(', ')}).</div>
-      <p class="muted">Limites : ${nA} alertes sur ${R.rows.length} sorties, c’est peu, et c’est moi qui les ai déclarées. La météo est celle mesurée le jour même, pas la prévision consultée. L’indice classe des sorties ; il ne donne pas une probabilité d’accident.</p>` };
-    const it = $('index-table').closest('.pc').querySelector('.pc-t'); if (!it.querySelector('.def-btn')) it.insertAdjacentHTML('beforeend', defBtn('indice'));
+  /* ---------- 06 · les grecs du trek ---------- */
+  function drawActe2() {
+    const A = window.RISK_ACTE2, box = $('gk-grid'); if (!A || !box) return;
+    const D = A.delta, G = A.gamma, V = A.vega, TH = A.theta, RH = A.rho, SW = A.sacWet;
+    const pct = v => `${v >= 0 ? '+' : '−'}${Math.abs(v) < 1 ? f1(Math.abs(v)) : f0(Math.abs(v))} %`, d2 = v => f2(v);
+    const sgn = m => `${m >= 0 ? '+' : '−'}${Math.abs(m) < 60 ? `${Math.abs(m)} min` : hm(Math.abs(m) / 60)}`;
+    const hN = TH.horizon[TH.horizon.length - 1], h1 = TH.horizon[0];
+    const ns = t => Math.abs(t) < 1.96 ? ' <span class="gk-ns">n.s.</span>' : '';
+    const big = G.steps[1];
+    const cards = [
+      { k: 'delta', dq: 'De combien mon temps bouge quand le terrain monte d’un niveau ?', l: 'Δ', n: 'Delta', q: 'le terrain',
+        tr: `Le terrain est mon « actif » : quand il se durcit, mon temps monte. En moyenne, un niveau de cote en plus coûte <b>${pct(D.cote)}</b> de temps, une descente raide ${pct(D.desc)}, à tout le reste égal (partie 04).`,
+        fi: ['Δ = ∂V / ∂S', 'De combien le prix V de l’option bouge quand le cours S de l’actif monte d’une unité.'] },
+      { k: 'gamma', dq: 'Le coût d’un niveau de terrain est-il le même à chaque niveau ?', l: 'Γ', n: 'Gamma', q: 'le saut du terrain',
+        tr: `Non : le delta change selon l’endroit. De facile à modéré, ${pct(G.steps[0].pct)} seulement. Puis <b>${pct(big.pct)} d’un coup</b> en passant à exigeant, là où le sentier disparaît. Puis ${pct(G.steps[2].pct)} jusqu’à expert. Le coût du terrain se joue en un saut.`,
+        fi: ['Γ = ∂²V / ∂S²', 'De combien le delta lui-même bouge quand le cours monte d’une unité. Un gamma fort : le prix réagit beaucoup plus à certains endroits qu’à d’autres.'] },
+      { k: 'vega', dq: 'De combien mon allure varie d’un tronçon à l’autre, et qu’est-ce qui la fait varier ?', l: 'ν', n: 'Vega', q: 'l’imprévisible',
+        tr: `Je gère mon effort sur tout le trajet. En montée raide, c’est mon moteur qui décide, et l’allure est <b>régulière</b> (${d2(V.mont.b)} contre ${d2(V.mont.a)} ailleurs). Ailleurs, le terrain freine ou il est roulant. Sans sac, je cours quand c’est roulant : plus d’alternance (${d2(V.sac.a)} contre ${d2(V.sac.b)} avec le sac).`,
+        fi: ['ν = ∂V / ∂σ', 'De combien le prix bouge quand la volatilité σ, l’ampleur des écarts du cours, monte d’un point.'] },
+      { k: 'theta', dq: 'De combien ma prévision se trompe quand elle porte un jour plus loin ?', l: 'Θ', n: 'Thêta', q: 'l’horizon',
+        tr: `Vue du soir du J${TH.origin}, la prévision vaut ${sgn(-h1.lo)} / ${sgn(h1.hi)} pour le lendemain, mais <b>${sgn(-hN.lo)} / ${sgn(hN.hi)}</b> pour le J${hN.day}. Mon arrivée : <b>${sgn(TH.real_end)}</b>, en haut de la fourchette. Sans l’enchaînement des écarts, elle s’arrêterait à ${sgn(hN.n_hi)} et j’en serais sorti.`,
+        fi: ['Θ = ∂V / ∂t', 'De combien le prix bouge quand un jour passe, tout le reste égal. L’incertitude sur le cours, elle, grandit avec le temps qui reste, comme σ√T.'] },
+      { k: 'rho', dq: 'De combien mon temps bouge quand je porte mon camp sur le dos ?', l: 'ρ', n: 'Rho', q: 'le portage',
+        tr: `Porter son camp a un coût, payé à chaque pas : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (partie 04). Le sac s’allège au fil des jours, mais la fatigue compense : son coût ne baisse pas nettement. Et je ne l’ai jamais porté en terrain expert : l’exigeant suffisait.`,
+        fi: ['ρ = ∂V / ∂r', 'De combien le prix bouge quand le taux d’intérêt r monte d’un point : le coût de porter la position dans le temps.'] },
+      { k: 'second', dq: 'Quand il pleut, le sac coûte-t-il toujours autant ?', l: '∂²', n: 'Second ordre', q: 'sac × pluie',
+        tr: `Un second ordre mesure comment l’effet d’un facteur change quand un autre change. Ici : le sac, selon la météo. Au sec, il me coûte <b>${pct(SW.sac_dry)}</b> ; sous la pluie, <b>${pct(SW.sac_wet)}</b> seulement. Sans sac, je cours dès que c’est roulant ; sous la pluie, je ne cours plus : l’écart avec le sac se resserre.`,
+        fi: ['∂²V / ∂r ∂S', 'Une dérivée croisée : de combien la sensibilité à une entrée bouge quand une autre bouge. Ici, de combien le coût du portage bouge quand la météo change.'] },
+    ];
+    cards.forEach(c => { DEFS['gk_' + c.k] = { t: `${c.n} : la définition en finance`, html: () => `<div class="def-f">${c.fi[0]}</div><p>${c.fi[1]}</p>` }; });
+    box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}${defBtn('gk_' + c.k)}</span></div>
+      <div class="gk-body"><p class="gk-dq">${c.dq}</p><p class="gk-tr">${c.tr}</p></div>
+      <div class="chart gk-c" id="c-gk-${c.k}" data-h="${c.k === 'theta' ? 130 : 110}"></div></div>`).join('');
+    const lab = (g, x, y, t, a = 'middle', cls = 'ax-title') => g.append('text').attr('class', cls).attr('x', x).attr('y', y).attr('text-anchor', a).text(t);
+    const bars = (id, vals, names, col, opt = {}) => {
+      const f = frame(id, { t: 16, r: 8, b: 18, l: 8 });
+      const x = d3.scaleBand().domain(names).range([0, f.w]).padding(.28), y = d3.scaleLinear().domain([0, d3.max(vals) * 1.15 || 1]).range([f.h, 0]);
+      if (opt.ref != null) { f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(opt.ref)).attr('y2', y(opt.ref)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3'); lab(f.g, 0, -4, opt.refLab, 'start'); }
+      vals.forEach((v, i) => {
+        const dim = opt.dim && opt.dim[i];
+        f.g.append('rect').attr('x', x(names[i])).attr('width', x.bandwidth()).attr('y', y(v)).attr('height', f.h - y(v)).attr('rx', 2).attr('fill', col).attr('fill-opacity', dim ? .3 : .85);
+        const inside = f.h - y(v) > 18;
+        lab(f.g, x(names[i]) + x.bandwidth() / 2, inside ? y(v) + 12 : y(v) - 4, `+${f0(v)} %${dim ? ' n.s.' : ''}`, 'middle', inside && !dim ? 'ax-title gk-in' : 'ax-title');
+        lab(f.g, x(names[i]) + x.bandwidth() / 2, f.h + 13, names[i]);
+      });
+    };
+    bars('c-gk-delta', [D.cote, D.desc], ['un niveau de cote', 'descente raide'], C('--critical'));
+    bars('c-gk-gamma', G.steps.map(s => s.pct), ['→ modéré', '→ exigeant', '→ expert'], C('--critical'), { ref: D.cote, refLab: `- - delta moyen : +${f0(D.cote)} % par niveau`, dim: G.steps.map(s => Math.abs(s.t) < 1.96) });
+    { // vega : paires d'écarts-types
+      const f = frame('c-gk-vega', { t: 12, r: 12, b: 16, l: 44 });
+      const rowsV = [['pente', 'ailleurs', 'montée raide', V.mont], ['sac', 'sans', 'avec', V.sac]];
+      const x = d3.scaleLinear().domain([.2, .38]).range([0, f.w]), y = d3.scaleBand().domain(rowsV.map(r => r[0])).range([0, f.h]).padding(.3);
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(3).tickSize(0).tickPadding(5).tickFormat(d2));
+      rowsV.forEach(([k, a, b, v]) => {
+        const cy = y(k) + y.bandwidth() / 2;
+        lab(f.g, -8, cy + 3, k, 'end');
+        f.g.append('line').attr('x1', x(v.a)).attr('x2', x(v.b)).attr('y1', cy).attr('y2', cy).attr('stroke', C('--hair')).attr('stroke-width', 3);
+        f.g.append('circle').attr('cx', x(v.a)).attr('cy', cy).attr('r', 4).attr('fill', C('--text-muted'));
+        f.g.append('circle').attr('cx', x(v.b)).attr('cy', cy).attr('r', 4).attr('fill', C('--accent'));
+        const left = v.a < v.b;
+        lab(f.g, x(v.a), cy - 8, a, left ? 'start' : 'end');
+        lab(f.g, x(v.b), cy - 8, b, left ? 'end' : 'start');
+      });
+    }
+    { // thêta : deux fourchettes et la trajectoire réelle
+      const f = frame('c-gk-theta', { t: 12, r: 58, b: 18, l: 8 }), P = TH.path;
+      const x = d3.scaleLinear().domain([0, P.length - 1]).range([0, f.w]);
+      const y = d3.scaleLinear().domain([d3.min(P, p => p.b5) * 1.05, Math.max(d3.max(P, p => p.b95), TH.real_end) * 1.08]).range([f.h, 0]);
+      const ar = (lo, hi) => d3.area().x((p, i) => x(i)).y0(p => y(p[lo])).y1(p => y(p[hi]))(P);
+      f.g.append('path').attr('d', ar('b5', 'b95')).attr('fill', C('--accent')).attr('fill-opacity', .2);
+      f.g.append('path').attr('d', ar('n5', 'n95')).attr('fill', C('--accent')).attr('fill-opacity', .25);
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C('--accent')).attr('stroke-dasharray', '3 3');
+      f.g.append('path').attr('d', d3.line().x((p, i) => x(i)).y(p => y(p.real))(P)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 1.8);
+      const ends = {}; P.forEach((p, i) => { ends[p.d] = i; });
+      Object.entries(ends).forEach(([d, i]) => lab(f.g, x(i), f.h + 13, dayLbl(d), 'end'));
+      lab(f.g, f.w + 4, y(TH.real_end) + 3, sgn(TH.real_end), 'start').attr('fill', C('--down'));
+      lab(f.g, f.w + 4, y(P[P.length - 1].b95) - 6, 'blocs', 'start');
+      lab(f.g, f.w + 4, y(P[P.length - 1].n95) + 10, 'normale', 'start');
+    }
+    { // rho : une heure sans sac, avec sac
+      const f = frame('c-gk-rho', { t: 8, r: 10, b: 8, l: 64 }), x = d3.scaleLinear().domain([0, 1 + RH.hi / 100]).range([0, f.w]);
+      const yb = d3.scaleBand().domain(['sans sac', 'avec sac']).range([0, f.h]).padding(.32);
+      [['sans sac', 1, C('--series-sans')], ['avec sac', 1 + RH.sac / 100, C('--series-avec')]].forEach(([k, v, col]) => {
+        f.g.append('rect').attr('x', 0).attr('width', x(v)).attr('y', yb(k)).attr('height', yb.bandwidth()).attr('rx', 2).attr('fill', col).attr('fill-opacity', .8);
+        lab(f.g, -8, yb(k) + yb.bandwidth() / 2 + 3, k, 'end');
+        lab(f.g, x(v) - 6, yb(k) + yb.bandwidth() / 2 + 3, hm(v), 'end', 'ax-title gk-in');
+      });
+    }
+    { // second ordre : le coût du sac, au sec et sous la pluie
+      const f = frame('c-gk-second', { t: 14, r: 40, b: 8, l: 56 });
+      const vals = [['au sec', SW.sac_dry], ['pluie', SW.sac_wet]], x = d3.scaleLinear().domain([0, d3.max(vals, v => v[1]) * 1.1]).range([0, f.w]);
+      const yb = d3.scaleBand().domain(vals.map(v => v[0])).range([0, f.h]).padding(.32);
+      f.g.append('line').attr('x1', x(RH.sac)).attr('x2', x(RH.sac)).attr('y1', -4).attr('y2', f.h).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
+      lab(f.g, x(RH.sac), -5, `moyenne ${pct(RH.sac)}`);
+      vals.forEach(([k, v], i) => {
+        f.g.append('rect').attr('x', 0).attr('width', x(v)).attr('y', yb(k)).attr('height', yb.bandwidth()).attr('rx', 2).attr('fill', C('--series-avec')).attr('fill-opacity', i ? .45 : .85);
+        lab(f.g, -8, yb(k) + yb.bandwidth() / 2 + 3, k, 'end');
+        lab(f.g, x(v) + 5, yb(k) + yb.bandwidth() / 2 + 3, `+${f0(v)} %`, 'start');
+      });
+    }
+    $('t-gk').innerHTML = `Le terrain coûte surtout quand le sentier disparaît (<b>${pct(big.pct)} d’un coup</b>). Le sac coûte <b>${pct(RH.sac)}</b> en moyenne (${pct(SW.sac_dry)} au sec, ${pct(SW.sac_wet)} sous la pluie) mais rend mon allure plus régulière. Et mon arrivée tombe au bord de la fourchette : c’est l’enchaînement des écarts, que la simulation va mesurer.`;
+    DEFS.grecs = { t: 'Les grecs : d’où ils viennent, comment on les mesure ici', html: () => `
+      <p><b>L’origine.</b> En 1973, <b>Fischer Black et Myron Scholes</b> donnent une formule pour le prix d’une option. Ce prix dépend de quelques entrées : le cours de l’actif, sa volatilité, le temps qui reste, le taux d’intérêt. Les traders nomment d’une lettre grecque la sensibilité du prix à chaque entrée : ce sont des dérivées. Chaque soir, un desk explique son résultat grec par grec.</p>
+      <div class="def-f">Δ = ∂V/∂S · Γ = ∂²V/∂S² · ν = ∂V/∂σ · Θ = ∂V/∂t · ρ = ∂V/∂r</div>
+      <p><b>Ici.</b> Le « prix » est mon temps de marche. <b>Δ</b> et <b>ρ</b> sont les effets de la partie 04 (régression sur ${A.n} tronçons) : le terrain est le sous-jacent, le sac le coût de portage. <b>Γ</b> : la même régression, avec un effet propre à chaque niveau de cote ; la marche modéré → exigeant tient même en retirant n’importe quelle sortie (t ≥ ${f1(G.loo_tmin)}). <b>ν</b> : l’écart-type de ce que la régression n’explique pas (${d2(V.all)} en tout), comparé entre groupes par un test de permutation. <b>Θ</b> : les fourchettes à 90 % de la simulation de la partie 07. <b>Second ordre</b> : ${SW.scanned} croisements de deux facteurs passés au crible, un à la fois.</p>
+      <p class="muted">Limites : avec ${SW.scanned} croisements testés, un résultat peut sortir par hasard ; sac × pluie tient en retirant n’importe quelle sortie (t de ${f1(SW.t_loo[1])} à ${f1(SW.t_loo[0])}), mais repose sur ${SW.n_out} sorties avec le sac sous la pluie. Non retenus : la pluie qui pèserait plus sur terrain dur (t = ${f1(A.vanna.t)}), le terrain appris au fil des jours (t = ${f1(A.charm.t)}). La pluie n’entre pas dans la régression de la partie 04 : son delta (${pct(D.pluie)}) vient de la partie 03.</p>` };
+    const gb = $('gk-btn'); if (gb && !gb.innerHTML) gb.innerHTML = defBtn('grecs', 'D’où viennent les grecs');
+  }
+
+  /* ---------- 07 (fin) · le jour de marge, évalué comme une option ---------- */
+  function drawMarge() {
+    const G = window.RISK_MARGE; if (!G || !$('c-mg')) return;
+    const CV = G.curve, c0 = CV[0], wet = CV.find(c => c.day === 7), M = G.M_min;
+    const mn = m => m < 60 ? `${m} min` : hm(m / 60);
+    { // valeur de la marge, soir après soir
+      const f = frame('c-mg', { t: 14, r: 64, b: 26, l: 8 });
+      const x = d3.scalePoint().domain(CV.map(c => c.day)).range([0, f.w]).padding(.2), y = d3.scaleLinear().domain([0, M * 1.12]).range([f.h, 0]);
+      const x7 = x(7) - x.step() / 2;
+      f.g.append('rect').attr('x', x7).attr('width', f.w - x7).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .1).attr('rx', 4);
+      f.g.append('text').attr('class', 'ax-title').attr('x', x7 + 6).attr('y', 10).text('jours de pluie');
+      yGrid(f.g, y, f.w, 4, v => `${v} min`);
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(d => f.narrow ? `J${d}` : `soir J${d}`));
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(M)).attr('y2', y(M)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4');
+      axTag(f.g, f.w + 2, y(M), mn(M));
+      hideUnder(f.g, [y(M)]);
+      [['normal', C('--text-muted'), 1.4], ['blocs', C('--accent'), 2.2]].forEach(([k, col, w]) => {
+        f.g.append('path').attr('d', d3.line().x(c => x(c.day)).y(c => y(c[k].value))(CV)).attr('fill', 'none').attr('stroke', col).attr('stroke-width', w);
+        f.g.selectAll(null).data(CV).join('circle').attr('cx', c => x(c.day)).attr('cy', c => y(c[k].value)).attr('r', k === 'blocs' ? 3.2 : 2.4).attr('fill', col);
+      });
+      f.g.append('text').attr('class', 'ax-title').attr('x', x(CV[0].day)).attr('y', y(c0.blocs.value) - 9).attr('text-anchor', 'start').text(mn(c0.blocs.value));
+      f.g.append('text').attr('class', 'ax-title').attr('x', x(7) - 6).attr('y', y(wet.blocs.value) - 8).attr('text-anchor', 'end').text(mn(wet.blocs.value));
+      hover(f.g.selectAll('.mh').data(CV).join('rect').attr('class', 'hit').attr('x', c => x(c.day) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
+        c => `<b>Soir du J${c.day}</b>${row('retard cumulé', `${c.dev >= 0 ? '+' : '−'}${mn(Math.abs(c.dev))}`)}${row('valeur de la marge', mn(c.blocs.value))}${row('marge entamée', `${f0(c.blocs.p_use)} %`)}${row('marge épuisée', `${f0(c.blocs.p_out)} %`)}${row('incertitude restante', `± ${mn(c.blocs.rem_min)}`)}`);
+      legend('l-mg', [['ln', C('--accent'), 'valeur, simulation par blocs'], ['ln', C('--text-muted'), 'valeur, tronçons indépendants'], ['dash', '', 'la marge entière']]);
+      readout('r-mg', `marge <b>${mn(M)}</b> · retard final <b>+${mn(G.real_end_min)}</b>`);
+    }
+    { // le smile
+      const f = frame('c-smile', { t: 14, r: 12, b: 26, l: 44 }), S = G.smile;
+      const lo = Math.min(G.sd.normal, ...S.map(s => s.sd_h)) * .9, hi = Math.max(...S.map(s => s.sd_h), G.sd.blocs) * 1.08;
+      const x = d3.scalePoint().domain(S.map(s => s.x)).range([0, f.w]).padding(.3), y = d3.scaleLinear().domain([lo, hi]).range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => hm(v), 'left');
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(v => v ? `+${v} h` : 'prévision'));
+      [[G.sd.normal, 'tronçons indépendants', C('--text-muted')], [G.sd.blocs, 'simulation par blocs', C('--accent')]].forEach(([v, l, col]) => {
+        f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '4 3');
+        f.g.append('text').attr('class', 'ax-title').attr('x', f.w).attr('y', y(v) - 5).attr('text-anchor', 'end').text(`${l} : ${hm(v)}`);
+      });
+      f.g.append('path').attr('d', d3.line().x(s => x(s.x)).y(s => y(s.sd_h)).curve(d3.curveMonotoneX)(S)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 2);
+      f.g.selectAll(null).data(S).join('circle').attr('cx', s => x(s.x)).attr('cy', s => y(s.sd_h)).attr('r', 3.2).attr('fill', C('--down'));
+      legend('l-smile', [['ln', C('--down'), 'écart-type implicite selon le seuil'], ['dash', C('--text-muted'), 'repères']]);
+      readout('r-smile', `implicite <b>${hm(G.sd.implied)}</b> · indépendants ${hm(G.sd.normal)}`);
+    }
+    const th = CV.find(c => c.day === 5);
+    $('mg-lede').innerHTML = `Le plan gardait un jour de marge : le J9, la Støvla, soit environ <b>${mn(M)}</b> de marche à mon allure. C’est une assurance : elle ne sert que si la traversée dépasse la prévision, et seulement jusqu’à ${mn(M)}. En finance, ce contrat est une option (un « call spread »), et la formule de Black-Scholes donne son prix, ici en minutes de marche.`;
+    $('mg-greeks').innerHTML = [
+      ['Δ', 'Delta', `Si la prévision glisse d’une heure, la marge vaut <b>${f0(G.greeks.delta * 60)} min</b> de plus : elle sera davantage sollicitée.`],
+      ['ν', 'Vega', `Si l’incertitude grandit de 10 %, la marge vaut <b>${f0(G.greeks.vega_10)} min</b> de plus : une assurance vaut plus quand l’avenir est flou.`],
+      ['Θ', 'Thêta', `Du soir du J2 au soir du J5, sans incident, la marge passe de ${mn(c0.blocs.value)} à <b>${mn(th.blocs.value)}</b> : chaque jour calme la rend moins utile.`],
+    ].map(([l, n, t]) => `<div><h4><span class="gk">${l}</span> ${n}</h4><p>${t}</p></div>`).join('');
+    $('mg-read').textContent = `À gauche, ce que vaut la marge chaque soir : le dépassement qu’elle doit s’attendre à absorber, d’après la suite de la prévision. La ligne pointillée est la marge entière. À droite, l’écart-type que Black-Scholes doit supposer pour retrouver ma simulation, selon le seuil de dépassement.`;
+    $('t-mg').innerHTML = `Au soir du J2, la marge vaut <b>${mn(c0.blocs.value)}</b> sur ${mn(M)} : une chance sur deux d’être entamée (${f0(c0.blocs.p_use)} %), ${f0(c0.blocs.p_out)} % d’être épuisée. Elle fond tant que tout va bien, puis la pluie la fait bondir : <b>${mn(wet.blocs.value)}</b> au soir du J7. À l’arrivée, elle est consommée en entier et je la dépasse de ${mn(G.real_end_min - M)}. Pour retrouver ma simulation, Black-Scholes doit supposer <b>${hm(G.sd.implied)}</b> d’écart-type au lieu de ${hm(G.sd.normal)} : c’est l’enchaînement des écarts.`;
+    DEFS.blackscholes = { t: 'Black-Scholes : le prix d’une assurance', html: () => `
+      <p><b>L’origine.</b> En 1973, <b>Fischer Black, Myron Scholes et Robert Merton</b> trouvent le prix « juste » d’une option : le droit, mais pas l’obligation, d’acheter un actif à un prix fixé d’avance (le prix d’exercice K). Merton et Scholes reçoivent le prix Nobel d’économie en 1997. En 1976, Black adapte la formule à un prix à terme F, connu aujourd’hui pour une date future.</p>
+      <div class="def-f">call = F·N(d₁) − K·N(d₂) · d₁ = [ln(F/K) + s²/2] / s · d₂ = d₁ − s · s = σ√τ</div>
+      <p>N est la loi normale : N(d₂) est la probabilité que l’option serve. s mesure l’incertitude qui reste jusqu’à l’échéance : elle grandit avec la volatilité σ et avec le temps τ. Une assurance plafonnée, qui paie le dépassement de K jusqu’à K + M, est la différence de deux calls : un <i>call spread</i>.</p>
+      <div class="def-ex"><b>Ici.</b> L’actif est mon temps de marche du J3 au J9. F est la prévision du soir du J2 (${hm(G.F0)}), K = F : la marge sert dès que je dépasse la prévision, jusqu’à M = ${mn(M)} (le jour de marge du plan, ${f1(G.margin.km)} km et ${f0(G.margin.dplus)} m de D+, converti à mon allure en trail). L’incertitude s vient de la simulation. Chaque soir, F est corrigé du retard déjà pris et s rétrécit. Résultat au J2 : ${mn(G.value_j2.bs_blocs)} avec la volatilité de la simulation par blocs, ${mn(G.value_j2.bs_normal)} avec des tronçons indépendants ; la simulation elle-même donne ${mn(G.value_j2.sim_blocs)}.</div>
+      <p class="muted">Limites : la formule suppose une loi lognormale et des écarts indépendants, d’où la volatilité implicite. Un trek ne se couvre pas en achetant et vendant : le « prix » est ici le dépassement attendu, pas un prix d’arbitrage. Chaque soir, la suite est supposée suivre la prévision du J2.</p>` };
+    const b = $('mg-btn'); if (b && !b.innerHTML) b.innerHTML = defBtn('blackscholes', 'Black-Scholes : le prix d’une assurance');
   }
 
   /* ---------- 09 · Monte Carlo ---------- */
@@ -1373,10 +1516,10 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, () => drawMc(false), drawPlanCharts, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, drawActe2, () => drawMc(false), drawMarge, drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
-  drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
+  drawTail(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
   addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) < 8) return; lastW = innerWidth; clearTimeout(t); t = setTimeout(drawAll, 150); });
-  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { drawAll(); drawTail(); drawIndex(); });
+  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { drawAll(); drawTail(); });
 })();

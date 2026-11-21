@@ -487,3 +487,28 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .risk-def { margin: 4px 0 16px; }
 .risk-def > div p { margin: 0; font-size: 14px; line-height: 1.5; }
 .facts-wide dd { flex: 0 0 92px; }
+
+/* partie 05 (météo) : en-têtes des graphiques alignés ; largeurs des encadrés pour qu'ils finissent à la même hauteur */
+#s5 .grid-2 > .pc { display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
+@media (min-width: 901px) {
+  #s5 .notes { grid-template-columns: 1fr .8fr 1.9fr; }
+  #s5 .notes.wk { grid-template-columns: .6fr 1fr 1.1fr; }
+}
+/* partie 06 (bilan de l'acte 2) : lettres grecques sans majuscule forcée */
+.greeks h4 .gk { text-transform: none; font: 700 14px var(--font); letter-spacing: 0; margin-right: 2px; color: var(--accent); }
+.gk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0 0; }
+.gk-card { display: flex; flex-direction: column; }
+.gk-card .pc-head { gap: 8px; }
+.gk-l { font: 700 18px var(--font); color: var(--accent); line-height: 1; }
+.gk-body { padding: 10px 14px 0; flex: 1; }
+.gk-body p { margin: 0 0 7px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.gk-body .gk-lab { display: block; font: 650 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1px; }
+.gk-body .gk-tr { color: var(--text-primary); }
+.gk-body .gk-tr b { color: var(--text-primary); }
+.gk-ns { display: inline-block; padding: 0 5px; border-radius: 4px; font: 600 10.5px var(--mono); color: var(--text-muted); border: 1px solid var(--hair); }
+.gk-c { padding: 0 6px 6px; }
+.gk-in { fill: #fff; }
+@media (max-width: 900px) { .gk-grid { grid-template-columns: 1fr; } }
+.gk-btn { margin: 2px 0 4px; }
+.gk-body .gk-tr { font-size: 14px; line-height: 1.55; margin: 0; }
+.gk-body .gk-dq { margin: 0 0 8px; padding-left: 9px; border-left: 2px solid var(--accent); font: 600 14px/1.45 var(--font); color: var(--text-primary); }
