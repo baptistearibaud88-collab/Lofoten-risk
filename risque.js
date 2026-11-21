@@ -857,28 +857,28 @@
     const hN = TH.horizon[TH.horizon.length - 1];
     const ns = t => Math.abs(t) < 1.96 ? ' <span class="gk-ns">n.s.</span>' : '';
     const cards = [
-      { k: 'delta', l: 'Δ', n: 'Delta', q: 'le terrain',
+      { k: 'delta', dq: 'De combien mon temps bouge quand le terrain monte d’un niveau ?', l: 'Δ', n: 'Delta', q: 'le terrain',
         tr: `Le terrain est mon « actif » : quand il se durcit, mon temps monte. Un niveau de cote en plus coûte <b>${pct(D.cote)}</b> de temps, une descente raide ${pct(D.desc)}, à tout le reste égal (partie 04).`,
         fi: ['Δ = ∂V / ∂S', 'De combien le prix V de l’option bouge quand le cours S de l’actif monte d’une unité.'] },
-      { k: 'gamma', l: 'Γ', n: 'Gamma', q: 'le sac sur terrain dur',
+      { k: 'gamma', dq: 'De combien le coût du sac bouge quand le terrain monte d’un niveau ?', l: 'Γ', n: 'Gamma', q: 'le sac sur terrain dur',
         tr: `Le sac ne coûte pas pareil partout : <b>${pct(G.sac_by_grade[0])}</b> en terrain facile, <b>${pct(G.sac_by_grade[3])}</b> en expert. Les deux risques ne s’additionnent pas, ils se renforcent : c’est sur le terrain le plus dur que le sac pèse le plus.`,
         fi: ['Γ = ∂²V / ∂S²   ·   croisé : ∂²V / ∂S₁∂S₂', 'De combien le delta lui-même bouge quand le cours monte d’une unité. Entre deux actifs, le gamma croisé dit de combien le delta de l’un bouge quand l’autre monte.'] },
-      { k: 'vega', l: 'ν', n: 'Vega', q: 'l’imprévisible',
-        tr: `Qu’est-ce qui rend mon allure imprévisible ? Pas la pluie (${d2(V.pluie[1])} contre ${d2(V.pluie[0])} au sec) : elle ralentit, sans disperser. Un peu le terrain. Et le sac la <b>calme</b> (${d2(V.sac[1])} contre ${d2(V.sac[0])}) : chargé, je marche plus régulier.`,
+      { k: 'vega', dq: 'De combien mon allure varie d’un tronçon à l’autre, et qu’est-ce qui la fait varier plus ?', l: 'ν', n: 'Vega', q: 'l’imprévisible',
+        tr: `Je cherche toujours à aller vite ; c’est le terrain qui décide. Parfois il freine, parfois il est roulant : cette alternance, c’est ma volatilité. Plus le terrain est dur, plus elle est forte (<b>${d2(V.terrain[0])}</b> en facile, <b>${d2(V.terrain[1])}</b> en expert). La pluie ne l’augmente pas (${d2(V.pluie[1])} contre ${d2(V.pluie[0])} au sec), et le sac la calme (${d2(V.sac[1])} contre ${d2(V.sac[0])}).`,
         fi: ['ν = ∂V / ∂σ', 'De combien le prix bouge quand la volatilité σ, l’ampleur des écarts du cours, monte d’un point.'] },
-      { k: 'theta', l: 'Θ', n: 'Thêta', q: 'l’horizon',
+      { k: 'theta', dq: 'De combien ma prévision se trompe quand elle porte un jour plus loin ?', l: 'Θ', n: 'Thêta', q: 'l’horizon',
         tr: `Plus je prévois loin, plus je me trompe. Vue du soir du J${TH.origin}, la prévision vaut <b>± ${TH.horizon[0].half_min} min</b> pour le lendemain, mais <b>± ${hm(hN.half_min / 60)}</b> pour le J${hN.day}.`,
         fi: ['Θ = ∂V / ∂t', 'De combien le prix bouge quand un jour passe, tout le reste égal. L’incertitude sur le cours, elle, grandit avec le temps qui reste, comme σ√T.'] },
-      { k: 'rho', l: 'ρ', n: 'Rho', q: 'le portage',
+      { k: 'rho', dq: 'De combien mon temps bouge quand je porte mon camp sur le dos ?', l: 'ρ', n: 'Rho', q: 'le portage',
         tr: `Porter son camp a un coût, payé à chaque pas : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (de ${pct(RH.lo)} à ${pct(RH.hi)}). C’est le prix de l’autonomie.`,
         fi: ['ρ = ∂V / ∂r', 'De combien le prix bouge quand le taux d’intérêt r monte d’un point : le coût de porter la position dans le temps.'] },
-      { k: 'second', l: '∂²', n: 'Second ordre', q: 'les effets croisés',
+      { k: 'second', dq: 'Le coût du terrain bouge-t-il avec la pluie, ou avec les jours ?', l: '∂²', n: 'Second ordre', q: 'les effets croisés',
         tr: `La pluie pèse-t-elle plus sur terrain dur ? ${pct(A.vanna.pct)} par niveau${ns(A.vanna.t)}. Ai-je appris le terrain au fil des jours ? ${pct(A.charm.pct)} par jour${ns(A.charm.t)}. Seul le gamma passe le seuil.`,
         fi: ['Vanna = ∂²V / ∂S∂σ   ·   Charm = ∂²V / ∂S∂t', 'De combien le delta bouge quand la volatilité monte d’un point (vanna), ou quand un jour passe (charm).'] },
     ];
     cards.forEach(c => { DEFS['gk_' + c.k] = { t: `${c.n} : la définition en finance`, html: () => `<div class="def-f">${c.fi[0]}</div><p>${c.fi[1]}</p>` }; });
     box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}${defBtn('gk_' + c.k)}</span></div>
-      <div class="gk-body"><p class="gk-tr">${c.tr}</p></div>
+      <div class="gk-body"><p class="gk-dq">${c.dq}</p><p class="gk-tr">${c.tr}</p></div>
       <div class="chart gk-c" id="c-gk-${c.k}" data-h="110"></div></div>`).join('');
     const lab = (g, x, y, t, a = 'middle', cls = 'ax-title') => g.append('text').attr('class', cls).attr('x', x).attr('y', y).attr('text-anchor', a).text(t);
     const bars = (id, vals, names, col, ref) => {
@@ -896,7 +896,7 @@
     bars('c-gk-gamma', G.sac_by_grade, GRADES, C('--series-avec'), RH.sac);
     { // vega : paires d'écarts-types
       const f = frame('c-gk-vega', { t: 8, r: 10, b: 16, l: 64 });
-      const rowsV = [['pluie', 'sec', 'pluie', V.pluie], ['sac', 'sans', 'avec', V.sac], ['terrain', 'facile', 'expert', V.terrain]];
+      const rowsV = [['terrain', 'facile', 'expert', V.terrain], ['pluie', 'sec', 'pluie', V.pluie], ['sac', 'sans', 'avec', V.sac]];
       const x = d3.scaleLinear().domain([.26, .38]).range([0, f.w]), y = d3.scaleBand().domain(rowsV.map(r => r[0])).range([0, f.h]).padding(.2);
       f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(3).tickSize(0).tickPadding(5).tickFormat(d2));
       rowsV.forEach(([k, a, b, v]) => {

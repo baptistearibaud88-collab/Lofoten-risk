@@ -511,3 +511,4 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 @media (max-width: 900px) { .gk-grid { grid-template-columns: 1fr; } }
 .gk-btn { margin: 2px 0 4px; }
 .gk-body .gk-tr { font-size: 14px; line-height: 1.55; margin: 0; }
+.gk-body .gk-dq { margin: 0 0 8px; padding-left: 9px; border-left: 2px solid var(--accent); font: 600 14px/1.45 var(--font); color: var(--text-primary); }
