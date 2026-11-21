@@ -494,3 +494,5 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
   #s5 .notes { grid-template-columns: 1fr .8fr 1.9fr; }
   #s5 .notes.wk { grid-template-columns: .6fr 1fr 1.1fr; }
 }
+/* partie 06 (bilan de l'acte 2) : lettres grecques sans majuscule forcée */
+.greeks h4 .gk { text-transform: none; font: 700 14px var(--font); letter-spacing: 0; margin-right: 2px; color: var(--accent); }

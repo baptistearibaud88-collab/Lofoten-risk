@@ -848,33 +848,57 @@
     $('t-wx').textContent = `Six jours secs et plus chauds que la normale (${f1(W_.tmax_mean)} °C de max moyen contre ${f1(W_.climato.tmax)}), puis ${f1(lateRain)} mm en trois jours, soit ${f0((lateRain / W_.climato.pluie_mm - 1) * 100)} % de plus que la normale de toute la période, avec des rafales jusqu’à ${W_.gust_max} km/h. Les trois incidents de terrain les plus graves (escalade, éboulement, grotte) tombent dans ces trois jours, quand la VFC était déjà sous la zone normale (environ −30 %). Le nombre de jours de pluie est normal (${W_.rainy_days}) : c’est leur regroupement en fin de séjour qui a fait le risque.`;
   }
 
-  /* ---------- 08 · danger scorecard ---------- */
-  function drawIndex() {
-    const rows = R.rows.slice().sort((a, b) => b.score - a.score);
-    const mx = d3.max(rows, r => Math.abs(r.score));
-    const keys = [['terrain', 'Terrain'], ['pente', 'Pente'], ['meteo', 'Météo'], ['fatigue', 'Fatigue']];
-    const col = d3.scaleLinear().domain([-.4, 0, .4]).range([C('--div-neg'), C('--div-mid'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
-    const pct = r => Math.round((1 - (r.rank - 1) / (rows.length - 1)) * 100);
-    $('index-table').innerHTML = `<thead><tr><th class="n">#</th><th>Sortie</th><th>Jour</th><th>Cote</th><th>Indice</th><th class="n">Score</th><th class="n">Centile</th><th title="${keys.map(k => k[1]).join(' · ')}">Facteurs <span class="muted">T P M F</span></th></tr></thead><tbody>${rows.map(r => {
-      const w = Math.abs(r.score) / mx * 50;
-      const bar = `<span class="sbar"><i style="${r.score >= 0 ? `left:50%;width:${w}%;background:var(--down)` : `right:50%;width:${w}%;background:var(--up)`};opacity:.8"></i></span>`;
-      return `<tr><td class="n">${r.rank}</td><td class="nw"><span class="dot" style="background:${r.sac ? C('--series-avec') : C('--series-sans')}" title="${r.sac ? 'avec le sac' : 'trail'}"></span>${r.name}${r.alert.length ? `<svg class="alt-ic" viewBox="-8 -8 16 15" role="img"><title>Alerte : ${r.alert.join(', ')}</title><path d="M0,-7 7,5.5 -7,5.5Z" fill="currentColor"/></svg>` : ''}</td><td class="mono">${dayLbl(r.day)}</td><td><span class="chipg l${r.grade}"><i></i>${GL[r.grade]}</span></td><td style="min-width:150px">${bar}</td><td class="n">${fs2(r.score)}</td><td class="n">${pct(r)}</td>
-        <td><span class="heat">${keys.map(([k, l]) => `<i style="background:${col(r.contrib[k])}" title="${l} ${fs2(r.contrib[k])}"></i>`).join('')}</span></td></tr>`;
-    }).join('')}</tbody>`;
-    legend('l-index', [['', C('--warning'), 'sortie avec alerte (survoler le triangle)'], ['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'trail'], ['', C('--down'), 'au-dessus de la moyenne (plus exposé)'], ['', C('--up'), 'en dessous'], ['', C('--div-pos'), 'facteur aggravant'], ['', C('--div-neg'), 'facteur atténuant']]);
-    const RD = R.idx.rand, TR = R.idx.terrain_ranks, nA = TR.length;
-    readout('r-index', `alertes de terrain aux rangs <b>${TR.join(', ')}</b> sur ${R.rows.length}`);
-    const noAlertTop = rows.filter(x => !x.alert.length).slice(0, 2);
-    $('t-index').innerHTML = `Rangs <b>${TR.join(', ')}</b> sur ${R.rows.length} pour les ${nA} alertes de terrain, toutes dans le tiers le plus exposé. Avec <b>${f0(RD.n)}</b> jeux de poids tirés au hasard, au moins ${nA - 1} y restent dans <b>${f0(RD.most * 100)} %</b> des cas.<br><br>L’indice ne prédit pas un éboulement : il dit où les signaux se cumulent avant de partir. Deux sorties très exposées n’ont d’ailleurs rien donné (${noAlertTop.map(x => `${x.name}, ${x.rank}e`).join(' ; ')}). Reste à mesurer jusqu’où une journée peut déraper.`;
-    DEFS.indice = { t: 'D’où vient un indice composite', html: () => `
-      <p><b>L’origine.</b> En 1968, <b>Edward Altman</b> veut prévoir les faillites d’entreprises. Aucun chiffre comptable n’y suffit seul. Il en combine cinq en une seule note, le <i>Z-score</i> : en dessous d’un seuil, l’entreprise est en zone de danger. Les banques notent encore leurs emprunteurs sur ce principe.</p>
-      <p><b>La construction.</b> Les facteurs n’ont pas la même unité (une cote, une pente en %, des millimètres de pluie, des millisecondes de VFC). On les ramène donc à la même échelle : l’écart à la moyenne des ${R.rows.length} sorties, divisé par l’écart-type. Puis on les additionne.</p>
-      <div class="def-f">indice = ¼ terrain + ¼ pente + ¼ météo + ¼ fatigue</div>
-      <p><b>Pourquoi ces quatre-là.</b> Ce sont les signaux connus avant de partir : la cote du sentier, la pente des passages raides, la météo du jour, la nuit précédente. L’irrégularité de l’allure n’y figure pas : elle se mesure pendant la sortie, et un incident la fait monter. Ce serait une conséquence, pas un signal.</p>
-      <p><b>Pourquoi des poids égaux.</b> Altman avait 66 entreprises pour calculer ses poids. Ici, il n’y a que ${nA} alertes de terrain : calculer des poids reviendrait à les ajuster sur le résultat. Poids égaux, donc, et un contrôle : on tire ${f0(RD.n)} jeux de poids au hasard et on regarde où tombent les alertes.</p>
-      <div class="def-ex"><b>Résultat.</b> Les ${nA} alertes sont toutes dans le tiers le plus exposé dans ${f0(RD.all * 100)} % des tirages, au moins ${nA - 1} dans ${f0(RD.most * 100)} %. Leur rang moyen est ${f1(RD.mean_rank)}, contre ${f0(RD.chance_rank)} si l’indice ne valait rien. En retirant un facteur à la fois, le plus sensible est la météo (rangs ${R.idx.loo.meteo.join(', ')}).</div>
-      <p class="muted">Limites : ${nA} alertes sur ${R.rows.length} sorties, c’est peu, et c’est moi qui les ai déclarées. La météo est celle mesurée le jour même, pas la prévision consultée. L’indice classe des sorties ; il ne donne pas une probabilité d’accident.</p>` };
-    const it = $('index-table').closest('.pc').querySelector('.pc-t'); if (!it.querySelector('.def-btn')) it.insertAdjacentHTML('beforeend', defBtn('indice'));
+  /* ---------- 06 · bilan de l'acte 2 : ce que chaque facteur a coûté, et les grecs ---------- */
+  function drawActe2() {
+    const A = window.RISK_ACTE2; if (!A) return;
+    const KS = [['sac', 'sac sur le dos', C('--series-avec')], ['terrain', 'terrain', C('--critical')], ['desc', 'descente raide', C('--warning')], ['meteo', 'vent et pluie (rafales)', C('--accent')]];
+    const D = A.days, wet = D.filter(d => d.day >= A.disp.wet_from);
+    const f = frame('c-attr', { t: 8, r: $('c-attr').clientWidth < 560 ? 34 : 58, b: 26, l: 8 });
+    const top = 62, gap = 22, hB = f.h - top - gap;
+    const x = d3.scaleBand().domain(D.map(d => d.day)).range([0, f.w]).paddingInner(.32).paddingOuter(.18);
+    const add = d => KS.reduce((s, [k]) => s + Math.max(0, d[k]), 0);
+    const y = d3.scaleLinear().domain([0, d3.max(D, add) * 1.12]).nice().range([top + gap + hB, top + gap]);
+    const yr = d3.scaleLinear().domain([0, d3.max(D, d => d.rain) * 1.25]).range([top - 4, 14]);
+    // jours mouillés : bande grise sur toute la hauteur
+    const x0 = x(wet[0].day) - x.step() * x.paddingInner() / 2, x1 = x(wet[wet.length - 1].day) + x.bandwidth() + x.step() * x.paddingInner() / 2;
+    f.g.append('rect').attr('x', x0).attr('width', x1 - x0).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .1).attr('rx', 4);
+    if (!f.narrow) f.g.append('text').attr('class', 'ax-title').attr('x', x0 + 6).attr('y', 10).text('jours mouillés');
+    // bandeau de pluie
+    f.g.append('text').attr('class', 'ax-title').attr('x', 0).attr('y', 10).text('pluie du jour (mm)');
+    f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', top - 4).attr('y2', top - 4).attr('stroke', C('--hair'));
+    const rw = Math.min(x.bandwidth(), 26);
+    f.g.selectAll('.rn').data(D).join('rect').attr('x', d => x(d.day) + (x.bandwidth() - rw) / 2).attr('width', rw).attr('y', d => yr(d.rain)).attr('height', d => yr(0) - yr(d.rain)).attr('rx', 2).attr('fill', C('--series-avec')).attr('fill-opacity', .55);
+    f.g.selectAll('.rl').data(D.filter(d => d.rain >= .5)).join('text').attr('class', 'ax-title').attr('text-anchor', 'middle').attr('x', d => x(d.day) + x.bandwidth() / 2).attr('y', d => yr(d.rain) - 4).text(d => f1(d.rain));
+    // barres empilées
+    yGrid(f.g, y, f.w, 4, v => f.narrow ? `${v}` : `${v} min`);
+    f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(dayLbl));
+    D.forEach(d => {
+      let c = 0;
+      KS.forEach(([k, , col]) => {
+        const v = Math.max(0, d[k]); if (!v) return;
+        f.g.append('rect').attr('x', x(d.day)).attr('width', x.bandwidth()).attr('y', y(c + v)).attr('height', y(c) - y(c + v)).attr('fill', col).attr('fill-opacity', .85);
+        c += v;
+      });
+      f.g.append('text').attr('class', 'ax-title').attr('text-anchor', 'middle').attr('x', x(d.day) + x.bandwidth() / 2).attr('y', y(c) - 5).style('font-size', f.narrow ? '9px' : null).text(f.narrow ? `${hm((d.real - d.base) / 60).replace(' h ', 'h')}` : `+${hm((d.real - d.base) / 60)}`);
+    });
+    hover(f.g.selectAll('.ah').data(D).join('rect').attr('class', 'hit').attr('x', d => x(d.day) - x.step() * x.paddingInner() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
+      d => `<b>${dayLbl(d.day)} · ${hm(d.real / 60)} de marche</b>${row('journée de base', hm(d.base / 60))}${KS.map(([k, l]) => row(l, `${fs0(d[k])} min`)).join('')}${row('fatigue (VFC)', `${fs0(d.fatigue)} min`)}${row('pluie', `${f1(d.rain)} mm`)}`);
+    legend('l-attr', [...KS.map(([, l, col]) => ['', col, l]), ['', C('--series-avec') + '8c', 'pluie du jour (mm)']]);
+    const T = A.total, E = A.effects;
+    readout('r-attr', `sur <b>${hm(T.real / 60)}</b> de marche · fatigue <b>${fs0(T.fatigue)} min</b>`);
+    const H = A.horizon, h1 = H[0].half_min, hN = H[H.length - 1].half_min;
+    const wetAdd = d3.sum(wet, d => d.real - d.base), wetMet = d3.sum(wet, d => d.meteo);
+    $('t-delta').innerHTML = `De combien mon temps bouge quand un facteur bouge d’un cran (partie 04) : sac <b>+${f0(E.sac)} %</b>, terrain +${f0(E.terrain)} % par niveau, descente raide +${f0(E.desc)} %, vent +${f0(E.meteo)} % par 10 km/h. La fatigue : 0.`;
+    $('t-vega').innerHTML = `La pluie rend-elle mes pas plus irréguliers ? Non : écart-type <b>${f2(A.disp.pluie)}</b> sous la pluie, ${f2(A.disp.sec)} au sec. Elle ne disperse pas, elle décale tout d’un coup : un risque commun (partie 03).`;
+    $('t-theta').innerHTML = `Ce que change le temps qui passe. Vue du soir du J${A.origin}, la fourchette de prévision fait <b>± ${h1} min</b> pour le lendemain, <b>± ${hm(hN / 60)}</b> pour le dernier jour : plus on vise loin, plus le risque grandit.`;
+    $('t-attr').innerHTML = `Sur ${hm(T.real / 60)} de marche, <b>${hm(T.terrain / 60)} de terrain</b>, <b>${hm(T.sac / 60)} de sac</b> et <b>${hm(T.meteo / 60)} de météo</b>. Le sac pèse au début, le terrain partout, la météo à la fin : ${f0(wetMet / wetAdd * 100)} % du surcoût des jours mouillés. Restait à savoir si on pouvait le prévoir : c’est la simulation.`;
+    DEFS.grecs = { t: 'Les grecs : expliquer un résultat facteur par facteur', html: () => `
+      <p><b>L’origine.</b> En 1973, <b>Fischer Black et Myron Scholes</b> donnent une formule pour le prix d’une option. Ce prix dépend de quelques entrées : le cours de l’actif, sa volatilité, le temps qui reste. Les traders nomment d’une lettre grecque la sensibilité du prix à chaque entrée : ce sont des dérivées.</p>
+      <div class="def-f">Δ = ∂prix / ∂cours · ν = ∂prix / ∂volatilité · Θ = ∂prix / ∂temps</div>
+      <p><b>À quoi ça sert.</b> Chaque soir, un desk de marché explique son résultat grec par grec (le <i>P&amp;L explain</i>) : tant venu du cours, tant de la volatilité, tant du temps qui passe. Ce qui reste est inexpliqué. Et l’incertitude d’un prix grandit avec le temps qui reste, comme σ√T : plus l’échéance est loin, plus la fourchette est large.</p>
+      <div class="def-ex"><b>Ici.</b> Le « résultat » est le temps de marche (${hm(T.real / 60)}). La journée de base est la même marche sans sac, sur terrain facile (cote ${A.base.grade}), sans descente raide, avec des rafales de ${A.base.gust} km/h et une nuit ordinaire (VFC ${A.base.hrv} ms). Pour chaque tronçon, les effets de la partie 04 donnent un temps de base ; les minutes au-dessus sont partagées entre les facteurs au prorata de leur effet (attribution logarithmique, comme celle des fonds). Total : ${hm((T.real - T.base) / 60)} attribuées, dont ${hm(T.terrain / 60)} au terrain et ${hm(T.sac / 60)} au sac.</div>
+      <p class="muted">Limites : la météo passe par les rafales, car dans la partie 04 le vent et la pluie arrivent ensemble (avec la pluie dans la régression, l’effet du vent disparaît). La pente reste dans la base : elle corrige l’étalon de Tobler. Le thêta vient de la simulation (partie 07, modèle par blocs, fourchette à 90 %).</p>` };
+    const it = $('c-attr').closest('.pc').querySelector('.pc-t'); if (!it.querySelector('.def-btn')) it.insertAdjacentHTML('beforeend', defBtn('grecs'));
   }
 
   /* ---------- 09 · Monte Carlo ---------- */
@@ -1376,10 +1400,10 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, () => drawMc(false), drawPlanCharts, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, drawActe2, () => drawMc(false), drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
-  drawTail(); drawIndex(); drawPlan(); drawConcl(); drawAll(); initMc();
+  drawTail(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
   addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) < 8) return; lastW = innerWidth; clearTimeout(t); t = setTimeout(drawAll, 150); });
-  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { drawAll(); drawTail(); drawIndex(); });
+  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { drawAll(); drawTail(); });
 })();
