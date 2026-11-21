@@ -287,6 +287,18 @@
       <div><h4>Méthode</h4><p>Régression de ln(temps réel / Tobler) sur le sac, la cote du terrain, la pente et la descente raide, estimée sur J1–J2 (174 tronçons, artefact GPS exclu). Chaque simulation réestime le modèle sur des résidus retirés au sort, puis tire les écarts des 431 tronçons suivants : loi normale, ou blocs de 8 résidus consécutifs. Prévision centrale : médiane du modèle par blocs. Résultats vérifiés par un second calcul indépendant.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-mc"></p></div>
     </div>
+    <h3 class="subh">Le jour de marge, évalué comme une option</h3>
+    <p class="lede" id="mg-lede"></p>
+    <div class="gk-btn" id="mg-btn"></div>
+    <div class="grid-2 g-6040">
+      <div class="pc"><div class="pc-head"><span class="pc-t">Valeur de la marge, soir après soir</span><span class="pc-r mono" id="r-mg"></span></div><div class="chart" id="c-mg" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-mg"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Volatilité implicite · le « smile »</span><span class="pc-r mono" id="r-smile"></span></div><div class="chart" id="c-smile" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-smile"></span></div></div>
+    </div>
+    <div class="notes eq risk-def greeks" id="mg-greeks"></div>
+    <div class="notes two">
+      <div><h4>Comment lire</h4><p id="mg-read"></p></div>
+      <div class="key"><h4>À retenir</h4><p id="t-mg"></p></div>
+    </div>
   </section>
 
   <section id="s8">
@@ -398,6 +410,7 @@
           <li><b>Massifs</b> : corrélations montée-descente et d’un massif au suivant ; agrégation des écarts en racine de la somme des carrés.</li>
           <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
           <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois par modèle (loi normale ; blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance au mauvais temps (outils/monte_carlo.js).</li>
+          <li><b>Jour de marge</b> : call spread sur le temps de marche J3–J9, formule de Black (1976) à taux nul, volatilité tirée de la simulation ; volatilité implicite recherchée sur la distribution de la simulation par blocs (outils/marge_option.js).</li>
           <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
           <li><b>Grecs</b> : régression de la partie 04 ; effet propre à chaque niveau de cote ; 55 croisements de deux facteurs testés un à un, contrôlés en retirant chaque sortie ; volatilité = écart-type des résidus par groupe (test de permutation) ; horizon tiré de la simulation (outils/conclusion_acte2.js).</li>
         </ul>
@@ -437,10 +450,11 @@
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261112-1"></script>
 <script src="risque_acte2.js?v=20261121-5"></script>
+<script src="risque_marge.js?v=20261121-1"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261118-3"></script>
-<script src="risque.js?v=20261121-17"></script>
+<script src="risque.js?v=20261121-19"></script>
 </body>
 </html>

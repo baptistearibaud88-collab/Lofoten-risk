@@ -957,6 +957,66 @@
     const gb = $('gk-btn'); if (gb && !gb.innerHTML) gb.innerHTML = defBtn('grecs', 'D’où viennent les grecs');
   }
 
+  /* ---------- 07 (fin) · le jour de marge, évalué comme une option ---------- */
+  function drawMarge() {
+    const G = window.RISK_MARGE; if (!G || !$('c-mg')) return;
+    const CV = G.curve, c0 = CV[0], wet = CV.find(c => c.day === 7), M = G.M_min;
+    const mn = m => m < 60 ? `${m} min` : hm(m / 60);
+    { // valeur de la marge, soir après soir
+      const f = frame('c-mg', { t: 14, r: 64, b: 26, l: 8 });
+      const x = d3.scalePoint().domain(CV.map(c => c.day)).range([0, f.w]).padding(.2), y = d3.scaleLinear().domain([0, M * 1.12]).range([f.h, 0]);
+      const x7 = x(7) - x.step() / 2;
+      f.g.append('rect').attr('x', x7).attr('width', f.w - x7).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .1).attr('rx', 4);
+      f.g.append('text').attr('class', 'ax-title').attr('x', x7 + 6).attr('y', 10).text('jours de pluie');
+      yGrid(f.g, y, f.w, 4, v => `${v} min`);
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(d => f.narrow ? `J${d}` : `soir J${d}`));
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(M)).attr('y2', y(M)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4');
+      axTag(f.g, f.w + 2, y(M), mn(M));
+      hideUnder(f.g, [y(M)]);
+      [['normal', C('--text-muted'), 1.4], ['blocs', C('--accent'), 2.2]].forEach(([k, col, w]) => {
+        f.g.append('path').attr('d', d3.line().x(c => x(c.day)).y(c => y(c[k].value))(CV)).attr('fill', 'none').attr('stroke', col).attr('stroke-width', w);
+        f.g.selectAll(null).data(CV).join('circle').attr('cx', c => x(c.day)).attr('cy', c => y(c[k].value)).attr('r', k === 'blocs' ? 3.2 : 2.4).attr('fill', col);
+      });
+      f.g.append('text').attr('class', 'ax-title').attr('x', x(CV[0].day)).attr('y', y(c0.blocs.value) - 9).attr('text-anchor', 'start').text(mn(c0.blocs.value));
+      f.g.append('text').attr('class', 'ax-title').attr('x', x(7) - 6).attr('y', y(wet.blocs.value) - 8).attr('text-anchor', 'end').text(mn(wet.blocs.value));
+      hover(f.g.selectAll('.mh').data(CV).join('rect').attr('class', 'hit').attr('x', c => x(c.day) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
+        c => `<b>Soir du J${c.day}</b>${row('retard cumulé', `${c.dev >= 0 ? '+' : '−'}${mn(Math.abs(c.dev))}`)}${row('valeur de la marge', mn(c.blocs.value))}${row('marge entamée', `${f0(c.blocs.p_use)} %`)}${row('marge épuisée', `${f0(c.blocs.p_out)} %`)}${row('incertitude restante', `± ${mn(c.blocs.rem_min)}`)}`);
+      legend('l-mg', [['ln', C('--accent'), 'valeur, simulation par blocs'], ['ln', C('--text-muted'), 'valeur, tronçons indépendants'], ['dash', '', 'la marge entière']]);
+      readout('r-mg', `marge <b>${mn(M)}</b> · retard final <b>+${mn(G.real_end_min)}</b>`);
+    }
+    { // le smile
+      const f = frame('c-smile', { t: 14, r: 12, b: 26, l: 44 }), S = G.smile;
+      const lo = Math.min(G.sd.normal, ...S.map(s => s.sd_h)) * .9, hi = Math.max(...S.map(s => s.sd_h), G.sd.blocs) * 1.08;
+      const x = d3.scalePoint().domain(S.map(s => s.x)).range([0, f.w]).padding(.3), y = d3.scaleLinear().domain([lo, hi]).range([f.h, 0]);
+      yGrid(f.g, y, f.w, 4, v => hm(v), 'left');
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(v => v ? `+${v} h` : 'prévision'));
+      [[G.sd.normal, 'tronçons indépendants', C('--text-muted')], [G.sd.blocs, 'simulation par blocs', C('--accent')]].forEach(([v, l, col]) => {
+        f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '4 3');
+        f.g.append('text').attr('class', 'ax-title').attr('x', f.w).attr('y', y(v) - 5).attr('text-anchor', 'end').text(`${l} : ${hm(v)}`);
+      });
+      f.g.append('path').attr('d', d3.line().x(s => x(s.x)).y(s => y(s.sd_h)).curve(d3.curveMonotoneX)(S)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 2);
+      f.g.selectAll(null).data(S).join('circle').attr('cx', s => x(s.x)).attr('cy', s => y(s.sd_h)).attr('r', 3.2).attr('fill', C('--down'));
+      legend('l-smile', [['ln', C('--down'), 'écart-type implicite selon le seuil'], ['dash', C('--text-muted'), 'repères']]);
+      readout('r-smile', `implicite <b>${hm(G.sd.implied)}</b> · indépendants ${hm(G.sd.normal)}`);
+    }
+    const th = CV.find(c => c.day === 5);
+    $('mg-lede').innerHTML = `Le plan gardait un jour de marge : le J9, la Støvla, soit environ <b>${mn(M)}</b> de marche à mon allure. C’est une assurance : elle ne sert que si la traversée dépasse la prévision, et seulement jusqu’à ${mn(M)}. En finance, ce contrat est une option (un « call spread »), et la formule de Black-Scholes donne son prix, ici en minutes de marche.`;
+    $('mg-greeks').innerHTML = [
+      ['Δ', 'Delta', `Si la prévision glisse d’une heure, la marge vaut <b>${f0(G.greeks.delta * 60)} min</b> de plus : elle sera davantage sollicitée.`],
+      ['ν', 'Vega', `Si l’incertitude grandit de 10 %, la marge vaut <b>${f0(G.greeks.vega_10)} min</b> de plus : une assurance vaut plus quand l’avenir est flou.`],
+      ['Θ', 'Thêta', `Du soir du J2 au soir du J5, sans incident, la marge passe de ${mn(c0.blocs.value)} à <b>${mn(th.blocs.value)}</b> : chaque jour calme la rend moins utile.`],
+    ].map(([l, n, t]) => `<div><h4><span class="gk">${l}</span> ${n}</h4><p>${t}</p></div>`).join('');
+    $('mg-read').textContent = `À gauche, ce que vaut la marge chaque soir : le dépassement qu’elle doit s’attendre à absorber, d’après la suite de la prévision. La ligne pointillée est la marge entière. À droite, l’écart-type que Black-Scholes doit supposer pour retrouver ma simulation, selon le seuil de dépassement.`;
+    $('t-mg').innerHTML = `Au soir du J2, la marge vaut <b>${mn(c0.blocs.value)}</b> sur ${mn(M)} : une chance sur deux d’être entamée (${f0(c0.blocs.p_use)} %), ${f0(c0.blocs.p_out)} % d’être épuisée. Elle fond tant que tout va bien, puis la pluie la fait bondir : <b>${mn(wet.blocs.value)}</b> au soir du J7. À l’arrivée, elle est consommée en entier et je la dépasse de ${mn(G.real_end_min - M)}. Pour retrouver ma simulation, Black-Scholes doit supposer <b>${hm(G.sd.implied)}</b> d’écart-type au lieu de ${hm(G.sd.normal)} : c’est l’enchaînement des écarts.`;
+    DEFS.blackscholes = { t: 'Black-Scholes : le prix d’une assurance', html: () => `
+      <p><b>L’origine.</b> En 1973, <b>Fischer Black, Myron Scholes et Robert Merton</b> trouvent le prix « juste » d’une option : le droit, mais pas l’obligation, d’acheter un actif à un prix fixé d’avance (le prix d’exercice K). Merton et Scholes reçoivent le prix Nobel d’économie en 1997. En 1976, Black adapte la formule à un prix à terme F, connu aujourd’hui pour une date future.</p>
+      <div class="def-f">call = F·N(d₁) − K·N(d₂) · d₁ = [ln(F/K) + s²/2] / s · d₂ = d₁ − s · s = σ√τ</div>
+      <p>N est la loi normale : N(d₂) est la probabilité que l’option serve. s mesure l’incertitude qui reste jusqu’à l’échéance : elle grandit avec la volatilité σ et avec le temps τ. Une assurance plafonnée, qui paie le dépassement de K jusqu’à K + M, est la différence de deux calls : un <i>call spread</i>.</p>
+      <div class="def-ex"><b>Ici.</b> L’actif est mon temps de marche du J3 au J9. F est la prévision du soir du J2 (${hm(G.F0)}), K = F : la marge sert dès que je dépasse la prévision, jusqu’à M = ${mn(M)} (le jour de marge du plan, ${f1(G.margin.km)} km et ${f0(G.margin.dplus)} m de D+, converti à mon allure en trail). L’incertitude s vient de la simulation. Chaque soir, F est corrigé du retard déjà pris et s rétrécit. Résultat au J2 : ${mn(G.value_j2.bs_blocs)} avec la volatilité de la simulation par blocs, ${mn(G.value_j2.bs_normal)} avec des tronçons indépendants ; la simulation elle-même donne ${mn(G.value_j2.sim_blocs)}.</div>
+      <p class="muted">Limites : la formule suppose une loi lognormale et des écarts indépendants, d’où la volatilité implicite. Un trek ne se couvre pas en achetant et vendant : le « prix » est ici le dépassement attendu, pas un prix d’arbitrage. Chaque soir, la suite est supposée suivre la prévision du J2.</p>` };
+    const b = $('mg-btn'); if (b && !b.innerHTML) b.innerHTML = defBtn('blackscholes', 'Black-Scholes : le prix d’une assurance');
+  }
+
   /* ---------- 09 · Monte Carlo ---------- */
   let mcModel = 'blocs', mcPlayed = false, mcRaf = 0;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1456,7 +1516,7 @@
   }
 
   /* ---------- draw all, redraw on resize ---------- */
-  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, drawActe2, () => drawMc(false), drawPlanCharts, drawCF];
+  const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, drawActe2, () => drawMc(false), drawMarge, drawPlanCharts, drawCF];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawPlan(); drawConcl(); drawAll(); initMc();
   let lastW = innerWidth, t = 0;
