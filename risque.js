@@ -857,22 +857,29 @@
     const hN = TH.horizon[TH.horizon.length - 1];
     const ns = t => Math.abs(t) < 1.96 ? ' <span class="gk-ns">n.s.</span>' : '';
     const cards = [
-      { k: 'delta', l: 'Δ', n: 'Delta', q: 'le terrain', fi: 'De combien le prix bouge quand le sous-jacent bouge d’un cran.',
-        tr: `Le sous-jacent, c’est le terrain. Un niveau de cote en plus : <b>${pct(D.cote)}</b> de temps ; une descente raide : ${pct(D.desc)}.`, h: 110 },
-      { k: 'gamma', l: 'Γ', n: 'Gamma', q: 'le sac sur terrain dur', fi: 'De combien le delta lui-même change. Entre deux facteurs, on parle de gamma croisé.',
-        tr: `Le sac ne coûte pas pareil partout : <b>${pct(G.sac_by_grade[0])}</b> en terrain facile, <b>${pct(G.sac_by_grade[3])}</b> en expert. Les deux risques se renforcent.`, h: 110 },
-      { k: 'vega', l: 'ν', n: 'Vega', q: 'l’imprévisible', fi: 'La sensibilité à la volatilité : l’ampleur des écarts, pas leur sens.',
-        tr: `Qu’est-ce qui rend mon allure imprévisible ? Pas la pluie (${d2(V.pluie[1])} contre ${d2(V.pluie[0])} au sec). Un peu le terrain. Et le sac la <b>calme</b> (${d2(V.sac[1])} contre ${d2(V.sac[0])}).`, h: 110 },
-      { k: 'theta', l: 'Θ', n: 'Thêta', q: 'l’horizon', fi: 'L’effet du temps qui passe. L’incertitude d’un prix grandit avec le temps qui reste.',
-        tr: `Vue du soir du J${TH.origin}, la prévision se trompe de <b>± ${TH.horizon[0].half_min} min</b> pour le lendemain, de <b>± ${hm(hN.half_min / 60)}</b> pour le J${hN.day}.`, h: 110 },
-      { k: 'rho', l: 'ρ', n: 'Rho', q: 'le portage', fi: 'La sensibilité au taux d’intérêt : le coût de porter une position dans le temps.',
-        tr: `Porter son camp a un coût : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (de ${pct(RH.lo)} à ${pct(RH.hi)}).`, h: 110 },
-      { k: 'second', l: '∂²', n: 'Second ordre', q: 'les effets croisés', fi: 'Vanna : le delta change avec la volatilité. Charm : le delta change avec le temps.',
-        tr: `La pluie pèse-t-elle plus sur terrain dur ? ${pct(A.vanna.pct)} par niveau${ns(A.vanna.t)}. Ai-je appris le terrain au fil des jours ? ${pct(A.charm.pct)} par jour${ns(A.charm.t)}.`, h: 110 },
+      { k: 'delta', l: 'Δ', n: 'Delta', q: 'le terrain',
+        tr: `Le terrain est mon « actif » : quand il se durcit, mon temps monte. Un niveau de cote en plus coûte <b>${pct(D.cote)}</b> de temps, une descente raide ${pct(D.desc)}, à tout le reste égal (partie 04).`,
+        fi: ['Δ = ∂V / ∂S', 'De combien le prix V de l’option bouge quand le cours S de l’actif monte d’une unité.'] },
+      { k: 'gamma', l: 'Γ', n: 'Gamma', q: 'le sac sur terrain dur',
+        tr: `Le sac ne coûte pas pareil partout : <b>${pct(G.sac_by_grade[0])}</b> en terrain facile, <b>${pct(G.sac_by_grade[3])}</b> en expert. Les deux risques ne s’additionnent pas, ils se renforcent : c’est sur le terrain le plus dur que le sac pèse le plus.`,
+        fi: ['Γ = ∂²V / ∂S²   ·   croisé : ∂²V / ∂S₁∂S₂', 'De combien le delta lui-même bouge quand le cours monte d’une unité. Entre deux actifs, le gamma croisé dit de combien le delta de l’un bouge quand l’autre monte.'] },
+      { k: 'vega', l: 'ν', n: 'Vega', q: 'l’imprévisible',
+        tr: `Qu’est-ce qui rend mon allure imprévisible ? Pas la pluie (${d2(V.pluie[1])} contre ${d2(V.pluie[0])} au sec) : elle ralentit, sans disperser. Un peu le terrain. Et le sac la <b>calme</b> (${d2(V.sac[1])} contre ${d2(V.sac[0])}) : chargé, je marche plus régulier.`,
+        fi: ['ν = ∂V / ∂σ', 'De combien le prix bouge quand la volatilité σ, l’ampleur des écarts du cours, monte d’un point.'] },
+      { k: 'theta', l: 'Θ', n: 'Thêta', q: 'l’horizon',
+        tr: `Plus je prévois loin, plus je me trompe. Vue du soir du J${TH.origin}, la prévision vaut <b>± ${TH.horizon[0].half_min} min</b> pour le lendemain, mais <b>± ${hm(hN.half_min / 60)}</b> pour le J${hN.day}.`,
+        fi: ['Θ = ∂V / ∂t', 'De combien le prix bouge quand un jour passe, tout le reste égal. L’incertitude sur le cours, elle, grandit avec le temps qui reste, comme σ√T.'] },
+      { k: 'rho', l: 'ρ', n: 'Rho', q: 'le portage',
+        tr: `Porter son camp a un coût, payé à chaque pas : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (de ${pct(RH.lo)} à ${pct(RH.hi)}). C’est le prix de l’autonomie.`,
+        fi: ['ρ = ∂V / ∂r', 'De combien le prix bouge quand le taux d’intérêt r monte d’un point : le coût de porter la position dans le temps.'] },
+      { k: 'second', l: '∂²', n: 'Second ordre', q: 'les effets croisés',
+        tr: `La pluie pèse-t-elle plus sur terrain dur ? ${pct(A.vanna.pct)} par niveau${ns(A.vanna.t)}. Ai-je appris le terrain au fil des jours ? ${pct(A.charm.pct)} par jour${ns(A.charm.t)}. Seul le gamma passe le seuil.`,
+        fi: ['Vanna = ∂²V / ∂S∂σ   ·   Charm = ∂²V / ∂S∂t', 'De combien le delta bouge quand la volatilité monte d’un point (vanna), ou quand un jour passe (charm).'] },
     ];
-    box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}</span></div>
-      <div class="gk-body"><p class="gk-fi"><span class="gk-lab">Finance</span>${c.fi}</p><p class="gk-tr"><span class="gk-lab">Trek</span>${c.tr}</p></div>
-      <div class="chart gk-c" id="c-gk-${c.k}" data-h="${c.h}"></div></div>`).join('');
+    cards.forEach(c => { DEFS['gk_' + c.k] = { t: `${c.n} : la définition en finance`, html: () => `<div class="def-f">${c.fi[0]}</div><p>${c.fi[1]}</p>` }; });
+    box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}${defBtn('gk_' + c.k)}</span></div>
+      <div class="gk-body"><p class="gk-tr">${c.tr}</p></div>
+      <div class="chart gk-c" id="c-gk-${c.k}" data-h="110"></div></div>`).join('');
     const lab = (g, x, y, t, a = 'middle', cls = 'ax-title') => g.append('text').attr('class', cls).attr('x', x).attr('y', y).attr('text-anchor', a).text(t);
     const bars = (id, vals, names, col, ref) => {
       const f = frame(id, { t: 16, r: 8, b: 18, l: 8 });
@@ -942,7 +949,7 @@
       <p><b>Ici.</b> Le « prix » est mon temps de marche. <b>Δ</b> et <b>ρ</b> sont les effets de la partie 04 (régression sur ${A.n} tronçons) : le terrain est le sous-jacent, le sac le coût de portage. <b>Γ</b> : on ajoute à la même régression un terme sac × cote ; le coût du sac monte de ${pct(G.pct)} par niveau (t = ${f1(G.t)}). <b>ν</b> : l’écart-type de ce que la régression n’explique pas (${d2(V.all)} en tout), comparé entre groupes. <b>Θ</b> : la fourchette à 90 % de la simulation de la partie 07.</p>
       <div class="def-ex"><b>Exemple.</b> Une heure de marche sans sac sur terrain facile devient environ ${hm(1 + G.sac_by_grade[0] / 100)} avec le sac ; en terrain expert, le seul sac la porte à ${hm(1 + G.sac_by_grade[3] / 100)}, terrain non compté.</div>
       <p class="muted">Limites : trois effets croisés ont été testés ; seul le gamma passe le seuil, de peu. C’est une piste solide plus qu’une preuve. La pluie n’entre pas dans la régression de la partie 04 : son delta (${pct(D.pluie)}) vient de la partie 03.</p>` };
-    const first = box.querySelector('.gk-card .pc-t'); if (first && !box.querySelector('.def-btn')) first.insertAdjacentHTML('beforeend', defBtn('grecs'));
+    const gb = $('gk-btn'); if (gb && !gb.innerHTML) gb.innerHTML = defBtn('grecs', 'D’où viennent les grecs');
   }
 
   /* ---------- 09 · Monte Carlo ---------- */
