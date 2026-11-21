@@ -399,7 +399,7 @@
           <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
           <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois par modèle (loi normale ; blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance au mauvais temps (outils/monte_carlo.js).</li>
           <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
-          <li><b>Grecs</b> : régression de la partie 04 plus un terme croisé à la fois (sac × cote, pluie × cote, cote × jour) ; volatilité = écart-type des résidus par groupe ; horizon tiré de la simulation (outils/conclusion_acte2.js).</li>
+          <li><b>Grecs</b> : régression de la partie 04 ; effet propre à chaque niveau de cote ; 55 croisements de deux facteurs testés un à un, contrôlés en retirant chaque sortie ; volatilité = écart-type des résidus par groupe (test de permutation) ; horizon tiré de la simulation (outils/conclusion_acte2.js).</li>
         </ul>
       </div>
       <div>
@@ -436,11 +436,11 @@
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261112-1"></script>
-<script src="risque_acte2.js?v=20261121-3"></script>
+<script src="risque_acte2.js?v=20261121-5"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
 <script src="risque_mc.js?v=20261111-1"></script>
 <script src="risque_cd.js?v=20261112-1"></script>
 <script src="ressentis_episodes.js?v=20261118-3"></script>
-<script src="risque.js?v=20261121-12"></script>
+<script src="risque.js?v=20261121-15"></script>
 </body>
 </html>

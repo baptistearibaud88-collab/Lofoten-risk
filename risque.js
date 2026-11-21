@@ -851,73 +851,81 @@
   /* ---------- 06 · les grecs du trek ---------- */
   function drawActe2() {
     const A = window.RISK_ACTE2, box = $('gk-grid'); if (!A || !box) return;
-    const D = A.delta, G = A.gamma, V = A.vega, TH = A.theta, RH = A.rho;
+    const D = A.delta, G = A.gamma, V = A.vega, TH = A.theta, RH = A.rho, SW = A.sacWet;
     const pct = v => `${v >= 0 ? '+' : '−'}${Math.abs(v) < 1 ? f1(Math.abs(v)) : f0(Math.abs(v))} %`, d2 = v => f2(v);
-    const GRADES = ['Facile', 'Modéré', 'Exigeant', 'Expert'];
-    const hN = TH.horizon[TH.horizon.length - 1];
+    const sgn = m => `${m >= 0 ? '+' : '−'}${Math.abs(m) < 60 ? `${Math.abs(m)} min` : hm(Math.abs(m) / 60)}`;
+    const hN = TH.horizon[TH.horizon.length - 1], h1 = TH.horizon[0];
     const ns = t => Math.abs(t) < 1.96 ? ' <span class="gk-ns">n.s.</span>' : '';
+    const big = G.steps[1];
     const cards = [
       { k: 'delta', dq: 'De combien mon temps bouge quand le terrain monte d’un niveau ?', l: 'Δ', n: 'Delta', q: 'le terrain',
-        tr: `Le terrain est mon « actif » : quand il se durcit, mon temps monte. Un niveau de cote en plus coûte <b>${pct(D.cote)}</b> de temps, une descente raide ${pct(D.desc)}, à tout le reste égal (partie 04).`,
+        tr: `Le terrain est mon « actif » : quand il se durcit, mon temps monte. En moyenne, un niveau de cote en plus coûte <b>${pct(D.cote)}</b> de temps, une descente raide ${pct(D.desc)}, à tout le reste égal (partie 04).`,
         fi: ['Δ = ∂V / ∂S', 'De combien le prix V de l’option bouge quand le cours S de l’actif monte d’une unité.'] },
-      { k: 'gamma', dq: 'De combien le coût du sac bouge quand le terrain monte d’un niveau ?', l: 'Γ', n: 'Gamma', q: 'le sac sur terrain dur',
-        tr: `Le sac ne coûte pas pareil partout : <b>${pct(G.sac_by_grade[0])}</b> en terrain facile, <b>${pct(G.sac_by_grade[3])}</b> en expert. Les deux risques ne s’additionnent pas, ils se renforcent : c’est sur le terrain le plus dur que le sac pèse le plus.`,
-        fi: ['Γ = ∂²V / ∂S²   ·   croisé : ∂²V / ∂S₁∂S₂', 'De combien le delta lui-même bouge quand le cours monte d’une unité. Entre deux actifs, le gamma croisé dit de combien le delta de l’un bouge quand l’autre monte.'] },
-      { k: 'vega', dq: 'De combien mon allure varie d’un tronçon à l’autre, et qu’est-ce qui la fait varier plus ?', l: 'ν', n: 'Vega', q: 'l’imprévisible',
-        tr: `Je ne me mets pas dans le rouge à chaque pas : je gère mon effort sur tout le trajet. À effort égal, c’est le terrain qui décide : parfois il freine, parfois il est roulant. Cette alternance, c’est ma volatilité. Plus le terrain est dur, plus elle est forte (<b>${d2(V.terrain[0])}</b> en facile, <b>${d2(V.terrain[1])}</b> en expert). La pluie ne l’augmente pas (${d2(V.pluie[1])} contre ${d2(V.pluie[0])} au sec), et le sac la calme (${d2(V.sac[1])} contre ${d2(V.sac[0])}).`,
+      { k: 'gamma', dq: 'Le coût d’un niveau de terrain est-il le même à chaque niveau ?', l: 'Γ', n: 'Gamma', q: 'le saut du terrain',
+        tr: `Non : le delta change selon l’endroit. De facile à modéré, ${pct(G.steps[0].pct)} seulement. Puis <b>${pct(big.pct)} d’un coup</b> en passant à exigeant, là où le sentier disparaît. Puis ${pct(G.steps[2].pct)} jusqu’à expert. Le coût du terrain se joue en un saut.`,
+        fi: ['Γ = ∂²V / ∂S²', 'De combien le delta lui-même bouge quand le cours monte d’une unité. Un gamma fort : le prix réagit beaucoup plus à certains endroits qu’à d’autres.'] },
+      { k: 'vega', dq: 'De combien mon allure varie d’un tronçon à l’autre, et qu’est-ce qui la fait varier ?', l: 'ν', n: 'Vega', q: 'l’imprévisible',
+        tr: `Je ne me mets pas dans le rouge à chaque pas : je gère mon effort sur tout le trajet. En montée raide, c’est mon moteur qui décide, et l’allure est <b>régulière</b> (${d2(V.mont.b)} contre ${d2(V.mont.a)} ailleurs). Ailleurs, le terrain freine ou il est roulant. Sans sac, je cours quand c’est roulant : plus d’alternance (${d2(V.sac.a)} contre ${d2(V.sac.b)} avec le sac).`,
         fi: ['ν = ∂V / ∂σ', 'De combien le prix bouge quand la volatilité σ, l’ampleur des écarts du cours, monte d’un point.'] },
       { k: 'theta', dq: 'De combien ma prévision se trompe quand elle porte un jour plus loin ?', l: 'Θ', n: 'Thêta', q: 'l’horizon',
-        tr: `Plus je prévois loin, plus je me trompe. Vue du soir du J${TH.origin}, la prévision vaut <b>± ${TH.horizon[0].half_min} min</b> pour le lendemain, mais <b>± ${hm(hN.half_min / 60)}</b> pour le J${hN.day}.`,
+        tr: `Vue du soir du J${TH.origin}, la prévision vaut ${sgn(-h1.lo)} / ${sgn(h1.hi)} pour le lendemain, mais <b>${sgn(-hN.lo)} / ${sgn(hN.hi)}</b> pour le J${hN.day}. Mon arrivée : <b>${sgn(TH.real_end)}</b>, en haut de la fourchette. Sans l’enchaînement des écarts, elle s’arrêterait à ${sgn(hN.n_hi)} et j’en serais sorti.`,
         fi: ['Θ = ∂V / ∂t', 'De combien le prix bouge quand un jour passe, tout le reste égal. L’incertitude sur le cours, elle, grandit avec le temps qui reste, comme σ√T.'] },
       { k: 'rho', dq: 'De combien mon temps bouge quand je porte mon camp sur le dos ?', l: 'ρ', n: 'Rho', q: 'le portage',
-        tr: `Porter son camp a un coût, payé à chaque pas : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (de ${pct(RH.lo)} à ${pct(RH.hi)}). C’est le prix de l’autonomie.`,
+        tr: `Porter son camp a un coût, payé à chaque pas : <b>${pct(RH.sac)}</b> de temps avec le sac, à terrain égal (de ${pct(RH.lo)} à ${pct(RH.hi)}). Le sac s’allège au fil des jours, mais la fatigue compense : son coût ne baisse pas nettement. Et je ne l’ai jamais porté en terrain expert : l’exigeant suffisait.`,
         fi: ['ρ = ∂V / ∂r', 'De combien le prix bouge quand le taux d’intérêt r monte d’un point : le coût de porter la position dans le temps.'] },
-      { k: 'second', dq: 'Le coût du terrain bouge-t-il avec la pluie, ou avec les jours ?', l: '∂²', n: 'Second ordre', q: 'les effets croisés',
-        tr: `La pluie pèse-t-elle plus sur terrain dur ? ${pct(A.vanna.pct)} par niveau${ns(A.vanna.t)}. Ai-je appris le terrain au fil des jours ? ${pct(A.charm.pct)} par jour${ns(A.charm.t)}. Seul le gamma passe le seuil.`,
-        fi: ['Vanna = ∂²V / ∂S∂σ   ·   Charm = ∂²V / ∂S∂t', 'De combien le delta bouge quand la volatilité monte d’un point (vanna), ou quand un jour passe (charm).'] },
+      { k: 'second', dq: 'Le coût du sac change-t-il avec la météo ?', l: '∂²', n: 'Second ordre', q: 'sac × pluie',
+        tr: `Oui : les ${pct(RH.sac)} du sac sont une moyenne. Au sec, il coûte <b>${pct(SW.sac_dry)}</b> ; sous la pluie, <b>${pct(SW.sac_wet)}</b> seulement. Sans sac, je ne cours plus sur le mouillé : le trail perd son avance. Sur ${SW.scanned} croisements testés, c’est le seul qui tient, même en retirant n’importe quelle sortie (${SW.n_out} sorties avec le sac sous la pluie : une piste à confirmer).`,
+        fi: ['∂²V / ∂r ∂S', 'Une dérivée croisée : de combien la sensibilité à une entrée bouge quand une autre bouge. Ici, de combien le coût du portage bouge quand la météo change.'] },
     ];
     cards.forEach(c => { DEFS['gk_' + c.k] = { t: `${c.n} : la définition en finance`, html: () => `<div class="def-f">${c.fi[0]}</div><p>${c.fi[1]}</p>` }; });
     box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}${defBtn('gk_' + c.k)}</span></div>
       <div class="gk-body"><p class="gk-dq">${c.dq}</p><p class="gk-tr">${c.tr}</p></div>
-      <div class="chart gk-c" id="c-gk-${c.k}" data-h="110"></div></div>`).join('');
+      <div class="chart gk-c" id="c-gk-${c.k}" data-h="${c.k === 'theta' ? 130 : 110}"></div></div>`).join('');
     const lab = (g, x, y, t, a = 'middle', cls = 'ax-title') => g.append('text').attr('class', cls).attr('x', x).attr('y', y).attr('text-anchor', a).text(t);
-    const bars = (id, vals, names, col, ref) => {
+    const bars = (id, vals, names, col, opt = {}) => {
       const f = frame(id, { t: 16, r: 8, b: 18, l: 8 });
       const x = d3.scaleBand().domain(names).range([0, f.w]).padding(.28), y = d3.scaleLinear().domain([0, d3.max(vals) * 1.15 || 1]).range([f.h, 0]);
-      if (ref != null) { f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(ref)).attr('y2', y(ref)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3'); lab(f.g, 0, -4, `- - sac en moyenne : +${f0(ref)} % (partie 04)`, 'start'); }
+      if (opt.ref != null) { f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(opt.ref)).attr('y2', y(opt.ref)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3'); lab(f.g, 0, -4, opt.refLab, 'start'); }
       vals.forEach((v, i) => {
-        f.g.append('rect').attr('x', x(names[i])).attr('width', x.bandwidth()).attr('y', y(v)).attr('height', f.h - y(v)).attr('rx', 2).attr('fill', col).attr('fill-opacity', .35 + .65 * (i + 1) / vals.length);
+        const dim = opt.dim && opt.dim[i];
+        f.g.append('rect').attr('x', x(names[i])).attr('width', x.bandwidth()).attr('y', y(v)).attr('height', f.h - y(v)).attr('rx', 2).attr('fill', col).attr('fill-opacity', dim ? .3 : .85);
         const inside = f.h - y(v) > 18;
-        lab(f.g, x(names[i]) + x.bandwidth() / 2, inside ? y(v) + 12 : y(v) - 4, v ? `+${f0(v)} %` : '0', 'middle', inside ? 'ax-title gk-in' : 'ax-title');
+        lab(f.g, x(names[i]) + x.bandwidth() / 2, inside ? y(v) + 12 : y(v) - 4, `+${f0(v)} %${dim ? ' n.s.' : ''}`, 'middle', inside && !dim ? 'ax-title gk-in' : 'ax-title');
         lab(f.g, x(names[i]) + x.bandwidth() / 2, f.h + 13, names[i]);
       });
     };
-    bars('c-gk-delta', D.by_grade, GRADES, C('--critical'));
-    bars('c-gk-gamma', G.sac_by_grade, GRADES, C('--series-avec'), RH.sac);
+    bars('c-gk-delta', [D.cote, D.desc], ['un niveau de cote', 'descente raide'], C('--critical'));
+    bars('c-gk-gamma', G.steps.map(s => s.pct), ['→ modéré', '→ exigeant', '→ expert'], C('--critical'), { ref: D.cote, refLab: `- - delta moyen : +${f0(D.cote)} % par niveau`, dim: G.steps.map(s => Math.abs(s.t) < 1.96) });
     { // vega : paires d'écarts-types
-      const f = frame('c-gk-vega', { t: 8, r: 10, b: 16, l: 64 });
-      const rowsV = [['terrain', 'facile', 'expert', V.terrain], ['pluie', 'sec', 'pluie', V.pluie], ['sac', 'sans', 'avec', V.sac]];
-      const x = d3.scaleLinear().domain([.26, .38]).range([0, f.w]), y = d3.scaleBand().domain(rowsV.map(r => r[0])).range([0, f.h]).padding(.2);
+      const f = frame('c-gk-vega', { t: 12, r: 12, b: 16, l: 44 });
+      const rowsV = [['pente', 'ailleurs', 'montée raide', V.mont], ['sac', 'sans', 'avec', V.sac]];
+      const x = d3.scaleLinear().domain([.2, .38]).range([0, f.w]), y = d3.scaleBand().domain(rowsV.map(r => r[0])).range([0, f.h]).padding(.3);
       f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(3).tickSize(0).tickPadding(5).tickFormat(d2));
       rowsV.forEach(([k, a, b, v]) => {
         const cy = y(k) + y.bandwidth() / 2;
         lab(f.g, -8, cy + 3, k, 'end');
-        f.g.append('line').attr('x1', x(v[0])).attr('x2', x(v[1])).attr('y1', cy).attr('y2', cy).attr('stroke', C('--hair')).attr('stroke-width', 3);
-        f.g.append('circle').attr('cx', x(v[0])).attr('cy', cy).attr('r', 4).attr('fill', C('--text-muted'));
-        f.g.append('circle').attr('cx', x(v[1])).attr('cy', cy).attr('r', 4).attr('fill', C('--accent'));
-        const left = v[0] < v[1];
-        lab(f.g, x(v[0]) + (left ? -7 : 7), cy - 6, a, left ? 'end' : 'start');
-        lab(f.g, x(v[1]) + (left ? 7 : -7), cy - 6, b, left ? 'start' : 'end');
+        f.g.append('line').attr('x1', x(v.a)).attr('x2', x(v.b)).attr('y1', cy).attr('y2', cy).attr('stroke', C('--hair')).attr('stroke-width', 3);
+        f.g.append('circle').attr('cx', x(v.a)).attr('cy', cy).attr('r', 4).attr('fill', C('--text-muted'));
+        f.g.append('circle').attr('cx', x(v.b)).attr('cy', cy).attr('r', 4).attr('fill', C('--accent'));
+        const left = v.a < v.b;
+        lab(f.g, x(v.a), cy - 8, a, left ? 'start' : 'end');
+        lab(f.g, x(v.b), cy - 8, b, left ? 'end' : 'start');
       });
     }
-    { // thêta : la fourchette s'ouvre
-      const f = frame('c-gk-theta', { t: 10, r: 8, b: 18, l: 8 }), H = TH.horizon, mx = H[H.length - 1].half_min;
-      const x = d3.scalePoint().domain(H.map(h => h.day)).range([0, f.w]).padding(.3), y = d3.scaleLinear().domain([-mx * 1.1, mx * 1.1]).range([f.h, 0]);
-      f.g.append('path').attr('d', d3.area().x(h => x(h.day)).y0(h => y(-h.half_min)).y1(h => y(h.half_min)).curve(d3.curveMonotoneX)(H)).attr('fill', C('--accent')).attr('fill-opacity', .22);
-      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C('--accent'));
-      H.forEach(h => lab(f.g, x(h.day), f.h + 13, dayLbl(h.day)));
-      lab(f.g, x(H[0].day), y(H[0].half_min) - 4, `±${H[0].half_min} min`);
-      lab(f.g, x(H[H.length - 1].day), y(mx) - 2, `±${hm(mx / 60)}`, 'end');
+    { // thêta : deux fourchettes et la trajectoire réelle
+      const f = frame('c-gk-theta', { t: 12, r: 58, b: 18, l: 8 }), P = TH.path;
+      const x = d3.scaleLinear().domain([0, P.length - 1]).range([0, f.w]);
+      const y = d3.scaleLinear().domain([d3.min(P, p => p.b5) * 1.05, Math.max(d3.max(P, p => p.b95), TH.real_end) * 1.08]).range([f.h, 0]);
+      const ar = (lo, hi) => d3.area().x((p, i) => x(i)).y0(p => y(p[lo])).y1(p => y(p[hi]))(P);
+      f.g.append('path').attr('d', ar('b5', 'b95')).attr('fill', C('--accent')).attr('fill-opacity', .2);
+      f.g.append('path').attr('d', ar('n5', 'n95')).attr('fill', C('--accent')).attr('fill-opacity', .25);
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0)).attr('stroke', C('--accent')).attr('stroke-dasharray', '3 3');
+      f.g.append('path').attr('d', d3.line().x((p, i) => x(i)).y(p => y(p.real))(P)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 1.8);
+      const ends = {}; P.forEach((p, i) => { ends[p.d] = i; });
+      Object.entries(ends).forEach(([d, i]) => lab(f.g, x(i), f.h + 13, dayLbl(d), 'end'));
+      lab(f.g, f.w + 4, y(TH.real_end) + 3, sgn(TH.real_end), 'start').attr('fill', C('--down'));
+      lab(f.g, f.w + 4, y(P[P.length - 1].b95) - 6, 'blocs', 'start');
+      lab(f.g, f.w + 4, y(P[P.length - 1].n95) + 10, 'normale', 'start');
     }
     { // rho : une heure sans sac, avec sac
       const f = frame('c-gk-rho', { t: 8, r: 10, b: 8, l: 64 }), x = d3.scaleLinear().domain([0, 1 + RH.hi / 100]).range([0, f.w]);
@@ -928,27 +936,24 @@
         lab(f.g, x(v) - 6, yb(k) + yb.bandwidth() / 2 + 3, hm(v), 'end', 'ax-title gk-in');
       });
     }
-    { // second ordre : la statistique t contre le seuil de 1,96
-      const f = frame('c-gk-second', { t: 8, r: 50, b: 16, l: 84 });
-      const T3 = [['sac × cote', G.t], ['pluie × cote', A.vanna.t], ['cote × jours', A.charm.t]];
-      const x = d3.scaleLinear().domain([0, 3]).range([0, f.w]), y = d3.scaleBand().domain(T3.map(t => t[0])).range([0, f.h]).padding(.3);
-      f.g.append('rect').attr('x', 0).attr('width', x(1.96)).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .08);
-      f.g.append('line').attr('x1', x(1.96)).attr('x2', x(1.96)).attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
-      lab(f.g, x(1.96), f.h + 12, 'seuil 1,96');
-      T3.forEach(([k, t]) => {
-        const ok = Math.abs(t) >= 1.96;
-        f.g.append('rect').attr('x', 0).attr('width', x(Math.abs(t))).attr('y', y(k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', ok ? C('--accent') : C('--text-muted')).attr('fill-opacity', ok ? .85 : .45);
-        lab(f.g, -8, y(k) + y.bandwidth() / 2 + 3, k, 'end');
-        lab(f.g, f.w + 6, y(k) + y.bandwidth() / 2 + 3, `t = ${f1(t)}`, 'start');
+    { // second ordre : le coût du sac, au sec et sous la pluie
+      const f = frame('c-gk-second', { t: 14, r: 40, b: 8, l: 56 });
+      const vals = [['au sec', SW.sac_dry], ['pluie', SW.sac_wet]], x = d3.scaleLinear().domain([0, d3.max(vals, v => v[1]) * 1.1]).range([0, f.w]);
+      const yb = d3.scaleBand().domain(vals.map(v => v[0])).range([0, f.h]).padding(.32);
+      f.g.append('line').attr('x1', x(RH.sac)).attr('x2', x(RH.sac)).attr('y1', -4).attr('y2', f.h).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '4 3');
+      lab(f.g, x(RH.sac), -5, `moyenne ${pct(RH.sac)}`);
+      vals.forEach(([k, v], i) => {
+        f.g.append('rect').attr('x', 0).attr('width', x(v)).attr('y', yb(k)).attr('height', yb.bandwidth()).attr('rx', 2).attr('fill', C('--series-avec')).attr('fill-opacity', i ? .45 : .85);
+        lab(f.g, -8, yb(k) + yb.bandwidth() / 2 + 3, k, 'end');
+        lab(f.g, x(v) + 5, yb(k) + yb.bandwidth() / 2 + 3, `+${f0(v)} %`, 'start');
       });
     }
-    $('t-gk').innerHTML = `Le terrain fixe le prix (<b>${pct(D.cote)} par niveau</b>), le sac en est le coût de portage (<b>${pct(RH.sac)}</b>), et les deux se renforcent : <b>${pct(G.sac_by_grade[0])} → ${pct(G.sac_by_grade[3])}</b> du facile à l’expert. La pluie ralentit sans disperser. Et plus la prévision porte loin, plus la fourchette s’ouvre : c’est la simulation.`;
+    $('t-gk').innerHTML = `Le terrain coûte surtout quand le sentier disparaît (<b>${pct(big.pct)} d’un coup</b>). Le sac coûte <b>${pct(RH.sac)}</b> en moyenne (${pct(SW.sac_dry)} au sec, ${pct(SW.sac_wet)} sous la pluie) mais rend mon allure plus régulière. Et mon arrivée tombe au bord de la fourchette : c’est l’enchaînement des écarts, que la simulation va mesurer.`;
     DEFS.grecs = { t: 'Les grecs : d’où ils viennent, comment on les mesure ici', html: () => `
       <p><b>L’origine.</b> En 1973, <b>Fischer Black et Myron Scholes</b> donnent une formule pour le prix d’une option. Ce prix dépend de quelques entrées : le cours de l’actif, sa volatilité, le temps qui reste, le taux d’intérêt. Les traders nomment d’une lettre grecque la sensibilité du prix à chaque entrée : ce sont des dérivées. Chaque soir, un desk explique son résultat grec par grec.</p>
       <div class="def-f">Δ = ∂V/∂S · Γ = ∂²V/∂S² · ν = ∂V/∂σ · Θ = ∂V/∂t · ρ = ∂V/∂r</div>
-      <p><b>Ici.</b> Le « prix » est mon temps de marche. <b>Δ</b> et <b>ρ</b> sont les effets de la partie 04 (régression sur ${A.n} tronçons) : le terrain est le sous-jacent, le sac le coût de portage. <b>Γ</b> : on ajoute à la même régression un terme sac × cote ; le coût du sac monte de ${pct(G.pct)} par niveau (t = ${f1(G.t)}). <b>ν</b> : l’écart-type de ce que la régression n’explique pas (${d2(V.all)} en tout), comparé entre groupes. <b>Θ</b> : la fourchette à 90 % de la simulation de la partie 07.</p>
-      <div class="def-ex"><b>Exemple.</b> Une heure de marche sans sac sur terrain facile devient environ ${hm(1 + G.sac_by_grade[0] / 100)} avec le sac ; en terrain expert, le seul sac la porte à ${hm(1 + G.sac_by_grade[3] / 100)}, terrain non compté.</div>
-      <p class="muted">Limites : trois effets croisés ont été testés ; seul le gamma passe le seuil, de peu. C’est une piste solide plus qu’une preuve. La pluie n’entre pas dans la régression de la partie 04 : son delta (${pct(D.pluie)}) vient de la partie 03.</p>` };
+      <p><b>Ici.</b> Le « prix » est mon temps de marche. <b>Δ</b> et <b>ρ</b> sont les effets de la partie 04 (régression sur ${A.n} tronçons) : le terrain est le sous-jacent, le sac le coût de portage. <b>Γ</b> : la même régression, avec un effet propre à chaque niveau de cote ; la marche modéré → exigeant tient même en retirant n’importe quelle sortie (t ≥ ${f1(G.loo_tmin)}). <b>ν</b> : l’écart-type de ce que la régression n’explique pas (${d2(V.all)} en tout), comparé entre groupes par un test de permutation. <b>Θ</b> : les fourchettes à 90 % de la simulation de la partie 07. <b>Second ordre</b> : ${SW.scanned} croisements de deux facteurs passés au crible, un à la fois.</p>
+      <p class="muted">Limites : avec ${SW.scanned} croisements testés, un résultat peut sortir par hasard ; sac × pluie tient en retirant n’importe quelle sortie (t de ${f1(SW.t_loo[1])} à ${f1(SW.t_loo[0])}), mais repose sur ${SW.n_out} sorties avec le sac sous la pluie. Non retenus : la pluie qui pèserait plus sur terrain dur (t = ${f1(A.vanna.t)}), le terrain appris au fil des jours (t = ${f1(A.charm.t)}). La pluie n’entre pas dans la régression de la partie 04 : son delta (${pct(D.pluie)}) vient de la partie 03.</p>` };
     const gb = $('gk-btn'); if (gb && !gb.innerHTML) gb.innerHTML = defBtn('grecs', 'D’où viennent les grecs');
   }
 
