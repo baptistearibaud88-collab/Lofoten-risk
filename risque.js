@@ -523,19 +523,21 @@
     if (!b) { if (!ev.target.closest('.def-pop')) closeDef(); return; }
     if (popFor === b) { closeDef(); return; }
     const d = DEFS[b.dataset.def]; if (!d) return;
-    pop.classList.toggle('big', !!d.wide);
+    pop.classList.toggle('big', !!d.wide); pop.classList.toggle('full', !!d.full);
     pop.innerHTML = `<button type="button" class="def-x" aria-label="Fermer">×</button><h5>${d.t}</h5>${d.html()}`;
     pop.hidden = false; popFor = b; b.setAttribute('aria-expanded', 'true');
-    if (innerWidth < 640) { pop.classList.add('sheet'); pop.style.left = pop.style.top = ''; return; }
+    if (d.full) { pop.classList.remove('sheet'); pop.style.left = pop.style.top = ''; if (d.after) d.after(pop); return; }
+    if (innerWidth < 640) { pop.classList.add('sheet'); pop.style.left = pop.style.top = ''; if (d.after) d.after(pop); return; }
     pop.classList.remove('sheet');
     const r = b.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
     let x = Math.min(innerWidth - w - 12, Math.max(12, r.left - 20)), y = r.bottom + 8;
     if (y + h > innerHeight - 12) y = Math.max(12, r.top - h - 8);
     pop.style.left = `${x}px`; pop.style.top = `${y}px`;
+    if (d.after) d.after(pop);
   });
   pop.addEventListener('click', ev => { if (ev.target.closest('.def-x')) closeDef(); });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeDef(); });
-  addEventListener('scroll', () => { if (!pop.classList.contains('sheet')) closeDef(); }, { passive: true });
+  addEventListener('scroll', () => { if (!pop.classList.contains('sheet') && !pop.classList.contains('full')) closeDef(); }, { passive: true });
 
   function drawAcf() {
     const T = EP.topo, M = T.massifs, SY = EP.sys, AG = SY.agg, sig = t => Math.abs(t.r) > t.crit;
@@ -1200,7 +1202,7 @@
     io.observe($('c-mc'));
   }
 
-  /* ---------- 10 · plan vs actual ---------- */
+  /* ---------- 08 · plan vs actual ---------- */
   const PLAN = [
     [1, '14/06', 'Napp → Nusfjord, sommet du Tønnåsheia', 'Napp → Nusfjord. Tønnåsheia abandonné : le premier jour avec le sac est bien plus dur que prévu.', [['c-ren', 'Renoncement']]],
     [2, '15/06', 'Volandstinden, bivouac sur son versant ou à Fredvang', 'Volandstinden, puis au-delà de Fredvang jusqu’aux hauteurs de Kvalvika, pour enchaîner sur le Ryten.', [['c-av', 'Avance volontaire']]],
@@ -1210,56 +1212,111 @@
     [6, '19/06', 'Journée 100 % trail depuis Munkebu : Hermannsdalstinden aller-retour', 'Reine, Reinebringen, l’arête, Helvete : 21 km, 1 677 m de D+.', [['c-ok', 'Contenu remplacé']]],
     [7, '20/06', 'Jusqu’à Å, Andstabben, début du tour du lac', 'Camp fixe à Sørvågen sous la pluie. Å et Andstabben en trail. Tour du lac abandonné (déconseillé, météo).', [['c-ab', 'Abandon d’itinéraire']]],
     [8, '21/06', 'Fin du tour du lac, puis camp sur les hauteurs de Sørvågen, au plus près du port', 'Le jour de marge est avancé et sert à la Støvla : neige après la barre rocheuse, éboulement au retour.', [['c-ok', 'Marge utilisée']]],
-    [9, '22/06', 'Jour de marge (météo ou forme) : Støvla ou kayak, puis le port', 'Gylttinden partiel, arrêt dans la grotte après les 10 000 m de D+. Kayak impossible.', [['c-sub', 'Jour réaffecté']]],
+    [9, '22/06', 'Jour de marge (météo ou forme) : Støvla ou kayak, puis le port', 'Gylttinden partiel, arrêt dans la grotte sous la pluie. Kayak impossible.', [['c-sub', 'Jour réaffecté']]],
   ];
   const PL = window.RISK_PLAN;
   const planDay = d => PL && PL.plan.days.find(x => x.day === d), realDay = d => PL && PL.real.days.find(x => x.day === d);
+  const eff = o => o.km + o.dplus / 100;   // km-effort : 100 m de montée comptent comme 1 km
   function drawPlan() {
+    if (!PL) return;
+    const M = PL.match, P_ = PL.plan, MO = PL.modes, ratio = MO.ratio;
     const fk = v => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${f1(Math.abs(v))} km`, fm = v => `${v > 0 ? '+' : v < 0 ? '−' : '±'}${f0(Math.abs(v))} m`;
-    $('plan').innerHTML = `<thead><tr><th>Jour</th><th>Prévu</th><th>Réel</th><th class="n">Écart</th><th>Statut</th></tr></thead><tbody>${PLAN.map(([d, dt, p, r, chips]) => {
-      const pd = planDay(d), rd = realDay(d);
-      const num = (x, sm) => x ? `<div class="pnum mono">${f1(x.km)} km · ${f0(x.dplus)} m D+${sm && sm.length ? ` · ${sm.join(', ')}` : ''}</div>` : '';
-      return `<tr><td>J${d}<br><span class="muted">${dt}</span></td><td>${p}${num(pd, pd && pd.summits)}</td><td>${r}${num(rd, rd && rd.summits)}</td>
-        <td class="n">${pd && rd ? `${fk(rd.km - pd.km)}<div class="muted">${fm(rd.dplus - pd.dplus)}</div>` : ''}</td><td><span class="chips">${chips.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join('')}</span></td></tr>`;
+    // journal : les km du plan sont convertis à la mesure de la montre, comme partout ailleurs
+    const journal = `<thead><tr><th>Jour</th><th>Prévu</th><th>Réel</th><th class="n">Écart</th><th>Statut</th></tr></thead><tbody>${PLAN.map(([d, dt, p, r, chips]) => {
+      const pd = planDay(d), rd = realDay(d), pkm = pd && pd.km * ratio;
+      const num = (km, x, sm) => x ? `<div class="pnum mono">${f1(km)} km · ${f0(x.dplus)} m D+${sm && sm.length ? ` · ${sm.join(', ')}` : ''}</div>` : '';
+      return `<tr><td>J${d}<br><span class="muted">${dt}</span></td><td>${p}${num(pkm, pd, pd && pd.summits)}</td><td>${r}${num(rd && rd.km, rd, rd && rd.summits)}</td>
+        <td class="n">${pd && rd ? `${fk(rd.km - pkm)}<div class="muted">${fm(rd.dplus - pd.dplus)}</div>` : ''}</td><td><span class="chips">${chips.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join('')}</span></td></tr>`;
     }).join('')}</tbody>`;
     const cnt = k => PLAN.reduce((n, p) => n + p[4].filter(c => c[0] === k).length, 0);
-    readout('r-plan', `renoncements <b>${cnt('c-ren')}</b> · substitution <b>${cnt('c-sub')}</b> · abandon <b>${cnt('c-ab')}</b>`);
-    if (!PL) return;
-    const M = PL.match, P_ = PL.plan, Rl = PL.real;
-    const totR = M.bridge.find(b => b.k === 'real').v, dpR = totDp;
-    const MO = PL.modes;
-    $('plan-lede').innerHTML = `J’avais deux façons d’avancer. Avec le sac : ${f0(MO.sac_pct)} % de temps en plus (partie 04), mais le camp suit. En trail : plus vite, mais sur le terrain le plus exposé (${physIds.filter(id => !rowOf(id).sac).length} alertes de terrain sur ${physIds.length}), et il faut revenir au camp. Un plan répartit l’effort entre les deux. Le mien tenait en 8 jours tracés avant le départ, plus 1 jour de marge, et presque rien ne s’est passé comme prévu : seuls ${f0(MO.track_done)} km des ${f0(P_.km8)} km du tracé ont été parcourus, ${MO.camps_same} campements sur ${MO.camps_n} sont à l’endroit prévu, ${M.abandoned.length - 1} sommets et le tour du lac ont sauté. Mais en finance, on ne juge pas un gérant sur sa fidélité à l’indice de référence : on regarde ce que ses écarts ont coûté. La question n’est donc pas « ai-je suivi le plan ? », mais « le budget prévu a-t-il tenu ? ».`;
+    DEFS.journal = { t: 'Journal des écarts, jour par jour', wide: true, html: () => `<p>Les kilomètres du plan sont convertis à la mesure de la montre (×${F('.2f')(ratio)}), pour comparer ce qui est comparable. ${cnt('c-ren')} renoncements, ${cnt('c-sub')} substitutions, ${cnt('c-ab')} abandon d’itinéraire.</p><div class="table-wrap flat"><table class="data plan">${journal}</table></div>` };
+    $('plan-lede').innerHTML = `Le plan : 8 jours tracés avant le départ, plus un jour de marge. Presque rien ne s’est passé comme prévu. Mais un gérant ne se juge pas sur sa fidélité à l’indice : on regarde ce que ses écarts ont coûté. Ici, en effort.`;
+  }
+  // la carte plein écran : plan et trace réelle, avec ou sans le sac, campements et sommets
+  function drawPlanMap(host) {
+    const P_ = PL.plan, Rl = PL.real, rowsById = Object.fromEntries(R.rows.map(r => [r.id, r]));
+    host.innerHTML = '';
+    const W = host.clientWidth, H = host.clientHeight, pad = 34;
+    const all = [...P_.line.flat(), ...Rl.line.flat()], lat0 = d3.mean(all, p => p[1]) * Math.PI / 180, kx = Math.cos(lat0);
+    const xs = d3.extent(all, p => p[0] * kx), ys = d3.extent(all, p => p[1]);
+    const sc = Math.min((W - 2 * pad) / (xs[1] - xs[0]), (H - 2 * pad) / (ys[1] - ys[0]));
+    const ox = (W - (xs[1] - xs[0]) * sc) / 2, oy = (H - (ys[1] - ys[0]) * sc) / 2;
+    const X = p => ox + (p[0] * kx - xs[0]) * sc, Y = p => H - oy - (p[1] - ys[0]) * sc, ln = d3.line().x(X).y(Y);
+    const svg = d3.select(host).append('svg').attr('width', W).attr('height', H).attr('class', 'pmap'), g = svg.append('g');
+    const cS = C('--series-avec'), cT = C('--series-sans'), cAl = C('--down');
+    // plan : pointillés fins, couleur du mode prévu
+    P_.modes_line.forEach(m => g.append('path').attr('d', ln(m.pts)).attr('fill', 'none').attr('stroke', m.t ? cT : cS).attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3').attr('opacity', .75).attr('class', 'nz'));
+    const a = P_.line[0][P_.line[0].length - 1], b = P_.line[1][0];
+    g.append('path').attr('d', ln([a, b])).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '1 5').attr('stroke-width', 1.6).attr('fill', 'none').attr('class', 'nz');
+    g.append('text').attr('class', 'lbl pm-t').attr('x', (X(a) + X(b)) / 2 + 8).attr('y', (Y(a) + Y(b)) / 2).text('bateau');
+    // réel : trait plein, une sortie par trait ; les 4 alertes de terrain soulignées
+    Rl.line.forEach((l, k) => { const r = rowsById[Rl.ids[k]] || {}, al = physIds.includes(Rl.ids[k]);
+      if (al) g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', cAl).attr('stroke-width', 7).attr('opacity', .28).attr('stroke-linejoin', 'round').attr('class', 'nz');
+      hover(g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', r.sac ? cS : cT).attr('stroke-width', 2.6).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('class', 'nz'),
+        () => `<b>J${r.day} · ${r.name}</b>${row('mode', r.sac ? 'avec le sac' : 'sans le sac (trail)')}${row('distance', `${f1(r.km)} km`)}${row('dénivelé', `${f0(r.dplus)} m`)}${row('cote', r.grade_lbl)}${al ? row('alerte', 'terrain') : ''}`); });
+    // sommets : atteints (plein) ou abandonnés (creux)
+    const tri = (x, y, s) => `M${x},${y - s}L${x + s * .9},${y + s * .6}L${x - s * .9},${y + s * .6}Z`;
+    const sumG = g.append('g');
+    Rl.summits.forEach(s => { const x = X([s.lon, s.lat]), y = Y([s.lon, s.lat]);
+      sumG.append('path').attr('d', tri(x, y, 6)).attr('fill', C('--text-primary')).attr('class', 'pm-m');
+      sumG.append('text').attr('class', 'lbl-strong pm-t').attr('x', x + 8).attr('y', y - 4).text(`${s.name}${s.alt ? ` ${f0(s.alt)} m` : ''}`); });
+    P_.summits.filter(s => !s.done).forEach(s => { const x = X([s.lon, s.lat]), y = Y([s.lon, s.lat]);
+      sumG.append('path').attr('d', tri(x, y, 6)).attr('fill', C('--bg')).attr('stroke', C('--down')).attr('stroke-width', 1.6).attr('class', 'pm-m');
+      sumG.append('text').attr('class', 'lbl pm-t').attr('x', x + 8).attr('y', y + 12).style('fill', C('--down')).text(W < 600 ? s.name : `${s.name} · abandonné`); });
+    // campements : prévus (carrés) et réels (ronds), avec le numéro des nuits
+    const uniq = (arr, key) => { const m = new Map(); arr.forEach((c, i) => { const k = key(c); if (!m.has(k)) m.set(k, { ...c, n: [] }); m.get(k).n.push(i + 1); }); return [...m.values()]; };
+    const pc = uniq(P_.camps, c => c.name), rc = uniq(Rl.camps, c => c.name);
+    hover(g.selectAll(null).data(pc).join('rect').attr('x', c => X([c.lon, c.lat]) - 5).attr('y', c => Y([c.lon, c.lat]) - 5).attr('width', 10).attr('height', 10).attr('class', 'pm-m')
+      .attr('fill', C('--bg')).attr('stroke', C('--text-primary')).attr('stroke-width', 1.6), c => `<b>Prévu · ${c.name}</b>${row('nuit', c.n.map(i => `N${i}`).join(', '))}${c.est ? row('position', 'estimée') : ''}`);
+    hover(g.selectAll(null).data(rc).join('circle').attr('cx', c => X([c.lon, c.lat])).attr('cy', c => Y([c.lon, c.lat])).attr('r', 6.5).attr('class', 'pm-m')
+      .attr('fill', C('--accent')).attr('stroke', C('--bg')).attr('stroke-width', 1.5), c => `<b>Réel · ${c.name}</b>${row('nuit', c.n.map(i => `N${i}`).join(', '))}${row('altitude', `${f0(c.alt)} m`)}`);
+    rc.forEach(c => g.append('text').attr('class', 'lbl-ink pm-t').attr('x', X([c.lon, c.lat]) - 10).attr('y', Y([c.lon, c.lat]) + 4).attr('text-anchor', 'end')
+      .style('paint-order', 'stroke').style('stroke', C('--bg')).style('stroke-width', '3px').text(`N${c.n.join('–')} ${c.name.replace('Hauteurs de ', '')}`));
+    // départ et arrivée
+    const st = Rl.line[0][0], en = Rl.line[Rl.line.length - 1].slice(-1)[0];
+    [[st, 'départ, 14/06'], [en, 'arrivée au port, 22/06']].forEach(([p, t]) => g.append('text').attr('class', 'lbl-strong pm-t').attr('x', X(p) + 10).attr('y', Y(p) + 16).text(t));
+    // les étiquettes ne se chevauchent pas : chacune descend d'une ligne tant qu'elle touche une étiquette déjà placée
+    g.selectAll('text.pm-t').nodes().forEach(t => { const r = t.getBBox();     // une étiquette qui sort du cadre passe de l'autre côté
+      if (r.x < 4) { t.setAttribute('text-anchor', 'start'); t.setAttribute('x', r.x + r.width + 20); }
+      else if (r.x + r.width > W - 4) { t.setAttribute('text-anchor', 'end'); t.setAttribute('x', r.x - 20); } });
+    { const placed = [];
+      g.selectAll('text.pm-t').nodes().sort((a, b) => a.getBBox().y - b.getBBox().y).forEach(t => {
+        for (let k = 0; k < 8; k++) { const r = t.getBBox(), hit = placed.some(q => r.x < q.x + q.width && q.x < r.x + r.width && r.y < q.y + q.height && q.y < r.y + r.height);
+          if (!hit) break; t.setAttribute('y', +t.getAttribute('y') + 12); }
+        placed.push(t.getBBox()); }); }
+    // échelle et nord, hors zoom
+    const kmPx = sc * (1 / 111.32), L10 = 10 * kmPx;
+    const ui = svg.append('g').attr('transform', `translate(${pad},${H - 18})`);
+    ui.append('line').attr('x2', L10).attr('stroke', C('--text-primary')).attr('stroke-width', 2);
+    [0, L10].forEach(x => ui.append('line').attr('x1', x).attr('x2', x).attr('y1', -4).attr('y2', 4).attr('stroke', C('--text-primary')).attr('stroke-width', 2));
+    ui.append('text').attr('class', 'lbl').attr('x', L10 + 8).attr('y', 4).text('10 km');
+    svg.append('text').attr('class', 'lbl-strong').attr('x', W - pad).attr('y', pad).attr('text-anchor', 'end').text('N ↑');
+    // zoom et déplacement ; les traits et les textes gardent leur taille
+    svg.call(d3.zoom().scaleExtent([1, 8]).on('zoom', ev => { const k = ev.transform.k; g.attr('transform', ev.transform);
+      g.selectAll('.nz').attr('vector-effect', 'non-scaling-stroke'); g.selectAll('.pm-t').style('font-size', `${11 / k}px`); g.selectAll('.pm-m').attr('transform', function () { const bb = this.getBBox(), cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2; return `translate(${cx},${cy}) scale(${1 / k}) translate(${-cx},${-cy})`; }); }));
+  }
+  function drawBridge() {
+    const M = PL.match, B = M.bridge, f = frame('c-bridge', { t: 8, r: 70, b: 28, l: 8 });
+    const lw = Math.min(250, f.w * .42);
+    const isT = d => d.total || d.k === 'plan' || d.k === 'real';
+    let run = 0; const D = B.map(b => { if (isT(b)) { run = b.v; return { ...b, a: 0, z: b.v }; } const a = run; run += b.v; return { ...b, a, z: run }; });
+    const x = d3.scaleLinear().domain([0, d3.max(D, d => Math.max(d.a, d.z)) * 1.04]).range([0, f.w - lw]);
+    const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.28);
+    const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
+    g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(6).tickSize(f.h).tickFormat('')).lower();
+    g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
+    const col = d => ({ plan: C('--accent'), cal: C('--series-avec'), dec: d.v < 0 ? C('--up') : C('--down'), ter: C('--warning'), mes: C('--text-muted') })[d.g];
+    D.forEach((d, i) => {
+      f.g.append('text').attr('class', isT(d) ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
+      g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', isT(d) ? (d.k === 'plan' ? .5 : .9) : .75);
+      if (i < D.length - 1) g.append('line').attr('x1', x(d.z)).attr('x2', x(d.z)).attr('y1', y(d.k) + y.bandwidth()).attr('y2', y(D[i + 1].k)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '2 2');
+      g.append('text').attr('class', 'lbl-strong').attr('x', x(Math.max(d.a, d.z)) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(isT(d) ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
+    });
   }
   function drawPlanCharts() {
     if (!PL) return;
-    const P_ = PL.plan, Rl = PL.real, M = PL.match;
-    // ---- map
-    {
-      const f = frame('c-pmap', { t: 10, r: 10, b: 10, l: 10 });
-      const all = [...P_.line.flat(), ...Rl.line.flat()];
-      const lat0 = d3.mean(all, p => p[1]), kx = Math.cos(lat0 * Math.PI / 180);
-      const xs = d3.extent(all, p => p[0] * kx), ys = d3.extent(all, p => p[1]);
-      const sc = Math.min(f.w / (xs[1] - xs[0]), f.h / (ys[1] - ys[0]));
-      const ox = (f.w - (xs[1] - xs[0]) * sc) / 2, oy = (f.h - (ys[1] - ys[0]) * sc) / 2;
-      const X = p => ox + (p[0] * kx - xs[0]) * sc, Y = p => f.h - oy - (p[1] - ys[0]) * sc;
-      const ln = d3.line().x(X).y(Y);
-      Rl.line.forEach(l => f.g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 2).attr('opacity', .85).attr('stroke-linejoin', 'round'));
-      P_.line.forEach(l => f.g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 1.3).attr('stroke-dasharray', '4 3').attr('opacity', .75));
-      // boat
-      const a = P_.line[0][P_.line[0].length - 1], b = P_.line[1][0];
-      f.g.append('path').attr('d', ln([a, b])).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '1 4').attr('stroke-width', 1.5).attr('fill', 'none');
-      f.g.append('text').attr('class', 'lbl').attr('x', (X(a) + X(b)) / 2 + 8).attr('y', (Y(a) + Y(b)) / 2).text('bateau');
-      const uniq = arr => arr.filter((c, i) => arr.findIndex(x => x.name === c.name) === i);
-      const pc = uniq(P_.camps), rc = uniq(Rl.camps);
-      hover(f.g.selectAll(null).data(pc).join('rect').attr('x', c => X([c.lon, c.lat]) - 5).attr('y', c => Y([c.lon, c.lat]) - 5).attr('width', 10).attr('height', 10)
-        .attr('fill', C('--bg')).attr('stroke', C('--text-primary')).attr('stroke-width', 1.6), c => `<b>Prévu · ${c.name}</b>${row('nuit', P_.camps.filter(x => x.name === c.name).map(x => dateLbl(x.night)).join(', '))}${row('altitude', `${f0(c.alt)} m`)}${c.est ? row('position', 'estimée') : ''}`);
-      hover(f.g.selectAll(null).data(rc).join('circle').attr('cx', c => X([c.lon, c.lat])).attr('cy', c => Y([c.lon, c.lat])).attr('r', 5.5)
-        .attr('fill', C('--accent')).attr('stroke', C('--bg')).attr('stroke-width', 1.5), c => `<b>Réel · ${c.name}</b>${row('nuit', Rl.camps.filter(x => x.name === c.name).map(x => dateLbl(x.night)).join(', '))}${row('altitude', `${f0(c.alt)} m`)}`);
-      if (!f.narrow) rc.forEach(c => f.g.append('text').attr('class', 'lbl-strong').attr('x', X([c.lon, c.lat]) + 9).attr('y', Y([c.lon, c.lat]) + 4).text(c.name.replace('Hauteurs de ', '').replace(' beach', '')));
-      readout('r-pmap', `plan <b>${f1(P_.km_walk)} km</b> avec la marge · réel <b>${f1(M.bridge.find(b => b.k === 'real').v)} km</b>`);
-      legend('l-pmap', [['dash', C('--text-primary'), 'itinéraire prévu'], ['ln', C('--accent'), 'trace réelle'], ['ring', C('--text-primary'), 'campement prévu'], ['', C('--accent'), 'campement réel']]);
-    }
-    // ---- progress on the planned route, evening after evening
+    const P_ = PL.plan, Rl = PL.real, M = PL.match, MO = PL.modes;
+    // ---- avancement sur le parcours prévu, soir après soir
     {
       const N = P_.camps.map((c, i) => ({ night: c.night, plan: c.km, real: Rl.camps[i].plan_km, pname: c.name, rname: Rl.camps[i].name }));
       const f = frame('c-prog', { t: 16, r: 54, b: 34, l: 8 });
@@ -1268,7 +1325,6 @@
       yGrid(f.g, y, f.w, 6, v => `${v} km`);
       xAxis(f.g, x, f.h, null, i => dateLbl(N[i].night));
       const st = d3.line().curve(d3.curveStepAfter).x((n, i) => x(i)).y(v => y(v));
-      // shaded gap between the two
       f.g.append('path').attr('d', d3.area().curve(d3.curveStepAfter).x((n, i) => x(i)).y0(n => y(n.plan)).y1(n => y(n.real))(N)).attr('fill', C('--accent')).attr('opacity', .12);
       f.g.append('path').attr('d', st(N.map(n => n.plan))).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4').attr('stroke-width', 1.5);
       f.g.append('path').attr('d', st(N.map(n => n.real))).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 2.2);
@@ -1282,38 +1338,17 @@
       readout('r-prog', `avance max <b>+${f0(best.real - best.plan)} km</b> (${dateLbl(best.night)})`);
       legend('l-prog', [['dash', C('--text-primary'), 'campements prévus'], ['ln', C('--accent'), 'campements réels, placés sur le parcours prévu']]);
     }
-    // ---- bridge from planned to real distance
-    {
-      const B = M.bridge, f = frame('c-bridge', { t: 8, r: 70, b: 28, l: 8 });
-      const lw = Math.min(250, f.w * .42);
-      const isT = d => d.total || d.k === 'plan' || d.k === 'real';
-      let run = 0; const D = B.map(b => { if (isT(b)) { run = b.v; return { ...b, a: 0, z: b.v }; } const a = run; run += b.v; return { ...b, a, z: run }; });
-      const x = d3.scaleLinear().domain([0, d3.max(D, d => Math.max(d.a, d.z)) * 1.04]).range([0, f.w - lw]);
-      const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.28);
-      const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
-      g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(6).tickSize(f.h).tickFormat('')).lower();
-      g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
-      const col = d => ({ plan: C('--accent'), cal: C('--series-avec'), dec: d.v < 0 ? C('--up') : C('--down'), ter: C('--warning'), mes: C('--text-muted') })[d.g];
-      D.forEach((d, i) => {
-        f.g.append('text').attr('class', isT(d) ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
-        g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', isT(d) ? (d.k === 'plan' ? .5 : .9) : .75);
-        if (i < D.length - 1) g.append('line').attr('x1', x(d.z)).attr('x2', x(d.z)).attr('y1', y(d.k) + y.bandwidth()).attr('y2', y(D[i + 1].k)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '2 2');
-        g.append('text').attr('class', 'lbl-strong').attr('x', x(Math.max(d.a, d.z)) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em')
-          .text(isT(d) ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
-      });
-      readout('r-bridge', `sur le parcours commun, la montre mesure <b>×${F('.2f')(M.gps_ratio)}</b> la longueur du tracé`);
-      legend('l-bridge', [['', C('--series-avec'), 'calendrier'], ['', C('--down'), 'décision qui ajoute'], ['', C('--up'), 'décision qui retire'], ['', C('--warning'), 'terrain'], ['', C('--text-muted'), 'mesure']]);
-    }
     // ---- le plan et le réel par mode : sac ou trail
-    const MO = PL.modes, pS = MO.plan.sac, pT = MO.plan.trail, rS = MO.real.sac, rT = MO.real.trail;
-    const pc = (a, b) => { const v = Math.round((b / a - 1) * 100); return v === 0 ? '0 %' : `${fs0(v)} %`; }, hP = pS.h + pT.h, hR = rS.h + rT.h, dpP = pS.dplus + pT.dplus, dpR = rS.dplus + rT.dplus;
+    const pS = MO.plan.sac, pT = MO.plan.trail, rS = MO.real.sac, rT = MO.real.trail;
+    [pS, pT, rS, rT].forEach(o => { o.eff = eff(o); });
+    const pc = (a, b) => { const v = Math.round((b / a - 1) * 100); return v === 0 ? '0 %' : `${fs0(v)} %`; }, hP = pS.h + pT.h, hR = rS.h + rT.h, dpP = pS.dplus + pT.dplus, dpR = rS.dplus + rT.dplus, eP = pS.eff + pT.eff, eR = rS.eff + rT.eff;
     {
       $('c-pmode').dataset.h = innerWidth < 640 ? 420 : 150;
       const f = frame('c-pmode', { t: 8, r: 8, b: 4, l: 8 }), nar = f.narrow;
-      const MET = [['Distance', 'km', 'km', v => f0(v)], ['Dénivelé positif', 'm', 'dplus', v => f0(v)], ['Temps de marche', '', 'h', v => hm(v)]];
+      const MET = [['Distance', 'km', 'km', v => f0(v)], ['Dénivelé positif', 'm', 'dplus', v => f0(v)], ['Effort (km + D+ / 100)', 'km-effort', 'eff', v => f0(v)]];
       const cols = nar ? 1 : 3, rows_ = nar ? 3 : 1, gap = 28, cw = (f.w - gap * (cols - 1)) / cols, ch = f.h / rows_;
       MET.forEach(([lab, unit, k, fmt], m) => {
-        const g = f.g.append('g').attr('transform', `translate(${nar ? 0 : m * (cw + gap)},${nar ? m * ch : 0})`), lw = 38, tw = unit === '' ? 62 : 70;
+        const g = f.g.append('g').attr('transform', `translate(${nar ? 0 : m * (cw + gap)},${nar ? m * ch : 0})`), lw = 38, tw = unit.length > 3 ? 96 : 70;
         const tot = [pS[k] + pT[k], rS[k] + rT[k]], x = d3.scaleLinear().domain([0, d3.max(tot)]).range([0, cw - lw - tw]);
         g.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 14).text(lab);
         [['Plan', pS, pT], ['Réel', rS, rT]].forEach(([nm, a, b], r) => {
@@ -1323,40 +1358,35 @@
             g.append('rect').attr('x', lw + x(x0)).attr('width', Math.max(1, x(v) - 1)).attr('y', yy).attr('height', bh).attr('rx', 2).attr('fill', c).attr('opacity', r ? .9 : .5);
             if (x(v) > 44) g.append('text').attr('class', 'lbl-ink').attr('x', lw + x(x0) + x(v) / 2).attr('y', yy + bh / 2 + 4).attr('text-anchor', 'middle').text(fmt(v));
           });
-          g.append('text').attr('class', 'lbl-strong').attr('x', lw + x(a[k] + b[k]) + 6).attr('y', yy + bh / 2 + 4).text(`${fmt(a[k] + b[k])}${unit ? ' ' + unit : ''}`);
+          g.append('text').attr('class', 'lbl-strong').attr('x', lw + x(a[k] + b[k]) + 6).attr('y', yy + bh / 2 + 4).text(`${fmt(a[k] + b[k])} ${unit}`);
         });
         g.append('text').attr('class', 'lbl').attr('x', lw).attr('y', 28 + 2 * 44 + 8).text(`sac ${pc(pS[k], rS[k])} · trail ${pc(pT[k], rT[k])} · total ${pc(pS[k] + pT[k], rS[k] + rT[k])}`);
       });
       legend('l-pmode', [['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'sans le sac (trail)'], ['', C('--text-muted'), 'plan en clair, réel en plein']]);
       readout('r-pmode', `plan converti à la mesure de la montre (×${F('.2f')(MO.ratio)})`);
     }
-    $('plan-stats').innerHTML = [
-      [`${f0(pS.km)} → ${f0(rS.km)} km`, `<em>Avec le sac</em>Distance portée : ${pc(pS.km, rS.km)}`],
-      [`${f0(pT.km)} → ${f0(rT.km)} km`, `<em>En trail</em>Distance sans le sac : ${pc(pT.km, rT.km)}`],
-      [`${f0(dpP)} → ${f0(dpR)} m`, `<em>Dénivelé</em>Le même relief, gravi autrement (${pc(dpP, dpR)})`],
-      [`${hm(hP)} → ${hm(hR)}`, '<em>Temps de marche</em>Le plan à mon allure réelle, contre le réel'],
-    ].map(([b, t]) => `<div><b>${b}</b><span>${t}</span></div>`).join('');
-    const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), slow = MO.speed.trail / MO.speed.sac - 1;
+    const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), dry = 67;   // sac au sec (partie 06, second ordre)
+    const carry = (h, p) => h - h / (1 + p / 100);
     $('plan-cols').innerHTML = [
-      [C('--down'), 'la trajectoire', 'Le plan n’a pas été suivi', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `Seuls ${f0(MO.track_done / P_.km8 * 100)} % du tracé prévu ont été parcourus. ${f0(-(B.ab + B.nd))} km abandonnés (Tønnåsheia, Kitinden, Helvetestinden, Hermannsdalstinden, tour du lac), ${f0(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
-      [C('--accent'), 'l’échange', 'Du sac contre du trail', `${fs0(rS.km - pS.km)} km · ${fs0(rT.km - pT.km)} km`, `Le tour du lac était prévu avec le sac. En fixant le camp à Sørvågen, j’ai remplacé ${f0(pS.km - rS.km)} km portés par ${f0(rT.km - pT.km)} km en trail. Ces kilomètres ne se valent pas. À terrain égal, le sac ajoute ${f0(MO.sac_pct)} % de temps (partie 04). Sur les ${hm(pS.h)} prévues avec le sac, ${hm(MO.carry.plan)} étaient son surcoût ; en réel, ${hm(MO.carry.real)} sur ${hm(rS.h)}.`],
-      [C('--up'), 'le budget', 'Le budget a tenu', `${hm(hP)} → ${hm(hR)}`, `Plus de kilomètres, mais plus légers : le dénivelé est le même à ${f0(Math.abs(dpR / dpP - 1) * 100)} % près, le temps de marche aussi. Le jour de marge a été utilisé, ni plus ni moins. La recherche de bivouac a coûté ${f1(MO.biv.km)} km et ${f0(MO.biv.up)} m en ${MO.biv.n} détours.`],
+      [C('--down'), 'la trajectoire', 'Elle n’a pas tenu', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `du tracé prévu parcourus. ${f0(-(B.ab + B.nd))} km abandonnés (${M.abandoned.map(a => a.name).join(', ')}), ${f0(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
+      [C('--up'), 'l’effort', 'Il a tenu', `${f0(eP)} → ${f0(eR)} km-effort`, `${pc(eP, eR)} seulement, et ${f0(dpP)} → ${f0(dpR)} m de D+. ${f0(pS.km - rS.km)} km portés en moins, ${f0(rT.km - pT.km)} km courus en plus : à mes vitesses, ${hm(hP)} prévues contre ${hm(hR)} marchées.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
-    $('plan-msg').innerHTML = `<b>Ni sous-estimé, ni surestimé.</b> Le plan n’a pas servi de trajectoire : il a servi de budget. L’effort total était bien estimé, si bien que les écarts, tous de sens contraires, se sont compensés : comme un portefeuille dont on change la composition sans changer le risque total.`;
-    DEFS.attribution = { t: 'D’où vient l’analyse des écarts au plan', html: () => `
+    $('plan-msg').innerHTML = `<b>Ni sous-estimé, ni surestimé.</b> Le plan n’a pas servi de trajectoire : il a servi de mesure de l’effort à fournir. Les écarts, de sens contraires, se sont compensés ; le jour de marge a servi à la Støvla, comme prévu.`;
+    DEFS.attribution = { t: 'D’où vient la comparaison au plan', html: () => `
       <p><b>L’indice de référence.</b> Un gérant de fonds est jugé contre un <i>benchmark</i> : un portefeuille de référence fixé à l’avance. S’en écarter n’est pas une faute, c’est son métier. Mais chaque écart doit s’expliquer.</p>
-      <p><b>L’attribution de performance.</b> En 1986, <b>Brinson, Hood et Beebower</b> publient <i>Determinants of Portfolio Performance</i>. Ils décomposent l’écart entre un fonds et son indice en morceaux qui s’additionnent : ce qui vient de la répartition entre grandes classes d’actifs (l’<i>allocation</i>), et ce qui vient du choix des titres dans chaque classe (la <i>sélection</i>). On sait alors d’où vient chaque point d’écart.</p>
-      <p><b>Le budget de risque.</b> Dans les années 1990, les gérants généralisent l’idée : on ne fixe plus seulement une composition, mais une quantité totale de risque à ne pas dépasser, que l’on répartit librement.</p>
-      <p class="def-ex"><b>Ici.</b> Le plan est l’indice de référence. Le « pont » est une attribution : il part des ${f0(P_.km8)} km du tracé, les convertit à la mesure de la montre (${f0(B.plan_eq)} km avec le jour de marge), puis ajoute chaque écart, classé en décision, terrain ou mesure, jusqu’aux ${f0(B.real)} km réels. Le graphique par mode montre l’allocation : moins de sac, plus de trail. Et le budget, c’est l’effort total : ${hm(hP)} prévues à mon allure réelle, ${hm(hR)} marchées.</p>
-      <p><b>Le coût de portage.</b> En finance, détenir une position coûte : financement, stockage, assurance. C’est le <i>cost of carry</i>. Ici, le sac est la position : il permet d’avancer avec son camp, mais il ajoute ${f0(MO.sac_pct)} % de temps à terrain égal. Fixer le camp, c’est arrêter de payer ce coût.</p>
-      <p><b>Comment il se calcule.</b> Ce n’est pas le temps passé avec le sac : c’est la part de ce temps qui vient du sac. La régression de la partie 04 dit qu’un trajet porté dure ${f0(MO.sac_pct)} % de plus que le même trajet fait léger. On retrouve donc le temps « léger » en divisant, et le surcoût est la différence.</p>
+      <p><b>L’attribution de performance.</b> En 1986, <b>Brinson, Hood et Beebower</b> décomposent l’écart entre un fonds et son indice en morceaux qui s’additionnent : la répartition entre grandes classes d’actifs (l’<i>allocation</i>) et le choix des titres (la <i>sélection</i>).</p>
+      <p class="def-ex"><b>Ici.</b> Le plan est l’indice. L’allocation, c’est la répartition entre sac et trail. La mesure commune est l’<b>effort</b>, en km-effort : 1 km compte 1, et 100 m de montée comptent 1 de plus. Plan : ${f0(eP)} km-effort ; réel : ${f0(eR)} (${pc(eP, eR)}). Le pont (bouton plus bas) part des ${f0(P_.km8)} km du tracé et classe chaque écart de distance.</p>
+      <p><b>Pourquoi pas le temps.</b> Je n’avais pas de temps estimé avant le départ. Convertir le plan en heures demande une vitesse, et la seule que j’ai est celle mesurée pendant le trek, pluie comprise (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail). Avec elle, le temps réel redonne exactement l’effort réel : la comparaison des temps (${hm(hP)} contre ${hm(hR)}) ne peut rien voir d’autre que l’effort et le mélange sac / trail. Elle ne voit pas le ralentissement d’allure, que mesure la simulation (partie 07, +${hm(mcLate)}). Les deux disent donc des choses différentes : l’effort prévu a tenu, l’allure a glissé.</p>
+      <p><b>Le coût de portage.</b> En finance, détenir une position coûte (financement, stockage) : c’est le <i>cost of carry</i>. Ici, le sac est la position : il permet d’avancer avec son camp, mais à terrain égal il ajoute ${f0(MO.sac_pct)} % de temps (partie 04, le ρ de la partie 06).</p>
       <div class="def-f">surcoût = temps porté − temps porté ÷ ${f2(1 + MO.sac_pct / 100)}</div>
-      <div class="def-ex"><b>Plan.</b> ${hm(pS.h)} prévues avec le sac ÷ ${f2(1 + MO.sac_pct / 100)} = ${hm(pS.h - MO.carry.plan)} si le même trajet était fait léger. Surcoût : ${hm(MO.carry.plan)}.<br><b>Réel.</b> ${hm(rS.h)} portées ÷ ${f2(1 + MO.sac_pct / 100)} = ${hm(rS.h - MO.carry.real)}. Surcoût : ${hm(MO.carry.real)}.</div>
-      <p>Le plan prévoyait donc bien ${hm(pS.h)} avec le sac sur ${hm(pS.h + pT.h)}, dont ${hm(MO.carry.plan)} dues au sac lui-même. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de ce surcoût. La partie 09 demande si cette économie était une décision ou une chance.</p>
-      <p class="muted">Précautions. Un point réel est compté « sur le plan » à moins de 60 m du tracé ; le dénivelé du plan vient du modèle de terrain de Strava, le réel de la montre. Le tracé Strava est lissé : sur le parcours commun, la montre mesure ${f0((MO.ratio - 1) * 100)} % de plus. Les distances du plan sont donc converties à la mesure de la montre ; sans cette conversion, le plan vaudrait ${hm(MO.plan_h_raw)}. Et le temps du plan est calculé avec mes vitesses réelles (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail) : il mesure ce que le plan demandait, pas ce que j’avais estimé avant de partir.</p>` };
+      <div class="def-ex"><b>Plan.</b> ${hm(pS.h)} avec le sac, dont ${hm(MO.carry.plan)} de surcoût. <b>Réel.</b> ${hm(rS.h)}, dont ${hm(MO.carry.real)}. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de portage.</div>
+      <p class="muted">Fourchette. Les ${f0(MO.sac_pct)} % sont une moyenne ; au sec, le sac coûte +${dry} % (partie 06, à confirmer : 2 sorties avec le sac sous la pluie). Presque tout le portage s’est fait au sec : avec +${dry} %, le surcoût serait de ${hm(carry(pS.h, dry))} dans le plan et ${hm(carry(rS.h, dry))} en réel, soit ${hm(carry(pS.h, dry) - carry(rS.h, dry))} économisées. Le temps réel vient de la montre (${hm(hR)}), la simulation additionne les tronçons de 250 m : quelques minutes d’écart. Un point réel est compté « sur le plan » à moins de 60 m du tracé ; le tracé Strava, lissé, est plus court que la mesure de la montre : ses distances sont multipliées par ${F('.2f')(MO.ratio)}.</p>` };
     const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
+    DEFS.pont = { t: 'De la distance prévue à la distance réelle', wide: true, html: () => `<p>Le pont part des ${f0(P_.km8)} km tracés sur Strava, ajoute le jour de marge et la conversion à la mesure de la montre (×${F('.2f')(M.gps_ratio)} sur le parcours commun), puis classe chaque écart jusqu’aux ${f0(B.real)} km réels : décision, terrain ou mesure.</p><div class="chart" id="c-bridge" data-h="330"></div><p class="muted">Distances à pied ; bateau Kirkefjord → Vindstad retiré du plan. Recherche de bivouac : ${f1(MO.biv.km)} km et ${f0(MO.biv.up)} m en ${MO.biv.n} détours.</p>`, after: drawBridge };
+    DEFS.carte = { t: 'Le plan et la trace réelle', full: true, html: () => `<div class="pm-legend legend-row"><span><i style="background:${C('--series-avec')}"></i>avec le sac</span><span><i style="background:${C('--series-sans')}"></i>sans le sac (trail)</span><span>trait plein : réel · pointillés : plan</span><span>● campement réel · □ prévu</span><span>▲ sommet atteint · △ abandonné</span><span><i style="background:${C('--down')};opacity:.4"></i>alerte de terrain</span><span class="muted">molette ou pincement pour zoomer</span></div><div class="pm-host" id="pm-host"></div>`, after: p => drawPlanMap(p.querySelector('#pm-host')) };
+    if (!$('plan-more').innerHTML) $('plan-more').innerHTML = [defBtn('carte', 'La carte : le plan et la trace réelle'), defBtn('pont', 'De la distance prévue à la distance réelle'), defBtn('journal', 'Journal des écarts, jour par jour')].join(' ');
     const N = P_.camps.map((c, i) => Rl.camps[i].plan_km - c.km), ahead = N.map((d, i) => [d, i]).filter(([d]) => d > 1.5);
-    $('t-plan').innerHTML = `<b>Tout a changé, sauf le total.</b> J’ai porté le sac sur ${f0(pS.km - rS.km)} km de moins que prévu et couru ${f0(rT.km - pT.km)} km de plus, pour le même dénivelé (${f0(dpR)} m) et le même temps de marche (${hm(hR)}). L’avance prise les ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) et le jour de marge ont absorbé le reste. Le plan avait donc la place pour l’imprévu. Mais des écarts qui se compensent, est-ce un plan bien construit, de bonnes décisions en route, ou de la chance ? C’est la dernière question.`;
+    $('t-plan').innerHTML = `<b>${f0(MO.track_done)} km sur ${f0(P_.km8)}</b> du tracé suivis, mais l’effort à <b>${pc(eP, eR)}</b> près. Moins de sac, plus de trail : l’avance des ${ahead.map(([, i]) => dateLbl(P_.camps[i].night)).join(' et ')} (jusqu’à +${f0(d3.max(ahead, a => a[0]))} km) a fait le reste. Bon plan, bonnes décisions, ou chance ? C’est la question suivante.`;
   }
 
   /* ---------- 12 · conclusion ---------- */
@@ -1492,7 +1522,7 @@
     readout('r-dec', `${CD.n} décisions`);
     // texts
     const P = MG.scen.find(d => d.key === 'plan'), Rl = MG.scen.find(d => d.key === 'reel');
-    $('cf-lede').innerHTML = `Le budget a tenu à quelques minutes près (partie 08), alors que la pluie a pris le modèle de court (partie 07). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
+    $('cf-lede').innerHTML = `L’effort prévu a tenu à 2 % près (partie 08), et la pluie, probable, est tombée trois jours (partie 07). Mais un bon résultat ne prouve pas une bonne décision, et un incident ne prouve pas une erreur. Pour trancher, on rejoue la traversée trois fois : en déplaçant la pluie, en changeant la marge, puis décision par décision.`;
     $('cf-bilan').innerHTML = [
       ['Chance · contre moi', `centile ${f0(MM.tot.pct)}`, `${f1(R.weather.total_rain)} mm en 9 jours : plus arrosé que ${f0(MM.tot.pct)} % des départs possibles (partie 05)`],
       ['Chance · pour moi', 'J7', 'la pluie arrive quand la traversée se termine'],

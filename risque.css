@@ -512,3 +512,13 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .gk-btn { margin: 2px 0 4px; }
 .gk-body .gk-tr { font-size: 14px; line-height: 1.55; margin: 0; }
 .gk-body .gk-dq { margin: 0 0 8px; padding-left: 9px; border-left: 2px solid var(--accent); font: 600 14px/1.45 var(--font); color: var(--text-primary); }
+
+/* partie 08 : deux colonnes, carte plein écran */
+.explain .ex-cols.two { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .explain .ex-cols.two { grid-template-columns: 1fr; } }
+.def-pop.full { left: 12px !important; top: 12px !important; right: 12px; bottom: 12px; width: auto; max-height: none; display: flex; flex-direction: column; }
+.def-pop.full .pm-host { flex: 1; min-height: 0; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; background: var(--bg); cursor: grab; }
+.def-pop.full .pm-host svg { display: block; }
+.pm-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; font-size: 12.5px; }
+.pm-legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.def-pop[hidden] { display: none !important; }

@@ -167,12 +167,23 @@ const planLine = []; let seg = [];
 P.forEach((p, i) => { if (inBoat(KM[i])) { if (seg.length) planLine.push(seg); seg = []; return; } seg.push(p); });
 planLine.push(seg);
 const r5 = v => Math.round(v * 1e5) / 1e5;
+// pour la carte : le plan découpé en tronçons avec ou sans le sac (sommets en aller-retour et J6 sans le sac)
+const TRAIL_R = [...SPURS.map(([, a, b]) => [a, b]), ...DAYS[5].ranges];
+const isTrail = k => TRAIL_R.some(([a, b]) => k >= a && k <= b);
+const planModes = []; { let cur = null;
+  P.forEach((p, i) => { if (inBoat(KM[i])) { cur = null; return; } const t = +isTrail(KM[i]);
+    if (!cur || cur.t !== t) { const prev = cur && cur.pts[cur.pts.length - 1]; cur = { t, pts: prev ? [prev] : [] }; planModes.push(cur); } cur.pts.push(p); }); }
+// sommets du plan : point le plus haut de chaque aller-retour (et du J6) ; fait ou abandonné d'après les sommets de la montre
+const doneNames = new Set(T.summits.map(x => x.sommet));
+const planSummits = [...SPURS, ['Hermannsdalstinden', ...DAYS[5].ranges[0]]].map(([n, a, b]) => { let best = idx(a); for (let i = idx(a); i <= idx(b); i++) if (P[i][2] > P[best][2]) best = i;
+  return { name: n.replace('Sommet du tour du lac', 'Tour du lac'), lat: r5(P[best][0]), lon: r5(P[best][1]), alt: Math.round(P[best][2]), done: doneNames.has(n) }; });
 const out = {
   plan: { km_total: r1(KM[KM.length - 1]), km8: plan8, km_walk: planWalk, dplus: planDp, margin: MARGIN, j6access, boat: BOAT,
     camps: CAMPS.map(c => ({ ...c, lat: r5(c.lat), lon: r5(c.lon) })), days: DAYS,
-    line: planLine.map(s => thin(s, 150).map(p => [r5(p[1]), r5(p[0])])) },
+    line: planLine.map(s => thin(s, 150).map(p => [r5(p[1]), r5(p[0])])), modes_line: planModes.map(m => ({ t: m.t, pts: thin(m.pts, 150).map(p => [r5(p[1]), r5(p[0])]) })), summits: planSummits },
   real: { camps: camps.map(c => ({ ...c })), days: Object.entries(real).map(([d, v]) => ({ day: +d, km: r1(v.km), dplus: Math.round(v.dplus), summits: rsum[d] || [] })),
-    line: T.acts.map(a => thin(a.pts.map(q => [q[1], q[0]]), 150).map(p => [r5(p[1]), r5(p[0])])) },
+    line: T.acts.map(a => thin(a.pts.map(q => [q[1], q[0]]), 150).map(p => [r5(p[1]), r5(p[0])])), ids: T.acts.map(a => a.id || a.activite || null),
+    summits: T.summits.map(x => ({ name: x.sommet, lat: x.lat, lon: x.lon, alt: x.hauteur_officielle_m || x.alt_gps_m, act: x.activite })) },
   match: { th: TH, shared: r1(shared), done: r1(doneKm), gps_ratio: r2(shared / doneKm), abandoned, bridge, biv: bivEp },  modes,
 };
 fs.writeFileSync(path.join(root, 'risque_plan.js'), `// généré par outils/plan_reel.js — ne pas modifier à la main\nwindow.RISK_PLAN = ${JSON.stringify(out)};\n`);
