@@ -133,7 +133,7 @@
   const physIds = ['stuvla', 'last_trail', 'bunes_munkebu', 'andstabben'];
   const physRanks = physIds.map(id => rowOf(id).rank).sort((a, b) => a - b);
   const tailRatio = D.beyond3 / D.norm3;
-  const mcLate = MC.real_tot - MC.central, cL = v => v > 99 ? '> 99' : v < 1 ? '< 1' : f0(v);
+  const mcLate = MC.real_dev[MC.real_dev.length - 1], cL = v => v > 99 ? '> 99' : v < 1 ? '< 1' : f0(v);
   const NS_ = MC.normal.seg, BS_ = MC.blocs.seg;
   const lateRain = d3.sum(W_.days.filter(d => d.day >= 7), d => d.rain);
   const worstN = R.nights.reduce((a, b) => b.hrv < a.hrv ? b : a), HRV_USUAL = 45;
@@ -960,9 +960,9 @@
   /* ---------- 07 (fin) · le jour de marge, évalué comme une option ---------- */
   function drawMarge() {
     const G = window.RISK_MARGE; if (!G || !$('c-mg')) return;
-    const CV = G.curve, c0 = CV[0], wet = CV.find(c => c.day === 7), M = G.M_min;
+    const CV = G.curve, c0 = CV[0], wet = CV.find(c => c.day === 7), c5 = CV.find(c => c.day === 5), M = G.M_min;
     const mn = m => m < 60 ? `${m} min` : hm(m / 60);
-    { // valeur de la marge, soir après soir
+    { // ce que la marge doit absorber, soir après soir
       const f = frame('c-mg', { t: 14, r: 64, b: 26, l: 8 });
       const x = d3.scalePoint().domain(CV.map(c => c.day)).range([0, f.w]).padding(.2), y = d3.scaleLinear().domain([0, M * 1.12]).range([f.h, 0]);
       const x7 = x(7) - x.step() / 2;
@@ -973,55 +973,56 @@
       f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(M)).attr('y2', y(M)).attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4');
       axTag(f.g, f.w + 2, y(M), mn(M));
       hideUnder(f.g, [y(M)]);
-      [['normal', C('--text-muted'), 1.4], ['blocs', C('--accent'), 2.2]].forEach(([k, col, w]) => {
+      [['blocs', C('--text-muted'), 1.4], ['clim', C('--accent'), 2.2]].forEach(([k, col, w]) => {
         f.g.append('path').attr('d', d3.line().x(c => x(c.day)).y(c => y(c[k].value))(CV)).attr('fill', 'none').attr('stroke', col).attr('stroke-width', w);
-        f.g.selectAll(null).data(CV).join('circle').attr('cx', c => x(c.day)).attr('cy', c => y(c[k].value)).attr('r', k === 'blocs' ? 3.2 : 2.4).attr('fill', col);
+        f.g.selectAll(null).data(CV).join('circle').attr('cx', c => x(c.day)).attr('cy', c => y(c[k].value)).attr('r', k === 'clim' ? 3.2 : 2.4).attr('fill', col);
       });
-      f.g.append('text').attr('class', 'ax-title').attr('x', x(CV[0].day)).attr('y', y(c0.blocs.value) - 9).attr('text-anchor', 'start').text(mn(c0.blocs.value));
-      f.g.append('text').attr('class', 'ax-title').attr('x', x(7) - 6).attr('y', y(wet.blocs.value) - 8).attr('text-anchor', 'end').text(mn(wet.blocs.value));
+      f.g.append('text').attr('class', 'ax-title').attr('x', x(CV[0].day)).attr('y', y(c0.clim.value) - 9).attr('text-anchor', 'start').text(mn(c0.clim.value));
+      f.g.append('text').attr('class', 'ax-title').attr('x', x(7) - 6).attr('y', y(wet.clim.value) - 8).attr('text-anchor', 'end').text(mn(wet.clim.value));
       hover(f.g.selectAll('.mh').data(CV).join('rect').attr('class', 'hit').attr('x', c => x(c.day) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-        c => `<b>Soir du J${c.day}</b>${row('retard cumulé', `${c.dev >= 0 ? '+' : '−'}${mn(Math.abs(c.dev))}`)}${row('valeur de la marge', mn(c.blocs.value))}${row('marge entamée', `${f0(c.blocs.p_use)} %`)}${row('marge épuisée', `${f0(c.blocs.p_out)} %`)}${row('incertitude restante', `± ${mn(c.blocs.rem_min)}`)}`);
-      legend('l-mg', [['ln', C('--accent'), 'valeur, simulation par blocs'], ['ln', C('--text-muted'), 'valeur, tronçons indépendants'], ['dash', '', 'la marge entière']]);
-      readout('r-mg', `marge <b>${mn(M)}</b> · retard final <b>+${mn(G.real_end_min)}</b>`);
+        c => `<b>Soir du J${c.day}${c.wet ? ' · pluie' : ''}</b>${row('retard sur le calendrier', `${c.dev >= 0 ? '+' : '−'}${mn(Math.abs(c.dev))}`)}${row('à absorber, simulation', mn(c.clim.value))}${row('à absorber, Black-Scholes', mn(c.clim.black))}${row('chance de servir', `${f0(c.clim.p_use)} %`)}`);
+      legend('l-mg', [['ln', C('--accent'), 'avec le climat'], ['ln', C('--text-muted'), 'beau temps seulement'], ['dash', '', 'la marge entière']]);
+      readout('r-mg', `marge <b>${mn(M)}</b> · utilisée <b>${mn(G.used_min)}</b>`);
     }
-    { // le smile
+    { // le smile, sur des options simples
       const f = frame('c-smile', { t: 14, r: 12, b: 26, l: 44 }), S = G.smile;
-      const lo = Math.min(G.sd.normal, ...S.map(s => s.sd_h)) * .9, hi = Math.max(...S.map(s => s.sd_h), G.sd.blocs) * 1.08;
+      const lo = Math.min(G.sd.clim, ...S.map(s => s.sd_h)) * .94, hi = Math.max(G.sd.clim, ...S.map(s => s.sd_h)) * 1.05;
       const x = d3.scalePoint().domain(S.map(s => s.x)).range([0, f.w]).padding(.3), y = d3.scaleLinear().domain([lo, hi]).range([f.h, 0]);
       yGrid(f.g, y, f.w, 4, v => hm(v), 'left');
-      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(v => v ? `+${v} h` : 'prévision'));
-      [[G.sd.normal, 'tronçons indépendants', C('--text-muted')], [G.sd.blocs, 'simulation par blocs', C('--accent')]].forEach(([v, l, col]) => {
-        f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(v)).attr('y2', y(v)).attr('stroke', col).attr('stroke-dasharray', '4 3');
-        f.g.append('text').attr('class', 'ax-title').attr('x', f.w).attr('y', y(v) - 5).attr('text-anchor', 'end').text(`${l} : ${hm(v)}`);
-      });
+      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(v => v ? `${v > 0 ? '+' : '−'}${Math.abs(v)} h` : 'seuil'));
+      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(G.sd.clim)).attr('y2', y(G.sd.clim)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '4 3');
+      f.g.append('text').attr('class', 'ax-title').attr('x', 4).attr('y', y(G.sd.clim) - 5).text(`écart-type simulé : ${hm(G.sd.clim)}`);
       f.g.append('path').attr('d', d3.line().x(s => x(s.x)).y(s => y(s.sd_h)).curve(d3.curveMonotoneX)(S)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 2);
-      f.g.selectAll(null).data(S).join('circle').attr('cx', s => x(s.x)).attr('cy', s => y(s.sd_h)).attr('r', 3.2).attr('fill', C('--down'));
-      legend('l-smile', [['ln', C('--down'), 'écart-type implicite selon le seuil'], ['dash', C('--text-muted'), 'repères']]);
-      readout('r-smile', `implicite <b>${hm(G.sd.implied)}</b> · indépendants ${hm(G.sd.normal)}`);
+      hover(f.g.selectAll(null).data(S).join('circle').attr('cx', s => x(s.x)).attr('cy', s => y(s.sd_h)).attr('r', 3.6).attr('fill', C('--down')),
+        s => `<b>Seuil ${s.x ? `${s.x > 0 ? '+' : '−'}${Math.abs(s.x)} h` : ''} sur le calendrier</b>${row('dépassé dans', `${f0(s.p)} % des simulations`)}${row('écart-type implicite', hm(s.sd_h))}`);
+      legend('l-smile', [['ln', C('--down'), 'écart-type que Black-Scholes doit supposer'], ['dash', C('--text-muted'), 'celui de la simulation']]);
+      readout('r-smile', `de <b>${hm(S[0].sd_h)}</b> à <b>${hm(S[S.length - 1].sd_h)}</b>`);
     }
-    const th = CV.find(c => c.day === 5);
-    $('mg-lede').innerHTML = `Le plan gardait un jour de marge : le J9, la Støvla, soit environ <b>${mn(M)}</b> de marche à mon allure. C’est une assurance : elle ne sert que si la traversée dépasse la prévision, et seulement jusqu’à ${mn(M)}. En finance, ce contrat est une option (un « call spread »), et la formule de Black-Scholes donne son prix, ici en minutes de marche.`;
+    $('mg-lede').innerHTML = `Le plan gardait un jour « de marge (météo ou forme) » : la Støvla, environ <b>${mn(M)}</b> de marche. Tout retard sur le calendrier se prend sur ce jour. En finance, c’est une option : la simulation donne son prix, en minutes.`;
     $('mg-greeks').innerHTML = [
-      ['Δ', 'Delta', `Si la prévision glisse d’une heure, la marge vaut <b>${f0(G.greeks.delta * 60)} min</b> de plus : elle sera davantage sollicitée.`],
-      ['ν', 'Vega', `Si l’incertitude grandit de 10 %, la marge vaut <b>${f0(G.greeks.vega_10)} min</b> de plus : une assurance vaut plus quand l’avenir est flou.`],
-      ['Θ', 'Thêta', `Du soir du J2 au soir du J5, sans incident, la marge passe de ${mn(c0.blocs.value)} à <b>${mn(th.blocs.value)}</b> : chaque jour calme la rend moins utile.`],
+      ['Δ', 'Delta', `Si la prévision glisse d’une heure, la marge doit absorber <b>${f0(G.greeks.delta * 60)} min</b> de plus.`],
+      ['ν', 'Vega', `Plus d’incertitude n’y change presque rien (<b>${G.greeks.vega_10 > 0 ? '+' : '−'}${f0(Math.abs(G.greeks.vega_10))} min</b> pour +10 %) : au soir du J2, la marge a déjà ${f0(c0.clim.p_use)} % de chances de servir.`],
+      ['Θ', 'Thêta', `Chaque soir sec, elle fond de <b>${f0(-G.theta.per_day)} min</b> : ${mn(c0.clim.value)} au J2, ${mn(c5.clim.value)} au J5. La pluie du J7 la relance à ${mn(wet.clim.value)}.`],
     ].map(([l, n, t]) => `<div><h4><span class="gk">${l}</span> ${n}</h4><p>${t}</p></div>`).join('');
-    $('mg-read').textContent = `À gauche, ce que vaut la marge chaque soir : le dépassement qu’elle doit s’attendre à absorber, d’après la suite de la prévision. La ligne pointillée est la marge entière. À droite, l’écart-type que Black-Scholes doit supposer pour retrouver ma simulation, selon le seuil de dépassement.`;
-    $('t-mg').innerHTML = `Au soir du J2, la marge vaut <b>${mn(c0.blocs.value)}</b> sur ${mn(M)} : une chance sur deux d’être entamée (${f0(c0.blocs.p_use)} %), ${f0(c0.blocs.p_out)} % d’être épuisée. Elle fond tant que tout va bien, puis la pluie la fait bondir : <b>${mn(wet.blocs.value)}</b> au soir du J7. À l’arrivée, elle est consommée en entier et je la dépasse de ${mn(G.real_end_min - M)}. Pour retrouver ma simulation, Black-Scholes doit supposer <b>${hm(G.sd.implied)}</b> d’écart-type au lieu de ${hm(G.sd.normal)} : c’est l’enchaînement des écarts.`;
-    DEFS.blackscholes = { t: 'Black-Scholes : le prix d’une assurance', html: () => `
-      <p><b>L’origine.</b> En 1973, <b>Fischer Black, Myron Scholes et Robert Merton</b> trouvent le prix « juste » d’une option : le droit, mais pas l’obligation, d’acheter un actif à un prix fixé d’avance (le prix d’exercice K). Merton et Scholes reçoivent le prix Nobel d’économie en 1997. En 1976, Black adapte la formule à un prix à terme F, connu aujourd’hui pour une date future.</p>
-      <div class="def-f">call = F·N(d₁) − K·N(d₂) · d₁ = [ln(F/K) + s²/2] / s · d₂ = d₁ − s · s = σ√τ</div>
-      <p>N est la loi normale : N(d₂) est la probabilité que l’option serve. s mesure l’incertitude qui reste jusqu’à l’échéance : elle grandit avec la volatilité σ et avec le temps τ. Une assurance plafonnée, qui paie le dépassement de K jusqu’à K + M, est la différence de deux calls : un <i>call spread</i>.</p>
-      <div class="def-ex"><b>Ici.</b> L’actif est mon temps de marche du J3 au J9. F est la prévision du soir du J2 (${hm(G.F0)}), K = F : la marge sert dès que je dépasse la prévision, jusqu’à M = ${mn(M)} (le jour de marge du plan, ${f1(G.margin.km)} km et ${f0(G.margin.dplus)} m de D+, converti à mon allure en trail). L’incertitude s vient de la simulation. Chaque soir, F est corrigé du retard déjà pris et s rétrécit. Résultat au J2 : ${mn(G.value_j2.bs_blocs)} avec la volatilité de la simulation par blocs, ${mn(G.value_j2.bs_normal)} avec des tronçons indépendants ; la simulation elle-même donne ${mn(G.value_j2.sim_blocs)}.</div>
-      <p class="muted">Limites : la formule suppose une loi lognormale et des écarts indépendants, d’où la volatilité implicite. Un trek ne se couvre pas en achetant et vendant : le « prix » est ici le dépassement attendu, pas un prix d’arbitrage. Chaque soir, la suite est supposée suivre la prévision du J2.</p>` };
-    const b = $('mg-btn'); if (b && !b.innerHTML) b.innerHTML = defBtn('blackscholes', 'Black-Scholes : le prix d’une assurance');
+    $('mg-read').textContent = `À gauche, ce que la marge doit s’attendre à absorber chaque soir ; pointillés : la marge entière. À droite, l’incertitude que Black-Scholes doit supposer, selon le seuil.`;
+    $('t-mg').innerHTML = `Au J2, la marge doit absorber <b>${mn(c0.clim.value)}</b> sur ${mn(M)}, avec ${f0(c0.clim.p_use)} % de chances de servir. Elle fond par temps sec, la pluie la relance. À l’arrivée, <b>${mn(G.used_min)}</b> ont servi (${f0(G.used_min / M * 100)} %) : elle a tenu, et le soleil de minuit a fait le reste pour la Støvla.`;
+    DEFS.blackscholes = { t: 'Black-Scholes et Monte Carlo : le prix d’une assurance', html: () => `
+      <p><b>L’origine.</b> En 1973, <b>Fischer Black, Myron Scholes et Robert Merton</b> trouvent le prix « juste » d’une option : le droit, mais pas l’obligation, d’acheter un actif à un prix fixé d’avance (le prix d’exercice K). Merton et Scholes reçoivent le prix Nobel d’économie en 1997. En 1976, Black adapte la formule à un prix à terme F, connu aujourd’hui pour une date future. En 1977, <b>Phelim Boyle</b> montre qu’on peut aussi trouver ce prix par Monte Carlo : simuler des milliers d’avenirs, et faire la moyenne de ce que l’option paie. C’est la méthode des banques quand l’avenir ne suit pas la loi de la formule.</p>
+      <div class="def-f">call = F·N(d₁) − K·N(d₂) · d₁ = [ln(F/K) + s²/2] / s · d₂ = d₁ − s</div>
+      <p>N est la loi normale, s l’incertitude qui reste jusqu’à l’échéance. Une assurance plafonnée, qui paie le dépassement de K jusqu’à K + M, est la différence de deux calls : un <i>call spread</i>.</p>
+      <div class="def-ex"><b>Ici.</b> L’actif : mon temps de marche du J3 au J9, <b>sans la Støvla</b> (elle est la marge, on ne la compte pas deux fois). Le seuil K : la prévision du soir du J2 à mon allure de beau temps, ${hm(G.K)}, c’est-à-dire le calendrier. La marge M : la Støvla convertie à mon allure en trail, ${mn(M)} (${f1(G.margin.km)} km, ${f0(G.margin.dplus)} m de D+). Paiement : le dépassement de K, plafonné à M. Prix au J2 : <b>${mn(G.value_j2.sim)}</b> par la simulation avec le climat, ${mn(G.value_j2.black)} par la formule, ${mn(G.value_j2.beau_temps)} si l’on oublie la pluie. Chaque soir, on remplace ce qui est déjà marché par le réel, et l’on ne garde que les mondes où la météo du jour est celle que j’ai eue.</div>
+      <p><b>Le smile.</b> Pour chaque seuil, on cherche l’écart-type que la formule doit supposer pour retrouver le prix simulé d’une option simple. Il monte avec le seuil, de ${hm(G.smile[0].sd_h)} à ${hm(G.smile[G.smile.length - 1].sd_h)} : les gros retards sont plus probables qu’une loi lognormale ne le dit. C’est la pluie, qui arrive par séries. Sur les marchés, le même effet vient des krachs.</p>
+      <p><b>Solidité.</b> Selon les choix de la simulation (coût de la pluie de la partie 03 ou mesuré, blocs de 1 à 4 km, mondes retenus, tirages), la marge doit absorber entre ${mn(G.sens.value_min)} et ${mn(G.sens.value_max)} au J2, avec ${f0(G.sens.use_min)} à ${f0(G.sens.use_max)} % de chances de servir. En revanche, la chance qu’elle soit <b>épuisée</b> dépend de la taille qu’on lui donne : ${G.sens.by_M.map(b => `${f0(b.p_out)} % pour ${mn(b.M_min)}`).join(', ')}. Ce n’est donc pas un résultat, et elle n’est pas affichée.</p>
+      <p class="muted">Limites. Un jour de marge n’est pas un nombre fixe de minutes : sous le soleil de minuit, une journée n’a pas d’heure de fin, et la Støvla (${mn(G.stvla_real_min)}) s’est faite malgré ${mn(G.used_min)} de retard. Le « prix » est ici le dépassement attendu, pas un prix d’arbitrage : un trek ne se couvre pas en achetant et vendant. Le coût de la pluie est mesuré après coup (partie 07, test de résistance).</p>` };
+    const b = $('mg-btn'); if (b && !b.innerHTML) b.innerHTML = defBtn('blackscholes', 'Black-Scholes et Monte Carlo : le prix d’une assurance');
   }
 
-  /* ---------- 09 · Monte Carlo ---------- */
-  let mcModel = 'blocs', mcPlayed = false, mcRaf = 0;
+  /* ---------- 07 · Monte Carlo ---------- */
+  let mcModel = 'clim', mcPlayed = false, mcRaf = 0;
+  const MCL = { clim: 'avec le climat', blocs: 'beau temps seulement' };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function drawMc(animate = false) {
-    const K = MC.seg_km, other = mcModel === 'blocs' ? 'normal' : 'blocs';
+    const K = MC.seg_km, other = mcModel === 'clim' ? 'blocs' : 'clim';
     const M = MC[mcModel].seg, O = MC[other].seg;
     const el = $('c-mc'), narrow = el.clientWidth < 560;
     const histW = narrow ? 64 : 150;
@@ -1029,23 +1030,23 @@
     const f = frame('c-mc', m);
     const x = d3.scaleLinear().domain([0, K[K.length - 1]]).range([0, f.w]);
     const lastR = MC.real_dev[MC.real_dev.length - 1];
-    const lim = Math.ceil(Math.max(M.term[6], -M.term[0], O.term[6], -O.term[0], Math.abs(lastR)) + .6);
-    const y = d3.scaleLinear().domain([-lim, lim]).range([f.h, 0]);
+    const hiL = Math.ceil(Math.max(M.term[6], O.term[6], lastR) + .6), loL = Math.ceil(Math.max(-M.term[0], -O.term[0], -lastR) + .6);
+    const y = d3.scaleLinear().domain([-loL, hiL]).range([f.h, 0]);
     dayBands(f.g, x, f.h);
     // J1–J2 : période de calage, hors simulation
     f.g.append('rect').attr('x', 0).attr('width', x(K[0])).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('opacity', .09);
     f.g.append('text').attr('class', 'lbl-strong').attr('x', x(K[0]) / 2).attr('y', f.h - 26).attr('text-anchor', 'middle').text(narrow ? 'calage' : `J1–J${MC.origin} : calage du modèle`);
     if (!narrow) f.g.append('text').attr('class', 'lbl').attr('x', x(K[0]) / 2).attr('y', f.h - 11).attr('text-anchor', 'middle').text(`${MC.cal_n} tronçons connus au soir du J${MC.origin}`);
-    yGrid(f.g, y, f.w, 6, v => `${v > 0 ? '+' : ''}${v} h`, 'left');
+    yGrid(f.g, y, f.w, 7, v => `${v > 0 ? '+' : ''}${v} h`, 'left');
     xAxis(f.g, x, f.h, narrow ? 4 : 8, v => `${v} km`);
     f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w + histW + 8).attr('y1', y(0)).attr('y2', y(0));
-    const col = d3.scaleLinear().domain([-lim * .7, 0, lim * .7]).range([C('--div-neg'), C('--text-muted'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
+    const col = d3.scaleLinear().domain([-loL * .8, 0, hiL * .6]).range([C('--div-neg'), C('--text-muted'), C('--div-pos')]).interpolate(d3.interpolateLab).clamp(true);
     const pg = f.g.append('g');
     const band = (lo, hi) => d3.area().x((v, i) => x(K[i])).y0((v, i) => y(lo[i])).y1((v, i) => y(hi[i])).curve(d3.curveMonotoneX)(lo);
     const bandG = pg.append('g');   // percentile bands: they appear once the simulations are in
     bandG.append('path').attr('d', band(M.bands['5'], M.bands['95'])).attr('fill', C('--accent')).attr('opacity', .1);
     bandG.append('path').attr('d', band(M.bands['25'], M.bands['75'])).attr('fill', C('--accent')).attr('opacity', .14);
-    const line = a => d3.line().x((v, i) => x(K[i])).y(v => y(Math.max(-lim, Math.min(lim, v))))(a);
+    const line = a => d3.line().x((v, i) => x(K[i])).y(v => y(Math.max(-loL, Math.min(hiL, v))))(a);
     const pathG = pg.append('g');
     const simP = M.paths.map(p => pathG.append('path').attr('d', line(p)).attr('fill', 'none').attr('stroke', col(p[p.length - 1])).attr('stroke-width', .8).attr('opacity', .42));
     const lineG = pg.append('g');
@@ -1056,10 +1057,10 @@
     const hx = f.w + 10, H = M.hist, E = M.edges;
     const xh = d3.scaleLinear().domain([0, d3.max([...M.hist, ...O.hist])]).range([0, histW]);
     const hg = f.g.append('g').attr('transform', `translate(${hx},0)`);
-    const bars = hg.selectAll('.mh').data(H.map((n, i) => ({ n, a: E[i], b: E[i + 1] })).filter(d => d.b > -lim && d.a < lim)).join('rect')
-      .attr('y', d => y(Math.min(lim, d.b)) + .5).attr('height', d => Math.max(.5, y(Math.max(-lim, d.a)) - y(Math.min(lim, d.b)) - 1)).attr('x', 0).attr('rx', 1.5)
+    const bars = hg.selectAll('.mh').data(H.map((n, i) => ({ n, a: E[i], b: E[i + 1] })).filter(d => d.b > -loL && d.a < hiL)).join('rect')
+      .attr('y', d => y(Math.min(hiL, d.b)) + .5).attr('height', d => Math.max(.5, y(Math.max(-loL, d.a)) - y(Math.min(hiL, d.b)) - 1)).attr('x', 0).attr('rx', 1.5)
       .attr('width', d => animate ? 0 : xh(d.n)).attr('fill', d => col((d.a + d.b) / 2)).attr('opacity', .9);
-    const cmpH = hg.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(d => xh(d.n)).y(d => y(d.a))(O.hist.map((n, i) => ({ n, a: E[i] })).filter(d => d.a >= -lim && d.a < lim)))
+    const cmpH = hg.append('path').attr('d', d3.line().curve(d3.curveStepAfter).x(d => xh(d.n)).y(d => y(d.a))(O.hist.map((n, i) => ({ n, a: E[i] })).filter(d => d.a >= -loL && d.a < hiL)))
       .attr('fill', 'none').attr('stroke', C('--warning')).attr('stroke-width', 1.2).attr('stroke-dasharray', '4 3').attr('opacity', .9);
     const tags = [[M.term[5], `P95 ${F('+.1f')(M.term[5])} h`, 'lbl-ink'], [M.es95, `5 % pires ${F('+.1f')(M.es95)} h`, 'lbl-strong'], [M.term[1], `P5 ${F('+.1f')(M.term[1])} h`, 'lbl-ink']];
     const tagG = hg.append('g');
@@ -1071,7 +1072,7 @@
     const realL = f.g.append('g'), ex = x(K[K.length - 1]), ey = y(lastR);
     realL.append('circle').attr('cx', ex).attr('cy', ey).attr('r', 4.5).attr('fill', C('--text-primary')).attr('stroke', C('--bg')).attr('stroke-width', 1.5);
     realL.append('text').attr('class', 'lbl-ink').attr('x', ex - 10).attr('y', ey - 14).attr('text-anchor', 'end').style('paint-order', 'stroke').style('stroke', C('--bg')).style('stroke-width', '4px')
-      .text(narrow ? `réel ${F('+.1f')(lastR)} h` : `réel : +${hm(mcLate)} sur la prévision · centile ${cL(M.real_pct)}`);
+      .text(narrow ? `réel ${F('+.1f')(lastR)} h` : `réel : +${hm(mcLate)} · centile ${cL(M.real_pct)}`);
     // crosshair
     const ch = f.g.append('line').attr('y1', 0).attr('y2', f.h).attr('stroke', C('--text-muted')).style('display', 'none');
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h)
@@ -1079,10 +1080,10 @@
         const i = d3.minIndex(K, k => Math.abs(k - x.invert(d3.pointer(ev)[0])));
         ch.style('display', null).attr('x1', x(K[i])).attr('x2', x(K[i]));
         const b = k => F('+.2f')(M.bands[k][i]);
-        showTip(ev, `<b>km ${f1(K[i])} · ${dayLbl(MC.seg_day[i])}</b>${row('P95 / P5', `${b('95')} / ${b('5')} h`)}${row('P75 / P25', `${b('75')} / ${b('25')} h`)}${row(other === 'normal' ? 'loi normale P95' : 'blocs P95', `${F('+.2f')(O.bands['95'][i])} h`)}${row('réel', `${F('+.2f')(MC.real_dev[i])} h`)}`);
+        showTip(ev, `<b>km ${f1(K[i])} · ${dayLbl(MC.seg_day[i])}</b>${row('P95 / P5', `${b('95')} / ${b('5')} h`)}${row('P75 / P25', `${b('75')} / ${b('25')} h`)}${row(`${MCL[other]}, P95`, `${F('+.2f')(O.bands['95'][i])} h`)}${row('réel', `${F('+.2f')(MC.real_dev[i])} h`)}`);
       }).on('pointerleave', () => { ch.style('display', 'none'); hideTip(); });
     legend('l-mc', [['ln', C('--div-neg'), 'trajectoire en avance'], ['ln', C('--div-pos'), 'trajectoire en retard'], ['', C('--accent') + ';opacity:.4', 'P5–P95 et P25–P75'],
-      ['ln', C('--text-primary'), 'trajectoire réelle'], ['dash', C('--warning'), `P5–P95 ${other === 'normal' ? 'loi normale' : 'blocs'} (comparaison)`]]);
+      ['ln', C('--text-primary'), 'trajectoire réelle'], ['dash', C('--warning'), `P5–P95 ${MCL[other]} (comparaison)`]]);
     // animation: the simulations arrive one by one, faster and faster; each one runs the 159 km,
     // the counter and the arrival histogram fill as they land; then the percentiles and the real path
     cancelAnimationFrame(mcRaf);
@@ -1118,68 +1119,73 @@
       mcRaf = requestAnimationFrame(frame);
     } else { fullBars(); cnt.textContent = f0(MC.ns); }
     // figures, backtest, stress test and text
-    const N_ = MC.normal.seg, B_ = MC.blocs.seg, BT = MC.backtest, ST = MC.stress, SM = BT.summary;
-    const shm = v => `${v < 0 ? '−' : '+'}${hm(Math.abs(v))}`;
+    const B_ = MC.blocs.seg, C_ = MC.clim.seg, BT = MC.backtest, ST = MC.stress, SM = BT.summary, CL = MC.climate, SC = MC.sens_clim;
+    const shm = v => `${v < 0 ? '−' : '+'}${hm(Math.abs(v))}`, pctW = v => `${f0(v)} %`;
+    $('mc-lede').innerHTML = `Au soir du J2, je connais deux jours de beau temps et le climat : il pleut un jour sur trois. Un modèle calé sur ces jours rejoue la suite ${f0(MC.ns)} fois, chacune avec la météo d’un été réel. Le réel sert de juge.`;
     $('mc-stats').innerHTML = [
-      [`${hm(N_.term_sd)} → ${hm(B_.term_sd)}`, `<em>Incertitude sur la suite</em>De combien le temps de marche J3–J9 varie d’une simulation à l’autre (écart-type, ${fs0((B_.term_sd / N_.term_sd - 1) * 100)} %)`],
-      [`${shm(N_.term[5])} → ${shm(B_.term[5])}`, '<em>Mauvais scénario</em>Retard dépassé dans 1 traversée sur 20 (P95, la valeur à risque)'],
-      [`${shm(N_.es95)} → ${shm(B_.es95)}`, '<em>Très mauvais scénario</em>Retard moyen dans ces 5 % pires traversées'],
-      [`${cL(N_.real_pct)} → ${cL(B_.real_pct)}`, `<em>Où tombe le réel</em>Centile de la vraie traversée, arrivée ${shm(mcLate)} après la prévision`],
+      [`${hm(B_.term_sd)} → ${hm(C_.term_sd)}`, '<em>Incertitude sur la suite</em>De combien le temps de marche J3–J9 varie d’une simulation à l’autre (écart-type)'],
+      [`${shm(B_.term[5])} → ${shm(C_.term[5])}`, '<em>Mauvais scénario</em>Retard dépassé dans 1 traversée sur 20 (P95, la valeur à risque)'],
+      [`${shm(B_.es95)} → ${shm(C_.es95)}`, '<em>Très mauvais scénario</em>Retard moyen dans ces 5 % pires traversées'],
+      [`${cL(B_.real_pct)} → ${cL(C_.real_pct)}`, `<em>Où tombe le réel</em>Centile de la vraie traversée, arrivée ${shm(mcLate)} après la prévision`],
     ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
 
-    // backtest, day by day: each evening the model is refitted on the days walked and forecasts the next one
-    $('mc-table').innerHTML = `<thead><tr><th>Jour</th><th class="n">Prévu la veille</th><th class="n">Fourchette à 90 %</th><th class="n">Réel</th><th class="n">Verdict</th></tr></thead><tbody>${BT.days.map(d => {
-      const o = d.blocs, out = d.real > o.p95 || d.real < o.p5;
-      return `<tr><td style="white-space:nowrap">${dayLbl(d.day)}${d.day >= ST.wet_from ? ' <span class="muted">pluie</span>' : ''}</td><td class="n">${hm(o.p50)}</td><td class="n">${hm(o.p5)} – ${hm(o.p95)}</td><td class="n${out ? ' over' : ''}">${hm(d.real)}</td><td class="n ${out ? 'over' : 'muted'}">${out ? 'dépassé' : 'tenu'}</td></tr>`; }).join('')}</tbody>`;
-    const dryOk = BT.days.filter(d => d.day < ST.wet_from && d.real <= d.blocs.p95 && d.real >= d.blocs.p5).length, dryN = BT.days.filter(d => d.day < ST.wet_from).length;
-    const wetOut = BT.days.filter(d => d.day >= ST.wet_from && d.real > d.blocs.p95).map(d => dayLbl(d.day));
-    $('mc-story').innerHTML = `
-      <p><b>1. Le modèle prévoit.</b> Il ne connaît que deux jours de beau temps, où j’étais en forme : c’est tout ce que je savais au soir du J2, et c’est sa limite. Il annonce la durée de la suite, avec une fourchette.</p>
-      <p><b>2. Tant qu’il fait sec, il voit juste.</b> Du J3 au J6, les ${dryN} journées tombent dans la fourchette prévue la veille${dryOk === dryN ? '' : ` (${dryOk} sur ${dryN})`} ; sortie par sortie, ${SM.blocs.dry.in90} sur ${SM.blocs.dry.n}. À condition de garder l’enchaînement des écarts : la loi normale, trop sûre d’elle, n’en contient que ${SM.normal.dry.in90}.</p>
-      <p><b>3. La pluie le prend de court.</b> ${wetOut.join(' et ')} dépassent le seuil. Ce n’est pas un événement imprévisible : aux Lofoten, il pleut un jour sur trois (partie 05). C’est un régime que le modèle n’a jamais vu, comme un modèle de marché calé sur des années calmes qui rencontre son premier krach.</p>
-      <p class="ex-msg"><b>Le modèle n’est pas celui qui le pilote.</b> Une valeur à risque ne prévoit pas la crise ; ce qui protège la banque, c’est le capital qu’elle a mis de côté. Moi, j’avais prévu le mauvais temps autrement que par un calcul d’allure : un jour de marge dans le plan, de l’avance prise tant qu’il faisait beau, un camp fixe quand la pluie est arrivée. Mon capital, c’était la marge. La simulation dit ce que le choc coûte ; les parties 08 et 09 diront si le plan et mes décisions pouvaient l’absorber.</p>`;
+    // backtest, day by day: each evening the model is refitted on the days walked and forecasts the next one (table in the « ? »)
+    const btTable = `<thead><tr><th>Jour</th><th class="n">Risque de pluie</th><th class="n">Fourchette prévue la veille</th><th class="n">Réel</th><th class="n">Verdict</th></tr></thead><tbody>${BT.days.map(d => {
+      const o = d.clim, out = d.real > o.p95 || d.real < o.p5;
+      return `<tr><td style="white-space:nowrap">${dayLbl(d.day)}${d.wet ? ' <span class="muted">pluie</span>' : ''}</td><td class="n muted">${pctW(d.p_wet)}</td><td class="n">${hm(o.p5)} – ${hm(o.p95)}</td><td class="n${out ? ' over' : ''}">${hm(d.real)}</td><td class="n ${out ? 'over' : 'muted'}">${out ? 'dépassé' : 'tenu'}</td></tr>`; }).join('')}</tbody>`;
+    const S_ = SM.clim, Sb = SM.blocs, dayOk = BT.days.filter(d => d.real <= d.clim.p95 && d.real >= d.clim.p5).length;
+    readout('r-bt', `contrôle : <b>${S_.all.in90} sorties sur ${S_.all.n}</b> dans la fourchette`);
+    $('mc-story').innerHTML = [
+      [C('--accent'), 'le climat', 'Le modèle prévoit', `${f0(100 - CL.p_none)} %`, `de chances, au soir du J2, d’avoir au moins un jour de pluie d’ici le J9 (${f1(CL.wet_mean)} en moyenne). Ce qu’il ignore : quand, et avec quelle intensité.`],
+      [C('--up'), 'le contrôle', 'Il tient, au sec comme sous la pluie', `${S_.all.in90} / ${S_.all.n}`, `sorties dans la fourchette prévue la veille. Sans le climat, la pluie le prenait de court : ${Sb.wet.above95} sorties sur ${Sb.wet.n} au-delà du seuil.`],
+      [C('--warning'), 'ma malchance', `${CL.real_wet} jours de pluie`, `${f0(CL.p_ge_real)} %`, `des mondes en avaient autant ou plus. Le réel finit au centile ${cL(C_.real_pct)} : une traversée un peu malchanceuse, pas un accident.`],
+    ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
+    $('mc-msg').innerHTML = `<b>La pluie n’était pas imprévisible.</b> Elle était probable ; seuls son moment et son coût ne l’étaient pas. Un modèle qui oublie le climat se croit plus sûr qu’il n’est. Ce qui protège, c’est la marge, évaluée plus bas.`;
 
     // stress test
-    const sc = Object.fromEntries(ST.scen.map(x => [x.label, x]));
-    $('st-intro').innerHTML = `Choc mesuré sur les J7 à J9 : <b>${fs0(ST.pct)} %</b> de temps par tronçon (intervalle à 95 % : ${fs0(ST.lo)} à ${fs0(ST.hi)} %), à terrain, pente et sac égaux. Pluie, rafales et fatigue accumulée y sont mêlées : trois jours ne suffisent pas à les séparer. On applique ce choc à la prévision du J2.`;
+    const sc = Object.fromEntries(ST.scen.map(x => [x.label, x])), W = ST.worst, wd = W.start.split('-');
+    $('st-intro').innerHTML = `Un jour de pluie me coûte <b>${fs0(ST.pct)} %</b> de temps par tronçon (de ${fs0(ST.lo)} à ${fs0(ST.hi)} %), à terrain, pente et sac égaux, mesuré sur les J7–J9. Chaque simulation tire ce coût dans l’intervalle : je ne savais pas quelle serait l’intensité.`;
     $('st-cols').innerHTML = [
-      [C('--accent'), 'prévision du J2', 'Temps sec jusqu’au bout', hm(sc.sec.median), `Le réel, ${hm(MC.real_tot)}, tombe au centile ${cL(sc.sec.real_pct)} : un mauvais scénario.`],
-      [C('--warning'), 'ce qui est arrivé', 'Mauvais temps du J7 au J9', `${hm(sc.pluie_fin.median)} <small>${shm(sc.pluie_fin.delta)}</small>`, `Avec ce choc, le réel tombe au centile ${cL(sc.pluie_fin.real_pct)} : la traversée redevient ordinaire. Le retard, c’était la météo.`],
-      [C('--down'), 'scénario de stress', 'Mauvais temps sur toute la suite', `${hm(sc.pluie_tout.median)} <small>${shm(sc.pluie_tout.delta)}</small>`, `Une traversée sur 20 dépasse ${hm(sc.pluie_tout.p95)}. C’est ce scénario que la marge du plan doit pouvoir absorber.`],
+      [C('--accent'), 'beau temps seulement', 'Le modèle du J2, sans pluie', hm(sc.sec.median), `Le réel, ${hm(MC.real_tot)}, tombe au centile ${cL(sc.sec.real_pct)} : un très mauvais scénario.`],
+      [C('--warning'), 'avec le climat', `${f1(CL.wet_mean)} jour de pluie en moyenne`, `${hm(sc.clim.median)} <small>${shm(sc.clim.delta)}</small>`, `Le réel tombe au centile ${cL(sc.clim.real_pct)} : une traversée ordinaire, un peu malchanceuse.`],
+      [C('--down'), 'le pire des 1 200 mondes', `${W.wet} jours de pluie sur ${W.days.length - MC.origin}`, `${hm(sc.pire.median)} <small>${shm(sc.pire.delta)}</small>`, `Départ le ${+wd[2]}/${wd[1]}/${wd[0]}. Une traversée sur 20 y dépasse ${hm(sc.pire.p95)} : le jour de marge n’y suffirait pas, il faudrait renoncer à des sommets.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
 
     // « ? » : d'où ça vient
-    const cf = Object.fromEntries(MC.coef.map(c => [c.name, c])), j6 = MC.blocs.day.find(d => d.day === 6);
+    const cf = Object.fromEntries(MC.coef.map(c => [c.name, c]));
     DEFS.montecarlo = { t: 'D’où vient la simulation de Monte Carlo', html: () => `
       <p><b>L’origine.</b> En 1946, à Los Alamos, le mathématicien <b>Stanislaw Ulam</b>, convalescent, se demande quelle est la chance de réussir une patience. Le calcul exact est impossible ; il a l’idée de jouer la partie des centaines de fois et de compter les réussites. Avec <b>John von Neumann</b>, il applique l’idée au trajet des neutrons, sur les premiers ordinateurs. Le nom de code vient du casino de Monte-Carlo, où l’oncle d’Ulam allait jouer.</p>
       <p><b>Le principe.</b> Quand un résultat dépend de beaucoup de petits hasards qui s’additionnent, on ne le calcule pas : on le <b>rejoue</b> des milliers de fois, et on regarde la répartition des résultats.</p>
-      <p><b>Ici, trois étages.</b></p>
-      <p><b>1. Un modèle à facteurs</b>, calé sur les ${MC.cal_n} tronçons des J1–J${MC.origin} (la méthode de la partie 04, mais avec les seules données connues ce soir-là) :</p>
-      <p class="def-f">temps = Tobler × sac × terrain × pente × e<sup>u</sup></p>
-      <p>Ce soir-là, il estime : sac ${fs0(cf['sac sur le dos'].pct)} %, terrain ${fs0(cf['terrain (+1 niveau)'].pct)} % par niveau. Ces valeurs diffèrent de celles de la partie 04, calculées après coup sur neuf jours : c’est le prix d’une vraie prévision, et cette incertitude est simulée elle aussi (le modèle est réestimé à chaque tirage).</p>
-      <p><b>2. L’aléa u</b>, ce que les facteurs n’expliquent pas, tiré de deux façons. <b>Loi normale</b> : chaque tronçon tire son écart seul, sans mémoire. <b>Blocs</b> : le <i>bootstrap</i>, inventé par <b>Bradley Efron</b> en 1979, retire au hasard dans ses propres données au lieu de supposer une loi ; en 1989, <b>Hans Künsch</b> propose de tirer des <b>blocs</b> de valeurs consécutives pour garder leur enchaînement. Ici : des morceaux réels de ${MC.block} tronçons (2 km), mis bout à bout.</p>
-      <p><b>3. La simulation</b> : les ${MC.fut_n} tronçons des J3 à J9 sont rejoués ${f0(MC.ns)} fois sur le parcours réellement suivi. L’itinéraire est une décision ; le temps est le risque.</p>
-      <p class="def-ex"><b>Pourquoi deux modèles.</b> Ils partagent tout, sauf l’enchaînement des écarts. Résultat : ${hm(N_.term_sd)} d’incertitude pour la loi normale, ${hm(B_.term_sd)} pour les blocs. La traversée réelle, qui n’a pas servi au calage, tranche : elle arrive ${shm(mcLate)} après la prévision, au centile ${cL(N_.real_pct)} du premier et ${cL(B_.real_pct)} du second.</p>
-      <p class="muted">Sensibilité : avec des blocs de 1 km, le réel tombe au centile ${cL(MC.sens.L4.real_pct)} ; de 4 km, au centile ${cL(MC.sens.L16.real_pct)}. D’un lancer à l’autre, le centile bouge d’environ un point.</p>` };
+      <p><b>Ici, quatre étages.</b></p>
+      <p><b>1. Un modèle à facteurs</b>, calé sur les ${MC.cal_n} tronçons des J1–J${MC.origin} (la méthode de la partie 04, avec les seules données connues ce soir-là) :</p>
+      <p class="def-f">temps = Tobler × sac × terrain × pente × pluie × e<sup>u</sup></p>
+      <p>Ce soir-là, il estime : sac ${fs0(cf['sac sur le dos'].pct)} %, terrain ${fs0(cf['terrain (+1 niveau)'].pct)} % par niveau de cote du tronçon. Ces valeurs diffèrent de celles de la partie 04, calculées après coup sur neuf jours et avec la cote de la sortie : c’est le prix d’une vraie prévision. L’effet du sac repose sur une seule sortie sans le sac (Volandstinden) ; il a pourtant tenu par temps sec.</p>
+      <p><b>2. L’aléa u</b>, ce que les facteurs n’expliquent pas : le <i>bootstrap</i> de <b>Bradley Efron</b> (1979) retire au hasard dans ses propres données au lieu de supposer une loi ; <b>Hans Künsch</b> (1989) tire des <b>blocs</b> consécutifs pour garder leur enchaînement (partie 02). Ici : des morceaux réels de ${MC.block} tronçons (2 km), et le modèle réestimé à chaque tirage.</p>
+      <p><b>3. La météo.</b> Chaque simulation tire un été parmi les ${f0(CL.pool)} des ${f0(CL.worlds)} mondes ERA5 (parties 05 et 09) dont le J2 est sec, comme le mien : la persistance de la pluie (partie 05) fait le reste. Un jour de pluie (au moins 1 mm) coûte ${fs0(CL.rain_pct)} % de temps, tiré entre ${fs0(CL.rain_lo)} et ${fs0(CL.rain_hi)} %. La probabilité de pluie était connue avant le départ ; son coût n’est mesuré qu’après.</p>
+      <p><b>4. La simulation</b> : les ${MC.fut_n} tronçons des J3 à J9 sont rejoués ${f0(MC.ns)} fois sur le parcours réellement suivi. L’itinéraire est une décision ; le temps est le risque.</p>
+      <p class="def-ex"><b>Ce que le climat change.</b> Sans lui, le réel tombe au centile ${cL(B_.real_pct)} (et au-delà du centile 99 si l’on tire chaque tronçon seul, sans l’enchaînement : ${cL(MC.normal.seg.real_pct)}). Avec lui, au centile ${cL(C_.real_pct)}.</p>
+      <p class="muted">Solidité du centile ${cL(C_.real_pct)} : avec le coût de la pluie de la partie 03 (${fs0(CL.rain_03)} %, sur les massifs), ${cL(SC.cost03.real_pct)} ; avec un coût fixe de ${fs0(CL.rain_pct)} %, ${cL(SC.cost_fixed.real_pct)} ; sans tenir compte du J2 sec, ${cL(SC.all_worlds.real_pct)} ; avec des blocs de 1 km ou de 4 km, ${cL(SC.L4.real_pct)} ou ${cL(SC.L16.real_pct)} ; d’un lancer à l’autre, ${SC.seeds.map(v => cL(v.real_pct)).join(', ')}.</p>` };
     DEFS.var95 = { t: 'D’où viennent le P95 et la moyenne des 5 % pires', html: () => `
       <p>Ce sont les deux mesures de risque des banques, appliquées à mon temps de marche.</p>
       <p><b>Le P95, ou valeur à risque (VaR).</b> En 1994, la banque <b>J.P. Morgan</b> publie <i>RiskMetrics</i> : son patron voulait chaque soir un seul chiffre, « combien peut-on perdre demain, dans 95 % des cas ? ». On range les ${f0(MC.ns)} simulations de la plus rapide à la plus lente, et on lit celle qui est à 95 % : seule 1 traversée sur 20 fait pire.</p>
-      <p><b>La moyenne des 5 % pires, ou <i>expected shortfall</i>.</b> La VaR dit où commence le pire, pas jusqu’où il va. En 1999, <b>Artzner, Delbaen, Eber et Heath</b> montrent ce défaut et proposent la moyenne des cas au-delà du seuil : ici, la moyenne des ${f0(MC.ns * .05)} traversées les plus lentes. Depuis la réforme de Bâle de 2016, c’est elle que les banques doivent calculer.</p>
-      <p class="def-ex"><b>Ici.</b> Prévision centrale pour J3–J9 : ${hm(MC.central)}. VaR à 95 % : ${shm(B_.term[5])} avec les blocs (${shm(N_.term[5])} avec la loi normale). Moyenne des 5 % pires : ${shm(B_.es95)}. Le réel : ${shm(mcLate)}, juste sous la VaR des blocs.</p>` };
-    DEFS.backtest = { t: 'D’où vient le contrôle a posteriori (backtest)', html: () => `
+      <p><b>La moyenne des 5 % pires, ou <i>expected shortfall</i>.</b> La VaR dit où commence le pire, pas jusqu’où il va. En 1999, <b>Artzner, Delbaen, Eber et Heath</b> montrent ce défaut et proposent la moyenne des cas au-delà du seuil. Depuis la réforme de Bâle de 2016, c’est elle que les banques doivent calculer.</p>
+      <p class="def-ex"><b>Ici.</b> Prévision de beau temps pour J3–J9 : ${hm(MC.central)}. VaR à 95 % : ${shm(C_.term[5])} avec le climat (${shm(B_.term[5])} sans). Moyenne des 5 % pires : ${shm(C_.es95)}. Le réel, ${shm(mcLate)}, reste sous la VaR avec le climat ; sans, il la touchait.</p>` };
+    DEFS.backtest = { t: 'D’où vient le contrôle a posteriori (backtest)', wide: true, html: () => `
       <p><b>L’idée.</b> Un modèle de risque annonce des seuils ; on vérifie après coup s’ils ont tenu. Si le seuil à 95 % est juste, le réel ne doit le dépasser qu’une fois sur 20.</p>
-      <p><b>L’origine.</b> En 1995, <b>Paul Kupiec</b>, économiste à la Réserve fédérale, propose de compter les dépassements et de tester si leur nombre est compatible avec le taux annoncé. En 1996, le <b>Comité de Bâle</b> en fait une règle pour les banques, avec des feux tricolores : sur 250 jours, jusqu’à 4 dépassements de la VaR à 99 %, feu vert ; de 5 à 9, orange ; 10 ou plus, rouge, et la banque doit immobiliser plus de capital.</p>
-      <p><b>Ici.</b> Chaque soir, le modèle est recalé sur les seuls jours déjà marchés et prévoit le lendemain, sortie par sortie (${SM.blocs.all.n} sorties du J3 au J9). On regarde où tombe chaque temps réel dans sa prévision : c’est son centile.</p>
-      <p class="def-ex"><b>Le compte.</b> Par temps sec : ${SM.blocs.dry.n - SM.blocs.dry.in90} sortie hors de l’intervalle à 90 % sur ${SM.blocs.dry.n} avec les blocs, pour ${f1(SM.blocs.dry.n * .1)} attendue : feu vert. Avec la loi normale : ${SM.normal.dry.n - SM.normal.dry.in90} sur ${SM.normal.dry.n}. Sous la pluie : ${SM.blocs.wet.above95} dépassements du seuil à 95 % sur ${SM.blocs.wet.n} sorties, pour ${f1(SM.blocs.wet.n * .05)} attendu ; la chance d’en voir autant avec un modèle juste est de ${F('.1f')(SM.blocs.p_above_wet * 100)} % : feu rouge.</p>
-      <p class="muted">${SM.blocs.all.n} sorties, c’est peu : le compte indique une tendance, pas une preuve.</p>` };
+      <p><b>L’origine.</b> En 1995, <b>Paul Kupiec</b>, économiste à la Réserve fédérale, propose de compter les dépassements et de tester si leur nombre est compatible avec le taux annoncé. En 1996, le <b>Comité de Bâle</b> en fait une règle pour les banques, avec des feux tricolores : sur 250 jours, jusqu’à 4 dépassements de la VaR à 99 %, feu vert ; de 5 à 9, orange ; 10 ou plus, rouge.</p>
+      <p><b>Ici.</b> Chaque soir, le modèle est recalé sur les seuls jours déjà marchés (le coût de la pluie retiré des jours mouillés), tire la météo du lendemain parmi les mondes qui avaient la même météo ce jour-là, et prévoit le lendemain, sortie par sortie (${S_.all.n} sorties du J3 au J9).</p>
+      <p class="def-ex"><b>Le compte.</b> Avec le climat : ${S_.all.n - S_.all.in90} sorties hors de l’intervalle à 90 % sur ${S_.all.n}, pour ${f1(S_.all.n * .1)} attendues ; sous la pluie, ${S_.wet.above95} dépassement du seuil à 95 % sur ${S_.wet.n} : feu vert. Beau temps seulement : ${Sb.wet.above95} dépassements sur ${Sb.wet.n} sous la pluie ; la chance d’en voir autant avec un modèle juste est de ${F('.1f')(Sb.p_above_wet * 100)} % : feu rouge.</p>
+      <p><b>Journée par journée</b>, avec le climat : ${dayOk} journées sur ${BT.days.length} dans la fourchette. Le risque de pluie annoncé passe de ${pctW(BT.days[0].p_wet)} à ${pctW(BT.days[BT.days.length - 1].p_wet)} une fois la pluie arrivée : c’est la persistance (partie 05).</p>
+      <div class="table-wrap flat"><table class="data">${btTable}</table></div>
+      <p class="muted">${S_.all.n} sorties, c’est peu : le compte indique une tendance, pas une preuve. Et le coût de la pluie vient des mêmes jours de pluie : le feu vert sous la pluie est en partie acquis d’avance.</p>` };
     DEFS.stress = { t: 'D’où vient le test de résistance', html: () => `
       <p><b>Le problème.</b> Un modèle calé sur le passé ne connaît que ce qu’il a vu. En 1998, le fonds <b>LTCM</b>, dirigé par deux prix Nobel, s’effondre : ses modèles, calés sur des années calmes, jugeaient la crise russe presque impossible. En 2008, les VaR des banques, calées sur 2004–2006, sont dépassées jour après jour.</p>
-      <p><b>La réponse.</b> Compléter le modèle par des <b>scénarios imposés</b> : on ne demande plus « quelle est la probabilité ? », mais « si cela arrive, combien cela coûte-t-il, et peut-on l’absorber ? ». Depuis 2009, la Réserve fédérale puis l’Autorité bancaire européenne imposent ces tests de résistance aux grandes banques.</p>
-      <p><b>Ici.</b> Le régime que le modèle du J2 n’a pas vu, c’est le mauvais temps. On mesure le choc là où il a eu lieu, en ajoutant une variable « J7 à J9 » à la régression de toute la traversée : ${fs0(ST.pct)} % de temps par tronçon. L’erreur type est calculée par sortie, pas par tronçon, puisque les tronçons d’une sortie partagent la même météo. Puis on rejoue la prévision du J2 en appliquant ce choc aux tronçons concernés.</p>
-      <p class="def-ex"><b>Attention au deuxième scénario.</b> Le choc est mesuré sur les J7–J9 puis appliqué aux J7–J9 : que le réel y redevienne ordinaire n’est pas une preuve, c’est une façon de mesurer la taille du choc en heures (${shm(sc.pluie_fin.delta)}). Le vrai test est le troisième : et si le mauvais temps était arrivé dès le J3, avec le sac ?</p>` };
-    if (!$('mc-more').querySelector('.def-btn')) $('mc-more').innerHTML = defBtn('montecarlo', 'Monte Carlo, modèle à facteurs et blocs : d’où ça vient');
+      <p><b>La réponse.</b> Compléter le modèle par des <b>scénarios imposés</b>, souvent historiques (« et si 2008 se reproduisait ? ») : on ne demande plus « quelle est la probabilité ? », mais « si cela arrive, combien cela coûte-t-il, et peut-on l’absorber ? ». Depuis 2009, la Réserve fédérale puis l’Autorité bancaire européenne imposent ces tests aux grandes banques.</p>
+      <p><b>Ici.</b> Le coût d’un jour de pluie est mesuré là où il a eu lieu : une variable « jour de pluie » ajoutée à la régression de toute la traversée donne ${fs0(ST.pct)} % de temps par tronçon. L’erreur type est calculée par sortie, pas par tronçon, puisque les tronçons d’une sortie partagent la même météo. Pluie, rafales et fatigue des derniers jours y sont mêlées. La partie 03 trouvait ${fs0(CL.rain_03)} % sur les massifs, sans tenir compte du sac : c’est dans l’intervalle.</p>
+      <p class="def-ex"><b>Le scénario historique.</b> Parmi les étés où le J2 est sec, le pire est celui qui commence le ${+wd[2]}/${wd[1]}/${wd[0]} : ${W.wet} jours de pluie du J3 au J9, mais seulement ${f1(W.mm)} mm, une bruine continue. Avec mon parcours, la médiane y serait de ${hm(sc.pire.median)}, ${shm(sc.pire.delta)} sur la prévision de beau temps.</p>` };
+    if (!$('mc-more').querySelector('.def-btn')) $('mc-more').innerHTML = defBtn('montecarlo', 'Monte Carlo, modèle à facteurs et climat : d’où ça vient');
     [['mc-stats-t', 'var95'], ['bt-t', 'backtest'], ['st-t', 'stress']].forEach(([id, k]) => { if (!$(id).querySelector('.def-btn')) $(id).insertAdjacentHTML('beforeend', defBtn(k)); });
-    $('t-mc').innerHTML = `Calé sur deux jours de beau temps, le modèle prévoit la suite et tient jusqu’au J6. Puis le mauvais temps des J7 à J9 coûte <b>${hm(mcLate)}</b> : presque impossible pour la loi normale (centile ${cL(N_.real_pct)}), un mauvais scénario plausible pour les blocs (centile ${cL(B_.real_pct)}). Deux leçons. Garder l’enchaînement des écarts donne la bonne mesure de l’incertitude. Et aucun modèle ne voit venir un régime qu’il n’a jamais connu : celui-là se traite par un scénario (${fs0(ST.pct)} % de temps) et par une marge. Le modèle a fait son travail ; reste à juger celui qui le pilote : le plan, puis les décisions.`;
+    $('t-mc').innerHTML = `<b>${f0(100 - CL.p_none)} %</b> de chances de pluie au soir du J2 ; le réel au <b>centile ${cL(C_.real_pct)}</b> avec le climat, contre ${cL(B_.real_pct)} sans. La pluie était probable ; son moment et son coût ne l’étaient pas. Oublier le climat, c’est se croire plus sûr qu’on ne l’est.`;
   }
   function initMc() {
     document.querySelectorAll('.segctl button').forEach(b => b.addEventListener('click', () => {

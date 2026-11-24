@@ -1,14 +1,14 @@
-# Branche `version-courte-acte-2` : raccourcir le rapport et le mettre en forme finale (suite)
+# Branche `version-courte-acte-3` : raccourcir le rapport et le mettre en forme finale (acte 3)
 
 Lis ce fichier en premier si tu reprends ce travail dans une nouvelle conversation.
 
 ## Règles
-- **On travaille uniquement sur la branche `version-courte-acte-2`** (créée le 18/11 à partir de `version-courte`, que Baptiste fusionne lui-même dans `main` : introduction et acte 1 terminés, v0.4). `main` est le site en ligne : on n'y touche pas ; fusion seulement quand Baptiste le demande.
+- **On travaille uniquement sur la branche `version-courte-acte-3`** (créée le 21/11 à partir de `main`, où les actes 1 et 2 sont fusionnés). `main` est le site en ligne : on n'y touche pas ; Baptiste fusionne lui-même.
 - Le site ne se publie que depuis `main` : les changements de cette branche ne sont pas en ligne. Pour les montrer à Baptiste :
   - captures d'écran : `python3 outils/apercu/captures.py s1 s6` (une ou plusieurs parties, `--mobile` pour le téléphone) ou `python3 outils/apercu/captures.py tout`, puis envoyer les images de `apercu/` dans la conversation ;
-  - aperçu en ligne de la branche (Baptiste peut l'ouvrir lui-même sur son téléphone) : `https://raw.githack.com/baptistearibaud88-collab/Lofoten-risk/version-courte-acte-2/risque.html` (mis à jour quelques minutes après chaque envoi).
+  - aperçu en ligne de la branche (Baptiste peut l'ouvrir lui-même sur son téléphone) : `https://raw.githack.com/baptistearibaud88-collab/Lofoten-risk/version-courte-acte-3/risque.html` (mis à jour quelques minutes après chaque envoi).
 - Compter les mots de chaque encadré : `python3 outils/apercu/textes.py`.
-- Après chaque modification validée : commit sur `version-courte-acte-2`, puis `git push origin version-courte-acte-2`. Monter les numéros de version `?v=` dans `risque.html` à chaque changement de `risque.js` ou `risque.css`.
+- Après chaque modification validée : commit sur `version-courte-acte-3`, puis `git push origin version-courte-acte-3`. Monter les numéros de version `?v=` dans `risque.html` à chaque changement de `risque.js` ou `risque.css`.
 - Fusion dans `main` seulement quand Baptiste le demande.
 
 ## Objectif (Baptiste, 14–18/11)
@@ -34,5 +34,11 @@ Lis ce fichier en premier si tu reprends ce travail dans une nouvelle conversati
 - 21/11, 14 h 30 : **premier jet Black-Scholes** à la fin de la partie 07, « Le jour de marge, évalué comme une option » : la marge (J9 Støvla, 9,3 km, 874 m D+ ≈ 3 h 10 à mon allure en trail) = call spread sur le temps J3–J9, K = prévision du J2 (32 h 40), formule de Black 1976, volatilité tirée de la simulation. Valeur au J2 : 45 min (blocs), 30 min (tronçons indépendants), 47 min sur la distribution de la simulation ; entamée 49 %, épuisée 6 % ; thêta 45 → 38 min du J2 au J5, bond à 1 h 44 au J7 (pluie), marge consommée en entier, dépassée de 11 min. Delta 26 min par heure de prévision, vega +3 min pour +10 %. Volatilité implicite 2 h 13 contre 1 h 16 (indépendants) et 2 h 01 (blocs), « smile » selon le seuil. Calcul : `node outils/marge_option.js` → `risque_marge.js` (à relancer après `outils/monte_carlo.js`). Volontairement brut : l'acte 3 sera rendu cohérent et concis ensuite.
 - Longueurs au 21/11 : acte 1 = 1 937 mots (01 : 539, 02 : 438, 03 : 960) ; acte 2 = 2 135 (04 : 711, 05 : 790, 06 : 634) ; acte 3 = 4 032 (07 : 1 622 avec Black-Scholes, 08 : 1 005, 09 : 958, 10 : 447). Total 8 104.
 - Prochaines : Baptiste vérifie et fusionne `version-courte-acte-2` dans `main` ; puis acte 3 (cohérence, concision, Monte Carlo et Black-Scholes à reprendre ensemble ; relancer `conclusion_acte2.js` et `marge_option.js` après le Monte Carlo).
+
+## Acte 3 (24/11)
+- Ordre de relance après toute modification de la simulation : `node outils/monte_carlo.js`, puis `node outils/conclusion_acte2.js` (carte Thêta de la 06 : elle lit le modèle « beau temps », resté identique ; vérifier avec `cmp`), puis `node outils/marge_option.js`.
+- **Étape 1 validée (simulation avec le climat)** : chaque simulation tire sa météo dans les 1 200 mondes ERA5 des parties 05 et 09 (813 dont le J2 est sec) ; un jour de pluie coûte +22 % (+7 à +38 %, tiré à chaque simulation ; les +13 % de la 03 ne sont pas significatifs, p = 0,32, gardés en variante). 75 % de chances de pluie au J2 ; réel au centile 70 (64 à 81 selon les choix) contre 93 sans le climat ; contrôle 16 sorties sur 19 ; test de résistance = pire des 1 200 mondes (13/06/2017, 7 jours de pluie, +7 h 07). Loi normale plus affichée (gardée pour la 06). Tableau journée par journée dans le « ? » du contrôle. Retard +3 h 21 partout.
+- **Jour de marge (minutes)** : Støvla retirée de l'actif (plus de double compte), seuil = calendrier de beau temps hors Støvla (29 h 56), marge 3 h 10. Au J2 : 1 h 36 à absorber (1 h 18 à 1 h 47 selon les choix), 76 % de chances de servir ; Black 1 h 42 ; thêta −14 min par jour sec, relance à 2 h 05 au J7 ; réel 2 h 17 utilisées (72 %). « Chance d'être épuisée » retirée : elle dépend de la taille donnée au jour (28 % pour 3 h 10, 8 % pour 6 h). Smile calculé sur des calls simples (2 h 21 → 2 h 51).
+- Prochaines étapes : alignement des encadrés de la 07, puis 08 (« l'effort a tenu »), 09 (relier la marge en minutes et en jours), 10 (conclusion + blague des 10 000 m).
 
 Le détail de chaque partie et tous les chiffres sont dans les documents de projet `claude/version_courte.md` (avancement de cette branche, nouvelle numérotation) et `claude/analyse_risque.md` (référence, ancienne numérotation à 12 parties).
