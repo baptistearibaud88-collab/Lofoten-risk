@@ -1122,12 +1122,12 @@
     const B_ = MC.blocs.seg, C_ = MC.clim.seg, BT = MC.backtest, ST = MC.stress, SM = BT.summary, CL = MC.climate, SC = MC.sens_clim;
     const shm = v => `${v < 0 ? '−' : '+'}${hm(Math.abs(v))}`, pctW = v => `${f0(v)} %`;
     $('mc-lede').innerHTML = `Au soir du J2, je connais deux jours de beau temps et le climat : il pleut un jour sur trois. Un modèle calé sur ces jours rejoue la suite ${f0(MC.ns)} fois, chacune avec la météo d’un été réel. Le réel sert de juge.`;
-    $('mc-stats').innerHTML = [
-      [`${hm(B_.term_sd)} → ${hm(C_.term_sd)}`, '<em>Incertitude sur la suite</em>De combien le temps de marche J3–J9 varie d’une simulation à l’autre (écart-type)'],
-      [`${shm(B_.term[5])} → ${shm(C_.term[5])}`, '<em>Mauvais scénario</em>Retard dépassé dans 1 traversée sur 20 (P95, la valeur à risque)'],
-      [`${shm(B_.es95)} → ${shm(C_.es95)}`, '<em>Très mauvais scénario</em>Retard moyen dans ces 5 % pires traversées'],
-      [`${cL(B_.real_pct)} → ${cL(C_.real_pct)}`, `<em>Où tombe le réel</em>Centile de la vraie traversée, arrivée ${shm(mcLate)} après la prévision`],
-    ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+    const mcRows = [
+      ['Incertitude sur la suite', 'écart-type du temps de marche J3–J9', hm(B_.term_sd), hm(C_.term_sd)],
+      ['Mauvais scénario', 'retard dépassé dans 1 traversée sur 20 (P95, la valeur à risque)', shm(B_.term[5]), shm(C_.term[5])],
+      ['Très mauvais scénario', 'retard moyen dans ces 5 % pires traversées', shm(B_.es95), shm(C_.es95)],
+      ['Où tombe le réel', `centile de la vraie traversée (${shm(mcLate)})`, cL(B_.real_pct), cL(C_.real_pct)],
+    ].map(([t, d, b, c]) => `<tr><td><b>${t}</b><br><span class="muted">${d}</span></td><td class="n">${b}</td><td class="n"><b>${c}</b></td></tr>`).join('');
 
     // backtest, day by day: each evening the model is refitted on the days walked and forecasts the next one (table in the « ? »)
     const btTable = `<thead><tr><th>Jour</th><th class="n">Risque de pluie</th><th class="n">Fourchette prévue la veille</th><th class="n">Réel</th><th class="n">Verdict</th></tr></thead><tbody>${BT.days.map(d => {
@@ -1165,8 +1165,10 @@
       <p><b>4. La simulation</b> : les ${MC.fut_n} tronçons des J3 à J9 sont rejoués ${f0(MC.ns)} fois sur le parcours réellement suivi. L’itinéraire est une décision ; le temps est le risque.</p>
       <p class="def-ex"><b>Ce que le climat change.</b> Sans lui, le réel tombe au centile ${cL(B_.real_pct)} (et au-delà du centile 99 si l’on tire chaque tronçon seul, sans l’enchaînement : ${cL(MC.normal.seg.real_pct)}). Avec lui, au centile ${cL(C_.real_pct)}.</p>
       <p class="muted">Solidité du centile ${cL(C_.real_pct)} : avec le coût de la pluie de la partie 03 (${fs0(CL.rain_03)} %, sur les massifs), ${cL(SC.cost03.real_pct)} ; avec un coût fixe de ${fs0(CL.rain_pct)} %, ${cL(SC.cost_fixed.real_pct)} ; sans tenir compte du J2 sec, ${cL(SC.all_worlds.real_pct)} ; avec des blocs de 1 km ou de 4 km, ${cL(SC.L4.real_pct)} ou ${cL(SC.L16.real_pct)} ; d’un lancer à l’autre, ${SC.seeds.map(v => cL(v.real_pct)).join(', ')}.</p>` };
-    DEFS.var95 = { t: 'D’où viennent le P95 et la moyenne des 5 % pires', html: () => `
-      <p>Ce sont les deux mesures de risque des banques, appliquées à mon temps de marche.</p>
+    DEFS.var95 = { t: 'Les chiffres de la simulation, avec ou sans le climat', wide: true, html: () => `
+      <p>Même modèle, mêmes ${f0(MC.ns)} tirages : seule la météo change.</p>
+      <div class="table-wrap flat"><table class="data"><thead><tr><th>Mesure</th><th class="n">Beau temps seulement</th><th class="n">Avec le climat</th></tr></thead><tbody>${mcRows}</tbody></table></div>
+      <p style="margin-top:12px">Le P95 et la moyenne des 5 % pires sont les deux mesures de risque des banques, appliquées à mon temps de marche.</p>
       <p><b>Le P95, ou valeur à risque (VaR).</b> En 1994, la banque <b>J.P. Morgan</b> publie <i>RiskMetrics</i> : son patron voulait chaque soir un seul chiffre, « combien peut-on perdre demain, dans 95 % des cas ? ». On range les ${f0(MC.ns)} simulations de la plus rapide à la plus lente, et on lit celle qui est à 95 % : seule 1 traversée sur 20 fait pire.</p>
       <p><b>La moyenne des 5 % pires, ou <i>expected shortfall</i>.</b> La VaR dit où commence le pire, pas jusqu’où il va. En 1999, <b>Artzner, Delbaen, Eber et Heath</b> montrent ce défaut et proposent la moyenne des cas au-delà du seuil. Depuis la réforme de Bâle de 2016, c’est elle que les banques doivent calculer.</p>
       <p class="def-ex"><b>Ici.</b> Prévision de beau temps pour J3–J9 : ${hm(MC.central)}. VaR à 95 % : ${shm(C_.term[5])} avec le climat (${shm(B_.term[5])} sans). Moyenne des 5 % pires : ${shm(C_.es95)}. Le réel, ${shm(mcLate)}, reste sous la VaR avec le climat ; sans, il la touchait.</p>` };
@@ -1183,8 +1185,8 @@
       <p><b>La réponse.</b> Compléter le modèle par des <b>scénarios imposés</b>, souvent historiques (« et si 2008 se reproduisait ? ») : on ne demande plus « quelle est la probabilité ? », mais « si cela arrive, combien cela coûte-t-il, et peut-on l’absorber ? ». Depuis 2009, la Réserve fédérale puis l’Autorité bancaire européenne imposent ces tests aux grandes banques.</p>
       <p><b>Ici.</b> Le coût d’un jour de pluie est mesuré là où il a eu lieu : une variable « jour de pluie » ajoutée à la régression de toute la traversée donne ${fs0(ST.pct)} % de temps par tronçon. L’erreur type est calculée par sortie, pas par tronçon, puisque les tronçons d’une sortie partagent la même météo. Pluie, rafales et fatigue des derniers jours y sont mêlées. La partie 03 trouvait ${fs0(CL.rain_03)} % sur les massifs, sans tenir compte du sac : c’est dans l’intervalle.</p>
       <p class="def-ex"><b>Le scénario historique.</b> Parmi les étés où le J2 est sec, le pire est celui qui commence le ${+wd[2]}/${wd[1]}/${wd[0]} : ${W.wet} jours de pluie du J3 au J9, mais seulement ${f1(W.mm)} mm, une bruine continue. Avec mon parcours, la médiane y serait de ${hm(sc.pire.median)}, ${shm(sc.pire.delta)} sur la prévision de beau temps.</p>` };
-    if (!$('mc-more').querySelector('.def-btn')) $('mc-more').innerHTML = defBtn('montecarlo', 'Monte Carlo, modèle à facteurs et climat : d’où ça vient');
-    [['mc-stats-t', 'var95'], ['bt-t', 'backtest'], ['st-t', 'stress']].forEach(([id, k]) => { if (!$(id).querySelector('.def-btn')) $(id).insertAdjacentHTML('beforeend', defBtn(k)); });
+    if (!$('mc-more').querySelector('.def-btn')) $('mc-more').innerHTML = defBtn('montecarlo', 'Monte Carlo, modèle à facteurs et climat : d’où ça vient') + ' ' + defBtn('var95', 'Les chiffres, avec ou sans le climat');
+    [['bt-t', 'backtest'], ['st-t', 'stress']].forEach(([id, k]) => { if (!$(id).querySelector('.def-btn')) $(id).insertAdjacentHTML('beforeend', defBtn(k)); });
     $('t-mc').innerHTML = `<b>${f0(100 - CL.p_none)} %</b> de chances de pluie au soir du J2 ; le réel au <b>centile ${cL(C_.real_pct)}</b> avec le climat, contre ${cL(B_.real_pct)} sans. La pluie était probable ; son moment et son coût ne l’étaient pas. Oublier le climat, c’est se croire plus sûr qu’on ne l’est.`;
   }
   function initMc() {
