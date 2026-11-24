@@ -522,3 +522,7 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .pm-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; font-size: 12.5px; }
 .pm-legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 .def-pop[hidden] { display: none !important; }
+.explain .ex-cols.four { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1100px) { .explain .ex-cols.four { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .explain .ex-cols.four { grid-template-columns: 1fr; } }
+.sl-g .c-F { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--up) 80%, transparent) 0 4px, color-mix(in srgb, var(--up) 45%, transparent) 4px 8px); }

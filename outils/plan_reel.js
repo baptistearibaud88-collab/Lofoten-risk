@@ -177,10 +177,15 @@ const planModes = []; { let cur = null;
 const doneNames = new Set(T.summits.map(x => x.sommet));
 const planSummits = [...SPURS, ['Hermannsdalstinden', ...DAYS[5].ranges[0]]].map(([n, a, b]) => { let best = idx(a); for (let i = idx(a); i <= idx(b); i++) if (P[i][2] > P[best][2]) best = i;
   return { name: n.replace('Sommet du tour du lac', 'Tour du lac'), lat: r5(P[best][0]), lon: r5(P[best][1]), alt: Math.round(P[best][2]), done: doneNames.has(n) }; });
+// étapes du plan avec le sac (changement de campement), km portés à la mesure de la montre : la journée, moins ses allers-retours sans le sac
+const MOVE_NAMES = { 1: 'Napp → Nusfjord', 2: 'Nusfjord → Fredvang', 3: 'Fredvang → lac du Kitinden', 4: 'Lac → Horseid, bateau, Bunes', 5: 'Bunes → Munkebu', 7: 'Munkebu → tour du lac', 8: 'Tour du lac → hauteurs de Sørvågen' };
+const overlap = ([a, b], [c, d]) => Math.max(a, c) < Math.min(b, d) ? lenOf([[Math.max(a, c), Math.min(b, d)]]) : 0;
+const planMoves = DAYS.filter(d => MOVE_NAMES[d.day]).map(d => { const all = lenOf(d.ranges), spur = d.ranges.reduce((s, r) => s + SPURS.reduce((t, [, k0, k1]) => t + overlap(r, [k0, k1]), 0), 0);
+  return { day: d.day, name: MOVE_NAMES[d.day], km: r1((all - spur) * ratio), loop: d.day >= 7 }; });
 const out = {
   plan: { km_total: r1(KM[KM.length - 1]), km8: plan8, km_walk: planWalk, dplus: planDp, margin: MARGIN, j6access, boat: BOAT,
     camps: CAMPS.map(c => ({ ...c, lat: r5(c.lat), lon: r5(c.lon) })), days: DAYS,
-    line: planLine.map(s => thin(s, 150).map(p => [r5(p[1]), r5(p[0])])), modes_line: planModes.map(m => ({ t: m.t, pts: thin(m.pts, 150).map(p => [r5(p[1]), r5(p[0])]) })), summits: planSummits },
+    line: planLine.map(s => thin(s, 150).map(p => [r5(p[1]), r5(p[0])])), modes_line: planModes.map(m => ({ t: m.t, pts: thin(m.pts, 150).map(p => [r5(p[1]), r5(p[0])]) })), summits: planSummits, moves: planMoves },
   real: { camps: camps.map(c => ({ ...c })), days: Object.entries(real).map(([d, v]) => ({ day: +d, km: r1(v.km), dplus: Math.round(v.dplus), summits: rsum[d] || [] })),
     line: T.acts.map(a => thin(a.pts.map(q => [q[1], q[0]]), 150).map(p => [r5(p[1]), r5(p[0])])), ids: T.acts.map(a => a.id || a.activite || null),
     summits: T.summits.map(x => ({ name: x.sommet, lat: x.lat, lon: x.lon, alt: x.hauteur_officielle_m || x.alt_gps_m, act: x.activite })) },
