@@ -977,34 +977,20 @@
       legend('l-mg', [['ln', C('--accent'), 'avec le climat'], ['ln', C('--text-muted'), 'beau temps seulement'], ['dash', '', 'la marge entière']]);
       readout('r-mg', `marge <b>${mn(M)}</b> · utilisée <b>${mn(G.used_min)}</b>`);
     }
-    { // le smile, sur des options simples
-      const f = frame('c-smile', { t: 14, r: 12, b: 26, l: 44 }), S = G.smile;
-      const lo = Math.min(G.sd.clim, ...S.map(s => s.sd_h)) * .94, hi = Math.max(G.sd.clim, ...S.map(s => s.sd_h)) * 1.05;
-      const x = d3.scalePoint().domain(S.map(s => s.x)).range([0, f.w]).padding(.3), y = d3.scaleLinear().domain([lo, hi]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => hm(v), 'left');
-      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(v => v ? `${v > 0 ? '+' : '−'}${Math.abs(v)} h` : 'seuil'));
-      f.g.append('line').attr('x1', 0).attr('x2', f.w).attr('y1', y(G.sd.clim)).attr('y2', y(G.sd.clim)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '4 3');
-      f.g.append('text').attr('class', 'ax-title').attr('x', 4).attr('y', y(G.sd.clim) - 5).text(`écart-type simulé : ${hm(G.sd.clim)}`);
-      f.g.append('path').attr('d', d3.line().x(s => x(s.x)).y(s => y(s.sd_h)).curve(d3.curveMonotoneX)(S)).attr('fill', 'none').attr('stroke', C('--down')).attr('stroke-width', 2);
-      hover(f.g.selectAll(null).data(S).join('circle').attr('cx', s => x(s.x)).attr('cy', s => y(s.sd_h)).attr('r', 3.6).attr('fill', C('--down')),
-        s => `<b>Seuil ${s.x ? `${s.x > 0 ? '+' : '−'}${Math.abs(s.x)} h` : ''} sur le calendrier</b>${row('dépassé dans', `${f0(s.p)} % des simulations`)}${row('écart-type implicite', hm(s.sd_h))}`);
-      legend('l-smile', [['ln', C('--down'), 'écart-type que Black-Scholes doit supposer'], ['dash', C('--text-muted'), 'celui de la simulation']]);
-      readout('r-smile', `de <b>${hm(S[0].sd_h)}</b> à <b>${hm(S[S.length - 1].sd_h)}</b>`);
-    }
     $('mg-lede').innerHTML = `Le plan gardait un jour « de marge (météo ou forme) » : la Støvla, environ <b>${mn(M)}</b> de marche. Tout retard sur le calendrier se prend sur ce jour. En finance, c’est une option : la simulation donne son prix, en minutes.`;
     $('mg-greeks').innerHTML = [
       ['Δ', 'Delta', `Si la prévision glisse d’une heure, la marge doit absorber <b>${f0(G.greeks.delta * 60)} min</b> de plus.`],
       ['ν', 'Vega', `Plus d’incertitude n’y change presque rien (<b>${G.greeks.vega_10 > 0 ? '+' : '−'}${f0(Math.abs(G.greeks.vega_10))} min</b> pour +10 %) : au soir du J2, la marge a déjà ${f0(c0.clim.p_use)} % de chances de servir.`],
       ['Θ', 'Thêta', `Chaque soir sec, elle fond de <b>${f0(-G.theta.per_day)} min</b> : ${mn(c0.clim.value)} au J2, ${mn(c5.clim.value)} au J5. La pluie du J7 la relance à ${mn(wet.clim.value)}.`],
     ].map(([l, n, t]) => `<div><h4><span class="gk">${l}</span> ${n}</h4><p>${t}</p></div>`).join('');
-    $('mg-read').textContent = `À gauche, ce que la marge doit s’attendre à absorber chaque soir ; pointillés : la marge entière. À droite, l’incertitude que Black-Scholes doit supposer, selon le seuil.`;
+    $('mg-read').textContent = `Chaque soir, ce que la marge doit s’attendre à absorber, avec et sans le climat ; pointillés : la marge entière.`;
     $('t-mg').innerHTML = `Au J2, la marge doit absorber <b>${mn(c0.clim.value)}</b> sur ${mn(M)}, avec ${f0(c0.clim.p_use)} % de chances de servir. Elle fond par temps sec, la pluie la relance. À l’arrivée, <b>${mn(G.used_min)}</b> ont servi (${f0(G.used_min / M * 100)} %) : elle a tenu, et le soleil de minuit a fait le reste pour la Støvla.`;
     DEFS.blackscholes = { t: 'Black-Scholes et Monte Carlo : le prix d’une assurance', html: () => `
       <p><b>L’origine.</b> En 1973, <b>Fischer Black, Myron Scholes et Robert Merton</b> trouvent le prix « juste » d’une option : le droit, mais pas l’obligation, d’acheter un actif à un prix fixé d’avance (le prix d’exercice K). Merton et Scholes reçoivent le prix Nobel d’économie en 1997. En 1976, Black adapte la formule à un prix à terme F, connu aujourd’hui pour une date future. En 1977, <b>Phelim Boyle</b> montre qu’on peut aussi trouver ce prix par Monte Carlo : simuler des milliers d’avenirs, et faire la moyenne de ce que l’option paie. C’est la méthode des banques quand l’avenir ne suit pas la loi de la formule.</p>
       <div class="def-f">call = F·N(d₁) − K·N(d₂) · d₁ = [ln(F/K) + s²/2] / s · d₂ = d₁ − s</div>
       <p>N est la loi normale, s l’incertitude qui reste jusqu’à l’échéance. Une assurance plafonnée, qui paie le dépassement de K jusqu’à K + M, est la différence de deux calls : un <i>call spread</i>.</p>
       <div class="def-ex"><b>Ici.</b> L’actif : mon temps de marche du J3 au J9, <b>sans la Støvla</b> (elle est la marge, on ne la compte pas deux fois). Le seuil K : la prévision du soir du J2 à mon allure de beau temps, ${hm(G.K)}, c’est-à-dire le calendrier. La marge M : la Støvla convertie à mon allure en trail, ${mn(M)} (${f1(G.margin.km)} km, ${f0(G.margin.dplus)} m de D+). Paiement : le dépassement de K, plafonné à M. Prix au J2 : <b>${mn(G.value_j2.sim)}</b> par la simulation avec le climat, ${mn(G.value_j2.black)} par la formule, ${mn(G.value_j2.beau_temps)} si l’on oublie la pluie. Chaque soir, on remplace ce qui est déjà marché par le réel, et l’on ne garde que les mondes où la météo du jour est celle que j’ai eue.</div>
-      <p><b>Le smile.</b> Pour chaque seuil, on cherche l’écart-type que la formule doit supposer pour retrouver le prix simulé d’une option simple. Il monte avec le seuil, de ${hm(G.smile[0].sd_h)} à ${hm(G.smile[G.smile.length - 1].sd_h)} : les gros retards sont plus probables qu’une loi lognormale ne le dit. C’est la pluie, qui arrive par séries. Sur les marchés, le même effet vient des krachs.</p>
+      <p><b>Le skew.</b> Pour retrouver les prix simulés, la formule doit supposer d’autant plus d’incertitude que le retard envisagé est grand (de ${hm(G.smile[0].sd_h)} à ${hm(G.smile[G.smile.length - 1].sd_h)}) : les gros retards sont plus probables qu’une loi lognormale ne le dit. C’est la pluie, qui arrive par séries ; sur les marchés d’actions, la même pente vient des krachs.</p>
       <p><b>Solidité.</b> Selon les choix de la simulation (coût de la pluie de la partie 03 ou mesuré, blocs de 1 à 4 km, mondes retenus, tirages), la marge doit absorber entre ${mn(G.sens.value_min)} et ${mn(G.sens.value_max)} au J2, avec ${f0(G.sens.use_min)} à ${f0(G.sens.use_max)} % de chances de servir. En revanche, la chance qu’elle soit <b>épuisée</b> dépend de la taille qu’on lui donne : ${G.sens.by_M.map(b => `${f0(b.p_out)} % pour ${mn(b.M_min)}`).join(', ')}. Ce n’est donc pas un résultat, et elle n’est pas affichée.</p>
       <p class="muted">Limites. Un jour de marge n’est pas un nombre fixe de minutes : sous le soleil de minuit, une journée n’a pas d’heure de fin, et la Støvla (${mn(G.stvla_real_min)}) s’est faite malgré ${mn(G.used_min)} de retard. Le « prix » est ici le dépassement attendu, pas un prix d’arbitrage : un trek ne se couvre pas en achetant et vendant. Le coût de la pluie est mesuré après coup (partie 07, test de résistance).</p>` };
     const b = $('mg-btn'); if (b && !b.innerHTML) b.innerHTML = defBtn('blackscholes', 'Black-Scholes et Monte Carlo : le prix d’une assurance');
