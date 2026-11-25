@@ -588,7 +588,7 @@
       [C('--accent'), 'Le bénéfice : le risque spécifique se dilue', 'Massifs indépendants', AG.spec, `Chaque retour à la mer remet le compteur à zéro : un pierrier sur un massif ne dit rien du suivant, et un massif difficile est compensé par un plus facile. Sur ${M.length} massifs, le risque propre à chacun est divisé par ${f0(AG.block / AG.spec)}.`],
       [C('--series-avec'), 'La limite : le risque systématique reste', 'Plus la pluie', AG.total, `La pluie ne connaît pas les retours à la mer : elle a touché les ${SY.n_wet} derniers massifs en même temps, et ses ${fs0(AG.sys)} min s’ajoutent bout à bout. √(${f0(AG.spec)}² + ${f0(AG.sys)}²) = ± ${f0(AG.total)}.`],
     ].map(([c, s_, t, v, p]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">± ${f0(v)} min</b><p>${p}</p></div>`).join('');
-    $('ex-msg').innerHTML = `<b>L’indépendance est un bénéfice, pas une protection totale.</b> Plus il y a de massifs indépendants, plus le risque propre à chacun se dilue ; le risque commun, lui, reste entier. Sans retour à la mer : ± ${f0(AG.block)} min. Avec : ± ${f0(AG.spec)}. Mais la pluie remet ${fs0(AG.sys)} min que rien ne dilue : ± ${f0(AG.total)}.`;
+    $('ex-msg').innerHTML = `<b>L’indépendance est un bénéfice, pas une protection totale.</b> Plus il y a de massifs indépendants, plus le risque propre à chacun se dilue ; le risque commun, lui, reste entier. Sans retour à la mer : ± ${f0(AG.block)} min. Avec : ± ${f0(AG.spec)}. Mais la pluie remet ${fs0(AG.sys)} min que rien ne dilue : ± ${f0(AG.total)}.`;
     readout('r-acf2', `bloc <b>± ${f0(AG.block)}</b> · indépendants <b>± ${f0(AG.spec)}</b> · avec la pluie <b>± ${f0(AG.total)}</b>`);
 
     // the « ? » button: systematic and specific risk, how the rain effect is measured
@@ -601,14 +601,7 @@
       <div class="table-wrap flat"><table class="data"><tbody>${SY.tried.map(t => `<tr><td>${t.l}</td><td class="n mono">p = ${f2(t.p)}</td></tr>`).join('')}</tbody></table></div>
       <p class="muted">La température ressort le plus, mais elle va avec la pluie : sur 9 jours, froid et pluie arrivent ensemble, on ne peut pas les séparer. Disons « la météo ». La VFC ressort aussi, mais sur six facteurs essayés, l’un ressort souvent par hasard, et la partie 04 ne trouve pas d’effet de la fatigue sur les tronçons : une piste, pas un résultat. Avec ${SY.n_wet} massifs sous la pluie, l’effet est un ordre de grandeur ; la simulation (partie 07) le mesure sur tous les tronçons et trouve un effet du même ordre.</p>
       <p class="muted">Repères : si les tronçons étaient indépendants, on aurait ± ${f0(T.agg.seg)} min ; si tous les massifs l’étaient, pluie comprise, ± ${f0(AG.indep)} min. Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au bord de la mer. Chaque massif pèse les minutes réellement perdues ou gagnées.</p>` };
-    $('facts-3').innerHTML = [
-      [`± ${f0(AG.block)} min`, 'un seul bloc sans sortie : les deux risques s’additionnent'],
-      [`± ${f0(AG.spec)} min`, 'massifs indépendants : le risque spécifique se dilue'],
-      [`${fs0(AG.sys)} min`, `la pluie, commune aux ${SY.n_wet} derniers massifs (${fs0(rainPct)} % à terrain égal)`],
-      [`± ${f0(AG.total)} min`, 'le total, pluie comprise'],
-      [`${f0(steepG * 100)} %`, 'du D+ au-dessus de 20 % de pente'],
-    ].map(([v, t]) => `<div><dd><b>${v}</b></dd><dt>${t}</dt></div>`).join('');
-    $('t-acf').innerHTML = `L’indépendance des massifs est un bénéfice : chaque retour à la mer efface une partie du risque propre au massif, le pierrier, le sentier invisible, la barre rocheuse. Mais elle a une limite : la pluie touche tous les massifs à la fois, et rien ne la dilue. Et le relief est raide : le risque se joue sur de courts passages.<br><br>Décider massif par massif, et garder la marge pour la météo.`;
+    $('t-acf').innerHTML = `Grâce à <b>la diversification</b>, les massifs indépendants ramènent l’incertitude de ± ${f0(AG.block)} à <b>± ${f0(AG.spec)} min</b> : chaque retour à la mer efface une partie du risque propre au massif. Mais la pluie touche tous les massifs à la fois : <b>${fs0(AG.sys)} min</b> que rien ne dilue. Décider massif par massif, et garder la marge pour la météo.`;
   }
 
 

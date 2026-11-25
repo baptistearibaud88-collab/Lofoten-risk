@@ -620,3 +620,6 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .meth-pop ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
 .meth-pop li { margin: 5px 0; }
 @media (max-width: 760px) { .meth-pop { grid-template-columns: 1fr; } }
+/* « À retenir » sur toute la largeur (partie 03) */
+.notes.one.full { max-width: none; }
+.notes.one.full .key p { font-size: 15px; line-height: 1.55; }
