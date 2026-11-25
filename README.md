@@ -14,6 +14,7 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 |---|---|
 | **Carte 3D** | [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/) — la traversée rejouée sur le relief : étapes avec le sac, sommets en trail, bivouacs, nuits, photos. |
 | **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) — 10 parties en trois actes, graphiques interactifs ; chaque notion technique s'ouvre dans un bouton « ? ». |
+| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — filmé à la GoPro et monté par moi ; aussi accessible depuis la carte, à côté de l'analyse de risque. |
 
 ![Le rapport](docs/apercu_rapport.jpg)
 
@@ -52,6 +53,7 @@ donnees/              données brutes : plan tracé (plan.gpx), pluie ERA5 1996�
 outils/               scripts de calcul (Node.js) qui produisent data/risque_*.js
 outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
 photos/               photos de la traversée (et miniatures)
+video/                le film (1080p, H.264) et ses miniatures
 docs/                 images du README
 ```
 

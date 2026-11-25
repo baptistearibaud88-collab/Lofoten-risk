@@ -6,6 +6,7 @@
   const T = window.TREK;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
+  let filmEl = null;   // home bubble to the film (buildFilmHome), next to the risk bubble
   let riskEl = null;   // home bubble to the risk report (buildRiskHome)
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   const COL = { pack: '#1d3f8f', camp: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff', finish: '#111418' };
@@ -576,6 +577,38 @@
     document.body.append(riskEl);
     placeRisk(); riskHome(true);
   }
+  /* home bubble: the film of the trek (montage, GoPro), opened full screen on demand ; nothing downloads before the click */
+  const FILM = { src: 'video/lofoten_norvege_1080p.mp4', poster: 'video/miniature.jpg', thumb: 'video/miniature_carte.jpg', dur: '2 min 13' };
+  function buildFilmHome() {
+    const play = sv('svg', { viewBox: '0 0 24 24', class: 'fh-play', 'aria-hidden': 'true' });
+    play.append(sv('circle', { cx: 12, cy: 12, r: 11 }), sv('path', { d: 'M10 7.8v8.4l6.6-4.2Z' }));
+    filmEl = el('button', { type: 'button', class: 'film-home bubble rh-off', 'aria-label': `Regarder le film de la traversée (${FILM.dur})`, onclick: openFilm },
+      el('span', { class: 'rh-head' }, el('i', { class: 'fh-dot' }), 'Le film'),
+      el('span', { class: 'fh-media' }, el('img', { class: 'fh-thumb', src: FILM.thumb, alt: '', loading: 'lazy', decoding: 'async' }), play),
+      el('span', { class: 'rh-foot' }, el('span', { class: 'rh-cta' }, 'Regarder ›'), el('span', { class: 'rh-meta' }, FILM.dur)));
+    document.body.append(filmEl);
+  }
+  function openFilm() {
+    const video = el('video', { class: 'film-video', controls: '', playsinline: '', preload: 'metadata', poster: FILM.poster, src: FILM.src });
+    const close = () => { video.pause(); video.removeAttribute('src'); video.load(); box.remove(); removeEventListener('keydown', onKey); filmEl && filmEl.focus(); };
+    const onKey = ev => { if (ev.key === 'Escape') close(); };
+    const box = el('div', { class: 'film-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Le film de la traversée' },
+      el('div', { class: 'film-frame' }, video,
+        el('p', { class: 'film-cap' }, 'Lofoten, juin 2026 · filmé à la GoPro, monté par Baptiste Aribaud')),
+      el('button', { type: 'button', class: 'film-x', 'aria-label': 'Fermer la vidéo', onclick: close }, '×'));
+    box.addEventListener('click', ev => { if (ev.target === box) close(); });
+    addEventListener('keydown', onKey);
+    document.body.append(box);
+    box.querySelector('.film-x').focus();
+    const p = video.play(); if (p && p.catch) p.catch(() => {});
+  }
+  function placeFilm() {
+    if (!filmEl || !riskEl) return;
+    const rr = riskEl.getBoundingClientRect(), gap = isPhone() || innerWidth <= 820 ? 8 : 10;
+    filmEl.style.bottom = riskEl.style.bottom;
+    if (riskEl.style.left) { filmEl.style.right = ''; filmEl.style.left = `${Math.round(rr.right + gap)}px`; }
+    else { filmEl.style.left = ''; filmEl.style.right = `${Math.round(innerWidth - rr.left + gap)}px`; }
+  }
   function placeRisk() {
     if (!riskEl) return;
     const pr = panelBox.getBoundingClientRect(), lg = document.querySelector('.legend');
@@ -592,11 +625,13 @@
       if (rb && rb.height && rb.bottom < innerHeight - bottom) bottom = innerHeight - rb.bottom;
       riskEl.style.bottom = `${Math.round(bottom)}px`;
     }
+    placeFilm();
   }
   function riskHome(on) {
     if (!riskEl) return;
     const was = !riskEl.classList.contains('rh-off');
     riskEl.classList.toggle('rh-off', !on);
+    if (filmEl) filmEl.classList.toggle('rh-off', !on);
     if (on) requestAnimationFrame(placeRisk);
     if (on && !was || on && !riskEl.classList.contains('play')) {   // replay the fan each time it comes back
       riskEl.classList.remove('play'); void riskEl.offsetWidth; riskEl.classList.add('play');
@@ -1877,6 +1912,7 @@
   placeSun(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeSun);
   document.getElementById('btn-tools').addEventListener('click', () => document.body.classList.toggle('ph-tools'));
   placeSources();
+  buildFilmHome();
   buildRiskHome();
   placeDepart(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeDepart);
 
