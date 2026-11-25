@@ -16,7 +16,17 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 | **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) — 10 parties en trois actes, graphiques interactifs ; chaque notion technique s'ouvre dans un bouton « ? ». |
 | **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — filmé à la GoPro et monté par moi ; aussi accessible depuis la carte, à côté de l'analyse de risque. |
 
-![Le rapport](docs/apercu_rapport.jpg)
+## La carte 3D
+
+La page d'accueil rejoue la traversée sur le relief des Lofoten (satellite, carte topo ou relief 3D), à partir de la trace de la montre.
+
+- **Toute la traversée, ou une seule sortie** : la trace se redessine avec ses compteurs en direct (distance, dénivelé, temps en mouvement, calories, fréquence cardiaque), la météo à l'altitude du moment et trois caméras (drone, orbite, fixe).
+- **Sept étapes avec le sac, neuf sommets en trail** : pour chaque sortie, le profil, la vitesse kilomètre par kilomètre et des records.
+- **Sept bivouacs, neuf nuits** : le sommeil et ses phases, la fréquence cardiaque au repos et la VFC, la météo de la nuit, le poids du sac le lendemain matin.
+- **Photos, infos et alertes** : placées là où elles ont eu lieu, chacune avec son récit.
+- **Inventaire de départ** : équipement et nourriture, poids et calories.
+- **Soleil de minuit** : la course du soleil sur 24 heures, au-dessus du cercle polaire.
+- **Le film et l'analyse de risque** : deux accès directs depuis l'accueil.
 
 ## Le rapport en trois actes
 
@@ -54,12 +64,16 @@ outils/               scripts de calcul (Node.js) qui produisent data/risque_*.j
 outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
 photos/               photos de la traversée (et miniatures)
 video/                le film (1080p, H.264) et ses miniatures
-docs/                 images du README
 ```
 
-## Régénérer les données
+## Reproduire les calculs
 
-`data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt. Les autres fichiers de `data/` en sont dérivés par les scripts de `outils/`, à relancer dans cet ordre depuis la racine :
+Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`, à partir des données de `donnees/` et `data/`. Les simulations utilisent une graine fixe : relancer les scripts redonne exactement les mêmes résultats.
+
+<details>
+<summary>Les commandes, dans l'ordre</summary>
+
+`data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt ; les autres fichiers de `data/` en sont dérivés. Depuis la racine :
 
 ```bash
 node outils/segmentation_terrain.js   # cotation par section (01)          → data/risque_sections.js
@@ -77,9 +91,9 @@ node outils/chance_decision.js        # volatilité et option (09)          → 
 node outils/carte_resume.js           # encart « Analyse de risque » de la carte → data/risque_carte.js
 ```
 
-Les simulations utilisent une graine fixe : relancer un script redonne exactement le même fichier. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur.
+`data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.
 
-Pour relire en local : `python3 outils/apercu/captures.py s1 s7` (une ou plusieurs parties, `--mobile` pour le téléphone) et `python3 outils/apercu/textes.py` (mots par encadré).
+</details>
 
 ## Sources
 
