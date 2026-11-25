@@ -595,7 +595,7 @@
     const onKey = ev => { if (ev.key === 'Escape') close(); };
     const box = el('div', { class: 'film-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Le film de la traversée' },
       el('div', { class: 'film-frame' }, video,
-        el('p', { class: 'film-cap' }, 'Lofoten, juin 2026 · filmé à la GoPro, monté par Baptiste Aribaud')),
+        el('p', { class: 'film-cap' }, 'Lofoten, juin 2026 · tournage GoPro HERO13 Black, montage Baptiste Aribaud')),
       el('button', { type: 'button', class: 'film-x', 'aria-label': 'Fermer la vidéo', onclick: close }, '×'));
     box.addEventListener('click', ev => { if (ev.target === box) close(); });
     addEventListener('keydown', onKey);

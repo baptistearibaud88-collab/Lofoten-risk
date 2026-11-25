@@ -10,11 +10,9 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 
 ## Voir le projet
 
-| | |
-|---|---|
-| **Carte 3D** | [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/) — la traversée rejouée sur le relief : étapes avec le sac, sommets en trail, bivouacs, nuits, photos. |
-| **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) — 10 parties en trois actes, graphiques interactifs ; chaque notion technique s'ouvre dans un bouton « ? ». |
-| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — filmé à la GoPro et monté par moi ; aussi accessible depuis la carte, à côté de l'analyse de risque. |
+- **Carte 3D** : [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/)
+- **Rapport d'analyse de risque** : [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html)
+- **Le film** : [regarder (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) · tournage GoPro HERO13 Black, montage personnel
 
 ## La carte 3D
 
