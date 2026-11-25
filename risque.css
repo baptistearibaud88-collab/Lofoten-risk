@@ -24,6 +24,7 @@
   --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --font-num: var(--mono);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "DejaVu Serif", serif;
 }
 @media (prefers-color-scheme: light) {
   :root:where(:not([data-theme="dark"])) .viz-root {
@@ -536,7 +537,10 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .def-pop .rules li { padding: 8px 4px; }
 /* conclusion : le socle des données (bande turquoise), puis la chaîne à trois maillons */
 .socle { --socle: #11b4c6; position: relative; background: var(--socle); color: #fff; padding: 12px 22px 16px; clip-path: polygon(2.5% 0, 97.5% 0, 100% 100%, 0 100%); border-radius: 4px; box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .14); }
-.socle-t { text-align: center; font: 700 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .92; margin-bottom: 8px; }
+.socle-t { text-align: center; margin-bottom: 10px; }
+.socle-t span { display: block; font: 700 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+.socle-t b { display: block; font: 600 30px/1.15 var(--serif); letter-spacing: .01em; color: #fff; }
+.socle-line .st b { font-family: var(--serif); font-weight: 600; }
 .socle-line { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; align-items: center; }
 .socle-line .st { text-align: center; }
 .socle-line .st .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--socle); font: 700 12px var(--mono); margin-right: 7px; vertical-align: 2px; }
@@ -566,3 +570,7 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
   .socle-line .ar::before { left: 2px; right: 6px; }
   .socle-line .ar::after { right: 1px; border-left-width: 7px; }
 }
+/* conclusion : titres de la chaîne en grand, police à empattements */
+.explain .ex-cols.chain .t { font: 600 21px/1.2 var(--serif); margin: 2px 0 6px; letter-spacing: .005em; }
+#cc-lede b { color: var(--text-primary); }
+@media (max-width: 640px) { .socle-t b { font-size: 24px; } .explain .ex-cols.chain .t { font-size: 19px; } }

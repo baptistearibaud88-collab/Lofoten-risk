@@ -1395,10 +1395,10 @@
     const eP = eff(MO.plan.sac) + eff(MO.plan.trail), eR = eff(MO.real.sac) + eff(MO.real.trail);
     const kmP = MO.plan.sac.km + MO.plan.trail.km, kmR = MO.real.sac.km + MO.real.trail.km, dpP = MO.plan.sac.dplus + MO.plan.trail.dplus, dpR = MO.real.sac.dplus + MO.real.trail.dplus;
     const nSeg = R.series.filter(x => Math.abs(x.slope) <= 60).length, nW = X.vol.worlds;
-    $('cc-lede').innerHTML = `Je suis parti avec un plan de ${f0(kmP)} km et ${f0(dpP)} m de dénivelé, un sac lourd et un seul jour de marge ; je suis arrivé au port avec ${f0(kmR)} km et ${f0(dpR)} m, par une autre route. Relue avec les outils de la finance, la semaine change de nature. <b>Le terrain devient un marché</b> : il a son allure attendue, ses écarts, ses séries. <b>Le sac devient une position</b> : il a un coût et des sensibilités. <b>La traversée devient un portefeuille</b> : on la simule, on la protège par une marge, on la juge contre un plan.`;
+    $('cc-lede').innerHTML = `Je suis parti avec un plan de ${f0(kmP)} km et ${f0(dpP)} m de dénivelé, un sac lourd et un seul jour de marge ; je suis arrivé au port avec ${f0(kmR)} km et ${f0(dpR)} m, par une autre route. Le but n’était pas de raconter cette semaine, mais d’en mesurer le risque : où il s’est concentré, ce qui l’a fait bouger, et si mon plan l’avait prévu. Pour y répondre, il a suffi de reprendre les outils de tous ceux qui prennent des risques avec méthode : une référence pour mesurer les écarts, des facteurs pour les expliquer, des scénarios pour s’y préparer, une marge pour s’en protéger. Posés sur neuf jours de marche, ils s’ajustent sans forcer : <b>le terrain devient un marché, le sac une position, la traversée un portefeuille.</b>`;
     // le socle : les données, de la montre à la compréhension
     const step = (n, h, sub) => `<div class="st"><span class="n">${n}</span><b>${h}</b><small>${sub}</small></div>`;
-    $('cc-socle').innerHTML = `<div class="socle-t">Le socle · les données</div><div class="socle-line">${[
+    $('cc-socle').innerHTML = `<div class="socle-t"><span>le socle</span><b>Les données</b></div><div class="socle-line">${[
       step(1, 'Collecter', 'montre GPS, sommeil, météo, 30 étés'),
       step(2, 'Traiter et nettoyer', `${f0(nSeg)} tronçons de 250 m, erreurs écartées`),
       step(3, 'Comprendre', 'l’écart à l’allure attendue devient un rendement'),
