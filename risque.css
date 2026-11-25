@@ -448,6 +448,13 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .toc-act { flex: 0 0 100%; font: 700 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-top: 6px; }
 .toc-act:first-child { margin-top: 0; }
 @media print { .act { break-before: page; } }
+/* bandeaux d'acte : même turquoise et même police que le socle de la conclusion */
+div.act { --socle: #11b4c6; align-items: center; gap: 6px 18px; margin: 44px 0 26px; padding: 18px 24px 22px; border: 0; border-radius: 4px; background: var(--socle); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .14); }
+div.act .act-n { display: inline-grid; place-items: center; padding: 4px 9px; border-radius: 4px; background: #fff; color: var(--socle); font-size: 11px; }
+div.act .act-t { font: 600 32px/1.1 var(--serif); letter-spacing: .01em; color: #fff; }
+div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rgba(255, 255, 255, .92); }
+@media (max-width: 640px) { div.act { padding: 14px 16px 18px; } div.act .act-t { font-size: 26px; } div.act .act-d { flex-basis: 100%; font-size: 13.5px; } }
+@media print { div.act { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
 /* partie 02 : carte « Ce que montre le graphique » */
 .dist-key { display: flex; flex-direction: column; }

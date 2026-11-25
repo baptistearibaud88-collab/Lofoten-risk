@@ -493,7 +493,7 @@
     readout('r-cause', `${slow.length} épisodes · ${f0(totMin)} min`);
     const fast = EPS.filter(d => d.sign < 0).sort((a, b) => a.lost_min - b.lost_min), fastOk = fast.filter(d => !d.gps);
     const epFast = `Côté rapide, ${fast.length} épisodes rendent ${f0(-d3.sum(fastOk, d => d.lost_min))} min (hors pentes GPS douteuses). Les plus nets : ${fastOk.slice(0, 3).map(d => `${actName(d.act)} (${dayLbl(d.day)}, ${f0(-d.lost_min)} min)`).join(', ')}. ${(g => g.length ? `${g.join(' et ')} ${g.length > 1 ? 'sont écartés' : 'est écarté'} : une pente GPS de plus de 60 % fausse le temps attendu.` : '')(fast.filter(d => d.gps).map(d => actName(d.act)))}`;
-    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(majMin)} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p>${stv ? `<div class="def-ex"><b>La Støvla (${dayLbl(stv.day)}), un épisode à deux causes.</b> ${f0(stv.real_min)} min au lieu de ${f0(stv.real_min - stv.lost_min)} prévues : ${f0(stv.lost_min)} min perdues. Je ne trouvais pas le passage de la barre rocheuse : névé, pierrier, rocher glissant, et le vide pas loin. Et il pleuvait, donc j’avançais très prudemment. Pour faire la part des deux, j’applique la règle mesurée sur les 15 massifs (partie 03) : à terrain égal, la pluie m’a rendu <b>${f0(rainPct * 100)} %</b> plus lent. Sur les ${f0(stv.real_min - stv.lost_min)} min prévues, cela fait <b>${f0(stvS.meteo || 0)} min</b> pour la météo ; les <b>${f0(stvS.sentier || 0)} min</b> restantes reviennent au sentier. Même par beau temps, je n’aurais donc pas été beaucoup plus rapide : c’est le passage lui-même qui a coûté. L’éboulement survenu au retour en est la meilleure illustration : ce terrain n’était pas seulement difficile, il était dangereux.</div>` : ''}<div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
+    DEFS.episodes = { t: `Les ${MAJ.length} épisodes lents de 10 min ou plus · ${f0(d3.sum(bars.filter(c => c.k !== 'pause'), c => Math.round(c.min)))} min`, wide: true, html: () => `<p>« Perdu » est le temps passé en plus du temps prévu sur l’épisode. La cause est qualifiée après coup, à partir du récit du jour.</p>${stv ? `<div class="def-ex"><b>La Støvla (${dayLbl(stv.day)}), un épisode à deux causes.</b> ${f0(stv.real_min)} min au lieu de ${f0(stv.real_min - stv.lost_min)} prévues : ${f0(stv.lost_min)} min perdues. Je ne trouvais pas le passage de la barre rocheuse : névé, pierrier, rocher glissant, et le vide pas loin. Et il pleuvait, donc j’avançais très prudemment. Pour faire la part des deux, j’applique la règle mesurée sur les 15 massifs (partie 03) : à terrain égal, la pluie m’a rendu <b>${f0(rainPct * 100)} %</b> plus lent. Sur les ${f0(stv.real_min - stv.lost_min)} min prévues, cela fait <b>${f0(stvS.meteo || 0)} min</b> pour la météo ; les <b>${f0(stvS.sentier || 0)} min</b> restantes reviennent au sentier. Même par beau temps, je n’aurais donc pas été beaucoup plus rapide : c’est le passage lui-même qui a coûté. L’éboulement survenu au retour en est la meilleure illustration : ce terrain n’était pas seulement difficile, il était dangereux.</div>` : ''}<div class="table-wrap flat"><table class="data ep">${epTable}</table></div><p class="muted" style="margin-top:10px">${epPause} ${epFast}</p>` };
     $('ep-btn').innerHTML = defBtn('episodes', `Les ${MAJ.length} épisodes lents, un par un`);
     const top = groups[0], subi = d3.sum(fam.filter(([fm]) => /subi/.test(fm)), d => d[1]);
     const CL = EP.cluster;
@@ -598,7 +598,6 @@
       <p>Ici, les massifs sont les titres. <b>Spécifique</b> : le terrain propre à chaque massif, un pierrier, un sentier invisible, une barre rocheuse. <b>Systématique</b> : la météo, qui pèse sur tous les massifs du moment.</p>
       <p class="def-f">risque total = √(spécifique² + systématique²)</p>
       <p><b>La mesure.</b> On compare les ${M.length} massifs à terrain égal (même cote) : sous la pluie (un jour à 1 mm ou plus, ${SY.n_wet} massifs), l’allure est <b>${fs0(rainPct)} %</b> plus lente. Sans tenir compte du terrain, on trouverait ${fs0(SY.raw_pct * 100)} % : les massifs sous la pluie étaient aussi plus durs. Pour chaque massif sous la pluie, la part systématique vaut son temps prévu × ${f0(rainPct)} % ; le reste est spécifique.</p>
-      <div class="def-ex"><b>Exemple.</b> ${mName(worst)} (${dayLbl(worst.day)}) : ${fs0(worst.lost)} min sur le massif, dont ${fs0(SY.sys_min[M.indexOf(worst)])} min de pluie et ${fs0(SY.spec_min[M.indexOf(worst)])} min propres au massif.</div>
       <p><b>Les autres facteurs communs essayés</b>, à terrain égal (p : part des tirages au hasard qui font aussi bien) :</p>
       <div class="table-wrap flat"><table class="data"><tbody>${SY.tried.map(t => `<tr><td>${t.l}</td><td class="n mono">p = ${f2(t.p)}</td></tr>`).join('')}</tbody></table></div>
       <p class="muted">La température ressort le plus, mais elle va avec la pluie : sur 9 jours, froid et pluie arrivent ensemble, on ne peut pas les séparer. Disons « la météo ». La VFC ressort aussi, mais sur six facteurs essayés, l’un ressort souvent par hasard, et la partie 04 ne trouve pas d’effet de la fatigue sur les tronçons : une piste, pas un résultat. Avec ${SY.n_wet} massifs sous la pluie, l’effet est un ordre de grandeur ; la simulation (partie 07) le mesure sur tous les tronçons et trouve un effet du même ordre.</p>
@@ -754,7 +753,7 @@
     const g = frame('c-strip', { t: 8, r: 8, b: 4, l: 8 });
     const S = [
       { k: 'Plus longue série sèche', o: M.dry, fmt: v => `${f0(v)} j`, tick: e => f0(e + .5), unit: 'j' },
-      { k: 'Plus gros épisode de 3 jours', o: M.max3, lived: lateRain, fmt: v => `${f1(v)} mm`, tick: e => f0(e), unit: 'mm' },
+      { k: 'Plus gros épisode de 3 jours', o: M.max3, fmt: null, tick: e => f0(e), unit: 'mm' },
     ];
     const rh = g.h / S.length;
     S.forEach((s, i) => {
@@ -762,7 +761,7 @@
       const xx = d3.scaleLinear().domain([E[0], E[E.length - 1]]).range([0, g.w]), top = 22, base = rh - 22;
       const yy = d3.scaleLinear().domain([0, d3.max(o.hist)]).range([base, top]);
       gg.append('text').attr('class', 'lbl-strong').attr('x', 0).attr('y', 13).text(s.k);
-      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.fmt(s.lived || o.v)} · centile ${f0(o.pct)}`);
+      gg.append('text').attr('class', 'lbl-ink').attr('x', g.w).attr('y', 13).attr('text-anchor', 'end').text(`2026 : ${s.fmt ? `${s.fmt(o.v)} · ` : ''}centile ${f0(o.pct)}`);
       const inBin = k => o.v >= E[k] && o.v < E[k + 1];
       gg.selectAll('.hb').data(o.hist).join('rect').attr('x', (n, k) => xx(E[k]) + .5).attr('width', (n, k) => Math.max(1, xx(E[k + 1]) - xx(E[k]) - 1)).attr('y', n => yy(n)).attr('height', n => base - yy(n))
         .attr('fill', (n, k) => inBin(k) ? C('--down') : C('--text-muted')).attr('fill-opacity', (n, k) => inBin(k) ? .9 : .5);
@@ -785,7 +784,7 @@
     });
     legend('l-strip', [['', C('--text-muted'), 'fenêtres de 9 jours, 1996–2025'], ['', C('--down'), 'classe de 2026'], ['dash', '', 'médiane']]);
     readout('r-strip', `${f0(M.n)} fenêtres · départs ${M.starts}`);
-    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était assez improbable : <b>${f1(lateRain)} mm en trois jours</b>, centile ${f0(M.max3.pct)}, plus fort que ${f0(M.ep.pct)} % des épisodes de pluie de l’été (en moyenne ${f0(M.ep.mean)} mm). Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 09.`;
+    $('t-wx2').innerHTML = `<b>La pluie a de la mémoire</b> : après un jour de pluie, le lendemain est pluvieux ${f0(pww * 100)} % du temps, contre ${f0(pwd * 100)} % après un jour sec. Le beau temps arrive donc par séries, la pluie par épisodes. Sur la série sèche, j’ai eu un peu de chance, mais pas tant que ça : ${M.dry.v} jours secs d’affilée, centile ${f0(M.dry.pct)} ; ${f0(M.dry.ge / M.n * 100)} % des fenêtres de 9 jours en ont autant ou plus. L’épisode final, lui, était rare : <b>centile ${f0(M.max3.pct)}</b>, presque 9 étés sur 10 n’ont pas trois jours aussi arrosés. Ce calendrier m’a pourtant été favorable malgré la pluie : elle est arrivée à la fin, alors que j’avais presque atteint la côte. Entre chance et décision, on le verra dans la partie 09.`;
   }
 
   /* ---------- 07 · weather vs benchmark ---------- */
@@ -817,7 +816,7 @@
       const bx = f.g.append('g').attr('transform', 'translate(6,4)');
       bx.append('text').attr('class', 'lbl').attr('y', 10).text(f.narrow ? `Cumul de 9 j · ${f0(MM.n)} fenêtres` : `Cumul de 9 jours · ${f0(MM.n)} fenêtres 1996–2025 · point centre`);
       bx.append('text').attr('class', 'lbl-strong').attr('y', 27).text(`médiane ${f1(MM.tot.med)} mm · moyenne ${f1(MM.tot.mean)} mm`);
-      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : ${f1(W_.total_rain)} mm · centile ${f0(MM.tot.pct)}`);
+      bx.append('text').attr('class', 'lbl-ink').attr('y', 43).text(`2026 : centile ${f0(MM.tot.pct)}`);
     }
     const ch = crossH(f);
     f.g.append('rect').attr('class', 'hit').attr('width', f.w).attr('height', f.h).on('pointermove', ev => {
@@ -1150,7 +1149,7 @@
     $('st-cols').innerHTML = [
       [C('--accent'), 'beau temps seulement', 'Le modèle du J2, sans pluie', hm(sc.sec.median), `Le réel, ${hm(MC.real_tot)}, tombe au centile ${cL(sc.sec.real_pct)} : un très mauvais scénario.`],
       [C('--warning'), 'avec le climat', `${f1(CL.wet_mean)} jour de pluie en moyenne`, `${hm(sc.clim.median)} <small>${shm(sc.clim.delta)}</small>`, `Le réel tombe au centile ${cL(sc.clim.real_pct)} : une traversée ordinaire, un peu malchanceuse.`],
-      [C('--down'), 'le pire des 1 200 mondes', `${W.wet} jours de pluie sur ${W.days.length - MC.origin}`, `${hm(sc.pire.median)} <small>${shm(sc.pire.delta)}</small>`, `Départ le ${+wd[2]}/${wd[1]}/${wd[0]}. Une traversée sur 20 y dépasse ${hm(sc.pire.p95)} : le jour de marge n’y suffirait pas, il faudrait renoncer à des sommets.`],
+      [C('--down'), 'le pire des étés', `${W.wet} jours de pluie sur ${W.days.length - MC.origin}`, `${hm(sc.pire.median)} <small>${shm(sc.pire.delta)}</small>`, `Départ le ${+wd[2]}/${wd[1]}/${wd[0]}. Une traversée sur 20 y dépasse ${hm(sc.pire.p95)} : le jour de marge n’y suffirait pas, il faudrait renoncer à des sommets.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
 
     // « ? » : d'où ça vient
@@ -1229,7 +1228,6 @@
         <td class="n">${pd && rd ? `${fk(rd.km - pkm)}<div class="muted">${fm(rd.dplus - pd.dplus)}</div>` : ''}</td><td><span class="chips">${chips.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join('')}</span></td></tr>`;
     }).join('')}</tbody>`;
     const cnt = k => PLAN.reduce((n, p) => n + p[4].filter(c => c[0] === k).length, 0);
-    DEFS.journal = { t: 'Journal des écarts, jour par jour', wide: true, html: () => `<p>Les kilomètres du plan sont convertis à la mesure de la montre (×${F('.2f')(ratio)}), pour comparer ce qui est comparable. ${cnt('c-ren')} renoncements, ${cnt('c-sub')} substitutions, ${cnt('c-ab')} abandon d’itinéraire.</p><div class="table-wrap flat"><table class="data plan">${journal}</table></div>` };
     $('plan-lede').innerHTML = `Le plan : 8 jours tracés avant le départ, plus un jour de marge. Presque rien ne s’est passé comme prévu. Mais un gérant ne se juge pas sur sa fidélité à l’indice : on regarde ce que ses écarts ont coûté. Ici, en effort.`;
   }
   // la carte plein écran : plan et trace réelle, avec ou sans le sac, campements et sommets
@@ -1296,48 +1294,33 @@
       g.selectAll('.nz').attr('vector-effect', 'non-scaling-stroke'); g.selectAll('.pm-t').style('font-size', `${11 / k}px`); g.selectAll('.pm-m').attr('transform', function () { const bb = this.getBBox(), cx = bb.x + bb.width / 2, cy = bb.y + bb.height / 2; return `translate(${cx},${cy}) scale(${1 / k}) translate(${-cx},${-cy})`; }); }));
   }
   function drawBridge() {
-    const M = PL.match, B = M.bridge, f = frame('c-bridge', { t: 8, r: 70, b: 28, l: 8 });
-    const lw = Math.min(250, f.w * .42);
+    $('c-bridge').dataset.h = innerWidth < 640 ? 560 : 330;
+    const M = PL.match, B = M.bridge, f = frame('c-bridge', { t: 8, r: 70, b: 28, l: 8 }), nar = f.narrow || innerWidth < 640;
+    const lw = nar ? 0 : Math.min(250, f.w * .42);
     const isT = d => d.total || d.k === 'plan' || d.k === 'real';
     let run = 0; const D = B.map(b => { if (isT(b)) { run = b.v; return { ...b, a: 0, z: b.v }; } const a = run; run += b.v; return { ...b, a, z: run }; });
     const x = d3.scaleLinear().domain([0, d3.max(D, d => Math.max(d.a, d.z)) * 1.04]).range([0, f.w - lw]);
-    const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(.28);
+    const y = d3.scaleBand().domain(D.map(d => d.k)).range([0, f.h]).padding(nar ? .08 : .28);
+    const bh = nar ? y.bandwidth() * .46 : y.bandwidth(), by = k => y(k) + (nar ? y.bandwidth() - bh : 0);
     const g = f.g.append('g').attr('transform', `translate(${lw},0)`);
-    g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(6).tickSize(f.h).tickFormat('')).lower();
-    g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
+    g.append('g').attr('class', 'gridl').call(d3.axisBottom(x).ticks(nar ? 4 : 6).tickSize(f.h).tickFormat('')).lower();
+    g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).ticks(nar ? 4 : 6).tickSize(0).tickPadding(8).tickFormat(v => `${v} km`));
     const col = d => ({ plan: C('--accent'), cal: C('--series-avec'), dec: d.v < 0 ? C('--up') : C('--down'), ter: C('--warning'), mes: C('--text-muted') })[d.g];
     D.forEach((d, i) => {
-      f.g.append('text').attr('class', isT(d) ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
-      g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', y(d.k)).attr('height', y.bandwidth()).attr('rx', 2).attr('fill', col(d)).attr('opacity', isT(d) ? (d.k === 'plan' ? .5 : .9) : .75);
-      if (i < D.length - 1) g.append('line').attr('x1', x(d.z)).attr('x2', x(d.z)).attr('y1', y(d.k) + y.bandwidth()).attr('y2', y(D[i + 1].k)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '2 2');
-      g.append('text').attr('class', 'lbl-strong').attr('x', x(Math.max(d.a, d.z)) + 6).attr('y', y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(isT(d) ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
+      f.g.append('text').attr('class', isT(d) ? 'lbl-strong' : 'lbl').attr('x', 0).attr('y', nar ? y(d.k) + y.bandwidth() * .3 : y(d.k) + y.bandwidth() / 2).attr('dy', '.35em').text(d.l);
+      g.append('rect').attr('x', x(Math.min(d.a, d.z))).attr('width', Math.max(1.5, Math.abs(x(d.z) - x(d.a)))).attr('y', by(d.k)).attr('height', bh).attr('rx', 2).attr('fill', col(d)).attr('opacity', isT(d) ? (d.k === 'plan' ? .5 : .9) : .75);
+      if (i < D.length - 1) g.append('line').attr('x1', x(d.z)).attr('x2', x(d.z)).attr('y1', by(d.k) + bh).attr('y2', by(D[i + 1].k)).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '2 2');
+      g.append('text').attr('class', 'lbl-strong').attr('x', x(Math.max(d.a, d.z)) + 6).attr('y', by(d.k) + bh / 2).attr('dy', '.35em').text(isT(d) ? `${f1(d.v)} km` : `${d.v > 0 ? '+' : '−'}${f1(Math.abs(d.v))}`);
     });
   }
   function drawPlanCharts() {
     if (!PL) return;
     const P_ = PL.plan, Rl = PL.real, M = PL.match, MO = PL.modes;
-    // ---- avancement sur le parcours prévu, soir après soir
-    {
-      const N = P_.camps.map((c, i) => ({ night: c.night, plan: c.km, real: Rl.camps[i].plan_km, pname: c.name, rname: Rl.camps[i].name }));
-      const f = frame('c-prog', { t: 16, r: 54, b: 34, l: 8 });
-      const x = d3.scalePoint().domain(N.map((n, i) => i)).range([0, f.w]).padding(.4);
-      const y = d3.scaleLinear().domain([0, P_.km_total]).nice().range([f.h, 0]);
-      yGrid(f.g, y, f.w, 6, v => `${v} km`);
-      xAxis(f.g, x, f.h, null, i => dateLbl(N[i].night));
-      const st = d3.line().curve(d3.curveStepAfter).x((n, i) => x(i)).y(v => y(v));
-      f.g.append('path').attr('d', d3.area().curve(d3.curveStepAfter).x((n, i) => x(i)).y0(n => y(n.plan)).y1(n => y(n.real))(N)).attr('fill', C('--accent')).attr('opacity', .12);
-      f.g.append('path').attr('d', st(N.map(n => n.plan))).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-dasharray', '5 4').attr('stroke-width', 1.5);
-      f.g.append('path').attr('d', st(N.map(n => n.real))).attr('fill', 'none').attr('stroke', C('--accent')).attr('stroke-width', 2.2);
-      f.g.selectAll(null).data(N).join('circle').attr('cx', (n, i) => x(i)).attr('cy', n => y(n.real)).attr('r', 3.8).attr('fill', C('--accent'));
-      f.g.selectAll(null).data(N).join('rect').attr('x', (n, i) => x(i) - 3.5).attr('y', n => y(n.plan) - 3.5).attr('width', 7).attr('height', 7).attr('fill', C('--bg')).attr('stroke', C('--text-primary')).attr('stroke-width', 1.4);
-      N.forEach((n, i) => { const d = n.real - n.plan; if (Math.abs(d) < 1.5) return;
-        f.g.append('text').attr('class', 'lbl-strong').attr('x', x(i) + 6).attr('y', y(Math.max(n.real, n.plan)) - 8).text(`${d > 0 ? '+' : '−'}${f0(Math.abs(d))} km`).attr('fill', d > 0 ? C('--up') : C('--down')); });
-      hover(f.g.selectAll(null).data(N).join('rect').attr('class', 'hit').attr('x', (n, i) => x(i) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-        n => `<b>Nuit du ${dateLbl(n.night)}</b>${row('prévu', `${n.pname} · km ${f1(n.plan)}`)}${row('réel', `${n.rname} · km ${f1(n.real)}`)}${row('écart', `${n.real - n.plan >= 0 ? '+' : '−'}${f1(Math.abs(n.real - n.plan))} km`)}`);
-      const best = N.reduce((b, n) => n.real - n.plan > b.real - b.plan ? n : b, N[0]);
-      readout('r-prog', `avance max <b>+${f0(best.real - best.plan)} km</b> (${dateLbl(best.night)})`);
-      legend('l-prog', [['dash', C('--text-primary'), 'campements prévus'], ['ln', C('--accent'), 'campements réels, placés sur le parcours prévu']]);
-    }
+    // ---- le pont : de la distance prévue à la distance réelle
+    drawBridge();
+    readout('r-bridge', `<b>${f0(M.bridge.find(b => b.k === 'plan_eq').v)} km</b> prévus → <b>${f0(M.bridge.find(b => b.k === 'real').v)} km</b> marchés`);
+    legend('l-bridge', [['', C('--up'), 'distance en moins'], ['', C('--down'), 'distance en plus'], ['', C('--series-avec'), 'jour de marge'], ['', C('--warning'), 'terrain'], ['', C('--text-muted'), 'mesure']]);
+    $('s-bridge').textContent = `bateau Kirkefjord → Vindstad retiré · bivouac : ${f1(MO.biv.km)} km en ${MO.biv.n} détours`;
     // ---- le plan et le réel par mode : sac ou trail
     const pS = MO.plan.sac, pT = MO.plan.trail, rS = MO.real.sac, rT = MO.real.trail;
     [pS, pT, rS, rT].forEach(o => { o.eff = eff(o); });
@@ -1360,7 +1343,8 @@
           });
           g.append('text').attr('class', 'lbl-strong').attr('x', lw + x(a[k] + b[k]) + 6).attr('y', yy + bh / 2 + 4).text(`${fmt(a[k] + b[k])} ${unit}`);
         });
-        g.append('text').attr('class', 'lbl').attr('x', lw).attr('y', 28 + 2 * 44 + 8).text(`sac ${pc(pS[k], rS[k])} · trail ${pc(pT[k], rT[k])} · total ${pc(pS[k] + pT[k], rS[k] + rT[k])}`);
+        const dk = (a, b) => { const v = Math.round(b - a); return `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} km`; };
+        g.append('text').attr('class', 'lbl').attr('x', lw).attr('y', 28 + 2 * 44 + 8).text(k === 'km' ? `sac ${dk(pS[k], rS[k])} · trail ${dk(pT[k], rT[k])} · total ${dk(pS[k] + pT[k], rS[k] + rT[k])}` : `sac ${pc(pS[k], rS[k])} · trail ${pc(pT[k], rT[k])} · total ${pc(pS[k] + pT[k], rS[k] + rT[k])}`);
       });
       legend('l-pmode', [['', C('--series-avec'), 'avec le sac'], ['', C('--series-sans'), 'sans le sac (trail)'], ['', C('--text-muted'), 'plan en clair, réel en plein']]);
       readout('r-pmode', `plan converti à la mesure de la montre (×${F('.2f')(MO.ratio)})`);
@@ -1368,24 +1352,23 @@
     const B = Object.fromEntries(M.bridge.map(b => [b.k, b.v])), dry = 67;   // sac au sec (partie 06, second ordre)
     const carry = (h, p) => h - h / (1 + p / 100);
     $('plan-cols').innerHTML = [
-      [C('--down'), 'la trajectoire', 'Elle n’a pas tenu', `${f0(MO.track_done)} km sur ${f0(P_.km8)}`, `du tracé prévu parcourus. ${f0(-(B.ab + B.nd))} km abandonnés (${M.abandoned.map(a => a.name).join(', ')}), ${f0(B.add + B.var)} km de sorties substituées et de variantes. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
+      [C('--down'), 'la trajectoire', 'Elle n’a pas tenu', `${f0(MO.track_done / P_.km8 * 10)} km sur 10`, `du tracé prévu parcourus. ${M.abandoned.length} sommets ou boucles abandonnés (${M.abandoned.map(a => a.name).join(', ')}), remplacés par d’autres sorties. ${MO.camps_same} campements sur ${MO.camps_n} à l’endroit prévu.`],
       [C('--up'), 'l’effort', 'Il a tenu', `${f0(eP)} → ${f0(eR)} km-effort`, `${pc(eP, eR)} seulement, et ${f0(dpP)} → ${f0(dpR)} m de D+. ${f0(pS.km - rS.km)} km portés en moins, ${f0(rT.km - pT.km)} km courus en plus : à mes vitesses, ${hm(hP)} prévues contre ${hm(hR)} marchées.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
     $('plan-msg').innerHTML = `<b>Ni sous-estimé, ni surestimé.</b> Le plan n’a pas servi de trajectoire : il a servi de mesure de l’effort à fournir. Les écarts, de sens contraires, se sont compensés ; le jour de marge a servi à la Støvla, comme prévu.`;
     DEFS.attribution = { t: 'D’où vient la comparaison au plan', html: () => `
       <p><b>L’indice de référence.</b> Un gérant de fonds est jugé contre un <i>benchmark</i> : un portefeuille de référence fixé à l’avance. S’en écarter n’est pas une faute, c’est son métier. Mais chaque écart doit s’expliquer.</p>
       <p><b>L’attribution de performance.</b> En 1986, <b>Brinson, Hood et Beebower</b> décomposent l’écart entre un fonds et son indice en morceaux qui s’additionnent : la répartition entre grandes classes d’actifs (l’<i>allocation</i>) et le choix des titres (la <i>sélection</i>).</p>
-      <p class="def-ex"><b>Ici.</b> Le plan est l’indice. L’allocation, c’est la répartition entre sac et trail. La mesure commune est l’<b>effort</b>, en km-effort : 1 km compte 1, et 100 m de montée comptent 1 de plus. Plan : ${f0(eP)} km-effort ; réel : ${f0(eR)} (${pc(eP, eR)}). Le pont (bouton plus bas) part des ${f0(P_.km8)} km du tracé et classe chaque écart de distance.</p>
+      <p class="def-ex"><b>Ici.</b> Le plan est l’indice. L’allocation, c’est la répartition entre sac et trail. La mesure commune est l’<b>effort</b>, en km-effort : 1 km compte 1, et 100 m de montée comptent 1 de plus. Plan : ${f0(eP)} km-effort ; réel : ${f0(eR)} (${pc(eP, eR)}). Le pont (graphique plus bas) part des ${f0(P_.km8)} km du tracé et classe chaque écart de distance.</p>
       <p><b>Pourquoi pas le temps.</b> Je n’avais pas de temps estimé avant le départ. Convertir le plan en heures demande une vitesse, et la seule que j’ai est celle mesurée pendant le trek, pluie comprise (${f1(MO.speed.sac)} km-effort/h avec le sac, ${f1(MO.speed.trail)} en trail). Avec elle, le temps réel redonne exactement l’effort réel : la comparaison des temps (${hm(hP)} contre ${hm(hR)}) ne peut rien voir d’autre que l’effort et le mélange sac / trail. Elle ne voit pas le ralentissement d’allure, que mesure la simulation (partie 07, +${hm(mcLate)}). Les deux disent donc des choses différentes : l’effort prévu a tenu, l’allure a glissé.</p>
       <p><b>Le coût de portage.</b> En finance, détenir une position coûte (financement, stockage) : c’est le <i>cost of carry</i>. Ici, le sac est la position : il permet d’avancer avec son camp, mais à terrain égal il ajoute ${f0(MO.sac_pct)} % de temps (partie 04, le ρ de la partie 06).</p>
       <div class="def-f">surcoût = temps porté − temps porté ÷ ${f2(1 + MO.sac_pct / 100)}</div>
       <div class="def-ex"><b>Plan.</b> ${hm(pS.h)} avec le sac, dont ${hm(MO.carry.plan)} de surcoût. <b>Réel.</b> ${hm(rS.h)}, dont ${hm(MO.carry.real)}. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de portage.</div>
       <p class="muted">Fourchette. Les ${f0(MO.sac_pct)} % sont une moyenne ; au sec, le sac coûte +${dry} % (partie 06, à confirmer : 2 sorties avec le sac sous la pluie). Presque tout le portage s’est fait au sec : avec +${dry} %, le surcoût serait de ${hm(carry(pS.h, dry))} dans le plan et ${hm(carry(rS.h, dry))} en réel, soit ${hm(carry(pS.h, dry) - carry(rS.h, dry))} économisées. Le temps réel vient de la montre (${hm(hR)}), la simulation additionne les tronçons de 250 m : quelques minutes d’écart. Un point réel est compté « sur le plan » à moins de 60 m du tracé ; le tracé Strava, lissé, est plus court que la mesure de la montre : ses distances sont multipliées par ${F('.2f')(MO.ratio)}.</p>` };
     const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
-    DEFS.pont = { t: 'De la distance prévue à la distance réelle', wide: true, html: () => `<p>Le pont part des ${f0(P_.km8)} km tracés sur Strava, ajoute le jour de marge et la conversion à la mesure de la montre (×${F('.2f')(M.gps_ratio)} sur le parcours commun), puis classe chaque écart jusqu’aux ${f0(B.real)} km réels : décision, terrain ou mesure.</p><div class="chart" id="c-bridge" data-h="330"></div><p class="muted">Distances à pied ; bateau Kirkefjord → Vindstad retiré du plan. Recherche de bivouac : ${f1(MO.biv.km)} km et ${f0(MO.biv.up)} m en ${MO.biv.n} détours.</p>`, after: drawBridge };
-    DEFS.carte = { t: 'Le plan et la trace réelle', full: true, html: () => `<div class="pm-legend legend-row"><span><i style="background:${C('--series-avec')}"></i>avec le sac</span><span><i style="background:${C('--series-sans')}"></i>sans le sac (trail)</span><span>trait plein : réel · pointillés : plan</span><span>● campement réel · □ prévu</span><span>▲ sommet atteint · △ abandonné</span><span><i style="background:${C('--down')};opacity:.4"></i>alerte de terrain</span><span class="muted">molette ou pincement pour zoomer</span></div><div class="pm-host" id="pm-host"></div>`, after: p => drawPlanMap(p.querySelector('#pm-host')) };
-    if (!$('plan-more').innerHTML) $('plan-more').innerHTML = [defBtn('carte', 'La carte : le plan et la trace réelle'), defBtn('pont', 'De la distance prévue à la distance réelle'), defBtn('journal', 'Journal des écarts, jour par jour')].join(' ');
-    $('t-plan').innerHTML = `<b>${f0(MO.track_done)} km sur ${f0(P_.km8)}</b> du tracé suivis, mais l’effort à <b>${pc(eP, eR)}</b> près. Moins de sac, plus de trail : les sommets abandonnés et les sorties substituées se sont compensés. Bon plan, bonnes décisions, ou chance ? C’est la question suivante.`;
+        DEFS.carte = { t: 'Le plan et la trace réelle', full: true, html: () => `<div class="pm-legend legend-row"><span><i style="background:${C('--series-avec')}"></i>avec le sac</span><span><i style="background:${C('--series-sans')}"></i>sans le sac (trail)</span><span>trait plein : réel · pointillés : plan</span><span>● campement réel · □ prévu</span><span>▲ sommet atteint · △ abandonné</span><span><i style="background:${C('--down')};opacity:.4"></i>alerte de terrain</span><span class="muted">molette ou pincement pour zoomer</span></div><div class="pm-host" id="pm-host"></div>`, after: p => drawPlanMap(p.querySelector('#pm-host')) };
+    if (!$('plan-more').innerHTML) $('plan-more').innerHTML = defBtn('carte', 'La carte : le plan et la trace réelle');
+    $('t-plan').innerHTML = `<b>${f0(MO.track_done / P_.km8 * 10)} km sur 10</b> du tracé suivis, mais l’effort à <b>${pc(eP, eR)}</b> près. Moins de sac, plus de trail : les sommets abandonnés et les sorties substituées se sont compensés. Bon plan, bonnes décisions, ou chance&nbsp;? C’est la question suivante.`;
   }
 
   /* ---------- 12 · conclusion ---------- */
@@ -1406,16 +1389,17 @@
     $('cc-cols').innerHTML = [
       [C('--accent'), 'mesurer', 'Le terrain comme un marché', `L’allure de Tobler sert de <b>rendement attendu</b> : chaque tronçon s’en écarte. Pris seuls, les écarts suivent presque une <b>loi normale</b> ; mais ils arrivent en série, comme la <b>volatilité</b> qui se regroupe sur les marchés agités. Les sommets sont presque <b>indépendants</b> : leur <b>risque spécifique</b> se dilue sur la semaine, comme dans un portefeuille <b>diversifié</b>. La pluie, elle, touche tous les sommets à la fois : c’est le <b>risque systématique</b>. La Støvla porte les deux : un sentier invisible, puis la pluie.`],
       [C('--series-avec'), 'expliquer', 'Le sac comme une position', `Une <b>régression à facteurs</b> chiffre chaque cause : le sac coûte ${fs0(sacS.pct)} %, chaque niveau de terrain ${fs0(sens['terrain (+1 niveau)'].pct)} %. Lues avec les <b>grecs</b> des options, ces sensibilités disent de combien mon temps bouge : le <b>gamma</b> révèle le saut brutal quand le sentier disparaît, le <b>vega</b> que l’allure reste plus régulière sous le sac, le <b>thêta</b> que l’incertitude grandit avec l’horizon.`],
-      [C('--warning'), 'piloter', 'La traversée comme un portefeuille', `Une <b>simulation de Monte Carlo</b> rejoue ${f0(MC_.ns)} traversées dans 1 200 étés réels : elle donne une <b>valeur à risque</b>, passe le <b>contrôle a posteriori</b> des banques et un <b>test de résistance</b>. Le jour de marge devient une <b>option</b>, évaluée avec Black-Scholes, dont la valeur fond à chaque jour sec. Le plan devient un <b>indice de référence</b>, et la dernière question est celle de tout gérant : <b>talent ou chance</b> ?`],
+      [C('--warning'), 'piloter', 'La traversée comme un portefeuille', `Une <b>simulation de Monte Carlo</b> rejoue ${f0(MC_.ns)} traversées dans 1 200 étés réels : elle donne une <b>valeur à risque</b>, passe le <b>contrôle a posteriori</b> des banques et un <b>test de résistance</b>. Le jour de marge devient une <b>option</b>, évaluée avec Black-Scholes, dont la valeur fond à chaque jour sec. Le plan devient un <b>indice de référence</b>, et la dernière question est celle de tout gérant : <b>talent ou chance&nbsp;?</b>`],
     ].map(([c, s_, t, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><p>${tx}</p></div>`).join('');
     $('cc-msg').innerHTML = `<b>Même méthode, même vocabulaire : seules les données changent.</b> C’est ce qui fait d’un trek un vrai terrain d’analyse.`;
     const slow = EP.episodes.filter(d => d.sign > 0 && Math.round(d.lost_min) >= 5), lost = d3.sum(slow, d => d.lost_min);
     const O = X.opt, upTo = k => O.dist.filter(d => d.k <= k).reduce((a, d) => a + d.p, 0), share = v => Math.round(v / 10);
+    const VG = window.RISK_ACTE2 && window.RISK_ACTE2.vega && window.RISK_ACTE2.vega.sac;
     $('lessons').innerHTML = [
-      ['Le danger n’était pas là où je portais', `Le sac m’a ralenti de ${f0(MO.sac_pct)} %, mais ${physIds.filter(id => !(R.rows.find(r => r.id === id) || {}).sac).length} alertes sur ${physIds.length} sont arrivées sans lui.`],
+      ['Le sac ralentit, le trail expose', `Le sac m’a ralenti de ${f0(MO.sac_pct)} %. Sans lui, le terrain était plus raide et mon allure plus irrégulière${VG ? ` (${f2(VG.a)} contre ${f2(VG.b)})` : ''} : les mesures confirment ce que j’avais ressenti.`],
       ['Les mauvais passages arrivent en série', `${slow.length} passages lents, ${hm(lost / 60)} en tout, le plus souvent subis.`],
       ['Le plan a servi de mesure, pas de chemin', `${f0(MO.track_done / PL_.plan.km8 * 10)} km sur 10 du tracé suivis, l’effort à ${f0(Math.abs(eR / eP - 1) * 100)} % près.`],
-      ['La pluie était probable ; son moment fut ma chance', `Trois étés sur quatre l’auraient eue pendant les grandes étapes ; elle est arrivée au J7.`],
+      ['La pluie était probable ; son moment fut ma chance', `Seul 1 été sur 4 garde les six premiers jours au sec ; en 2026, elle est arrivée au J7.`],
     ].map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
     DEFS.regles = { t: 'Pour la prochaine traversée', html: () => `<ul class="rules">${[
       `<b>Deux jours de marge, pas un.</b> Un seul suffit dans ${share(O.p_enough)} étés sur 10 ; deux, dans ${share(upTo(2))}.`,
@@ -1492,37 +1476,16 @@
       readout('r-need', `la marge suffit dans <b>${pctF(O.p_enough)}</b> des étés`);
       const pt = $('c-need').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('option'));
     }
-    // (c) thêta : la chance que la marge serve encore, soir après soir
-    {
-      const T = TH_, f = frame('c-cft', { t: 14, r: 16, b: 26, l: 44 });
-      const x = d3.scalePoint().domain([...T.map(t => t.day), 7]).range([0, f.w]).padding(.25), y = d3.scaleLinear().domain([0, 100]).range([f.h, 0]);
-      yGrid(f.g, y, f.w, 4, v => `${v} %`, 'left');
-      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(d => d ? (f.narrow ? `J${d}` : `soir J${d}`) : 'départ'));
-      const x7 = x(7) - x.step() / 2;
-      f.g.append('rect').attr('x', x7).attr('width', f.w - x7).attr('y', 0).attr('height', f.h).attr('fill', C('--text-muted')).attr('fill-opacity', .1).attr('rx', 4);
-      f.g.append('text').attr('class', 'ax-title').attr('x', x7 + 6).attr('y', 10).text('pluie');
-      [['p_use', C('--accent'), 'elle servira'], ['p_short', C('--down'), 'elle ne suffira pas']].forEach(([k, c]) => {
-        f.g.append('path').attr('d', d3.line().x(t => x(t.day)).y(t => y(t[k]))(T)).attr('fill', 'none').attr('stroke', c).attr('stroke-width', 2);
-        f.g.selectAll(null).data(T).join('circle').attr('cx', t => x(t.day)).attr('cy', t => y(t[k])).attr('r', 3).attr('fill', c);
-        f.g.append('text').attr('class', 'lbl tagt').attr('x', x(0) + 8).attr('y', y(T[0][k]) - 8).text(`${pctF(T[0][k])}`);
-      });
-      f.g.append('circle').attr('cx', x(7)).attr('cy', y(100)).attr('r', 5.5).attr('fill', C('--bg')).attr('stroke', C('--down')).attr('stroke-width', 2.2);
-      f.g.append('text').attr('class', 'lbl-strong').attr('x', x(7) - 10).attr('y', y(100) + 20).attr('text-anchor', 'end').style('paint-order', 'stroke').style('stroke', C('--bg')).style('stroke-width', '3px').text(`J7 : ${O.real_plan} étapes du plan sous la pluie`);
-      hover(f.g.selectAll('.mh').data(T).join('rect').attr('class', 'hit').attr('x', t => x(t.day) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-        t => `<b>${t.day ? `Soir du J${t.day}` : 'Au départ'}</b>${row('la marge servira', pctF(t.p_use))}${row('elle ne suffira pas', pctF(t.p_short))}${row('étés retenus', `${f0(t.n)} (même météo ce jour-là)`)}`);
-      legend('l-cft', [['ln', C('--accent'), 'chance que la marge serve (≥ 1 étape sous la pluie)'], ['ln', C('--down'), 'chance qu’elle ne suffise pas (≥ 2)']]);
-      readout('r-cft', `de <b>${pctF(T[0].p_use)}</b> au départ à <b>${pctF(T[T.length - 1].p_use)}</b> au soir du J6`);
-    }
     // (d) lire
     const av = X.ahead, avMax = av.reduce((b, a) => a.km > b.km ? a : b, av[0]), bunes = av.find(a => /Bunes/.test(a.real));
     $('cf-lede').innerHTML = `La pluie, son moment et sa quantité, je la subis : c’est la volatilité. Le jour de marge, prévu avant de partir, est la seule vraie option. L’une se mesure sur 1 200 étés réels, l’autre s’évalue comme une assurance.`;
     $('cf-cols').innerHTML = [
-      [C('--warning'), 'la volatilité', 'Le moment de la pluie', '1 été sur 4', `garde les six premiers jours au sec, comme 2026 (${pctF(V.p_dry_1_6)}). Dans un été sur trois, il pleut dès le J1. La quantité, elle, était ordinaire : ${pctF(V.p_ge_wet)} des étés ont au moins ${V.real_wet} jours de pluie.`],
+      [C('--warning'), 'la volatilité', 'Le moment de la pluie', '1 été sur 4', `garde les six premiers jours au sec, comme 2026 (${pctF(V.p_dry_1_6)}). Dans un été sur trois, il pleut dès le J1.`],
       [C('--accent'), 'l’option, avant de partir', 'Un seul jour de marge', `suffit : ${pctF(O.p_enough)}`, `Il sert dans ${pctF(O.p_use)} des étés, mais ne couvre qu’un jour de pluie sur une étape : dans ${pctF(O.p_short)} des étés, il en faudrait deux ou plus.`],
       [C('--down'), 'l’option, en 2026', 'Débordée, puis libérée', `${O.real_plan} étapes`, `du plan tombaient sous la pluie, celles du tour du lac. J’ai renoncé à la boucle : la marge, libérée, est devenue la Støvla, sous la pluie, avec son éboulement.`],
-      [C('--text-muted'), 'ce qui n’a pas compté', 'L’avance des J2–J3', `+${f0(avMax.km)} km → ${bunes ? `${bunes.km < 0 ? '−' : '+'}${f0(Math.abs(bunes.km))} km` : '0'}`, `le soir du ${dateLbl(avMax.night)}, puis à Bunes : le bateau du J4 impose la même étape, avance ou pas.`],
+      [C('--text-muted'), 'ce qui n’a pas compté', 'L’avance des J2–J3', `+${f0(avMax.km)} km → ${bunes ? `${bunes.km < 0 ? '−' : '+'}${f0(Math.abs(bunes.km))} km` : '0'}`, `le soir du ${dateLbl(avMax.night)}, puis plus rien le lendemain à Bunes : le bateau du J4 impose la même étape, avance ou pas.`],
     ].map(([c, s_, t, v, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">${v}</b><p>${tx}</p></div>`).join('');
-    $('cf-msg').innerHTML = `<b>La chance a choisi le moment ; la seule option était trop petite.</b> Ce n’est pas la marge qui a protégé la traversée, mais une pluie tombée à la fin et le renoncement au tour du lac. Et le jour libéré n’était pas sans risque : ${f1(TW.hard_km)} km de trail exigeant sous la pluie (${TW.names.map(nameOf).join(', ')}).`;
+    $('cf-msg').innerHTML = `<b>La chance a choisi le moment ; la seule option était trop petite.</b> Le jour de marge a bien absorbé mon retard de marche (partie 07), mais il ne pouvait pas couvrir deux étapes sous la pluie : c’est une pluie tombée à la fin et le renoncement au tour du lac qui ont protégé la traversée. Et le jour libéré n’était pas sans risque : ${f1(TW.hard_km)} km de trail exigeant ou expert sous la pluie (${TW.names.map(nameOf).join(', ')}).`;
     $('t-cf').innerHTML = `<b>1 été sur 4</b> garde les six premiers jours au sec : c’est ma chance. Le jour de marge, seule vraie option, ne suffisait que dans <b>${pctF(O.p_enough)}</b> des étés. En 2026, la pluie l’aurait débordé ; le renoncement au tour du lac l’a libéré pour un sommet.`;
     DEFS.volat = { t: 'La volatilité : la pluie sur 1 200 étés', html: () => `
       <p><b>D’où viennent les étés.</b> Les mêmes que les parties 05 et 07 : ERA5, au point centre de l’archipel, de 1996 à 2025, avec un départ chaque jour du 1er juin au 10 juillet, soit ${f0(V.worlds)} fenêtres de 9 jours. Un jour de pluie reçoit au moins 1 mm.</p>
@@ -1540,7 +1503,7 @@
     const QD = { merite: ['Mérité', C('--up')], chance: ['Chance', C('--warning')], consequence: ['Conséquence', C('--down')], malchance: ['Malchance', C('--series-avec')] };
     const decTable = `<thead><tr><th>Jour</th><th>Décision</th><th>Ce que je savais</th><th>Résultat constaté</th><th>Verdict</th></tr></thead><tbody>${I.map(d => `<tr><td class="mono">${d.day}</td><td>${d.txt}${d.day === 'J2' ? '<div class="muted">avance effacée au J4 par le bateau</div>' : ''}${/faute de bivouac/.test(d.txt) ? '<div class="muted">en partie subie : bivouac impossible au lac</div>' : ''}</td><td>${d.flags.length ? d.flags.map(k => FL[k] || k).join(', ') : 'aucun signal'}</td><td>${d.res}</td><td class="nw"><span class="dot" style="background:${QD[d.quad][1]}"></span>${QD[d.quad][0]}</td></tr>`).join('')}</tbody>`;
     DEFS.decision = { t: 'Les décisions, une par une', wide: true, html: () => `
-      <p><b>L’idée.</b> En 1966, <b>Ronald Howard</b> fonde l’analyse de décision sur une règle : une décision se juge avec ce que l’on savait au moment de la prendre, pas avec ce qui est arrivé. Juger sur le résultat seul, c’est le biais de résultat (<i>resulting</i>, Annie Duke, 2018). En finance, c’est la question posée à tout gérant : talent ou chance ?</p>
+      <p><b>L’idée.</b> En 1966, <b>Ronald Howard</b> fonde l’analyse de décision sur une règle : une décision se juge avec ce que l’on savait au moment de la prendre, pas avec ce qui est arrivé. Juger sur le résultat seul, c’est le biais de résultat (<i>resulting</i>, Annie Duke, 2018). En finance, c’est la question posée à tout gérant : talent ou chance&nbsp;?</p>
       <p><b>La grille.</b> Chaque décision est classée selon les signaux connus à ce moment-là (prudente face aux signaux : bonne ; engagée malgré eux : risquée) et selon son résultat. ${CD.quad.merite} au résultat mérité, ${CD.quad.consequence} payées, ${CD.quad.chance} chanceuse, ${CD.quad.malchance} malchanceuse.</p>
       <div class="table-wrap flat"><table class="data">${decTable}</table></div>
       <p class="muted">À lire comme un journal, pas comme une preuve : ${CD.n} décisions, choisies et notées par moi après coup.</p>` };

@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261125-7">
+<link rel="stylesheet" href="risque.css?v=20261125-8">
 </head>
 <body>
 <div class="viz-root">
@@ -24,7 +24,7 @@
 <header class="hero">
   <div class="hero-top">
     <div>
-      <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v0.4 · 18/11/2026</span><span>Période : 14–22 juin 2026</span></div>
+      <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v1.0 · 25/11/2026</span><span>Période : 14–22 juin 2026</span></div>
       <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
       <p class="sub">Allure, terrain, météo et récupération sur 9 jours, en trois actes : mesurer, expliquer, piloter.</p>
     </div>
@@ -228,7 +228,7 @@
     </div>
     <div class="notes wk">
       <div><h4>Comment lire</h4><p>À gauche, la chance qu’il pleuve un jour donné, selon qu’il a plu ou non la veille. Si les jours étaient indépendants, les deux barres seraient égales. À droite, chaque histogramme range 1 200 fenêtres de 9 jours tirées des étés 1996–2025 ; la barre rouge est la classe de 2026, et le centile dit quelle part des fenêtres fait moins.</p></div>
-      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 09. Un épisode est une suite de jours de pluie. La pluie vécue (24,1 mm) est celle de la zone où j’étais chaque jour. Le classement sur 30 ans se fait à un point fixe, au centre de l’archipel, où la même semaine donne 22,1 mm : on compare ainsi des mesures identiques.</p></div>
+      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 09. Un épisode est une suite de jours de pluie. Le classement sur 30 ans se fait à un point fixe, au centre de l’archipel, pour comparer chaque été au même endroit.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-wx2"></p></div>
     </div>
   </section>
@@ -246,7 +246,7 @@
 
   <div class="act" id="act3"><span class="act-n">Acte 3</span><span class="act-t">Piloter</span><span class="act-d">Prévoir, tenir un budget, décider : ce que le modèle voit et ce que le pilote choisit.</span></div>
   <section id="s7">
-    <header class="sh"><span class="num">07</span><h2>Simulation de risque : la prévision du J2, rejouée 5 000 fois</h2></header>
+    <header class="sh"><span class="num">07</span><h2>Simulation de risque : la prévision du J2, rejouée 5&nbsp;000 fois</h2></header>
     <p class="lede" id="mc-lede"></p>
     <div class="pc">
       <div class="pc-head mc-head">
@@ -311,13 +311,13 @@
       </div>
     </div>
     <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Avancement sur le parcours prévu, soir après soir</span><span class="pc-r mono" id="r-prog"></span></div>
-      <div class="chart" id="c-prog" data-h="300"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-prog"></span></div>
+      <div class="pc-head"><span class="pc-t">De la distance prévue à la distance réelle</span><span class="pc-r mono" id="r-bridge"></span></div>
+      <div class="chart" id="c-bridge" data-h="330"></div>
+      <div class="pc-foot"><span class="legend-row" id="l-bridge"></span><span class="src" id="s-bridge"></span></div>
       <div class="pc-more" id="plan-more"></div>
     </div>
     <div class="notes two">
-      <div><h4>Comment lire</h4><p>En haut, le plan en clair, le réel en plein, avec et sans le sac. L’escalier place chaque campement réel sur le parcours prévu : au-dessus de la ligne, en avance.</p></div>
+      <div><h4>Comment lire</h4><p>En haut, le plan en clair, le réel en plein, avec et sans le sac. En bas, le pont part du tracé prévu et ajoute chaque écart, jusqu’à la distance réelle.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-plan"></p></div>
     </div>
   </section>
@@ -343,15 +343,10 @@
         <div class="ex-cols four" id="cf-cols"></div>
         <p class="ex-msg" id="cf-msg"></p>
       </div>
-    </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Le jour de marge, soir après soir</span><span class="pc-r mono" id="r-cft"></span></div>
-      <div class="chart" id="c-cft" data-h="220"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-cft"></span></div>
       <div class="pc-more" id="cf-more"></div>
     </div>
     <div class="notes two">
-      <div><h4>Comment lire</h4><p>À gauche, le jour de la première pluie dans 1 200 étés ; à droite, le nombre d’étapes qu’elle aurait mouillées. En bas, la chance que la marge serve encore, vue de chaque soir.</p></div>
+      <div><h4>Comment lire</h4><p>À gauche, le jour de la première pluie dans 1 200 étés. À droite, le nombre d’étapes du plan qu’elle aurait mouillées : au-delà d’une, un seul jour de marge ne suffit plus.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-cf"></p></div>
     </div>
   </section>
@@ -441,6 +436,6 @@
 <script src="risque_mc.js?v=20261124-2"></script>
 <script src="risque_cd.js?v=20261124-3"></script>
 <script src="ressentis_episodes.js?v=20261118-3"></script>
-<script src="risque.js?v=20261125-10"></script>
+<script src="risque.js?v=20261125-12"></script>
 </body>
 </html>
