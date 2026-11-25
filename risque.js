@@ -1432,7 +1432,7 @@
     $('lessons').innerHTML = [
       ['Le danger n’était pas là où je portais', `Le sac m’a ralenti de ${f0(MO.sac_pct)} %, mais ${physIds.filter(id => !(R.rows.find(r => r.id === id) || {}).sac).length} des ${physIds.length} alertes de terrain sont arrivées sans lui, sur des sommets où je me sentais léger.`],
       ['Les mauvais passages arrivent en série', `Un pas seul était ordinaire. Ce sont les séries qui ont coûté : ${slow.length} passages lents, ${hm(lost / 60)} en tout, le plus souvent subis.`],
-      ['Le plan a servi de mesure, pas de chemin', `Seuls ${f0(MO.track_done)} des ${f0(PL_.plan.km8)} km tracés ont été suivis, et pourtant l’effort tombe à ${f0(Math.abs(eR / eP - 1) * 100)} % du plan : chaque renoncement a été compensé ailleurs.`],
+      ['Le plan a servi de mesure, pas de chemin', `À peine ${f0(MO.track_done / PL_.plan.km8 * 10)} km sur 10 du tracé prévu ont été suivis, et pourtant l’effort tombe à ${f0(Math.abs(eR / eP - 1) * 100)} % du plan : chaque renoncement a été compensé ailleurs.`],
       ['La pluie était probable ; son moment fut ma chance', `Dans trois étés sur quatre, elle serait tombée pendant les grandes étapes. Elle est arrivée au J7, quand mon seul jour de marge n’aurait couvert que ${share(O.p_enough)} étés sur 10.`],
     ].map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
     $('rules').innerHTML = [
