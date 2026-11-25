@@ -6,6 +6,7 @@
   const T = window.TREK;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isPhone = () => window.matchMedia('(max-width: 820px)').matches;
+  let liveTitleWasOpen = false, curLive = null;   // declared early: the home panel can be reset before the map is ready
   let filmEl = null;   // home bubble to the film (buildFilmHome), next to the risk bubble
   let riskEl = null;   // home bubble to the risk report (buildRiskHome)
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -628,12 +629,26 @@
       riskEl.style.right = `${Math.round(innerWidth - pr.left + 12)}px`;
       let bottom = lr && lr.height ? innerHeight - lr.top + 10 : 62;
       if (above && cr && cr.height) bottom = Math.max(bottom, innerHeight - cr.top + 10);
-      // on the bivouacs home, line it up with the bottom of the night records
-      const rg = panelBox.querySelector('.rec-grid'), rb = rg && rg.getBoundingClientRect();
-      if (rb && rb.height && rb.bottom < innerHeight - bottom) bottom = innerHeight - rb.bottom;
       riskEl.style.bottom = `${Math.round(bottom)}px`;
+      alignRecords(innerHeight - bottom);
     }
     placeFilm();
+  }
+  /* bivouacs home: the night records (and the bivouac-law link under them) go down so that the
+     bottom of the records lines up with the bottom of the home bubbles, without making the panel scroll */
+  function alignRecords(target) {
+    const rt = panelBox.querySelector('.rec-title'), rg = panelBox.querySelector('.rec-grid');
+    if (!rt || !rg) return;
+    const law = panelBox.querySelector('.law-link');
+    rt.style.marginTop = ''; if (law) law.style.marginTop = '';
+    if (riskEl && riskEl.classList.contains('rh-off')) return;
+    const base = parseFloat(getComputedStyle(rt).marginTop) || 0;
+    const d = Math.round(target - rg.getBoundingClientRect().bottom);
+    if (d <= 0) return;
+    rt.style.marginTop = `${base + d}px`;
+    let over = panel.scrollHeight - panel.clientHeight;   // never push the law link out of view
+    if (over > 0 && law) { const lm = parseFloat(getComputedStyle(law).marginTop) || 0, cut = Math.min(over, Math.max(0, lm - 4)); law.style.marginTop = `${lm - cut}px`; over -= cut; }
+    if (over > 0) rt.style.marginTop = `${Math.max(base, base + d - over)}px`;
   }
   function riskHome(on) {
     if (!riskEl) return;
@@ -2111,7 +2126,6 @@
   }
   /* phone only: while an activity plays, the screen goes to the map and the moving figures —
      title folded, map buttons tucked behind one button under the compass, no tabs, no headings */
-  let liveTitleWasOpen = false, curLive = null;
   function phoneLive(on) {
     on = on && matchMedia('(max-width: 600px)').matches;
     const was = document.body.classList.contains('ph-live');
