@@ -15,7 +15,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js')); require(path.join(root, 'data.js'));
+require(path.join(root, 'data', 'risque_data.js')); require(path.join(root, 'data', 'data.js'));
 const R = window.RISK, S = R.series, TR = window.TREK.trace.features;
 
 const FLAT_SLOPE = 5, FLAT_MIN = 6, FLAT_E = 0.10, SLOW_E = 0.20, NEAR_M = 35, RET_MIN = 4;
@@ -77,6 +77,6 @@ S.forEach((s, i) => {
   else sections.push({ act: s.act, i0: i, i1: i, g: g[i], why: w });
 });
 const out = `// généré par outils/segmentation_terrain.js — ne pas modifier à la main\nwindow.RISK_SECTIONS = ${JSON.stringify({ seg_grade: g, sections })};\n`;
-fs.writeFileSync(path.join(root, 'risque_sections.js'), out);
+fs.writeFileSync(path.join(root, 'data', 'risque_sections.js'), out);
 const km = i => S[i].km, prevKm = i => i ? S[i - 1].km : 0;
 sections.forEach(x => console.log(x.act.padEnd(22), String(x.g), `${prevKm(x.i0).toFixed(1)}→${km(x.i1).toFixed(1)} km`, x.why ? x.why.k + (x.why.o ? ' ' + x.why.o : '') : ''));

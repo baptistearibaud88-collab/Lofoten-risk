@@ -11,7 +11,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'data.js')); require(path.join(root, 'risque_data.js'));
+require(path.join(root, 'data', 'data.js')); require(path.join(root, 'data', 'risque_data.js'));
 const T = window.TREK, R = window.RISK;
 const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 const hav = (a, b) => { const la = (b[0] - a[0]) * Math.PI / 180, lo = (b[1] - a[1]) * Math.PI / 180 * Math.cos(a[0] * Math.PI / 180); return 6371000 * Math.hypot(la, lo); };
@@ -154,7 +154,7 @@ const speed = { sac: eff(rSac) / rSac.h, trail: eff(rTrail) / rTrail.h };       
 pSac.h = eff(pSac) / speed.sac; pTrail.h = eff(pTrail) / speed.trail;
 const hRaw = (pSac.gpx + pSac.dplus / 100) / speed.sac + (pTrail.gpx + MARGIN.km + pTrail.dplus / 100) / speed.trail;   // sans conversion de mesure
 // coût de portage : part du temps avec le sac due au sac lui-même (effet de la régression, partie 06)
-require(path.join(root, 'risque_sens.js'));
+require(path.join(root, 'data', 'risque_sens.js'));
 const sacPct = window.RISK_SENS.sens.find(x => x.name === 'sac sur le dos').pct / 100, carry = h => h * (1 - 1 / (1 + sacPct));
 const rnd = o => ({ km: r1(o.km), dplus: Math.round(o.dplus), h: r2(o.h), ...(o.gpx != null ? { gpx: r1(o.gpx) } : {}) });
 const campSame = CAMPS.slice(1).filter((c, i) => hav([c.lat, c.lon], [camps[i + 1].lat, camps[i + 1].lon]) < 300).length;
@@ -191,7 +191,7 @@ const out = {
     summits: T.summits.map(x => ({ name: x.sommet, lat: x.lat, lon: x.lon, alt: x.hauteur_officielle_m || x.alt_gps_m, act: x.activite })) },
   match: { th: TH, shared: r1(shared), done: r1(doneKm), gps_ratio: r2(shared / doneKm), abandoned, bridge, biv: bivEp },  modes,
 };
-fs.writeFileSync(path.join(root, 'risque_plan.js'), `// généré par outils/plan_reel.js — ne pas modifier à la main\nwindow.RISK_PLAN = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_plan.js'), `// généré par outils/plan_reel.js — ne pas modifier à la main\nwindow.RISK_PLAN = ${JSON.stringify(out)};\n`);
 console.log(`plan ${out.plan.km_total} km tracés · itinéraire 8 j ${plan8} km · avec marge ${planWalk} km, ${planDp} m D+ · accès J6 ${j6access} km`);
 console.log(` · commun ${r1(shared)} km réel pour ${r1(doneKm)} km de plan (×${r2(shared / doneKm)})`);
 DAYS.forEach(d => console.log(`J${d.day} plan ${d.km} km ${d.dplus} m · réel ${r1(real[d.day].km)} km ${Math.round(real[d.day].dplus)} m`));

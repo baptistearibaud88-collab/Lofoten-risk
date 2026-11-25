@@ -31,7 +31,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-['risque_data.js', 'risque_sections.js', 'risque_episodes.js'].forEach(f => require(path.join(root, f)));
+['risque_data.js', 'risque_sections.js', 'risque_episodes.js'].forEach(f => require(path.join(root, 'data', f)));
 const R = window.RISK, S = R.series, N = S.length, G = window.RISK_SECTIONS.seg_grade, mm = R.dist.mode_mu;
 const NS = 5000, L = 8, ORIGIN = 2, GPS_SLOPE = 60, TH = 1, MARGIN_ACT = 'stuvla';
 const rowOf = Object.fromEntries(R.rows.map(r => [r.id, r]));
@@ -230,7 +230,7 @@ marge.k_blocs = r3(q(sorted(sumOver(sims.blocs, kept)), 50));   // prévision du
 marge.real_kept = r3(fut0.reduce((a, i, j) => a + (kept[j] ? TR[i] : 0), 0));
 out.marge = marge;
 
-fs.writeFileSync(path.join(root, 'risque_mc.js'), `// généré par outils/monte_carlo.js — ne pas modifier à la main\nwindow.RISK_MC = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_mc.js'), `// généré par outils/monte_carlo.js — ne pas modifier à la main\nwindow.RISK_MC = ${JSON.stringify(out)};\n`);
 const hm = h => `${h < 0 ? '−' : ''}${Math.floor(Math.abs(h))} h ${String(Math.round((Math.abs(h) % 1) * 60)).padStart(2, '0')}`;
 console.log(`calage J1–J${ORIGIN} : ${cal0.length} tronçons, s = ${out.sigma} ·`, out.coef.map(c => `${c.name} ${c.b}`).join(' · '));
 console.log(`prévision J${ORIGIN + 1}–J9 : centrale ${hm(out.central)}, réel ${hm(realTot)} (${hm(realTot - out.central)} d'écart)`);

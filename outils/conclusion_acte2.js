@@ -19,7 +19,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-['risque_data.js', 'risque_episodes.js', 'risque_mc.js'].forEach(f => require(path.join(root, f)));
+['risque_data.js', 'risque_episodes.js', 'risque_mc.js'].forEach(f => require(path.join(root, 'data', f)));
 const R = window.RISK, MC = window.RISK_MC, mm = R.dist.mode_mu, GPS_SLOPE = 60;
 const rowOf = Object.fromEntries(R.rows.map(r => [r.id, r]));
 const wetDay = Object.fromEntries(R.weather.days.map(d => [d.day, +(d.rain >= 1)]));
@@ -87,5 +87,5 @@ const theta = { origin: MC.origin,
   real_end: mn(MC.real_dev[MC.real_dev.length - 1]), pct_blocs: MC.blocs.seg.real_pct, pct_normal: MC.normal.seg.real_pct };
 
 const res = { n: S.length, delta, gamma, vega, theta, rho, vanna, charm, sacWet };
-fs.writeFileSync(path.join(root, 'risque_acte2.js'), `// généré par outils/conclusion_acte2.js — ne pas modifier à la main\nwindow.RISK_ACTE2 = ${JSON.stringify(res)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_acte2.js'), `// généré par outils/conclusion_acte2.js — ne pas modifier à la main\nwindow.RISK_ACTE2 = ${JSON.stringify(res)};\n`);
 const { theta: _t, ...brief } = res; console.log(JSON.stringify(brief), JSON.stringify(theta.horizon), theta.real_end, theta.pct_blocs, theta.pct_normal);

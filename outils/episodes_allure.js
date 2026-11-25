@@ -10,7 +10,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-['risque_data.js', 'data.js', 'risque_sections.js'].forEach(f => require(path.join(root, f)));
+['risque_data.js', 'data.js', 'risque_sections.js'].forEach(f => require(path.join(root, 'data', f)));
 const R = window.RISK, S = R.series, A = window.TREK.acts, SEC = window.RISK_SECTIONS;
 const N = S.length, e = S.map(s => s.e), acts = [...new Set(S.map(s => s.act))];
 const EP_THR = 0.20, EP_MIN = 3, MAXLAG = 20, GPS_SLOPE = 60;   // same threshold as outils/distribution.js
@@ -162,7 +162,7 @@ const out = {
   seg_t: t.map(Math.round), seg_lost: lost.map(r2), thr: EP_THR, episodes,
   topo, cluster, sys,
 };
-fs.writeFileSync(path.join(root, 'risque_episodes.js'), `// généré par outils/episodes_allure.js — ne pas modifier à la main\nwindow.RISK_EPISODES = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_episodes.js'), `// généré par outils/episodes_allure.js — ne pas modifier à la main\nwindow.RISK_EPISODES = ${JSON.stringify(out)};\n`);
 console.log(`${episodes.length} épisodes · ${massifs.length} massifs · raideur même massif r=${r2(topo.grad_same.r)} · suivant r=${r2(topo.grad_next.r)} · allure même massif r=${r2(topo.pace_same.r)} · suivant r=${r2(topo.pace_next.r)} (seuil ${r2(topo.pace_next.crit)})`);
 console.log('systématique :', JSON.stringify(sys.agg), 'pluie', sys.rain_pct, 'brut', sys.raw_pct, JSON.stringify(sys.tried));
 console.log(topo.slope.map(b => `${b.lo}%: dist ${Math.round(b.dist * 100)} D+ ${Math.round(b.gain * 100)}`).join(' | '));

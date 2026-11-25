@@ -9,7 +9,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js')); require(path.join(root, 'risque_sections.js'));
+require(path.join(root, 'data', 'risque_data.js')); require(path.join(root, 'data', 'risque_sections.js'));
 const R = window.RISK, S = R.series;
 const GPS_SLOPE = 60;
 const r3 = v => Math.round(v * 1000) / 1000;
@@ -78,6 +78,6 @@ const out = {
   artefacts: art.map(i => ({ act: S[i].act, day: S[i].day, km: S[i].km, slope: S[i].slope, e: r3(S[i].e) })),
   sd_avec: r3(sdOf(1)), sd_sans: r3(sdOf(0)),
 };
-fs.writeFileSync(path.join(root, 'risque_dist.js'), `// généré par outils/distribution.js — ne pas modifier à la main\nwindow.RISK_DIST = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_dist.js'), `// généré par outils/distribution.js — ne pas modifier à la main\nwindow.RISK_DIST = ${JSON.stringify(out)};\n`);
 console.log(`n ${n} (${art.length} artefact) · σ ${r3(sd)} · asym ${r3(skew)} · kurt ${r3(kurt)} · JB ${r3(jb)} p ${r3(jb_p)} · >2σ ${b2} (${r3(n * norm2)} att.) · >3σ ${b3} (${r3(lam)} att., p ${r3(pPois)}) · Student ddl ${r3(best.df)} gain ${r3(best.ll - llN)} · σ sac ${out.sd_avec} / ${out.sd_sans}`);
 console.log(extremes);

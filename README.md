@@ -1,42 +1,84 @@
-# Lofoten Traverse — Planning, Luck and Risk
+# Lofoten 2026 — une traversée lue comme une analyse de risque
 
-Traversée des îles Lofoten (Norvège), du 13 au 23 juin 2026 : 159 km, 9 889 m de dénivelé positif, 7 campements, 9 sommets.
+![Lofoten](photos/apercu.jpg)
 
-> Dans quelle mesure la réussite d'une expédition vient-elle du plan et des décisions, plutôt que de circonstances favorables ?
+Neuf jours seul et en autonomie dans les îles Lofoten (Norvège), du 14 au 22 juin 2026, sous le soleil de minuit : **159 km, 9 892 m de dénivelé positif, 25 sorties**, sac de bivouac sur le dos ou en trail léger pour les sommets.
 
-## La carte
+J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec les outils de la gestion des risques en finance.
 
-La page d'accueil (`index.html`) est une carte 3D des Lofoten : trace bleu foncé marchée avec le sac, trace rouge en trail sans sac, bivouacs en bleu foncé, sommets en triangles noirs. Trois rubriques : bivouacs, sommets (chaque sortie trail se rejoue) et étapes avec le sac de bivouac en bivouac ; un bouton rejoue toute la traversée. Compteurs en direct, profil d’altitude et de fréquence cardiaque, caméra drone, orbite ou fixe, campements et sommets. Un clic sur un campement fait voler la caméra jusqu'à lui et affiche la nuit : sommeil, fréquence cardiaque au repos, HRV, Body Battery, météo corrigée de l'altitude, poids estimé du sac le lendemain.
+> **Problématique** — Seul, en autonomie, sous le soleil de minuit : où le risque s'est-il réellement concentré pendant la traversée, et le plan l'avait-il anticipé ?
 
-## En cours
+## Voir le projet
 
-- Collecte des données (GPS Garmin, météo ERA5, nourriture, équipement, sommeil, dépenses) : presque terminée
-- Récit jour par jour et données de planification (livre-guide)
-- Analyses : biais du plan, simulation Monte Carlo, indice de dangerosité
-- Chapitres jour par jour de la carte-récit
+| | |
+|---|---|
+| **Carte 3D** | [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/) — la traversée rejouée sur le relief : étapes avec le sac, sommets en trail, bivouacs, nuits, photos. |
+| **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) — 10 parties en trois actes, graphiques interactifs ; chaque notion technique s'ouvre dans un bouton « ? ». |
 
-## Données du rapport de risque
+![Le rapport](docs/apercu_rapport.jpg)
 
-`risque_data.js` (analyse principale) et `data.js` (trace et récit) sont générés hors de ce dépôt. Onze fichiers en sont dérivés ici, à régénérer dans cet ordre après chaque mise à jour :
+## Le rapport en trois actes
+
+| Acte | Partie | En une phrase |
+|---|---|---|
+| **1 · Mesurer** | 01 Relief et cotation | 25 sorties en bougies, terrain coté sur l'échelle norvégienne (DNT) : 52 % de la distance en terrain exigeant ou expert. |
+| | 02 Écarts et temps perdu | Chaque tronçon de 250 m comparé à une allure attendue (Tobler recalé) : écarts presque normaux un par un, mais qui arrivent en série. |
+| | 03 Sommets indépendants, météo commune | Risque spécifique (le terrain d'un massif) diversifié, risque systématique (la pluie) qui touche tout à la fois. |
+| **2 · Expliquer** | 04 Sensibilités et fatigue | Régression à facteurs : sac +41 %, descente raide +22 %, +15 % par niveau de terrain ; fatigue suivie par la VFC nocturne. |
+| | 05 Météo | 2026 face à 30 étés (ERA5) : six jours secs, puis un épisode de pluie rare. |
+| | 06 Les grecs | Les mesures relues comme les sensibilités d'une option : delta, gamma, vega, thêta, rho. |
+| **3 · Piloter** | 07 Monte Carlo et jour de marge | 5 000 traversées simulées dans 1 200 étés réels ; valeur à risque, contrôle a posteriori, test de résistance ; le jour de marge évalué avec Black-Scholes. |
+| | 08 Plan contre réel | Le plan comme indice de référence : 7 km sur 10 du tracé suivis, mais l'effort tenu à 2 % près. |
+| | 09 Chance ou décision | La pluie comme volatilité, le jour de marge comme seule option réelle. |
+| | 10 Conclusion | Ce que la semaine a montré, et les règles pour la prochaine traversée. |
+
+## Les données et les méthodes
+
+- **Données** : montre GPS (7 184 points, fréquence cardiaque, VFC et sommeil de 9 nuits), météo ERA5 (Copernicus, 30 étés 1996–2025), cotes des sorties (DNT et guides), plan tracé avant le départ (Strava).
+- **Traitement** : traversée découpée en 604 tronçons de 250 m, un tronçon faux écarté (altitude GPS erronée) ; chaque tronçon rattaché à sa météo, à la nuit précédente, à sa cote et au port ou non du sac.
+- **Méthodes** : loi de Tobler recalée, tests de normalité et de séries, régression à facteurs (moindres carrés), simulation de Monte Carlo par blocs avec climat tiré dans 1 200 fenêtres réelles, valeur à risque et expected shortfall, contrôle a posteriori (Kupiec, Bâle), test de résistance, Black-Scholes / Black 1976 sur un call spread, attribution de performance (Brinson), options réelles (Myers).
+
+Le détail de chaque méthode, ses limites et ses sources sont dans le rapport (boutons « ? » et partie « Méthodes et sources »).
+
+## Organisation du dépôt
 
 ```
-node outils/segmentation_terrain.js   # cotation par section (partie 01) → risque_sections.js
-node outils/distribution.js           # distribution des écarts, sans artefact GPS (partie 02) → risque_dist.js
-node outils/episodes_allure.js        # épisodes d'allure et massifs (parties 04–05) → risque_episodes.js
-node outils/plan_reel.js              # plan (donnees/plan.gpx) contre réel (partie 10) → risque_plan.js
-node outils/bougies_sorties.js        # bougies par sortie (partie 01) → risque_bougies.js
-node outils/meteo_series.js           # persistance de la pluie, 1 200 fenêtres (partie 07) → risque_meteo.js
-node outils/indice_danger.js          # indice de danger sans artefact GPS (partie 08) → risque_indice.js
-node outils/sensibilites.js           # régression et matrice sans artefact GPS (partie 06) → risque_sens.js
-node outils/monte_carlo.js            # prévision du J2, contrôle a posteriori, test de résistance (partie 09) → risque_mc.js
-node outils/carte_resume.js           # encart « Analyse de risque » de la carte → risque_carte.js
-node outils/chance_decision.js        # pluie déplacée, grille des décisions (partie 11) → risque_cd.js
+index.html            carte 3D (page d'accueil)
+risque.html           rapport d'analyse de risque
+css/                  styles des deux pages
+js/                   code des deux pages (app.js : carte ; risque.js : rapport)
+data/                 données chargées par les pages (data.js, risque_*.js, ressentis_episodes.js)
+donnees/              données brutes : plan tracé (plan.gpx), pluie ERA5 1996–2025
+outils/               scripts de calcul (Node.js) qui produisent data/risque_*.js
+outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
+photos/               photos de la traversée (et miniatures)
+docs/                 images du README
 ```
 
-`donnees/era5_climatology_1996_2025_daily.json` : pluie quotidienne ERA5 1996–2025 au point centre (copie de `data/raw/weather/`), lue par `outils/meteo_series.js`.
+## Regénérer les données
 
-`ressentis_episodes.js` se remplit à la main : cause de chaque épisode lent de 10 min ou plus.
+`data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt. Les autres fichiers de `data/` en sont dérivés par les scripts de `outils/`, à relancer dans cet ordre depuis la racine :
 
-## Sources des fonds de carte
+```bash
+node outils/segmentation_terrain.js   # cotation par section (01)          → data/risque_sections.js
+node outils/distribution.js           # écarts à l'allure attendue (02)    → data/risque_dist.js
+node outils/episodes_allure.js        # épisodes lents et massifs (02–03)  → data/risque_episodes.js
+node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
+node outils/bougies_sorties.js        # bougies par sortie (01)            → data/risque_bougies.js
+node outils/meteo_series.js           # pluie sur 1 200 fenêtres (05)      → data/risque_meteo.js
+node outils/indice_danger.js          # rangs d'exposition des sorties     → data/risque_indice.js
+node outils/sensibilites.js           # régression et corrélations (04)    → data/risque_sens.js
+node outils/monte_carlo.js            # simulation, contrôle, résistance (07) → data/risque_mc.js
+node outils/conclusion_acte2.js       # les grecs (06)                     → data/risque_acte2.js
+node outils/marge_option.js           # jour de marge, Black-Scholes (07)  → data/risque_marge.js
+node outils/chance_decision.js        # volatilité et option (09)          → data/risque_cd.js
+node outils/carte_resume.js           # encart « Analyse de risque » de la carte → data/risque_carte.js
+```
 
-Relief : Mapzen / AWS Terrain Tiles · Imagerie : Esri World Imagery · Topo : OpenTopoMap (© OpenStreetMap, CC-BY-SA) · Carte : MapLibre GL JS
+Les simulations utilisent une graine fixe : relancer un script redonne exactement le même fichier. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur.
+
+Pour relire en local : `python3 outils/apercu/captures.py s1 s7` (une ou plusieurs parties, `--mobile` pour le téléphone) et `python3 outils/apercu/textes.py` (mots par encadré).
+
+## Sources
+
+Météo : ERA5 (Copernicus / Open-Meteo). Cotation : DNT (Den Norske Turistforening), 68north, Horizon Rando, Hunting for Bliss. Fonds de carte : relief Mapzen / AWS Terrain Tiles, imagerie Esri World Imagery, topo OpenTopoMap (© OpenStreetMap, CC-BY-SA), rendu MapLibre GL JS.

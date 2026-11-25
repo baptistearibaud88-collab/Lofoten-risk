@@ -13,7 +13,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js')); require(path.join(root, 'risque_indice.js'));
+require(path.join(root, 'data', 'risque_data.js')); require(path.join(root, 'data', 'risque_indice.js'));
 const R = window.RISK, IX = window.RISK_INDICE, S = R.series, mm = R.dist.mode_mu, GPS_SLOPE = 60;
 const rowOf = Object.fromEntries(R.rows.map(r => [r.id, r]));
 
@@ -60,7 +60,7 @@ const fixed = R.rows.map(r => { const ix = IX.rows.find(o => o.id === r.id), es 
 const ek = S.filter(keep).map(x => x.e), em = ek.reduce((a, v) => a + v, 0) / ek.length;
 const acf1 = ek.slice(1).reduce((a, v, i) => a + (v - em) * (ek[i] - em), 0) / ek.reduce((a, v) => a + (v - em) ** 2, 0);
 const out = { acf1: Math.round(acf1 * 1000) / 1000, n: res.n, r2: res.r2, sens: res.sens, corr: { vars: R.corr.vars, m: corr(fixed) }, e_mean: Object.fromEntries(fixed.map(r => [r.id, r.e_mean])) };
-fs.writeFileSync(path.join(root, 'risque_sens.js'), `// généré par outils/sensibilites.js — ne pas modifier à la main\nwindow.RISK_SENS = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_sens.js'), `// généré par outils/sensibilites.js — ne pas modifier à la main\nwindow.RISK_SENS = ${JSON.stringify(out)};\n`);
 console.log(`sans artefact (${res.n} tronçons) : R² ${res.r2.toFixed(3)} · ρ₁ ${acf1.toFixed(3)} (publié ${R.acf_r[0].toFixed(3)})`);
 res.sens.forEach((s, i) => console.log(`  ${s.name.padEnd(26)} ${String(s.pct).padStart(6)} %  [${s.lo} ; ${s.hi}]   (publié ${R.sens[i].pct})`));
 const d = out.corr.m.flatMap((r, i) => r.map((v, j) => [Math.abs(v - R.corr.m[i][j]), KEYS[i], KEYS[j], R.corr.m[i][j], v])).filter(x => x[0] > .05 && x[1] < x[2]);

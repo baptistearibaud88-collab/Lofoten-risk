@@ -13,7 +13,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js'));
+require(path.join(root, 'data', 'risque_data.js'));
 const R = window.RISK, S = R.series, rows = R.rows, W = R.idx.weights;
 const GPS_SLOPE = 60, K = 8;
 
@@ -82,6 +82,6 @@ res.idx = { weights: eq, factors: EA, n: rows.length, alert_ranks: rkEq.filter((
   rand: { n: NR, all: r3(all / NR), most: r3(most / NR), mean_rank: Math.round(sumRank / NR * 10) / 10, chance_rank: (rows.length + 1) / 2 }, loo, old5 };
 console.log(`indice à 4 facteurs, poids égaux : alertes de terrain aux rangs ${res.idx.terrain_ranks} (5 facteurs pondérés : ${old5.terrain_ranks})`);
 console.log(`poids au hasard (${NR}) : toutes dans le tiers ${(all / NR * 100).toFixed(0)} %, toutes sauf une au plus ${(most / NR * 100).toFixed(0)} %, rang moyen ${res.idx.rand.mean_rank} (hasard ${res.idx.rand.chance_rank})`, JSON.stringify(loo));
-fs.writeFileSync(path.join(root, 'risque_indice.js'), `// généré par outils/indice_danger.js — ne pas modifier à la main\nwindow.RISK_INDICE = ${JSON.stringify(res)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_indice.js'), `// généré par outils/indice_danger.js — ne pas modifier à la main\nwindow.RISK_INDICE = ${JSON.stringify(res)};\n`);
 console.log(`5 facteurs sans artefact : alertes de terrain aux rangs ${old5.terrain_ranks}, p = ${old5.mw_p.toFixed(4)}`);
 [...res.rows].sort((a, b) => a.rank - b.rank).forEach(o => { const old = rows.find(r => r.id === o.id); console.log(String(o.rank).padStart(2), `(${String(old.rank).padStart(2)})`, o.id.padEnd(22), o.score.toFixed(2), JSON.stringify(o.contrib), old.alert.join(' / ')); });

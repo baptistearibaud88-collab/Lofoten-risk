@@ -15,7 +15,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-['risque_data.js', 'risque_plan.js'].forEach(f => require(path.join(root, f)));
+['risque_data.js', 'risque_plan.js'].forEach(f => require(path.join(root, 'data', f)));
 const R = window.RISK, PL = window.RISK_PLAN, r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, mean = a => a.reduce((s, v) => s + v, 0) / a.length;
 const TH = 1, rain = R.cf.clim.real_rain_d, real = rain.map(v => v >= TH);
 if (real.filter(Boolean).length !== 3 || !real.slice(6).every(Boolean)) throw new Error('épisode réel inattendu');
@@ -55,7 +55,7 @@ items.forEach(d => { d.luck = r2(d.out - (icpt + slope * d.q)); d.quad = d.q >= 
 const quad = {}; ['merite', 'chance', 'consequence', 'malchance'].forEach(k => quad[k] = items.filter(d => d.quad === k).length);
 
 const out = { th: TH, rain: rain.map(r1), real_wet: real.map(Number), vol, opt, theta, trail_wet, ahead, free_real, dec: { items, n, quad } };
-fs.writeFileSync(path.join(root, 'risque_cd.js'), `// généré par outils/chance_decision.js — ne pas modifier à la main\nwindow.RISK_CD = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_cd.js'), `// généré par outils/chance_decision.js — ne pas modifier à la main\nwindow.RISK_CD = ${JSON.stringify(out)};\n`);
 console.log('volatilité', JSON.stringify(vol)); console.log('option', JSON.stringify(opt)); console.log('thêta', JSON.stringify(theta));
 console.log('trail sous la pluie', JSON.stringify(trail_wet)); console.log('avance', ahead.map(a => `${a.night.slice(5)} ${a.km}`).join(' · '));
 console.log(`décisions ${n} (ρ ${r2(rho)}, R² ${r2(r2v)} : non affichés, notes données après coup)`, JSON.stringify(quad));

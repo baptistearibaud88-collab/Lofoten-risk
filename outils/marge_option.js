@@ -18,7 +18,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-['risque_mc.js', 'risque_plan.js'].forEach(f => require(path.join(root, f)));
+['risque_mc.js', 'risque_plan.js'].forEach(f => require(path.join(root, 'data', f)));
 const MC = window.RISK_MC, P = window.RISK_PLAN, MG = MC.marge;
 if (!MG) throw new Error('risque_mc.js sans bloc « marge » : relancer outils/monte_carlo.js');
 
@@ -77,7 +77,7 @@ const res = {
   curve, greeks, smile, sens,
   theta: { j2: c2.clim.value, j5: c5.clim.value, j7: c7.clim.value, per_day: r1((c5.clim.value - c2.clim.value) / 3) },
 };
-fs.writeFileSync(path.join(root, 'risque_marge.js'), `// généré par outils/marge_option.js — ne pas modifier à la main\nwindow.RISK_MARGE = ${JSON.stringify(res)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_marge.js'), `// généré par outils/marge_option.js — ne pas modifier à la main\nwindow.RISK_MARGE = ${JSON.stringify(res)};\n`);
 console.log(`marge M = ${M.toFixed(2)} h (${res.M_min} min) · seuil K = ${K} h (calendrier, beau temps, hors Støvla) · réel hors Støvla ${MG.real_kept} h → marge utilisée ${res.used_min} min (${Math.round(used / M * 100)} %)`);
 console.log('valeur au J2 (min) :', JSON.stringify(res.value_j2), '· écarts-types (h) :', JSON.stringify(res.sd));
 curve.forEach(c => console.log(`J${c.day}${c.wet ? ' pluie' : '      '} retard ${c.dev} min · climat ${c.clim.value} min (entamée ${c.clim.p_use} %, épuisée ${c.clim.p_out} %, Black ${c.clim.black}, n ${c.clim.n}) · beau temps ${c.blocs.value} min (${c.blocs.p_use} %, ${c.blocs.p_out} %)`));

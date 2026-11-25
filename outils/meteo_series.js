@@ -10,7 +10,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js'));
+require(path.join(root, 'data', 'risque_data.js'));
 const E = JSON.parse(fs.readFileSync(path.join(root, 'donnees', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
 const TH = 1, LEN = 9, N_START = 40, START = [6, 1];
 const r26 = window.RISK.cf.clim.real_rain_d;
@@ -51,5 +51,5 @@ const out = {
   tot: { ...stats(tot), v: r1(t26), pct: pct(tot, t26), edges: rng(0, 80, 4), hist: hist(tot, rng(0, 80, 4)) },
   ep: { v: r1(ep26), pct: pct(eps, ep26), n: eps.length, mean: r1(sum(eps) / eps.length) },
 };
-fs.writeFileSync(path.join(root, 'risque_meteo.js'), `// généré par outils/meteo_series.js — ne pas modifier à la main\nwindow.RISK_METEO = ${JSON.stringify(out)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_meteo.js'), `// généré par outils/meteo_series.js — ne pas modifier à la main\nwindow.RISK_METEO = ${JSON.stringify(out)};\n`);
 console.log(JSON.stringify({ ...out, dry: { ...out.dry, hist: undefined, edges: undefined }, max3: { ...out.max3, hist: undefined, edges: undefined }, tot: { ...out.tot, hist: undefined, edges: undefined } }, null, 1));

@@ -8,7 +8,7 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'risque_data.js')); require(path.join(root, 'data.js'));
+require(path.join(root, 'data', 'risque_data.js')); require(path.join(root, 'data', 'data.js'));
 const R = window.RISK, TR = window.TREK.trace.features;
 
 const bougies = TR.map(f => {
@@ -19,5 +19,5 @@ const bougies = TR.map(f => {
 });
 const manque = R.rows.filter(r => !bougies.find(b => b.id === r.id));
 if (manque.length) throw new Error(`sorties sans trace : ${manque.map(r => r.id).join(', ')}`);
-fs.writeFileSync(path.join(root, 'risque_bougies.js'), `// généré par outils/bougies_sorties.js — ne pas modifier à la main\nwindow.RISK_BOUGIES = ${JSON.stringify(bougies)};\n`);
+fs.writeFileSync(path.join(root, 'data', 'risque_bougies.js'), `// généré par outils/bougies_sorties.js — ne pas modifier à la main\nwindow.RISK_BOUGIES = ${JSON.stringify(bougies)};\n`);
 bougies.forEach(b => console.log(`J${b.day}`, b.id.padEnd(22), `O ${b.o}  H ${b.h}  B ${b.l}  C ${b.c}  D+ ${b.dplus}`));
