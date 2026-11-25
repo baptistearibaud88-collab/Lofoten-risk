@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261121-8">
+<link rel="stylesheet" href="risque.css?v=20261125-7">
 </head>
 <body>
 <div class="viz-root">
@@ -247,51 +247,45 @@
   <div class="act" id="act3"><span class="act-n">Acte 3</span><span class="act-t">Piloter</span><span class="act-d">Prévoir, tenir un budget, décider : ce que le modèle voit et ce que le pilote choisit.</span></div>
   <section id="s7">
     <header class="sh"><span class="num">07</span><h2>Simulation de risque : la prévision du J2, rejouée 5 000 fois</h2></header>
-    <p class="lede">Jusqu’ici, on a mesuré ce qui s’est passé. Une simulation de risque fait l’inverse : elle se place avant, et dit ce qui pouvait arriver. Au soir du J2, je connais mon allure sur deux jours. Un modèle calé sur ces deux seuls jours, de beau temps, prévoit le temps de marche des sept suivants, puis la suite est rejouée 5 000 fois. La traversée réelle n’a pas servi au calage : l’endroit où elle tombe est un vrai résultat. L’aléa est tiré de deux façons. <b>Loi normale</b> : chaque tronçon tire son écart seul. <b>Blocs</b> : on tire des séquences réelles de 2 km, qui gardent l’enchaînement des écarts (parties 02 et 03).</p>
+    <p class="lede" id="mc-lede"></p>
     <div class="pc">
       <div class="pc-head mc-head">
-        <div class="segctl" role="group" aria-label="Hypothèse de tirage">
-          <button type="button" data-m="blocs" aria-pressed="true">Rééchantillonnage par blocs</button>
-          <button type="button" data-m="normal" aria-pressed="false">Loi normale</button>
+        <div class="segctl" role="group" aria-label="Météo de la simulation">
+          <button type="button" data-m="clim" aria-pressed="true">Avec le climat</button>
+          <button type="button" data-m="blocs" aria-pressed="false">Beau temps seulement</button>
         </div>
         <span class="mc-counter"><b id="mc-n">0</b> / 5 000 simulations</span>
         <button type="button" class="mc-replay" id="mc-replay">↻ Relancer</button>
       </div>
       <div class="chart" id="c-mc" data-h="440"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-mc"></span><span class="src">2 × 5 000 tirages · graine fixe · calage J1–J2, prévision J3–J9</span></div>
+      <div class="pc-foot"><span class="legend-row" id="l-mc"></span><span class="src">5 000 tirages par modèle · graine fixe · calage J1–J2 · météo : 1 200 étés ERA5</span></div>
       <div class="pc-more" id="mc-more"></div>
     </div>
-    <p class="mc-cmp"><span id="mc-stats-t"><b>Même prévision, deux façons de tirer le hasard.</b></span> Dans chaque case, à gauche de la flèche : la loi normale (tronçons indépendants) ; à droite : les blocs (mauvaises passes qui s’enchaînent). L’écart entre les deux, c’est le prix d’oublier l’enchaînement.</p>
-    <div class="stat-strip" id="mc-stats"></div>
     <h3 class="subh">Le modèle a-t-il tenu ? Contrôle chaque soir pour le lendemain</h3>
-    <p class="lede">Une prévision ne vaut que si on la vérifie. Chaque soir, le modèle est recalé sur les jours déjà marchés, il prévoit le lendemain, et on compare au réel : c’est le contrôle a posteriori que les banques doivent faire sur leurs modèles de risque.</p>
-    <div class="grid-2 g-bt">
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t" id="bt-t">Journée par journée · modèle par blocs</span><span class="pc-r mono">temps de marche</span></div>
-        <div class="table-wrap flat"><table class="data" id="mc-table"></table></div>
-      </div>
-      <div class="pc explain">
-        <div class="pc-head"><span class="pc-t">Ce que la simulation raconte</span></div>
-        <div class="ex-body story" id="mc-story"></div>
+    <p class="lede">Chaque soir, le modèle est recalé sur les jours déjà marchés, tire la météo du lendemain selon celle du jour, et prévoit. On compare au réel : c’est le contrôle que les banques font sur leurs modèles de risque.</p>
+    <div class="pc explain">
+      <div class="pc-head"><span class="pc-t" id="bt-t">Ce que la simulation raconte</span><span class="pc-r mono" id="r-bt"></span></div>
+      <div class="ex-body">
+        <div class="ex-cols" id="mc-story"></div>
+        <p class="ex-msg" id="mc-msg"></p>
       </div>
     </div>
     <div class="pc mt explain">
-      <div class="pc-head"><span class="pc-t" id="st-t">Test de résistance · et si le mauvais temps était arrivé plus tôt ?</span><span class="pc-r mono">temps de marche J3–J9, médiane</span></div>
+      <div class="pc-head"><span class="pc-t" id="st-t">Test de résistance · et si la pluie n’avait pas cessé ?</span><span class="pc-r mono">temps de marche J3–J9, médiane</span></div>
       <div class="ex-body">
         <p class="ex-intro" id="st-intro"></p>
         <div class="ex-cols" id="st-cols"></div>
       </div>
     </div>
-    <div class="notes wk">
-      <div><h4>Comment lire</h4><p>La zone grise est la période de calage. À partir du J3, chaque trait est une traversée simulée : au-dessus de zéro, en retard sur la prévision centrale ; en dessous, en avance. Le cône contient 90 % des simulations, et la distribution de droite montre où elles arrivent. Le trait épais est la traversée réelle. Les pointillés jaunes rappellent le cône de l’autre modèle.</p></div>
-      <div><h4>Méthode</h4><p>Régression de ln(temps réel / Tobler) sur le sac, la cote du terrain, la pente et la descente raide, estimée sur J1–J2 (174 tronçons, artefact GPS exclu). Chaque simulation réestime le modèle sur des résidus retirés au sort, puis tire les écarts des 431 tronçons suivants : loi normale, ou blocs de 8 résidus consécutifs. Prévision centrale : médiane du modèle par blocs. Résultats vérifiés par un second calcul indépendant.</p></div>
+    <div class="notes two">
+      <div><h4>Comment lire</h4><p>Zéro : la prévision du J2 par beau temps. Chaque trait est une traversée simulée ; le cône en contient 90 %, la distribution de droite leur arrivée. Trait épais : le réel.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-mc"></p></div>
     </div>
     <h3 class="subh">Le jour de marge, évalué comme une option</h3>
     <p class="lede" id="mg-lede"></p>
     <div class="gk-btn" id="mg-btn"></div>
     <div class="grid-2 g-6040">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Valeur de la marge, soir après soir</span><span class="pc-r mono" id="r-mg"></span></div><div class="chart" id="c-mg" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-mg"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Ce que la marge doit absorber, soir après soir</span><span class="pc-r mono" id="r-mg"></span></div><div class="chart" id="c-mg" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-mg"></span></div></div>
       <div class="pc"><div class="pc-head"><span class="pc-t">Volatilité implicite · le « smile »</span><span class="pc-r mono" id="r-smile"></span></div><div class="chart" id="c-smile" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-smile"></span></div></div>
     </div>
     <div class="notes eq risk-def greeks" id="mg-greeks"></div>
@@ -302,92 +296,82 @@
   </section>
 
   <section id="s8">
-    <header class="sh"><span class="num">08</span><h2>Plan contre réel : le budget a-t-il tenu ?</h2></header>
+    <header class="sh"><span class="num">08</span><h2>Plan contre réel : l’effort a-t-il tenu ?</h2></header>
     <p class="lede" id="plan-lede"></p>
-    <div class="stat-strip" id="plan-stats"></div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Même budget, autre répartition · sac ou trail</span><span class="pc-r mono" id="r-pmode"></span></div>
+    <div class="pc">
+      <div class="pc-head"><span class="pc-t">Même effort, autre répartition · sac ou trail</span><span class="pc-r mono" id="r-pmode"></span></div>
       <div class="chart" id="c-pmode" data-h="150"></div>
       <div class="pc-foot"><span class="legend-row" id="l-pmode"></span></div>
     </div>
     <div class="pc mt explain">
-      <div class="pc-head"><span class="pc-t">Lire le plan · trajectoire ou budget</span></div>
+      <div class="pc-head"><span class="pc-t">Lire le plan · trajectoire ou effort</span></div>
       <div class="ex-body">
-        <div class="ex-cols" id="plan-cols"></div>
+        <div class="ex-cols two" id="plan-cols"></div>
         <p class="ex-msg" id="plan-msg"></p>
       </div>
     </div>
     <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">De la distance prévue à la distance réelle</span><span class="pc-r mono" id="r-bridge"></span></div>
-      <div class="chart" id="c-bridge" data-h="330"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-bridge"></span><span class="src">Distances à pied ; bateau Kirkefjord → Vindstad retiré du plan</span></div>
+      <div class="pc-head"><span class="pc-t">Avancement sur le parcours prévu, soir après soir</span><span class="pc-r mono" id="r-prog"></span></div>
+      <div class="chart" id="c-prog" data-h="300"></div>
+      <div class="pc-foot"><span class="legend-row" id="l-prog"></span></div>
+      <div class="pc-more" id="plan-more"></div>
     </div>
-    <div class="grid-2 mt">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Avancement sur le parcours prévu, soir après soir</span><span class="pc-r mono" id="r-prog"></span></div><div class="chart" id="c-prog" data-h="360"></div><div class="pc-foot"><span class="legend-row" id="l-prog"></span></div></div>
-      <div class="pc"><div class="pc-head"><span class="pc-t">Le plan et la trace réelle</span><span class="pc-r mono" id="r-pmap"></span></div><div class="chart" id="c-pmap" data-h="360"></div><div class="pc-foot"><span class="legend-row" id="l-pmap"></span></div></div>
-    </div>
-    <details class="pc mt fold">
-      <summary><span class="pc-t">Journal des écarts, jour par jour</span><span class="pc-r mono" id="r-plan"></span></summary>
-      <div class="table-wrap flat"><table class="data plan" id="plan"></table></div>
-    </details>
-    <div class="notes wk">
-      <div><h4>Comment lire</h4><p>Les barres comparent le plan (en clair) et le réel (en plein), avec le sac et en trail. Le pont part des 128 km du tracé, retrouve les 154 km du plan à mesure égale, puis classe chaque écart jusqu’aux 159 km réels. Sur l’escalier, un campement au-dessus de la ligne du plan est en avance ; en dessous, en retard.</p></div>
-      <div><h4>Méthode</h4><p>Plan : 8 jours tracés sur Strava avant le départ, découpés selon les campements prévus. Sans le sac dans le plan : les sommets en aller-retour, le J6 et le jour de marge ; le reste avec, Ryten et tour du lac compris. Distances du plan converties à la mesure de la montre (+13 %). Temps du plan : effort (km + D+/100) divisé par mes vitesses réelles.</p></div>
+    <div class="notes two">
+      <div><h4>Comment lire</h4><p>En haut, le plan en clair, le réel en plein, avec et sans le sac. L’escalier place chaque campement réel sur le parcours prévu : au-dessus de la ligne, en avance.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-plan"></p></div>
     </div>
   </section>
 
   <section id="s9">
-    <header class="sh"><span class="num">09</span><h2>Chance ou décision : pourquoi le budget a tenu</h2></header>
+    <header class="sh"><span class="num">09</span><h2>Chance ou décision : la pluie et le jour de marge</h2></header>
     <p class="lede" id="cf-lede"></p>
-    <div class="stat-strip cf-bilan" id="cf-bilan"></div>
-    <div class="grid-2 g-6040 mt">
+    <div class="grid-2">
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">Et si la pluie était arrivée plus tôt ?</span><span class="pc-r mono" id="r-slide"></span></div>
-        <div class="slide" id="c-slide"></div>
-        <div class="pc-foot"><span class="legend-row" id="l-slide"></span></div>
+        <div class="pc-head"><span class="pc-t">La volatilité · quand arrive la première pluie ?</span><span class="pc-r mono" id="r-first"></span></div>
+        <div class="chart" id="c-first" data-h="250"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-first"></span><span class="src">ERA5 · 1 200 étés</span></div>
       </div>
       <div class="pc">
-        <div class="pc-head"><span class="pc-t">La même question sur 1 200 mondes météo</span><span class="pc-r mono" id="r-cfb"></span></div>
-        <div class="chart" id="c-cfb" data-h="430"></div>
-        <div class="pc-foot"><span class="legend-row" id="l-cfb"></span><span class="src">ERA5 · 1996–2025</span></div>
+        <div class="pc-head"><span class="pc-t">L’option · combien d’étapes sous la pluie ?</span><span class="pc-r mono" id="r-need"></span></div>
+        <div class="chart" id="c-need" data-h="250"></div>
+        <div class="pc-foot"><span class="legend-row" id="l-need"></span><span class="src">étapes du plan, J1–J8</span></div>
       </div>
     </div>
     <div class="pc mt explain">
       <div class="pc-head"><span class="pc-t">Lire la pluie · chance ou décision</span></div>
       <div class="ex-body">
-        <div class="ex-cols" id="cf-cols"></div>
+        <div class="ex-cols four" id="cf-cols"></div>
         <p class="ex-msg" id="cf-msg"></p>
       </div>
     </div>
-    <div class="grid-2 g-6040 mt">
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">Décision par décision · qualité contre résultat</span><span class="pc-r mono" id="r-cfd"></span></div>
-        <div class="chart" id="c-cfd" data-h="360"></div>
-      </div>
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">Le verdict, case par case</span></div>
-        <div class="verdict" id="cf-verdict"></div>
-      </div>
+    <div class="pc mt">
+      <div class="pc-head"><span class="pc-t">Le jour de marge, soir après soir</span><span class="pc-r mono" id="r-cft"></span></div>
+      <div class="chart" id="c-cft" data-h="220"></div>
+      <div class="pc-foot"><span class="legend-row" id="l-cft"></span></div>
+      <div class="pc-more" id="cf-more"></div>
     </div>
-    <details class="pc mt fold">
-      <summary><span class="pc-t">La grille des décisions, une par une</span><span class="pc-r mono" id="r-dec"></span></summary>
-      <div class="table-wrap flat"><table class="data" id="dec-table"></table></div>
-    </details>
-    <div class="notes wk">
-      <div><h4>Comment lire</h4><p>À gauche, chaque ligne rejoue la traversée avec les 3 jours de pluie déplacés. À droite, la même règle sur 1 200 départs réels : la part des mondes sans étape mouillée. Dans la matrice, la diagonale est méritée ; en haut à gauche, un bon résultat après une décision risquée relève de la chance.</p></div>
-      <div><h4>Méthode</h4><p>Règle : un jour de pluie (≥ 1 mm), on attend si l’on peut encore arriver à temps, sinon on marche. Plan : 8 étapes en 9 jours ; réel : 6. Décisions : qualité notée avec les signaux connus au moment de décider, résultat noté après coup. Détail dans les boutons « ? ».</p></div>
+    <div class="notes two">
+      <div><h4>Comment lire</h4><p>À gauche, le jour de la première pluie dans 1 200 étés ; à droite, le nombre d’étapes qu’elle aurait mouillées. En bas, la chance que la marge serve encore, vue de chaque soir.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-cf"></p></div>
     </div>
   </section>
 
   <section id="s10" class="concl">
-    <header class="sh"><span class="num">10</span><h2>Conclusion</h2></header>
-    <ol class="lessons" id="lessons"></ol>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">Règles de décision pour la prochaine traversée</span></div>
-      <ul class="rules" id="rules"></ul>
+    <header class="sh"><span class="num">10</span><h2>Conclusion : la semaine, de bout en bout</h2></header>
+    <p class="lede" id="cc-lede"></p>
+    <div class="pc explain">
+      <div class="pc-head"><span class="pc-t">Un trek, lu comme une analyse de risque</span></div>
+      <div class="ex-body">
+        <div class="socle" id="cc-socle"></div>
+        <p class="socle-up">Sur ce socle, l’analyse tient en trois maillons</p>
+        <div class="ex-cols chain" id="cc-cols"></div>
+        <p class="ex-msg" id="cc-msg"></p>
+      </div>
     </div>
+    <h3 class="subh">Ce que la semaine a montré</h3>
+    <ol class="lessons four" id="lessons"></ol>
+    <div class="pc-more cc-more" id="cc-more"></div>
+    <p class="cc-end" id="cc-end"></p>
   </section>
 
   <section id="methodes" class="methods">
@@ -409,9 +393,10 @@
           <li><b>Épisodes</b> : moyenne glissante sur 2 km, épisodes d’au moins 3 tronçons au-delà de ±0,20 ; test du hasard par 2 000 mélanges des écarts ; autocorrélation d’ordre 1.</li>
           <li><b>Massifs</b> : corrélations montée-descente et d’un massif au suivant ; agrégation des écarts en racine de la somme des carrés.</li>
           <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
-          <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois par modèle (loi normale ; blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance au mauvais temps (outils/monte_carlo.js).</li>
-          <li><b>Jour de marge</b> : call spread sur le temps de marche J3–J9, formule de Black (1976) à taux nul, volatilité tirée de la simulation ; volatilité implicite recherchée sur la distribution de la simulation par blocs (outils/marge_option.js).</li>
+          <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois (blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; météo tirée dans les 1 200 mondes ERA5 dont le J2 est sec, coût d’un jour de pluie mesuré par régression (erreur type par sortie) et tiré dans son intervalle ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance sur le pire monde historique (outils/monte_carlo.js).</li>
+          <li><b>Jour de marge</b> : call spread sur le temps de marche J3–J9 hors Støvla, seuil = prévision de beau temps du J2 ; prix par Monte Carlo (Boyle, 1977) sur la simulation avec le climat, comparé à la formule de Black (1976) ; volatilité implicite sur des calls simples (outils/marge_option.js).</li>
           <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
+          <li><b>Chance ou décision</b> : sur les 1 200 étés, jour de la première pluie (la volatilité) et nombre de jours d’étape du plan sous la pluie (ce que le jour de marge doit couvrir, option réelle au sens de Myers 1977) ; chaque soir, la chance que la marge serve encore, sachant la météo du jour (outils/chance_decision.js).</li>
           <li><b>Grecs</b> : régression de la partie 04 ; effet propre à chaque niveau de cote ; 55 croisements de deux facteurs testés un à un, contrôlés en retirant chaque sortie ; volatilité = écart-type des résidus par groupe (test de permutation) ; horizon tiré de la simulation (outils/conclusion_acte2.js).</li>
         </ul>
       </div>
@@ -429,8 +414,9 @@
         <ul>
           <li>Un seul marcheur, un seul séjour : les effets mesurés décrivent cette traversée, pas une loi générale.</li>
           <li>Les 5 sorties cotées avec les seuls critères DNT reposent aussi sur le récit et peuvent être révisées.</li>
-          <li>La simulation (partie 07) est calée sur deux jours de beau temps et suit le parcours réellement choisi ; le contrôle porte sur 7 journées et 19 sorties, et le choc de mauvais temps mêle pluie, vent et fatigue.</li>
+          <li>La simulation (partie 07) est calée sur deux jours de beau temps et suit le parcours réellement choisi ; le contrôle porte sur 7 journées et 19 sorties. La probabilité de pluie était connue avant le départ, mais son coût est mesuré sur les J7–J9 eux-mêmes, et il mêle pluie, vent et fatigue.</li>
           <li>La normale du graphique de pluie cumulée est une moyenne de période sur trois zones ; les centiles (partie 05) ne portent que sur le point centre.</li>
+          <li>La partie 09 ne modélise pas mes réactions à une pluie arrivée plus tôt (sécher le matériel au village, changer d’itinéraire) : elle compte seulement ce que le climat proposait. La grille des décisions est notée par moi, après coup.</li>
           <li>Les intervalles de confiance de la régression (partie 04) supposent des tronçons indépendants ; la partie 02 montre qu’ils s’enchaînent : ils sont donc un peu trop étroits.</li>
         </ul>
       </div>
@@ -445,16 +431,16 @@
 <script src="risque_dist.js?v=20261108-3"></script>
 <script src="risque_sections.js?v=20261108-1"></script>
 <script src="risque_episodes.js?v=20261118-1"></script>
-<script src="risque_plan.js?v=20261111-3"></script>
+<script src="risque_plan.js?v=20261124-2"></script>
 <script src="risque_bougies.js?v=20261110-1"></script>
 <script src="risque_meteo.js?v=20261110-2"></script>
 <script src="risque_indice.js?v=20261112-1"></script>
 <script src="risque_acte2.js?v=20261121-5"></script>
-<script src="risque_marge.js?v=20261121-1"></script>
+<script src="risque_marge.js?v=20261124-2"></script>
 <script src="risque_sens.js?v=20261110-2"></script>
-<script src="risque_mc.js?v=20261111-1"></script>
-<script src="risque_cd.js?v=20261112-1"></script>
+<script src="risque_mc.js?v=20261124-2"></script>
+<script src="risque_cd.js?v=20261124-3"></script>
 <script src="ressentis_episodes.js?v=20261118-3"></script>
-<script src="risque.js?v=20261121-19"></script>
+<script src="risque.js?v=20261125-10"></script>
 </body>
 </html>

@@ -24,6 +24,7 @@
   --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --font-num: var(--mono);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "DejaVu Serif", serif;
 }
 @media (prefers-color-scheme: light) {
   :root:where(:not([data-theme="dark"])) .viz-root {
@@ -512,3 +513,70 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .gk-btn { margin: 2px 0 4px; }
 .gk-body .gk-tr { font-size: 14px; line-height: 1.55; margin: 0; }
 .gk-body .gk-dq { margin: 0 0 8px; padding-left: 9px; border-left: 2px solid var(--accent); font: 600 14px/1.45 var(--font); color: var(--text-primary); }
+
+/* partie 08 : deux colonnes, carte plein écran */
+.explain .ex-cols.two { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .explain .ex-cols.two { grid-template-columns: 1fr; } }
+.def-pop.full { left: 12px !important; top: 12px !important; right: 12px; bottom: 12px; width: auto; max-height: none; display: flex; flex-direction: column; }
+.def-pop.full .pm-host { flex: 1; min-height: 0; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; background: var(--bg); cursor: grab; }
+.def-pop.full .pm-host svg { display: block; }
+.pm-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; font-size: 12.5px; }
+.pm-legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.def-pop[hidden] { display: none !important; }
+.explain .ex-cols.four { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1100px) { .explain .ex-cols.four { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .explain .ex-cols.four { grid-template-columns: 1fr; } }
+.sl-g .c-F { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--up) 80%, transparent) 0 4px, color-mix(in srgb, var(--up) 45%, transparent) 4px 8px); }
+/* conclusion : quatre enseignements, le mot de la fin */
+.lessons.four { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1100px) { .lessons.four { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .lessons.four { grid-template-columns: 1fr; } }
+.cc-end { margin: 28px auto 8px; max-width: 760px; text-align: center; font-size: 18px; line-height: 1.5; color: var(--text-primary); }
+.cc-end span { display: block; margin-top: 6px; font: 500 12.5px var(--mono); color: var(--text-muted); }
+.cc-more { margin-top: 14px; }
+.def-pop .rules li { padding: 8px 4px; }
+/* conclusion : le socle des données (bande turquoise), puis la chaîne à trois maillons */
+.socle { --socle: #11b4c6; position: relative; background: var(--socle); color: #fff; padding: 12px 22px 16px; clip-path: polygon(2.5% 0, 97.5% 0, 100% 100%, 0 100%); border-radius: 4px; box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .14); }
+.socle-t { text-align: center; margin-bottom: 10px; }
+.socle-t span { display: block; font: 700 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+.socle-t b { display: block; font: 600 30px/1.15 var(--serif); letter-spacing: .01em; color: #fff; }
+.socle-line .st b { font-family: var(--serif); font-weight: 600; }
+.socle-line { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; align-items: center; }
+.socle-line .st { text-align: center; }
+.socle-line .st .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--socle); font: 700 12px var(--mono); margin-right: 7px; vertical-align: 2px; }
+.socle-line .st b { font-size: 16px; color: #fff; }
+.socle-line .st small { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.35; color: rgba(255, 255, 255, .9); }
+.socle-line .ar { position: relative; height: 22px; }
+.socle-line .ar::before { content: ''; position: absolute; left: 4px; right: 10px; top: 50%; height: 2.5px; margin-top: -1px; background: #fff; }
+.socle-line .ar::after { content: ''; position: absolute; right: 3px; top: calc(50% - 6px); border: 6px solid transparent; border-left: 9px solid #fff; border-right: 0; }
+.socle-up { text-align: center; margin: 10px 0 12px; font: 600 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.socle-up::after { content: '▼'; display: block; color: #11b4c6; font-size: 13px; margin-top: 3px; }
+.explain .ex-cols.chain { gap: 26px; }
+.explain .ex-cols.chain > div { position: relative; background: var(--surface-1); }
+.explain .ex-cols.chain > div:not(:last-child)::after { content: ''; position: absolute; right: -22px; top: 46%; width: 18px; height: 11px; border: 3px solid var(--text-muted); border-radius: 8px; z-index: 2; }
+.explain .ex-cols.chain > div:not(:last-child)::before { content: ''; position: absolute; right: -34px; top: calc(46% + 3px); width: 18px; height: 11px; border: 3px solid var(--text-muted); border-radius: 8px; z-index: 1; transform: translateY(-3px); }
+@media (max-width: 900px) {
+  .explain .ex-cols.chain { grid-template-columns: 1fr; gap: 30px; }
+  .explain .ex-cols.chain > div:not(:last-child)::after { right: auto; left: calc(50% - 6px); top: auto; bottom: -24px; width: 11px; height: 18px; }
+  .explain .ex-cols.chain > div:not(:last-child)::before { right: auto; left: calc(50% - 6px); top: auto; bottom: -34px; width: 11px; height: 18px; transform: none; }
+}
+@media (max-width: 640px) {
+  .socle { padding: 10px 12px 14px; clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%); }
+  .socle-line { grid-template-columns: 1fr 18px 1fr 18px 1fr; align-items: start; }
+  .socle-line .ar { align-self: center; }
+  .socle-line .st .n { display: grid; margin: 0 auto 4px; }
+  .socle-line .st b { font-size: 13px; }
+  .socle-line .st small { font-size: 10.5px; }
+  .socle-line .ar::before { left: 2px; right: 6px; }
+  .socle-line .ar::after { right: 1px; border-left-width: 7px; }
+}
+/* conclusion : titres de la chaîne en grand, police à empattements */
+.explain .ex-cols.chain .t { font: 600 21px/1.2 var(--serif); margin: 2px 0 6px; letter-spacing: .005em; }
+#cc-lede b { color: var(--text-primary); }
+@media (max-width: 640px) { .socle-t b { font-size: 24px; } .explain .ex-cols.chain .t { font-size: 19px; } }
+/* conclusion : enseignements compacts */
+.lessons.four { gap: 10px; }
+.lessons.four li { padding: 10px 12px; }
+.lessons.four li::before { font-size: 11px; margin-bottom: 3px; }
+.lessons.four h4 { font-size: 14px; line-height: 1.3; margin-bottom: 3px; }
+.lessons.four p { font-size: 13px; line-height: 1.45; }
