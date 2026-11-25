@@ -35,6 +35,8 @@ Une carte interactive qui rassemble toutes les données du trek, classées par n
 | | 09 Chance ou décision | La pluie comme volatilité, le jour de marge comme seule option réelle. |
 | | 10 Conclusion | Ce que la semaine a montré, et les règles pour la prochaine traversée. |
 
+![Un trek, lu comme une analyse de risque](docs/conclusion_analyse.jpg)
+
 ## Les données et les méthodes
 
 - **Données** : montre GPS (7 184 points, fréquence cardiaque, VFC et sommeil de 9 nuits), météo ERA5 (Copernicus, 30 étés 1996–2025), cotes des sorties (DNT et guides), plan tracé avant le départ (Strava).
@@ -56,6 +58,7 @@ outils/               scripts de calcul (Node.js) qui produisent data/risque_*.j
 outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
 photos/               photos de la traversée (et miniatures)
 video/                le film (1080p, H.264) et ses miniatures
+docs/                 image du README
 ```
 
 ## Reproduire les calculs
