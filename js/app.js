@@ -613,13 +613,21 @@
     if (!riskEl) return;
     const pr = panelBox.getBoundingClientRect(), lg = document.querySelector('.legend');
     if (isPhone() || innerWidth <= 820) {   // bottom sheet: on the left, just above the sheet
+      [riskEl, filmEl].forEach(e => { if (e) { e.style.width = ''; e.classList.remove('slim'); } });
       riskEl.style.right = ''; riskEl.style.left = '10px';
       riskEl.style.bottom = `${Math.round(innerHeight - pr.top + 10)}px`;
     } else {                                // right, against the panel, just above the legend line
       const lr = lg && lg.getBoundingClientRect();
+      // the two bubbles (risk + film) share the gap between the "Infos" button and the right panel
+      const cr = document.querySelector('.controls')?.getBoundingClientRect(), gapW = 10;
+      const room = cr && cr.width ? pr.left - 12 - (cr.right + 12) : 2 * 236 + gapW;
+      const fit = Math.floor((room - (filmEl ? gapW : 0)) / (filmEl ? 2 : 1)), above = fit < 130;   // too narrow: go above the button row
+      const w = above ? 236 : Math.min(236, fit);
+      [riskEl, filmEl].forEach(e => { if (!e) return; e.style.width = `${w}px`; e.classList.toggle('slim', w < 200); });
       riskEl.style.left = '';
       riskEl.style.right = `${Math.round(innerWidth - pr.left + 12)}px`;
       let bottom = lr && lr.height ? innerHeight - lr.top + 10 : 62;
+      if (above && cr && cr.height) bottom = Math.max(bottom, innerHeight - cr.top + 10);
       // on the bivouacs home, line it up with the bottom of the night records
       const rg = panelBox.querySelector('.rec-grid'), rb = rg && rg.getBoundingClientRect();
       if (rb && rb.height && rb.bottom < innerHeight - bottom) bottom = innerHeight - rb.bottom;

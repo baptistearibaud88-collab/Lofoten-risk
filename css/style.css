@@ -1249,3 +1249,11 @@ body.base-topo .rh-chart { background: rgba(20, 35, 43, .06); }
 @media (prefers-reduced-motion: reduce) { .film-modal { animation: none; } .film-home:hover .fh-thumb { transform: none; } }
 /* téléphone : les deux bulles côte à côte s'arrêtent avant la colonne de boutons du bord droit */
 @media (max-width: 820px) { .risk-home, .film-home { width: min(176px, calc((100vw - 80px) / 2)); } }
+/* bulles resserrées entre la rangée de boutons et le panneau : la miniature est rognée sur les côtés, jamais aplatie */
+.risk-home.slim, .film-home.slim { padding: 9px 10px 8px; }
+.slim .rh-head { font-size: 10px; letter-spacing: .06em; gap: 6px; }
+.slim .rh-meta { display: none; }
+.slim .rh-cta { font-size: 13px; }
+.risk-home .rh-head, .film-home .rh-head { white-space: nowrap; }
+.slim .rh-head { font-size: 9.5px; letter-spacing: .03em; gap: 5px; }
+.slim .fh-play { left: auto; top: auto; right: 5px; bottom: 5px; width: 22px; height: 22px; transform: none; }
