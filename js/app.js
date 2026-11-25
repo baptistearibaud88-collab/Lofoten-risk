@@ -149,7 +149,7 @@
       ids = [a.reference]; where = `de ${act.name}`; open = null; replay = null;
     } else if (a.rubrique === 'etape') {
       const e = T.etapes.find(x => String(x.day) === String(a.reference));
-      ids = e.acts; where = `de l’étape J${e.day} · ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Rejouer l’étape';
+      ids = e.acts; where = `de l’étape ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Rejouer l’étape';
     } else {
       const sm = T.summits.find(x => x.sommet === a.reference);
       ids = SUMMIT_OUTINGS[sm.activite] || [sm.activite]; where = `de la sortie ${sm.sommet}`; open = () => openSummit(sm); replay = 'Rejouer la sortie';
@@ -500,7 +500,7 @@
     } else if (rubric === 'alerts') {
       body.append(
         el('h2', null, 'Alertes'),
-        el('p', { class: 'note' }, 'Les moments où le parcours a mis au défi.'),
+        el('p', { class: 'note' }, 'Les moments où le parcours m’a mis au défi.'),
         el('ul', { class: 'camp-list' }, ALERTS.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openAlert(a) },
             el('span', { class: 'camp-num num-peak' }, warnIcon()),
