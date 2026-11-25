@@ -1,6 +1,6 @@
 # Lofoten 2026 — une traversée lue comme une analyse de risque
 
-![Lofoten](photos/apercu.jpg)
+![Lofoten](photos/banniere.jpg)
 
 Neuf jours seul et en autonomie dans les îles Lofoten (Norvège), du 14 au 22 juin 2026, sous le soleil de minuit : **159 km, 9 892 m de dénivelé positif, 25 sorties**, sac de bivouac sur le dos ou en trail léger pour les sommets.
 
@@ -18,15 +18,7 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 
 ## La carte 3D
 
-La page d'accueil rejoue la traversée sur le relief des Lofoten (satellite, carte topo ou relief 3D), à partir de la trace de la montre.
-
-- **Toute la traversée, ou une seule sortie** : la trace se redessine avec ses compteurs en direct (distance, dénivelé, temps en mouvement, calories, fréquence cardiaque), la météo à l'altitude du moment et trois caméras (drone, orbite, fixe).
-- **Sept étapes avec le sac, neuf sommets en trail** : pour chaque sortie, le profil, la vitesse kilomètre par kilomètre et des records.
-- **Sept bivouacs, neuf nuits** : le sommeil et ses phases, la fréquence cardiaque au repos et la VFC, la météo de la nuit, le poids du sac le lendemain matin.
-- **Photos, infos et alertes** : placées là où elles ont eu lieu, chacune avec son récit.
-- **Inventaire de départ** : équipement et nourriture, poids et calories.
-- **Soleil de minuit** : la course du soleil sur 24 heures, au-dessus du cercle polaire.
-- **Le film et l'analyse de risque** : deux accès directs depuis l'accueil.
+Une carte interactive qui rassemble toutes les données du trek, classées par nuit, par sortie et dans l'inventaire de départ, avec les annotations et le récit de la traversée.
 
 ## Le rapport en trois actes
 
