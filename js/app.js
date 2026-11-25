@@ -1064,7 +1064,7 @@
             'Température ramenée à l’altitude du point (−6,5 °C par 1 000 m) ; ressenti = refroidissement par le vent.',
             'Records des nuits : ERA5, sauf trois nuits vécues autrement sur place (vent à Horseid, pluie à Sørvågen, froid aux hauteurs de Kvalvika), déclarées.'),
           sec('Sac, équipement et nourriture',
-            'Équipement : pesées quand elles existent, sinon fiches produits ou valeurs typiques (pesées en cours).',
+            'Équipement : pesées quand elles existent, sinon fiches produits ou valeurs typiques.',
             'Nourriture : quantités emportées ; calories des fiches produits ou valeurs typiques.',
             `Poids du sac au départ : estimation de ${nf(T.depart ? T.depart.sac_kg : 0, 1)} kg sans eau, puis consommation jour après jour.`),
           sec('Récit et photos',
@@ -1310,8 +1310,7 @@
       el('div', null, el('dt', null, 'Nuages'), el('dd', null, nf(w.cloud_pct), el('small', null, ' %')))));
     if (n.bag_next_morning_kg != null) {
       kids.push(el('h3', null, `Le lendemain matin · J${n.next_day}`));
-      kids.push(el('dl', { class: 'kv' }, el('div', { title: T.bag_note }, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg'))),
-        el('div', null, el('dt', null, 'Estimation'), el('dd', { class: 'dd-note' }, 'à confirmer par les pesées'))));
+      kids.push(el('dl', { class: 'kv' }, el('div', { title: T.bag_note }, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg')))));
     }
     return kids;
   }
