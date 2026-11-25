@@ -1257,3 +1257,8 @@ body.base-topo .rh-chart { background: rgba(20, 35, 43, .06); }
 .risk-home .rh-head, .film-home .rh-head { white-space: nowrap; }
 .slim .rh-head { font-size: 9.5px; letter-spacing: .03em; gap: 5px; }
 .slim .fh-play { left: auto; top: auto; right: 5px; bottom: 5px; width: 22px; height: 22px; transform: none; }
+/* accueil Bivouacs : l'espace libre au-dessus des records est réparti dans les lignes et les tuiles (alignRecords) */
+.camp-row { padding: calc(11px + var(--row-x, 0px)) 12px; }
+.rec-tile { padding-top: calc(6px + var(--tile-x, 0px)); padding-bottom: calc(7px + var(--tile-x, 0px)); }
+.roomy .camp-name { font-size: 16.5px; }
+.roomy .rec-v { font-size: 17px; }

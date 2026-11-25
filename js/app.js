@@ -639,12 +639,25 @@
   function alignRecords(target) {
     const rt = panelBox.querySelector('.rec-title'), rg = panelBox.querySelector('.rec-grid');
     if (!rt || !rg) return;
-    const law = panelBox.querySelector('.law-link');
+    const law = panelBox.querySelector('.law-link'), body = rt.parentElement;
     rt.style.marginTop = ''; if (law) law.style.marginTop = '';
+    body.style.removeProperty('--row-x'); body.style.removeProperty('--tile-x'); body.classList.remove('roomy');
     if (riskEl && riskEl.classList.contains('rh-off')) return;
     const base = parseFloat(getComputedStyle(rt).marginTop) || 0;
+    const d0 = Math.round(target - rg.getBoundingClientRect().bottom);
+    if (d0 <= 0) return;
+    // fill the gap: first air out the bivouac rows, then the record tiles; only what is left becomes space
+    const nRows = body.querySelectorAll('.camp-row, .recap-list .camp-row').length || 1;
+    const rx = Math.min(12, Math.floor(d0 * .8 / (2 * nRows)));
+    const tx = Math.min(10, Math.floor((d0 - 2 * rx * nRows) * .6 / 4));
+    if (rx > 0) body.style.setProperty('--row-x', `${rx}px`);
+    if (tx > 0) body.style.setProperty('--tile-x', `${tx}px`);
+    body.classList.toggle('roomy', rx >= 4);
     const d = Math.round(target - rg.getBoundingClientRect().bottom);
-    if (d <= 0) return;
+    if (d > 80) {   // very tall screen: aligning would leave a hole, keep the natural layout
+      body.style.removeProperty('--row-x'); body.style.removeProperty('--tile-x'); body.classList.remove('roomy'); return;
+    }
+    if (d <= 0) { rt.style.marginTop = ''; return; }
     rt.style.marginTop = `${base + d}px`;
     let over = panel.scrollHeight - panel.clientHeight;   // never push the law link out of view
     if (over > 0 && law) { const lm = parseFloat(getComputedStyle(law).marginTop) || 0, cut = Math.min(over, Math.max(0, lm - 4)); law.style.marginTop = `${lm - cut}px`; over -= cut; }
