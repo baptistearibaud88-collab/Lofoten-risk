@@ -587,3 +587,14 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .lessons.four li::before { font-size: 11px; margin-bottom: 3px; }
 .lessons.four h4 { font-size: 14px; line-height: 1.3; margin-bottom: 3px; }
 .lessons.four p { font-size: 13px; line-height: 1.45; }
+
+/* en-tête : titre centré ; sommaire des actes et carte 3D côte à côte */
+.hero-head { text-align: center; margin: 0 auto 22px; }
+.hero-head .docmeta { justify-content: center; }
+.hero-head h1 { margin-left: auto; margin-right: auto; }
+.hero-head .sub { margin: 0 auto; }
+.toc-row { display: grid; grid-template-columns: 1fr 270px; gap: 28px; align-items: center; padding-top: 16px; border-top: 1px solid var(--hair); }
+.toc-row .toc { border-top: 0; padding: 0; }
+@media (max-width: 900px) { .toc-row { grid-template-columns: 1fr; gap: 18px; } .toc-row .map-card { width: 100%; max-width: 420px; justify-self: center; box-sizing: border-box; } }
+@media print { .toc-row { display: none; } }
+@media (max-width: 640px) { .hero-head .docmeta { gap: 4px 14px; } .hero-head .docmeta span + span::before { content: none; } }

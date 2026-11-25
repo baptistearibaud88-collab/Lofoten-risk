@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="risque.css?v=20261125-8">
+<link rel="stylesheet" href="risque.css?v=20261125-10">
 </head>
 <body>
 <div class="viz-root">
@@ -22,20 +22,13 @@
 </nav>
 
 <header class="hero">
-  <div class="hero-top">
-    <div>
-      <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v1.0 · 25/11/2026</span><span>Période : 14–22 juin 2026</span></div>
-      <h1>Analyse de risque d’une traversée autonome : Lofoten, juin 2026</h1>
-      <p class="sub">Allure, terrain, météo et récupération sur 9 jours, en trois actes : mesurer, expliquer, piloter.</p>
-    </div>
-    <a class="map-card" href="index.html" aria-label="Revenir à la carte 3D">
-      <span class="mc-k">Carte 3D</span>
-      <svg id="map-thumb" class="map-thumb" aria-hidden="true"></svg>
-      <span class="mc-foot"><span class="mc-go">‹ Revenir à la carte</span><span class="mc-meta">159 km · 9 jours</span></span>
-    </a>
+  <div class="hero-head">
+    <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v1.0 · 25/11/2026</span><span>Période : 14–22 juin 2026</span></div>
+    <h1>Analyse de risque d’une traversée autonome&nbsp;: Lofoten, juin 2026</h1>
+    <p class="sub">Allure, terrain, météo et récupération sur 9 jours, en trois actes : mesurer, expliquer, piloter.</p>
   </div>
   <div class="hero-grid">
-    <div class="problem"><span>Problématique</span>Seul, en autonomie, sous le soleil de minuit : où le risque s’est-il réellement concentré pendant la traversée, et le plan l’avait-il anticipé ?</div>
+    <div class="problem"><span>Problématique</span>Seul, en autonomie, sous le soleil de minuit : où le risque s’est-il réellement concentré pendant la traversée, et le plan l’avait-il anticipé&nbsp;?</div>
     <div class="scope">
       <span>Périmètre</span>
       <dl id="scope"></dl>
@@ -44,21 +37,28 @@
 </header>
 
 <main>
-  <nav class="toc" aria-label="Sommaire">
-    <span class="toc-act">Acte 1 · Mesurer</span>
-    <a href="#s1"><b>01</b>Relief et cotation</a>
-    <a href="#s2"><b>02</b>Écarts et temps perdu</a>
-    <a href="#s3"><b>03</b>Massifs et météo</a>
-    <span class="toc-act">Acte 2 · Expliquer</span>
-    <a href="#s4"><b>04</b>Sensibilités et fatigue</a>
-    <a href="#s5"><b>05</b>Météo</a>
-    <a href="#s6"><b>06</b>Les grecs</a>
-    <span class="toc-act">Acte 3 · Piloter</span>
-    <a href="#s7"><b>07</b>Monte Carlo</a>
-    <a href="#s8"><b>08</b>Plan contre réel</a>
-    <a href="#s9"><b>09</b>Chance ou décision</a>
-    <a href="#s10"><b>10</b>Conclusion</a>
-  </nav>
+  <div class="toc-row">
+    <nav class="toc" aria-label="Sommaire">
+      <span class="toc-act">Acte 1 · Mesurer</span>
+      <a href="#s1"><b>01</b>Relief et cotation</a>
+      <a href="#s2"><b>02</b>Écarts et temps perdu</a>
+      <a href="#s3"><b>03</b>Massifs et météo</a>
+      <span class="toc-act">Acte 2 · Expliquer</span>
+      <a href="#s4"><b>04</b>Sensibilités et fatigue</a>
+      <a href="#s5"><b>05</b>Météo</a>
+      <a href="#s6"><b>06</b>Les grecs</a>
+      <span class="toc-act">Acte 3 · Piloter</span>
+      <a href="#s7"><b>07</b>Monte Carlo</a>
+      <a href="#s8"><b>08</b>Plan contre réel</a>
+      <a href="#s9"><b>09</b>Chance ou décision</a>
+      <a href="#s10"><b>10</b>Conclusion</a>
+    </nav>
+    <a class="map-card" href="index.html" aria-label="Revenir à la carte 3D">
+      <span class="mc-k">Carte 3D</span>
+      <svg id="map-thumb" class="map-thumb" aria-hidden="true"></svg>
+      <span class="mc-foot"><span class="mc-go">‹ Revenir à la carte</span><span class="mc-meta">159 km · 9 jours</span></span>
+    </a>
+  </div>
 
   <div class="act" id="act1"><span class="act-n">Acte 1</span><span class="act-t">Mesurer</span><span class="act-d">Sur quel terrain, et de combien l’allure s’écarte du prévu.</span></div>
   <section id="s1">
