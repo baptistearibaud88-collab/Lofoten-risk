@@ -532,3 +532,5 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 @media (max-width: 640px) { .lessons.four { grid-template-columns: 1fr; } }
 .cc-end { margin: 28px auto 8px; max-width: 760px; text-align: center; font-size: 18px; line-height: 1.5; color: var(--text-primary); }
 .cc-end span { display: block; margin-top: 6px; font: 500 12.5px var(--mono); color: var(--text-muted); }
+.cc-more { margin-top: 14px; }
+.def-pop .rules li { padding: 8px 4px; }

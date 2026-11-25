@@ -1390,58 +1390,35 @@
 
   /* ---------- 12 · conclusion ---------- */
   function drawConcl() {
-    const PL_ = window.RISK_PLAN, MO = PL_.modes, X = window.RISK_CD, r = MO.ratio;
-    const eff = o => o ? o.km + o.dplus / 100 : 0;
-    // la semaine, soir après soir : effort cumulé du réel moins celui du plan (km + D+/100, plan à la mesure de la montre)
-    let cp = 0, cr = 0;
-    const W = d3.range(1, 10).map(d => { const p = PL_.plan.days.find(x => x.day === d), q = PL_.real.days.find(x => x.day === d);
-      cp += p ? p.km * r + p.dplus / 100 : 0; cr += eff(q); return { day: d, gap: cr - cp, p, q, cp, cr }; });
+    const PL_ = window.RISK_PLAN, MO = PL_.modes, X = window.RISK_CD, MC_ = MC;
+    const eff = o => o.km + o.dplus / 100;
     const eP = eff(MO.plan.sac) + eff(MO.plan.trail), eR = eff(MO.real.sac) + eff(MO.real.trail);
     const kmP = MO.plan.sac.km + MO.plan.trail.km, kmR = MO.real.sac.km + MO.real.trail.km, dpP = MO.plan.sac.dplus + MO.plan.trail.dplus, dpR = MO.real.sac.dplus + MO.real.trail.dplus;
-    {
-      const f = frame('c-week', { t: 34, r: 16, b: 30, l: 46 });
-      const x = d3.scalePoint().domain(W.map(w => w.day)).range([0, f.w]).padding(.35);
-      const lim = Math.ceil(d3.max(W, w => Math.abs(w.gap)) / 5) * 5 + 5, y = d3.scaleLinear().domain([-lim, lim]).range([f.h, 0]);
-      const x7 = x(7) - x.step() / 2;
-      f.g.append('rect').attr('x', x7).attr('width', f.w - x7).attr('y', 0).attr('height', f.h).attr('fill', C('--series-avec')).attr('fill-opacity', .08).attr('rx', 4);
-      f.g.append('text').attr('class', 'ax-title').attr('x', f.w - 6).attr('y', f.h - 8).attr('text-anchor', 'end').text('pluie');
-      yGrid(f.g, y, f.w, 4, v => `${v > 0 ? '+' : ''}${v}`, 'left');
-      f.g.append('g').attr('class', 'axis').attr('transform', `translate(0,${f.h})`).call(d3.axisBottom(x).tickSize(0).tickPadding(9).tickFormat(d => f.narrow ? `J${d}` : `soir J${d}`));
-      f.g.append('line').attr('class', 'zero').attr('x1', 0).attr('x2', f.w).attr('y1', y(0)).attr('y2', y(0));
-      f.g.append('text').attr('class', 'lbl').attr('x', 4).attr('y', y(0) - 6).text('le plan');
-      f.g.append('text').attr('class', 'ax-title').attr('x', -f.m.l + 4).attr('y', -16).text('écart cumulé, en km-effort');
-      const pts = [{ day: 0, gap: 0 }, ...W], xx = d => d.day ? x(d.day) : x(1) - x.step() * .6;
-      const area = sgn => d3.area().x(xx).y0(y(0)).y1(d => y(sgn > 0 ? Math.max(0, d.gap) : Math.min(0, d.gap))).curve(d3.curveMonotoneX)(pts);
-      f.g.append('path').attr('d', area(1)).attr('fill', C('--up')).attr('fill-opacity', .22);
-      f.g.append('path').attr('d', area(-1)).attr('fill', C('--down')).attr('fill-opacity', .18);
-      f.g.append('path').attr('d', d3.line().x(xx).y(d => y(d.gap)).curve(d3.curveMonotoneX)(pts)).attr('fill', 'none').attr('stroke', C('--text-primary')).attr('stroke-width', 2.2);
-      f.g.selectAll(null).data(W).join('circle').attr('cx', w => x(w.day)).attr('cy', w => y(w.gap)).attr('r', 3.6).attr('fill', C('--text-primary'));
-      // les moments de la semaine
-      const PH = [[1, 'un premier jour trop lourd', -1], [3, 'rattrapé', 1], [4.5, 'le creux : bateau, renoncements, nuit courte', -1], [6, 'le grand jour', 1], [8, 'sous la pluie, depuis le camp fixe', 1]];
-      PH.forEach(([d, t, s]) => { const i = Math.floor(d), j = Math.ceil(d), xv = (x(i) + x(j)) / 2, g = (W[i - 1].gap + W[j - 1].gap) / 2;
-        f.g.append('text').attr('class', 'lbl-strong').attr('x', xv).attr('y', s > 0 ? Math.min(y(g) - 12, y(Math.max(0, g)) - 12) : Math.max(y(g) + 20, y(0) + 20)).attr('text-anchor', 'middle')
-          .style('paint-order', 'stroke').style('stroke', C('--bg')).style('stroke-width', '4px').text(f.narrow ? '' : t); });
-      hover(f.g.selectAll('.mh').data(W).join('rect').attr('class', 'hit').attr('x', w => x(w.day) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', f.h),
-        w => `<b>Soir du J${w.day}</b>${row('prévu ce jour', w.p ? `${f1(w.p.km * r)} km · ${f0(w.p.dplus)} m` : '—')}${row('marché ce jour', w.q ? `${f1(w.q.km)} km · ${f0(w.q.dplus)} m` : '—')}${row('écart cumulé', `${w.gap >= 0 ? '+' : '−'}${f0(Math.abs(w.gap))} km-effort`)}`);
-      legend('l-week', [['', C('--up') + ';opacity:.4', 'en avance sur le plan'], ['', C('--down') + ';opacity:.4', 'en retard'], ['', C('--series-avec') + ';opacity:.25', 'jours de pluie']]);
-      readout('r-week', `arrivée : <b>${fs0((eR / eP - 1) * 100)} %</b> d’effort sur le plan`);
-    }
     $('cc-lede').innerHTML = `Je suis parti avec un plan de ${f0(kmP)} km et ${f0(dpP)} m de dénivelé, un sac lourd et un seul jour de marge. Je suis arrivé au port avec ${f0(kmR)} km et ${f0(dpR)} m : le compte prévu, par une autre route.`;
+    // le pont entre le trek et l'analyse de risque
+    $('cc-intro').innerHTML = `Une montre GPS, un sac et neuf jours de météo : il n’en faut pas plus pour une analyse de risque complète. Chaque tronçon de 250 m devient un <b>rendement</b> ; le relief, la pluie et la fatigue deviennent des <b>facteurs de risque</b>.`;
+    $('cc-cols').innerHTML = [
+      [C('--accent'), 'mesurer', 'Le terrain comme un marché', `L’allure de Tobler sert de <b>rendement attendu</b> : chaque tronçon s’en écarte. Pris seuls, les écarts suivent presque une <b>loi normale</b> ; mais ils arrivent en série, comme la <b>volatilité</b> qui se regroupe sur les marchés agités. Les sommets sont presque <b>indépendants</b> : leur <b>risque spécifique</b> se dilue sur la semaine, comme dans un portefeuille <b>diversifié</b>. La pluie, elle, touche tous les sommets à la fois : c’est le <b>risque systématique</b>. La Støvla porte les deux : un sentier invisible, puis la pluie.`],
+      [C('--series-avec'), 'expliquer', 'Le sac comme une position', `Une <b>régression à facteurs</b> chiffre chaque cause : le sac coûte ${fs0(sacS.pct)} %, chaque niveau de terrain ${fs0(sens['terrain (+1 niveau)'].pct)} %. Lues avec les <b>grecs</b> des options, ces sensibilités disent de combien mon temps bouge : le <b>gamma</b> révèle le saut brutal quand le sentier disparaît, le <b>vega</b> que l’allure reste plus régulière sous le sac, le <b>thêta</b> que l’incertitude grandit avec l’horizon.`],
+      [C('--warning'), 'piloter', 'La traversée comme un portefeuille', `Une <b>simulation de Monte Carlo</b> rejoue ${f0(MC_.ns)} traversées dans 1 200 étés réels : elle donne une <b>valeur à risque</b>, passe le <b>contrôle a posteriori</b> des banques et un <b>test de résistance</b>. Le jour de marge devient une <b>option</b>, évaluée avec Black-Scholes, dont la valeur fond à chaque jour sec. Le plan devient un <b>indice de référence</b>, et la dernière question est celle de tout gérant : <b>talent ou chance</b> ?`],
+    ].map(([c, s_, t, tx]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><p>${tx}</p></div>`).join('');
+    $('cc-msg').innerHTML = `<b>Même méthode, même vocabulaire : seules les données changent.</b> Ce sont elles qui font le lien, et c’est ce qui fait d’un trek un vrai terrain d’analyse.`;
     const slow = EP.episodes.filter(d => d.sign > 0 && Math.round(d.lost_min) >= 5), lost = d3.sum(slow, d => d.lost_min);
-    const V = X.vol, O = X.opt, upTo = k => O.dist.filter(d => d.k <= k).reduce((a, d) => a + d.p, 0), share = v => Math.round(v / 10);
+    const O = X.opt, upTo = k => O.dist.filter(d => d.k <= k).reduce((a, d) => a + d.p, 0), share = v => Math.round(v / 10);
     $('lessons').innerHTML = [
       ['Le danger n’était pas là où je portais', `Le sac m’a ralenti de ${f0(MO.sac_pct)} %, mais ${physIds.filter(id => !(R.rows.find(r => r.id === id) || {}).sac).length} des ${physIds.length} alertes de terrain sont arrivées sans lui, sur des sommets où je me sentais léger.`],
       ['Les mauvais passages arrivent en série', `Un pas seul était ordinaire. Ce sont les séries qui ont coûté : ${slow.length} passages lents, ${hm(lost / 60)} en tout, le plus souvent subis.`],
       ['Le plan a servi de mesure, pas de chemin', `À peine ${f0(MO.track_done / PL_.plan.km8 * 10)} km sur 10 du tracé prévu ont été suivis, et pourtant l’effort tombe à ${f0(Math.abs(eR / eP - 1) * 100)} % du plan : chaque renoncement a été compensé ailleurs.`],
       ['La pluie était probable ; son moment fut ma chance', `Dans trois étés sur quatre, elle serait tombée pendant les grandes étapes. Elle est arrivée au J7, quand mon seul jour de marge n’aurait couvert que ${share(O.p_enough)} étés sur 10.`],
     ].map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
-    $('rules').innerHTML = [
+    DEFS.regles = { t: 'Pour la prochaine traversée', html: () => `<ul class="rules">${[
       `<b>Deux jours de marge, pas un.</b> Un seul suffit dans ${share(O.p_enough)} étés sur 10 ; deux, dans ${share(upTo(2))}.`,
       '<b>Choisir avant de partir à quoi je renoncerai sous la pluie.</b> C’est l’abandon du tour du lac, pas la marge, qui a sauvé la fin.',
       '<b>Un jour libéré n’est pas un jour sans risque.</b> Sous la pluie, le danger passe du sac aux sommets sans sac : la Støvla et son éboulement.',
       '<b>Après une nuit courte, pas de sommet exposé.</b> Le départ à 2 h du J5 s’est fini en renoncement au pied du sommet.',
-    ].map((x, i) => `<li data-k="${i + 1}"><span>${x}</span></li>`).join('');
-    $('cc-end').innerHTML = `Et en comptant les allers-retours au campement pour faire le plein d’eau, pour le réchaud et pour boire, j’ai passé la barre des <b>10 000 m de D+</b> 😜<span>la montre, elle, s’arrête à ${f0(dpR)} m</span>`;
+    ].map((x, i) => `<li data-k="${i + 1}"><span>${x}</span></li>`).join('')}</ul>` };
+    if (!$('cc-more').innerHTML) $('cc-more').innerHTML = defBtn('regles', 'Pour la prochaine traversée');
+    $('cc-end').innerHTML = `Et en comptant les allers-retours au campement pour faire le plein d’eau, pour le réchaud et pour boire, j’ai passé la barre des <b>10 000 m de D+</b> 😜`;
   }
 
   /* ---------- hero · map card thumbnail (the real trace) ---------- */
