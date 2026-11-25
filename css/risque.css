@@ -24,7 +24,6 @@
   --font: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --font-num: var(--mono);
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "DejaVu Serif", serif;
 }
 @media (prefers-color-scheme: light) {
   :root:where(:not([data-theme="dark"])) .viz-root {
@@ -451,7 +450,7 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 /* bandeaux d'acte : même turquoise et même police que le socle de la conclusion */
 div.act { --socle: #11b4c6; align-items: center; gap: 6px 18px; margin: 44px 0 26px; padding: 18px 24px 22px; border: 0; border-radius: 4px; background: var(--socle); box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .14); }
 div.act .act-n { display: inline-grid; place-items: center; padding: 4px 9px; border-radius: 4px; background: #fff; color: var(--socle); font-size: 11px; }
-div.act .act-t { font: 600 32px/1.1 var(--serif); letter-spacing: .01em; color: #fff; }
+div.act .act-t { font: 750 32px/1.1 var(--font); letter-spacing: -.02em; color: #fff; }
 div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rgba(255, 255, 255, .92); }
 @media (max-width: 640px) { div.act { padding: 14px 16px 18px; } div.act .act-t { font-size: 26px; } div.act .act-d { flex-basis: 100%; font-size: 13.5px; } }
 @media print { div.act { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
@@ -546,8 +545,8 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .socle { --socle: #11b4c6; position: relative; background: var(--socle); color: #fff; padding: 12px 22px 16px; clip-path: polygon(2.5% 0, 97.5% 0, 100% 100%, 0 100%); border-radius: 4px; box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .14); }
 .socle-t { text-align: center; margin-bottom: 10px; }
 .socle-t span { display: block; font: 700 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
-.socle-t b { display: block; font: 600 30px/1.15 var(--serif); letter-spacing: .01em; color: #fff; }
-.socle-line .st b { font-family: var(--serif); font-weight: 600; }
+.socle-t b { display: block; font: 750 30px/1.15 var(--font); letter-spacing: -.02em; color: #fff; }
+.socle-line .st b { font-weight: 720; }
 .socle-line { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; align-items: center; }
 .socle-line .st { text-align: center; }
 .socle-line .st .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--socle); font: 700 12px var(--mono); margin-right: 7px; vertical-align: 2px; }
@@ -578,7 +577,7 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
   .socle-line .ar::after { right: 1px; border-left-width: 7px; }
 }
 /* conclusion : titres de la chaîne en grand, police à empattements */
-.explain .ex-cols.chain .t { font: 600 21px/1.2 var(--serif); margin: 2px 0 6px; letter-spacing: .005em; }
+.explain .ex-cols.chain .t { font: 720 20px/1.2 var(--font); margin: 2px 0 6px; letter-spacing: -.015em; }
 #cc-lede b { color: var(--text-primary); }
 @media (max-width: 640px) { .socle-t b { font-size: 24px; } .explain .ex-cols.chain .t { font-size: 19px; } }
 /* conclusion : enseignements compacts */
@@ -625,17 +624,14 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .notes.one.full .key p { font-size: 15px; line-height: 1.55; }
 
 /* notions clés de finance (risque spécifique / systématique, diversification, les six grecs,
-   volatilité, option) : le nom ressort en serif, sur un bandeau légèrement teinté */
+   volatilité, option) : le nom ressort en gras, sur un bandeau légèrement teinté */
 .concept { --ck-tint: color-mix(in srgb, var(--accent) 11%, var(--surface-1)); --ck-line: color-mix(in srgb, var(--accent) 28%, var(--hair)); }
 .pc.concept > .pc-head { background: var(--ck-tint); border-bottom-color: var(--ck-line); padding: 10px 14px; }
 .concept .pc-t { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; font: inherit; text-transform: none; letter-spacing: 0; color: var(--text-primary); }
-.concept .ck { font: 600 20px/1.15 var(--serif); color: var(--text-primary); }
+.concept .ck { font: 720 19px/1.15 var(--font); letter-spacing: -.015em; color: var(--text-primary); }
 .concept .ck-sub { font: 650 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); }
 .risk-def.concept > div { padding-top: 0; overflow: hidden; border-color: var(--ck-line); }
 .risk-def.concept h4 { margin: 0 -14px 9px; padding: 9px 14px; background: var(--ck-tint); border-bottom: 1px solid var(--ck-line);
-  font: 600 20px/1.15 var(--serif); text-transform: none; letter-spacing: 0; color: var(--text-primary); }
+  font: 720 19px/1.15 var(--font); text-transform: none; letter-spacing: -.015em; color: var(--text-primary); }
 .gk-card.concept .gk-l { font-size: 24px; }
-@media (max-width: 640px) { .concept .ck, .risk-def.concept h4 { font-size: 18px; } }
-/* notions clés : police principale du rapport (celle des titres de partie), pas la serif */
-.concept .ck, .risk-def.concept h4 { font: 720 19px/1.15 var(--font); letter-spacing: -.015em; }
 @media (max-width: 640px) { .concept .ck, .risk-def.concept h4 { font-size: 17.5px; } }
