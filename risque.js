@@ -1397,13 +1397,12 @@
     const nSeg = R.series.filter(x => Math.abs(x.slope) <= 60).length, nW = X.vol.worlds;
     $('cc-lede').innerHTML = `Je suis parti avec un plan de ${f0(kmP)} km et ${f0(dpP)} m de dénivelé, un sac lourd et un seul jour de marge ; je suis arrivé au port avec ${f0(kmR)} km et ${f0(dpR)} m, par une autre route. Relue avec les outils de la finance, la semaine change de nature. <b>Le terrain devient un marché</b> : il a son allure attendue, ses écarts, ses séries. <b>Le sac devient une position</b> : il a un coût et des sensibilités. <b>La traversée devient un portefeuille</b> : on la simule, on la protège par une marge, on la juge contre un plan.`;
     // le socle : les données, de la montre à la compréhension
-    const step = (n, h, items) => `<div class="st"><span class="n">${n}</span><h5>${h}</h5><ul>${items.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
-    $('cc-socle').innerHTML = `<div class="socle-h"><span class="s">le socle</span><b>Les données</b><span class="muted">sans elles, un trek reste un souvenir ; avec elles, il devient une série à analyser</span></div>
-      <div class="socle-flow">${[
-        step(1, 'Collecter', ['montre GPS : <b>7 184 points</b> (position, altitude, temps, cœur)', `sommeil : <b>${R.nights.length} nuits</b> (récupération, VFC)`, 'météo heure par heure, et <b>30 étés</b> d’archives', `terrain : la cote de chacune des <b>${R.rows.length} sorties</b> ; le plan tracé sur Strava`]),
-        step(2, 'Traiter', ['un tronçon faux écarté (erreur d’altitude)', `la trace découpée en <b>${f0(nSeg)} tronçons</b> de 250 m`, 'météo, sommeil, cote et sac rattachés à chaque tronçon', `le plan converti à la mesure de la montre (×${F('.2f')(MO.ratio)})`]),
-        step(3, 'Comprendre', ['une allure attendue pour chaque tronçon (Tobler)', 'l’écart entre le réel et l’attendu devient un <b>rendement</b>', 'le relief, la pluie, le sac et la fatigue deviennent des <b>facteurs de risque</b>', `${f0(nW)} étés réels deviennent autant d’avenirs possibles`]),
-      ].join('<i class="ar" aria-hidden="true"></i>')}</div>`;
+    const step = (n, h, sub) => `<div class="st"><span class="n">${n}</span><b>${h}</b><small>${sub}</small></div>`;
+    $('cc-socle').innerHTML = `<div class="socle-t">Le socle · les données</div><div class="socle-line">${[
+      step(1, 'Collecter', 'montre GPS, sommeil, météo, 30 étés'),
+      step(2, 'Traiter et nettoyer', `${f0(nSeg)} tronçons de 250 m, erreurs écartées`),
+      step(3, 'Comprendre', 'l’écart à l’allure attendue devient un rendement'),
+    ].join('<i class="ar" aria-hidden="true"></i>')}</div>`;
     $('cc-cols').innerHTML = [
       [C('--accent'), 'mesurer', 'Le terrain comme un marché', `L’allure de Tobler sert de <b>rendement attendu</b> : chaque tronçon s’en écarte. Pris seuls, les écarts suivent presque une <b>loi normale</b> ; mais ils arrivent en série, comme la <b>volatilité</b> qui se regroupe sur les marchés agités. Les sommets sont presque <b>indépendants</b> : leur <b>risque spécifique</b> se dilue sur la semaine, comme dans un portefeuille <b>diversifié</b>. La pluie, elle, touche tous les sommets à la fois : c’est le <b>risque systématique</b>. La Støvla porte les deux : un sentier invisible, puis la pluie.`],
       [C('--series-avec'), 'expliquer', 'Le sac comme une position', `Une <b>régression à facteurs</b> chiffre chaque cause : le sac coûte ${fs0(sacS.pct)} %, chaque niveau de terrain ${fs0(sens['terrain (+1 niveau)'].pct)} %. Lues avec les <b>grecs</b> des options, ces sensibilités disent de combien mon temps bouge : le <b>gamma</b> révèle le saut brutal quand le sentier disparaît, le <b>vega</b> que l’allure reste plus régulière sous le sac, le <b>thêta</b> que l’incertitude grandit avec l’horizon.`],

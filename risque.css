@@ -534,33 +534,35 @@ details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
 .cc-end span { display: block; margin-top: 6px; font: 500 12.5px var(--mono); color: var(--text-muted); }
 .cc-more { margin-top: 14px; }
 .def-pop .rules li { padding: 8px 4px; }
-/* conclusion : le socle des données, puis la chaîne à trois maillons */
-.socle { border: 1px solid var(--hair); border-bottom: 5px solid var(--text-primary); border-radius: 10px 10px 4px 4px; padding: 12px 14px 14px; background: color-mix(in srgb, var(--accent) 5%, var(--surface-1)); }
-.socle-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 10px; }
-.socle-h .s { font: 600 10.5px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
-.socle-h b { font-size: 17px; color: var(--text-primary); }
-.socle-h .muted { font-size: 12.5px; }
-.socle-flow { display: grid; grid-template-columns: 1fr 28px 1fr 28px 1fr; align-items: stretch; }
-.socle-flow .st { background: var(--surface-1); border: 1px solid var(--hair); border-radius: 8px; padding: 10px 12px; }
-.socle-flow .st .n { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--bg); font: 700 11px var(--mono); margin-right: 6px; vertical-align: 1px; }
-.socle-flow .st h5 { display: inline; margin: 0; font-size: 14px; color: var(--text-primary); }
-.socle-flow .st ul { margin: 8px 0 0; padding-left: 16px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
-.socle-flow .st li + li { margin-top: 2px; }
-.socle-flow .ar { position: relative; }
-.socle-flow .ar::before { content: ''; position: absolute; left: 4px; right: 8px; top: 50%; height: 2px; background: var(--accent); }
-.socle-flow .ar::after { content: ''; position: absolute; right: 3px; top: calc(50% - 5px); border: 6px solid transparent; border-left: 8px solid var(--accent); border-right: 0; }
-.socle-up { text-align: center; margin: 12px 0 10px; font: 600 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
-.socle-up::before { content: '▲'; display: block; color: var(--text-primary); font-size: 12px; margin-bottom: 2px; }
+/* conclusion : le socle des données (bande turquoise), puis la chaîne à trois maillons */
+.socle { --socle: #11b4c6; position: relative; background: var(--socle); color: #fff; padding: 12px 22px 16px; clip-path: polygon(2.5% 0, 97.5% 0, 100% 100%, 0 100%); border-radius: 4px; box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .14); }
+.socle-t { text-align: center; font: 700 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .92; margin-bottom: 8px; }
+.socle-line { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; align-items: center; }
+.socle-line .st { text-align: center; }
+.socle-line .st .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: var(--socle); font: 700 12px var(--mono); margin-right: 7px; vertical-align: 2px; }
+.socle-line .st b { font-size: 16px; color: #fff; }
+.socle-line .st small { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.35; color: rgba(255, 255, 255, .9); }
+.socle-line .ar { position: relative; height: 22px; }
+.socle-line .ar::before { content: ''; position: absolute; left: 4px; right: 10px; top: 50%; height: 2.5px; margin-top: -1px; background: #fff; }
+.socle-line .ar::after { content: ''; position: absolute; right: 3px; top: calc(50% - 6px); border: 6px solid transparent; border-left: 9px solid #fff; border-right: 0; }
+.socle-up { text-align: center; margin: 10px 0 12px; font: 600 11px var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.socle-up::after { content: '▼'; display: block; color: #11b4c6; font-size: 13px; margin-top: 3px; }
 .explain .ex-cols.chain { gap: 26px; }
 .explain .ex-cols.chain > div { position: relative; background: var(--surface-1); }
 .explain .ex-cols.chain > div:not(:last-child)::after { content: ''; position: absolute; right: -22px; top: 46%; width: 18px; height: 11px; border: 3px solid var(--text-muted); border-radius: 8px; z-index: 2; }
 .explain .ex-cols.chain > div:not(:last-child)::before { content: ''; position: absolute; right: -34px; top: calc(46% + 3px); width: 18px; height: 11px; border: 3px solid var(--text-muted); border-radius: 8px; z-index: 1; transform: translateY(-3px); }
 @media (max-width: 900px) {
-  .socle-flow { grid-template-columns: 1fr; gap: 0; }
-  .socle-flow .ar { height: 26px; }
-  .socle-flow .ar::before { left: calc(50% - 1px); right: auto; top: 3px; bottom: 9px; width: 2px; height: auto; }
-  .socle-flow .ar::after { left: calc(50% - 6px); right: auto; top: auto; bottom: 2px; border: 6px solid transparent; border-top: 8px solid var(--accent); border-bottom: 0; }
   .explain .ex-cols.chain { grid-template-columns: 1fr; gap: 30px; }
   .explain .ex-cols.chain > div:not(:last-child)::after { right: auto; left: calc(50% - 6px); top: auto; bottom: -24px; width: 11px; height: 18px; }
   .explain .ex-cols.chain > div:not(:last-child)::before { right: auto; left: calc(50% - 6px); top: auto; bottom: -34px; width: 11px; height: 18px; transform: none; }
+}
+@media (max-width: 640px) {
+  .socle { padding: 10px 12px 14px; clip-path: polygon(3% 0, 97% 0, 100% 100%, 0 100%); }
+  .socle-line { grid-template-columns: 1fr 18px 1fr 18px 1fr; align-items: start; }
+  .socle-line .ar { align-self: center; }
+  .socle-line .st .n { display: grid; margin: 0 auto 4px; }
+  .socle-line .st b { font-size: 13px; }
+  .socle-line .st small { font-size: 10.5px; }
+  .socle-line .ar::before { left: 2px; right: 6px; }
+  .socle-line .ar::after { right: 1px; border-left-width: 7px; }
 }
