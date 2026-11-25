@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="css/risque.css?v=20261125-13">
+<link rel="stylesheet" href="css/risque.css?v=20261125-14">
 </head>
 <body>
 <div class="viz-root">
@@ -155,7 +155,7 @@
   <section id="s3">
     <header class="sh"><span class="num">03</span><h2>Des sommets indépendants, une météo commune</h2></header>
     <p class="lede">Chaque massif monte de la mer et y redescend : entre deux sommets, on repasse au bord d’un fjord, d’une route ou d’un village. La traversée est une suite de 15 ascensions courtes et indépendantes, chacune avec sa sortie.</p>
-    <div class="notes two risk-def">
+    <div class="notes two risk-def concept">
       <div><h4>Risque spécifique</h4><p>Propre à un massif : un pierrier, un sentier invisible, une barre rocheuse. Il ne dit rien du massif suivant.</p></div>
       <div><h4>Risque systématique</h4><p>Commun à tous les massifs du moment : la météo. Aucun retour à la mer ne l’efface.</p></div>
     </div>
@@ -167,8 +167,8 @@
       <div class="pc-head"><span class="pc-t">Fiche de risque · structure des massifs</span><span class="pc-r mono" id="r-sheet"></span></div>
       <div class="table-wrap flat"><table class="data risk-sheet" id="risk-sheet"></table></div>
     </div>
-    <div class="pc mt explain">
-      <div class="pc-head"><span class="pc-t">La diversification · ce que l’indépendance apporte, et sa limite</span><span class="pc-r mono" id="r-acf2"></span></div>
+    <div class="pc mt explain concept">
+      <div class="pc-head"><span class="pc-t"><span class="ck">La diversification</span><span class="ck-sub">ce que l’indépendance apporte, et sa limite</span></span><span class="pc-r mono" id="r-acf2"></span></div>
       <div class="ex-body">
         <p class="ex-intro" id="ex-intro"></p>
         <div class="ex-cols" id="ex-cols"></div>
@@ -325,13 +325,13 @@
     <header class="sh"><span class="num">09</span><h2>Chance ou décision : la pluie et le jour de marge</h2></header>
     <p class="lede" id="cf-lede"></p>
     <div class="grid-2">
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">La volatilité · quand arrive la première pluie ?</span><span class="pc-r mono" id="r-first"></span></div>
+      <div class="pc concept">
+        <div class="pc-head"><span class="pc-t"><span class="ck">La volatilité</span><span class="ck-sub">quand arrive la première pluie&nbsp;?</span></span><span class="pc-r mono" id="r-first"></span></div>
         <div class="chart" id="c-first" data-h="250"></div>
         <div class="pc-foot"><span class="legend-row" id="l-first"></span><span class="src">ERA5 · 1 200 étés</span></div>
       </div>
-      <div class="pc">
-        <div class="pc-head"><span class="pc-t">L’option · combien d’étapes sous la pluie ?</span><span class="pc-r mono" id="r-need"></span></div>
+      <div class="pc concept">
+        <div class="pc-head"><span class="pc-t"><span class="ck">L’option</span><span class="ck-sub">combien d’étapes sous la pluie&nbsp;?</span></span><span class="pc-r mono" id="r-need"></span></div>
         <div class="chart" id="c-need" data-h="250"></div>
         <div class="pc-foot"><span class="legend-row" id="l-need"></span><span class="src">étapes du plan, J1–J8</span></div>
       </div>
@@ -434,6 +434,6 @@
 <script src="data/risque_mc.js?v=20261124-2"></script>
 <script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261125-17"></script>
+<script src="js/risque.js?v=20261125-18"></script>
 </body>
 </html>

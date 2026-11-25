@@ -871,7 +871,7 @@
         fi: ['∂²V / ∂r ∂S', 'Une dérivée croisée : de combien la sensibilité à une entrée bouge quand une autre bouge. Ici, de combien le coût du portage bouge quand la météo change.'] },
     ];
     cards.forEach(c => { DEFS['gk_' + c.k] = { t: `${c.n} : la définition en finance`, html: () => `<div class="def-f">${c.fi[0]}</div><p>${c.fi[1]}</p>` }; });
-    box.innerHTML = cards.map(c => `<div class="pc gk-card"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t">${c.n} · ${c.q}${defBtn('gk_' + c.k)}</span></div>
+    box.innerHTML = cards.map(c => `<div class="pc gk-card concept"><div class="pc-head"><span class="gk-l">${c.l}</span><span class="pc-t"><span class="ck">${c.n}</span><span class="ck-sub">${c.q}</span>${defBtn('gk_' + c.k)}</span></div>
       <div class="gk-body"><p class="gk-dq">${c.dq}</p><p class="gk-tr">${c.tr}</p></div>
       <div class="chart gk-c" id="c-gk-${c.k}" data-h="${c.k === 'theta' ? 130 : 110}"></div></div>`).join('');
     const lab = (g, x, y, t, a = 'middle', cls = 'ax-title') => g.append('text').attr('class', cls).attr('x', x).attr('y', y).attr('text-anchor', a).text(t);

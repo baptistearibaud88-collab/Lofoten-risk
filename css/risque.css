@@ -623,3 +623,16 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 /* « À retenir » sur toute la largeur (partie 03) */
 .notes.one.full { max-width: none; }
 .notes.one.full .key p { font-size: 15px; line-height: 1.55; }
+
+/* notions clés de finance (risque spécifique / systématique, diversification, les six grecs,
+   volatilité, option) : le nom ressort en serif, sur un bandeau légèrement teinté */
+.concept { --ck-tint: color-mix(in srgb, var(--accent) 11%, var(--surface-1)); --ck-line: color-mix(in srgb, var(--accent) 28%, var(--hair)); }
+.pc.concept > .pc-head { background: var(--ck-tint); border-bottom-color: var(--ck-line); padding: 10px 14px; }
+.concept .pc-t { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 2px 10px; font: inherit; text-transform: none; letter-spacing: 0; color: var(--text-primary); }
+.concept .ck { font: 600 20px/1.15 var(--serif); color: var(--text-primary); }
+.concept .ck-sub { font: 650 10.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary); }
+.risk-def.concept > div { padding-top: 0; overflow: hidden; border-color: var(--ck-line); }
+.risk-def.concept h4 { margin: 0 -14px 9px; padding: 9px 14px; background: var(--ck-tint); border-bottom: 1px solid var(--ck-line);
+  font: 600 20px/1.15 var(--serif); text-transform: none; letter-spacing: 0; color: var(--text-primary); }
+.gk-card.concept .gk-l { font-size: 24px; }
+@media (max-width: 640px) { .concept .ck, .risk-def.concept h4 { font-size: 18px; } }
