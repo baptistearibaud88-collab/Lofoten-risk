@@ -1512,6 +1512,19 @@
   const charts = [drawMapThumb, drawCandles, drawTerrain, drawDist, drawRoll, drawAcf, drawSens, drawHrv, drawWx, drawPersist, drawActe2, () => drawMc(false), drawMarge, drawPlanCharts, drawCF, drawConcl];
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawPlan(); drawAll(); initMc();
+  // navigation : un rechargement repart du haut ; les liens internes défilent sans laisser d'ancre dans l'adresse
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const cleanUrl = () => history.replaceState(null, '', location.pathname + location.search);
+  if (location.hash) {   // lien partagé vers une partie : on y va une fois les graphiques dessinés, puis on retire l'ancre
+    const t = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (t) requestAnimationFrame(() => t.scrollIntoView({ block: 'start' }));
+    cleanUrl();
+  } else scrollTo(0, 0);
+  document.addEventListener('click', ev => {
+    const a = ev.target.closest('a[href^="#"]'); if (!a) return;
+    const t = document.getElementById(a.getAttribute('href').slice(1)); if (!t) return;
+    ev.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); cleanUrl();
+  });
   let lastW = innerWidth, t = 0;
   addEventListener('resize', () => { if (Math.abs(innerWidth - lastW) < 8) return; lastW = innerWidth; clearTimeout(t); t = setTimeout(drawAll, 150); });
   matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', () => { drawAll(); drawTail(); });
