@@ -598,3 +598,15 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 @media (max-width: 900px) { .toc-row { grid-template-columns: 1fr; gap: 18px; } .toc-row .map-card { width: 100%; max-width: 420px; justify-self: center; box-sizing: border-box; } }
 @media print { .toc-row { display: none; } }
 @media (max-width: 640px) { .hero-head .docmeta { gap: 4px 14px; } .hero-head .docmeta span + span::before { content: none; } }
+
+/* en-tête : deux rangées alignées sur la même colonne de droite (périmètre, puis carte agrandie) */
+.hero-grid { grid-template-columns: 1fr 400px; gap: 16px; }
+.toc-row { grid-template-columns: 1fr 400px; gap: 16px 32px; align-items: stretch; }
+.toc-row .toc { align-content: center; row-gap: 8px; column-gap: 8px; }
+.toc-row .toc-act { font-size: 12px; margin-top: 10px; }
+.toc-row .toc-act:first-child { margin-top: 0; }
+.toc-row .toc a { font-size: 15.5px; padding: 8px 14px; border-radius: 8px; }
+.toc-row .map-card { padding: 16px 16px 14px; }
+.toc-row .map-thumb { height: 205px; }
+.toc-row .mc-go { font-size: 15.5px; }
+@media (max-width: 900px) { .hero-grid, .toc-row { grid-template-columns: 1fr; } .toc-row .toc a { font-size: 14px; padding: 6px 11px; } .toc-row .map-thumb { height: 160px; } }
