@@ -228,7 +228,6 @@
       f.g.append('path').attr('d', area(r.pts)).attr('fill', gcol(r.g)).attr('fill-opacity', r.g === 4 ? .85 : .42);
       f.g.append('path').attr('d', ln(r.pts)).attr('fill', 'none').attr('stroke', r.g === 4 ? C('--text-primary') : gcol(r.g)).attr('stroke-width', 1.4);
     });
-    R.alerts.forEach(a => warnTri(f.g, x(a.km), y(R.series[a.seg].alt) - 12, .9));
     const ch = crossH(f);
     const segTot = d3.sum(S, (_, i) => segKm(i));
     const share = g => d3.sum(S, (_, i) => segG(i) >= g ? segKm(i) : 0) / segTot;
@@ -241,7 +240,7 @@
         readout('r-terrain', `<b>${dayLbl(s.day)}</b> ${r.name} · <b>${GL[g]}</b>${g === r.grade ? ` · ${r.sac_t}` : ` · passage clé ${GL[r.grade]}`}`);
         showTip(ev, `<b>${r.name} · ${dayLbl(s.day)}</b>${row('cote ici', GL[g])}${sec ? row('section', `${f1(sec.i0 ? S[sec.i0 - 1].km : 0)} → ${f1(S[sec.i1].km)} km`) : ''}${row('pourquoi', sec ? secWhy(sec) : 'cote de la sortie')}${row('passage clé', `${GL[r.grade]} · ${r.sac_t}`)}${row('altitude', `${f0(s.alt)} m`)}${row('pente du tronçon', `${s.slope} %`)}${row('source', srcL(r))}`);
       }).on('pointerleave', () => { ch.hide(); hideTip(); readout('r-terrain', def); });
-    legend('l-terrain', [1, 2, 3, 4].map(g => ['', g === 4 ? `${gcol(4)};box-shadow:inset 0 0 0 1px var(--text-muted)` : gcol(g), GL[g]]).concat([['', C('--warning'), 'alerte']]));
+    legend('l-terrain', [1, 2, 3, 4].map(g => ['', g === 4 ? `${gcol(4)};box-shadow:inset 0 0 0 1px var(--text-muted)` : gcol(g), GL[g]]));
 
     // distance mix
     const mix = [1, 2, 3, 4].map(g => ({ g, km: d3.sum(S, (_, i) => segG(i) === g ? segKm(i) : 0) / segTot * totKm, n: SEC.sections.filter(x => x.g === g).length, dp: d3.sum(S, (_, i) => segG(i) === g ? segDp[i] : 0) }));
@@ -1241,17 +1240,16 @@
     const ox = (W - (xs[1] - xs[0]) * sc) / 2, oy = (H - (ys[1] - ys[0]) * sc) / 2;
     const X = p => ox + (p[0] * kx - xs[0]) * sc, Y = p => H - oy - (p[1] - ys[0]) * sc, ln = d3.line().x(X).y(Y);
     const svg = d3.select(host).append('svg').attr('width', W).attr('height', H).attr('class', 'pmap'), g = svg.append('g');
-    const cS = C('--series-avec'), cT = C('--series-sans'), cAl = C('--down');
+    const cS = C('--series-avec'), cT = C('--series-sans');
     // plan : pointillés fins, couleur du mode prévu
     P_.modes_line.forEach(m => g.append('path').attr('d', ln(m.pts)).attr('fill', 'none').attr('stroke', m.t ? cT : cS).attr('stroke-width', 1.4).attr('stroke-dasharray', '4 3').attr('opacity', .75).attr('class', 'nz'));
     const a = P_.line[0][P_.line[0].length - 1], b = P_.line[1][0];
     g.append('path').attr('d', ln([a, b])).attr('stroke', C('--text-muted')).attr('stroke-dasharray', '1 5').attr('stroke-width', 1.6).attr('fill', 'none').attr('class', 'nz');
     g.append('text').attr('class', 'lbl pm-t').attr('x', (X(a) + X(b)) / 2 + 8).attr('y', (Y(a) + Y(b)) / 2).text('bateau');
-    // réel : trait plein, une sortie par trait ; les 4 alertes de terrain soulignées
-    Rl.line.forEach((l, k) => { const r = rowsById[Rl.ids[k]] || {}, al = physIds.includes(Rl.ids[k]);
-      if (al) g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', cAl).attr('stroke-width', 7).attr('opacity', .28).attr('stroke-linejoin', 'round').attr('class', 'nz');
+    // réel : trait plein, une sortie par trait
+    Rl.line.forEach((l, k) => { const r = rowsById[Rl.ids[k]] || {};
       hover(g.append('path').attr('d', ln(l)).attr('fill', 'none').attr('stroke', r.sac ? cS : cT).attr('stroke-width', 2.6).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('class', 'nz'),
-        () => `<b>J${r.day} · ${r.name}</b>${row('mode', r.sac ? 'avec le sac' : 'sans le sac (trail)')}${row('distance', `${f1(r.km)} km`)}${row('dénivelé', `${f0(r.dplus)} m`)}${row('cote', r.grade_lbl)}${al ? row('alerte', 'terrain') : ''}`); });
+        () => `<b>J${r.day} · ${r.name}</b>${row('mode', r.sac ? 'avec le sac' : 'sans le sac (trail)')}${row('distance', `${f1(r.km)} km`)}${row('dénivelé', `${f0(r.dplus)} m`)}${row('cote', r.grade_lbl)}`); });
     // sommets : atteints (plein) ou abandonnés (creux)
     const tri = (x, y, s) => `M${x},${y - s}L${x + s * .9},${y + s * .6}L${x - s * .9},${y + s * .6}Z`;
     const sumG = g.append('g');
@@ -1366,7 +1364,7 @@
       <div class="def-ex"><b>Plan.</b> ${hm(pS.h)} avec le sac, dont ${hm(MO.carry.plan)} de surcoût. <b>Réel.</b> ${hm(rS.h)}, dont ${hm(MO.carry.real)}. En portant moins loin, j’ai économisé ${hm(MO.carry.plan - MO.carry.real)} de portage.</div>
       <p class="muted">Fourchette. Les ${f0(MO.sac_pct)} % sont une moyenne ; au sec, le sac coûte +${dry} % (partie 06, à confirmer : 2 sorties avec le sac sous la pluie). Presque tout le portage s’est fait au sec : avec +${dry} %, le surcoût serait de ${hm(carry(pS.h, dry))} dans le plan et ${hm(carry(rS.h, dry))} en réel, soit ${hm(carry(pS.h, dry) - carry(rS.h, dry))} économisées. Le temps réel vient de la montre (${hm(hR)}), la simulation additionne les tronçons de 250 m : quelques minutes d’écart. Un point réel est compté « sur le plan » à moins de 60 m du tracé ; le tracé Strava, lissé, est plus court que la mesure de la montre : ses distances sont multipliées par ${F('.2f')(MO.ratio)}.</p>` };
     const pt = $('c-pmode').closest('.pc').querySelector('.pc-t'); if (!pt.querySelector('.def-btn')) pt.insertAdjacentHTML('beforeend', defBtn('attribution'));
-        DEFS.carte = { t: 'Le plan et la trace réelle', full: true, html: () => `<div class="pm-legend legend-row"><span><i style="background:${C('--series-avec')}"></i>avec le sac</span><span><i style="background:${C('--series-sans')}"></i>sans le sac (trail)</span><span>trait plein : réel · pointillés : plan</span><span>● campement réel · □ prévu</span><span>▲ sommet atteint · △ abandonné</span><span><i style="background:${C('--down')};opacity:.4"></i>alerte de terrain</span><span class="muted">molette ou pincement pour zoomer</span></div><div class="pm-host" id="pm-host"></div>`, after: p => drawPlanMap(p.querySelector('#pm-host')) };
+        DEFS.carte = { t: 'Le plan et la trace réelle', full: true, html: () => `<div class="pm-legend legend-row"><span><i style="background:${C('--series-avec')}"></i>avec le sac</span><span><i style="background:${C('--series-sans')}"></i>sans le sac (trail)</span><span>trait plein : réel · pointillés : plan</span><span>● campement réel · □ prévu</span><span>▲ sommet atteint · △ abandonné</span><span class="muted">molette ou pincement pour zoomer</span></div><div class="pm-host" id="pm-host"></div>`, after: p => drawPlanMap(p.querySelector('#pm-host')) };
     if (!$('plan-more').innerHTML) $('plan-more').innerHTML = defBtn('carte', 'La carte : le plan et la trace réelle');
     $('t-plan').innerHTML = `<b>${f0(MO.track_done / P_.km8 * 10)} km sur 10</b> du tracé suivis, mais l’effort à <b>${pc(eP, eR)}</b> près. Moins de sac, plus de trail : les sommets abandonnés et les sorties substituées se sont compensés. Bon plan, bonnes décisions, ou chance&nbsp;? C’est la question suivante.`;
   }
