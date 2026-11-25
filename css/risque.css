@@ -610,3 +610,13 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .toc-row .map-thumb { height: 205px; }
 .toc-row .mc-go { font-size: 15.5px; }
 @media (max-width: 900px) { .hero-grid, .toc-row { grid-template-columns: 1fr; } .toc-row .toc a { font-size: 14px; padding: 6px 11px; } .toc-row .map-thumb { height: 160px; } }
+
+/* Méthodes et sources : une phrase, puis tout le détail dans un bouton */
+.meth-lede { max-width: 760px; margin: 4px 0 0; font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+.methods .cc-more { padding-left: 0; }
+.meth-pop { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px; }
+.meth-pop h4 { margin: 14px 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.meth-pop div > h4:first-child { margin-top: 2px; }
+.meth-pop ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.meth-pop li { margin: 5px 0; }
+@media (max-width: 760px) { .meth-pop { grid-template-columns: 1fr; } }

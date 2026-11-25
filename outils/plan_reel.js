@@ -41,7 +41,7 @@ const CAMPS = [
   { night: '2026-06-21', name: 'Hauteurs de Sørvågen', km: 124.0 },
 ];
 const DAYS = [
-  { day: 1, ranges: [[0, 22.36]], summits: ['Tønnåsheia'] },
+  { day: 1, ranges: [[0, 22.36]], summits: ['Tønsåsheia'] },
   { day: 2, ranges: [[22.36, 39.98]], summits: ['Volandstinden'] },
   { day: 3, ranges: [[39.98, 61.81]], summits: ['Ryten', 'Kitinden'] },
   { day: 4, ranges: [[61.81, 85.98]], summits: ['Helvetestinden'], boat: true },
@@ -100,7 +100,7 @@ const notDone = []; let u = null;
 P.forEach((p, i) => { if (!i || inBoat(KM[i])) return; const c = nearIn(GR, RP, p)[0] < TH, st = KM[i] - KM[i - 1];
   if (!c) { if (!u) u = { k0: KM[i], km: 0, top: p[2] }; u.km += st; u.k1 = KM[i]; u.top = Math.max(u.top, p[2]); } else if (u) { notDone.push(u); u = null; } });
 if (u) notDone.push(u);
-const ABANDON = [['Tønnåsheia', 16.6, 22.4], ['Kitinden', 56.8, 61.9], ['Helvetestinden', 79, 86], ['Hermannsdalstinden', 90.7, 95.8], ['Tour du lac', 111.9, 120.3]];
+const ABANDON = [['Tønsåsheia', 16.6, 22.4], ['Kitinden', 56.8, 61.9], ['Helvetestinden', 79, 86], ['Hermannsdalstinden', 90.7, 95.8], ['Tour du lac', 111.9, 120.3]];
 const abandoned = ABANDON.map(([n, a, b]) => ({ name: n, km: r1(notDone.filter(x => x.k0 >= a && x.k1 <= b).reduce((s, x) => s + x.km, 0)), top: Math.round(Math.max(0, ...notDone.filter(x => x.k0 >= a && x.k1 <= b).map(x => x.top))) }));
 abandoned.find(a => a.name === 'Hermannsdalstinden').km = r1(abandoned.find(a => a.name === 'Hermannsdalstinden').km + j6access);   // the J6 approach from Munkebu and back, never walked
 const abKm = abandoned.reduce((s, a) => s + a.km, 0), ndKm = notDone.reduce((s, x) => s + x.km, 0) + j6access;
@@ -143,7 +143,7 @@ const bivEp = off.filter(o => o.m >= BIG && CAUSE.bivouac.includes(o.act)).map(o
 // Munkebu) et le jour de marge (Støvla) sont entièrement en trail. Tout le reste se fait avec le sac,
 // tour du lac compris. Le tracé lissé de Strava étant plus court que la mesure de la montre
 // (rapport mesuré sur le parcours commun), les distances du plan sont converties à la mesure de la montre.
-const SPURS = [['Tønnåsheia', 16.7, 22.4], ['Volandstinden', 35.1, 40.0], ['Kitinden', 56.8, 61.8], ['Helvetestinden', 80.8, 84.2], ['Munken', 99.1, 100.2], ['Andstabben', 108.4, 111.8], ['Sommet du tour du lac', 114.4, 117.0]];
+const SPURS = [['Tønsåsheia', 16.7, 22.4], ['Volandstinden', 35.1, 40.0], ['Kitinden', 56.8, 61.8], ['Helvetestinden', 80.8, 84.2], ['Munken', 99.1, 100.2], ['Andstabben', 108.4, 111.8], ['Sommet du tour du lac', 114.4, 117.0]];
 const ratio = shared / doneKm, j6 = DAYS[5];
 const spurKm = SPURS.reduce((a, [, k0, k1]) => a + lenOf([[k0, k1]]), 0), spurDp = SPURS.reduce((a, [, k0, k1]) => a + dpOf([[k0, k1]]), 0);
 const pTrail = { gpx: spurKm + j6.route_km, dplus: spurDp + j6.route_dplus + MARGIN.dplus }; pTrail.km = pTrail.gpx * ratio + MARGIN.km;

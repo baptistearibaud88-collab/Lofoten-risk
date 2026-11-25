@@ -357,10 +357,10 @@
         <p class="def-f">v = 6 · e<sup>−3,5 · |s + 0,05|</sup> km/h, où s est la pente (0,10 pour +10 %)</p>
         <p>Le <b>6</b> est la vitesse maximale ; le <b>+0,05</b> place ce maximum en légère descente (−5 %) ; le <b>3,5</b> règle la vitesse à laquelle on ralentit quand la pente s’éloigne de −5 %, dans un sens comme dans l’autre. Sur le plat : <b>5,0 km/h</b> ; à +20 % : <b>2,5 km/h</b>.</p>
         ${tobSvg()}
-        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge, mesuré par d’autres, il y a 70 ans : c’est la seule pièce de l’analyse qui ne vient pas de mon trek. Je ne prends dans mes données que deux nombres, mon allure moyenne avec et sans le sac : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac, à peu près sa vitesse sans.</p>
+        <p><b>Le recalage.</b> Tobler décrit un marcheur moyen sans charge, mesuré par d’autres, il y a plus de 70 ans : c’est la seule pièce de l’analyse qui ne vient pas de mon trek. Je ne prends dans mes données que deux nombres, mon allure moyenne avec et sans le sac : <b>${f0((1 - Math.exp(-mm.avec)) * 100)} % moins vite</b> que Tobler avec le sac, à peu près sa vitesse sans.</p>
         <p class="def-ex"><b>Exemple.</b> Sur la barre du Støvla (${st.slope > 0 ? '+' : ''}${f0(st.slope)} %), le temps attendu était ${mn(stX)} ; j’ai mis ${mn(stT)}, soit un écart e = ${fs2(st.e)} : <b>×${f1(Math.exp(st.e))}</b> le temps attendu. e = 0 : dans mon allure ; +0,4 : environ 1,5 fois plus lent.</p>
         <p><b>Ma façon de marcher.</b> Par rapport à Tobler, je vais ${f0((1 - Math.exp(eUp)) * 100)} % plus vite dans les montées de plus de 15 %, et ${f0((Math.exp(eDn) - 1) * 100)} % plus lentement dans les descentes douces, où Tobler suppose qu’on court. Ces écarts restent des surprises : je ne les connaissais pas avant de partir.</p>
-        <p class="muted"><b>Test de solidité.</b> Pas de sortie témoin : l’étalon est une convention. J’en ai essayé cinq autres (allure calée sur le plat, sur le plat facile, une voix par sortie, médiane, jour mesuré mis de côté). Les extrêmes restent les mêmes passages, et 3 à 6 tronçons dépassent 3σ quand la loi normale en attend 1,6. Seul le verdict « loi normale acceptée ou non » change selon l’étalon : il est à la limite.</p>` };
+        <p class="muted"><b>Test de solidité.</b> Pas de sortie témoin : l’étalon est une convention. J’en ai essayé cinq autres (allure calée sur le plat, sur le plat facile, une allure par sortie, médiane, jour mesuré mis de côté). Les extrêmes restent les mêmes passages, et 3 à 6 tronçons dépassent 3σ quand la loi normale en attend 1,6. Seul le verdict « loi normale acceptée ou non » change selon l’étalon : il est à la limite.</p>` };
       DEFS.student = { t: 'D’où vient la loi de Student', html: () => `
         <p>En 1908, <b>William Gosset</b>, chimiste à la brasserie Guinness à Dublin, contrôle la qualité de l’orge sur de <b>petits échantillons</b>. Il remarque que si l’on estime la moyenne et l’écart-type sur peu de mesures, les écarts extrêmes sortent plus souvent que la loi normale ne le prévoit. Guinness interdisant de publier sous son nom, il signe <b>« Student »</b>.</p>
         <p><b>La construction.</b> On prend une variable normale Z et on la divise par une estimation bruitée de son écart-type, construite à partir de ν autres variables normales (une loi du χ² à ν degrés de liberté) :</p>
@@ -375,7 +375,7 @@
         <p><b>Pourquoi le logarithme.</b> Un produit de ${f0(D.n)} petits nombres devient minuscule et difficile à calculer. Le logarithme transforme le produit en somme, sans changer l’endroit du maximum :</p>
         <p class="def-f">ln L(θ) = Σ ln f(x<sub>i</sub> | θ)</p>
         <p>On fait varier θ jusqu’à rendre cette somme la plus grande possible. Pour la loi normale, le calcul tombe juste : le maximum est atteint pour la moyenne et l’écart-type des données. Pour la Student, il n’y a pas de formule : l’ordinateur cherche le maximum pas à pas.</p>
-        <p class="def-ex"><b>Départager deux lois.</b> Ajouter un réglage fait toujours monter ln L un peu. En 1973, <b>Hirotugu Akaike</b> propose de compter chaque réglage comme une pénalité : AIC = 2 × (nombre de réglages) − 2 ln L, et la plus petite valeur gagne. Ici, la Student gagne <b>+${f1(D.ll_gain)}</b> en ln L pour un réglage en plus, qui coûte 1 : différence d’AIC ${F('+.2f')(D.d_aic)}, une égalité. On garde la plus simple, la normale.</p>` };
+        <p class="def-ex"><b>Départager deux lois.</b> Ajouter un réglage fait toujours monter ln L un peu. En 1973, <b>Hirotugu Akaike</b> propose de compter chaque réglage comme une pénalité : AIC = 2 × (nombre de réglages) − 2 ln L, et la plus petite valeur gagne. Ici, la Student gagne <b>+${f1(D.ll_gain)}</b> en ln L pour un réglage en plus, qui coûte 1 : différence d’AIC ${Math.abs(D.d_aic) < .005 ? '0,00' : F('+.2f')(D.d_aic)}, une égalité. On garde la plus simple, la normale.</p>` };
       DEFS.hist = { t: 'D’où vient l’histogramme et sa courbe', html: () => `
         <p>Le mot est de <b>Karl Pearson</b>, en 1891. La construction tient en trois étapes.</p>
         <p><b>1. Les classes.</b> On découpe l’axe des écarts e en intervalles de même largeur, ici ${f1(w)} (de ${f1(D.edges[0])} à ${f1(D.edges[D.edges.length - 1])}).</p>
@@ -1163,7 +1163,7 @@
       <p><b>2. L’aléa u</b>, ce que les facteurs n’expliquent pas : le <i>bootstrap</i> de <b>Bradley Efron</b> (1979) retire au hasard dans ses propres données au lieu de supposer une loi ; <b>Hans Künsch</b> (1989) tire des <b>blocs</b> consécutifs pour garder leur enchaînement (partie 02). Ici : des morceaux réels de ${MC.block} tronçons (2 km), et le modèle réestimé à chaque tirage.</p>
       <p><b>3. La météo.</b> Chaque simulation tire un été parmi les ${f0(CL.pool)} des ${f0(CL.worlds)} mondes ERA5 (parties 05 et 09) dont le J2 est sec, comme le mien : la persistance de la pluie (partie 05) fait le reste. Un jour de pluie (au moins 1 mm) coûte ${fs0(CL.rain_pct)} % de temps, tiré entre ${fs0(CL.rain_lo)} et ${fs0(CL.rain_hi)} %. La probabilité de pluie était connue avant le départ ; son coût n’est mesuré qu’après.</p>
       <p><b>4. La simulation</b> : les ${MC.fut_n} tronçons des J3 à J9 sont rejoués ${f0(MC.ns)} fois sur le parcours réellement suivi. L’itinéraire est une décision ; le temps est le risque.</p>
-      <p class="def-ex"><b>Ce que le climat change.</b> Sans lui, le réel tombe au centile ${cL(B_.real_pct)} (et au-delà du centile 99 si l’on tire chaque tronçon seul, sans l’enchaînement : ${cL(MC.normal.seg.real_pct)}). Avec lui, au centile ${cL(C_.real_pct)}.</p>
+      <p class="def-ex"><b>Ce que le climat change.</b> Sans lui, le réel tombe au centile ${cL(B_.real_pct)} (et au-delà du centile 99 si l’on tire chaque tronçon seul, sans l’enchaînement). Avec lui, au centile ${cL(C_.real_pct)}.</p>
       <p class="muted">Solidité du centile ${cL(C_.real_pct)} : avec le coût de la pluie de la partie 03 (${fs0(CL.rain_03)} %, sur les massifs), ${cL(SC.cost03.real_pct)} ; avec un coût fixe de ${fs0(CL.rain_pct)} %, ${cL(SC.cost_fixed.real_pct)} ; sans tenir compte du J2 sec, ${cL(SC.all_worlds.real_pct)} ; avec des blocs de 1 km ou de 4 km, ${cL(SC.L4.real_pct)} ou ${cL(SC.L16.real_pct)} ; d’un lancer à l’autre, ${SC.seeds.map(v => cL(v.real_pct)).join(', ')}.</p>` };
     DEFS.var95 = { t: 'Les chiffres de la simulation, avec ou sans le climat', wide: true, html: () => `
       <p>Même modèle, mêmes ${f0(MC.ns)} tirages : seule la météo change.</p>
@@ -1202,7 +1202,7 @@
 
   /* ---------- 08 · plan vs actual ---------- */
   const PLAN = [
-    [1, '14/06', 'Napp → Nusfjord, sommet du Tønnåsheia', 'Napp → Nusfjord. Tønnåsheia abandonné : le premier jour avec le sac est bien plus dur que prévu.', [['c-ren', 'Renoncement']]],
+    [1, '14/06', 'Napp → Nusfjord, sommet du Tønsåsheia', 'Napp → Nusfjord. Tønsåsheia abandonné : le premier jour avec le sac est bien plus dur que prévu.', [['c-ren', 'Renoncement']]],
     [2, '15/06', 'Volandstinden, bivouac sur son versant ou à Fredvang', 'Volandstinden, puis au-delà de Fredvang jusqu’aux hauteurs de Kvalvika, pour enchaîner sur le Ryten.', [['c-av', 'Avance volontaire']]],
     [3, '16/06', 'Ryten, Kvalvika, Kitinden, bivouac au pied du Kitinden', 'Ryten (brouillard), plage, Moltinden à la place du Kitinden. Camp impossible au lac : la journée continue jusqu’à Horseid.', [['c-av', 'Avance subie'], ['c-sub', 'Substitution']]],
     [4, '17/06', 'Horseid → bateau de 15 h → Bunes, Helvetestinden', 'Bivouac à Bunes imposé par le bateau. Helvetestinden abandonné après 1 h 15 de recherche de bivouac.', [['c-ren', 'Renoncement']]],
@@ -1395,7 +1395,7 @@
     const VG = window.RISK_ACTE2 && window.RISK_ACTE2.vega && window.RISK_ACTE2.vega.sac;
     $('lessons').innerHTML = [
       ['Le sac ralentit, le trail expose', `Le sac m’a ralenti de ${f0(MO.sac_pct)} %. Sans lui, le terrain était plus raide et mon allure plus irrégulière${VG ? ` (${f2(VG.a)} contre ${f2(VG.b)})` : ''} : les mesures confirment ce que j’avais ressenti.`],
-      ['Les mauvais passages arrivent en série', `${slow.length} passages lents, ${hm(lost / 60)} en tout, le plus souvent subis.`],
+      ['Les mauvais passages arrivent en série', `${slow.length} épisodes lents, ${hm(lost / 60)} en tout, le plus souvent subis.`],
       ['Le plan a servi de mesure, pas de chemin', `${f0(MO.track_done / PL_.plan.km8 * 10)} km sur 10 du tracé suivis, l’effort à ${f0(Math.abs(eR / eP - 1) * 100)} % près.`],
       ['La pluie était probable ; son moment fut ma chance', `Seul 1 été sur 4 garde les six premiers jours au sec ; en 2026, elle est arrivée au J7.`],
     ].map(([h, p]) => `<li><h4>${h}</h4><p>${p}</p></li>`).join('');
@@ -1406,6 +1406,8 @@
       '<b>Après une nuit courte, pas de sommet exposé.</b> Le départ à 2 h du J5 s’est fini en renoncement au pied du sommet.',
     ].map((x, i) => `<li data-k="${i + 1}"><span>${x}</span></li>`).join('')}</ul>` };
     if (!$('cc-more').innerHTML) $('cc-more').innerHTML = defBtn('regles', 'Pour la prochaine traversée');
+    DEFS.methodes = { t: 'Données, calculs, sources et limites', wide: true, html: () => $('tpl-methodes').innerHTML };
+    if ($('meth-more') && !$('meth-more').innerHTML) $('meth-more').innerHTML = defBtn('methodes', 'Données, calculs, sources et limites');
     $('cc-end').innerHTML = `Et en comptant les allers-retours au campement pour faire le plein d’eau, pour le réchaud et pour boire, j’ai passé la barre des <b>10 000 m de D+</b> 😜`;
   }
 
@@ -1502,7 +1504,7 @@
     const decTable = `<thead><tr><th>Jour</th><th>Décision</th><th>Ce que je savais</th><th>Résultat constaté</th><th>Verdict</th></tr></thead><tbody>${I.map(d => `<tr><td class="mono">${d.day}</td><td>${d.txt}${d.day === 'J2' ? '<div class="muted">avance effacée au J4 par le bateau</div>' : ''}${/faute de bivouac/.test(d.txt) ? '<div class="muted">en partie subie : bivouac impossible au lac</div>' : ''}</td><td>${d.flags.length ? d.flags.map(k => FL[k] || k).join(', ') : 'aucun signal'}</td><td>${d.res}</td><td class="nw"><span class="dot" style="background:${QD[d.quad][1]}"></span>${QD[d.quad][0]}</td></tr>`).join('')}</tbody>`;
     DEFS.decision = { t: 'Les décisions, une par une', wide: true, html: () => `
       <p><b>L’idée.</b> En 1966, <b>Ronald Howard</b> fonde l’analyse de décision sur une règle : une décision se juge avec ce que l’on savait au moment de la prendre, pas avec ce qui est arrivé. Juger sur le résultat seul, c’est le biais de résultat (<i>resulting</i>, Annie Duke, 2018). En finance, c’est la question posée à tout gérant : talent ou chance&nbsp;?</p>
-      <p><b>La grille.</b> Chaque décision est classée selon les signaux connus à ce moment-là (prudente face aux signaux : bonne ; engagée malgré eux : risquée) et selon son résultat. ${CD.quad.merite} au résultat mérité, ${CD.quad.consequence} payées, ${CD.quad.chance} chanceuse, ${CD.quad.malchance} malchanceuse.</p>
+      <p><b>La grille.</b> Chaque décision est classée selon les signaux connus à ce moment-là (prudente face aux signaux : bonne ; engagée malgré eux : risquée) et selon son résultat. ${CD.quad.merite} méritées, ${CD.quad.consequence} payées, ${CD.quad.chance} chanceuse, ${CD.quad.malchance} malchanceuse.</p>
       <div class="table-wrap flat"><table class="data">${decTable}</table></div>
       <p class="muted">À lire comme un journal, pas comme une preuve : ${CD.n} décisions, choisies et notées par moi après coup.</p>` };
     if (!$('cf-more').innerHTML) $('cf-more').innerHTML = defBtn('decision', 'Les décisions, une par une');

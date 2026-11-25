@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="css/risque.css?v=20261125-11">
+<link rel="stylesheet" href="css/risque.css?v=20261125-12">
 </head>
 <body>
 <div class="viz-root">
@@ -371,62 +371,61 @@
 
   <section id="methodes" class="methods">
     <header class="sh"><span class="num">§</span><h2>Méthodes et sources</h2></header>
-    <div class="grid-2 g-top">
-      <div>
-        <h3>Données</h3>
-        <ul>
-          <li><b>Trace et effort</b> : montre GPS, 7 184 points avec altitude, temps en mouvement, fréquence cardiaque et calories, regroupés en 605 tronçons de 250 m, dont 604 analysés (un tronçon écarté pour erreur d’altitude GPS, partie 02).</li>
-          <li><b>Sommeil et récupération</b> : 9 nuits (durée, phases, VFC, recharge d’énergie).</li>
-          <li><b>Météo</b> : réanalyse ERA5 (Copernicus), heure par heure sur trois zones, et climatologie 1996–2025 sur les mêmes dates.</li>
-          <li><b>Terrain</b> : échelle DNT et échelle CAS, à partir des guides cités (partie 01).</li>
-        </ul>
-        <h3>Calculs</h3>
-        <ul>
-          <li><b>Allure attendue</b> : fonction de Tobler, v = 6·e<sup>−3,5·|pente+0,05|</sup> km/h.</li>
-          <li><b>Écart</b> : ln(temps réel / temps attendu), centré séparément avec et sans sac. Un tronçon écarté (erreur d’altitude GPS à Kvalvika, |pente| &gt; 60 %), partout à partir de la partie 02.</li>
-          <li><b>Loi</b> : test de Jarque-Bera, loi de Student ajustée par maximum de vraisemblance.</li>
-          <li><b>Épisodes</b> : moyenne glissante sur 2 km, épisodes d’au moins 3 tronçons au-delà de ±0,20 ; test du hasard par 2 000 mélanges des écarts ; autocorrélation d’ordre 1.</li>
-          <li><b>Massifs</b> : corrélations montée-descente et d’un massif au suivant ; agrégation des écarts en racine de la somme des carrés.</li>
-          <li><b>Sensibilités</b> : moindres carrés sur ln(temps réel / Tobler), 604 tronçons ; corrélations de Spearman par sortie.</li>
-          <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, puis J3–J9 simulés 5 000 fois (blocs de 8 résidus, 2 km), incertitude d’estimation comprise ; météo tirée dans les 1 200 mondes ERA5 dont le J2 est sec, coût d’un jour de pluie mesuré par régression (erreur type par sortie) et tiré dans son intervalle ; contrôle a posteriori chaque soir pour le lendemain ; test de résistance sur le pire monde historique (outils/monte_carlo.js).</li>
-          <li><b>Jour de marge</b> : call spread sur le temps de marche J3–J9 hors Støvla, seuil = prévision de beau temps du J2 ; prix par Monte Carlo (Boyle, 1977) sur la simulation avec le climat, comparé à la formule de Black (1976) ; volatilité implicite sur des calls simples (outils/marge_option.js).</li>
-          <li><b>Persistance de la pluie</b> : ERA5 quotidien au point centre, 1 200 fenêtres de 9 jours (1996–2025).</li>
-          <li><b>Chance ou décision</b> : sur les 1 200 étés, jour de la première pluie (la volatilité) et nombre de jours d’étape du plan sous la pluie (ce que le jour de marge doit couvrir, option réelle au sens de Myers 1977) ; chaque soir, la chance que la marge serve encore, sachant la météo du jour (outils/chance_decision.js).</li>
-          <li><b>Grecs</b> : régression de la partie 04 ; effet propre à chaque niveau de cote ; 55 croisements de deux facteurs testés un à un, contrôlés en retirant chaque sortie ; volatilité = écart-type des résidus par groupe (test de permutation) ; horizon tiré de la simulation (outils/conclusion_acte2.js).</li>
-        </ul>
+    <p class="meth-lede">Montre GPS (7 184 points, 604 tronçons de 250 m), sommeil et VFC de 9 nuits, météo ERA5 sur 30 étés, cotes DNT et guides de randonnée. Chaque méthode est expliquée dans son bouton « ? » ; le détail des calculs, les sources et les limites sont réunis ici.</p>
+    <div class="pc-more cc-more" id="meth-more"></div>
+    <template id="tpl-methodes">
+      <div class="meth-pop">
+        <div>
+          <h4>Données</h4>
+          <ul>
+            <li><b>Trace et effort</b> : montre GPS, 7 184 points (altitude, temps en mouvement, fréquence cardiaque) ; 604 tronçons de 250 m analysés, un écarté pour une altitude GPS erronée à Kvalvika.</li>
+            <li><b>Sommeil et récupération</b> : 9 nuits (durée, phases, VFC).</li>
+            <li><b>Météo</b> : réanalyse ERA5 (Copernicus), heure par heure sur trois zones ; 30 étés (1996–2025) au centre de l’archipel.</li>
+            <li><b>Terrain</b> : échelles DNT et CAS, d’après les guides cités.</li>
+          </ul>
+          <h4>Calculs</h4>
+          <ul>
+            <li><b>Allure attendue</b> : Tobler, v = 6·e<sup>−3,5·|pente+0,05|</sup> km/h, recalée avec et sans le sac ; écart = ln(temps réel / temps attendu).</li>
+            <li><b>Loi et épisodes</b> : Jarque-Bera, Student par maximum de vraisemblance ; épisodes d’au moins 3 tronçons au-delà de ±0,20, testés par 2 000 mélanges.</li>
+            <li><b>Massifs</b> : corrélations d’un massif au suivant ; écarts agrégés en racine de la somme des carrés.</li>
+            <li><b>Sensibilités et grecs</b> : moindres carrés sur 604 tronçons, effet propre à chaque cote, 55 croisements testés en retirant chaque sortie.</li>
+            <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, 5 000 tirages par blocs de 2 km, météo tirée dans 1 200 étés ERA5 ; contrôle chaque soir ; test de résistance.</li>
+            <li><b>Jour de marge</b> : call spread, prix par Monte Carlo (Boyle, 1977) comparé à la formule de Black (1976) ; option réelle (Myers, 1977).</li>
+            <li><b>Reproduire</b> : les scripts du dossier <span class="mono">outils/</span> régénèrent toutes les données (voir le README du dépôt).</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Sources</h4>
+          <ul class="src-list">
+            <li><a href="https://www.dnt.no/om-dnt/english/need-to-know-about-norwegian-outdoor-life/grading-of-trails/">DNT, Grading of trails</a></li>
+            <li><a href="https://www.68north.com/?p=3657">68north, Volandstind</a> · <a href="https://www.68north.com/?p=5071">Andstabben</a> · <a href="https://www.68north.com/?p=1009">Helvetestind</a> · <a href="https://www.68north.com/?p=1030">Hermannsdalstind</a></li>
+            <li><a href="https://www.horizonrando.fr/en/norway/helvete/">Horizon Rando, Helvete</a> · <a href="https://www.horizonrando.fr/en/norway/munken/">Munken</a> · <a href="https://www.horizonrando.fr/en/norway/ryten/">Ryten</a> · <a href="https://www.horizonrando.fr/en/norway/nesland-to-nusfjord/">Nesland → Nusfjord</a> · <a href="https://www.horizonrando.fr/en/norway/tonsasheia/">Tønsåsheia</a></li>
+            <li><a href="https://huntingforbliss.com/horseid-beach-lofoten">Hunting for Bliss, Horseid</a></li>
+            <li>Tobler, W. (1993), <i>Three presentations on geographical analysis and modeling</i>, NCGIA.</li>
+            <li>Hersbach, H. et al. (2020), <i>The ERA5 global reanalysis</i>, QJRMS 146.</li>
+          </ul>
+          <h4>Limites</h4>
+          <ul>
+            <li>Un seul marcheur, un seul séjour : les effets décrivent cette traversée, pas une loi générale.</li>
+            <li>14 sorties sur 25 sont cotées avec les seuls critères DNT et le récit du jour : leur cote peut être révisée.</li>
+            <li>La simulation est calée sur deux jours de beau temps ; le coût de la pluie est mesuré sur les J7–J9 eux-mêmes et mêle pluie, vent et fatigue ; le contrôle porte sur 19 sorties.</li>
+            <li>La partie 09 ne modélise pas mes réactions à une pluie précoce ; la grille des décisions est notée par moi, après coup.</li>
+            <li>Les intervalles de la régression supposent des tronçons indépendants ; comme ils s’enchaînent, ces intervalles sont un peu trop étroits.</li>
+          </ul>
+        </div>
       </div>
-      <div>
-        <h3>Sources</h3>
-        <ul class="src-list">
-          <li><a href="https://www.dnt.no/om-dnt/english/need-to-know-about-norwegian-outdoor-life/grading-of-trails/">DNT, Grading of trails</a></li>
-          <li><a href="https://www.68north.com/?p=3657">68north, Volandstind</a> · <a href="https://www.68north.com/?p=5071">Andstabben</a> · <a href="https://www.68north.com/?p=1009">Helvetestind</a> · <a href="https://www.68north.com/?p=1030">Hermannsdalstind</a></li>
-          <li><a href="https://www.horizonrando.fr/en/norway/helvete/">Horizon Rando, Helvete</a> · <a href="https://www.horizonrando.fr/en/norway/munken/">Munken</a> · <a href="https://www.horizonrando.fr/en/norway/ryten/">Ryten</a> · <a href="https://www.horizonrando.fr/en/norway/nesland-to-nusfjord/">Nesland → Nusfjord</a> · <a href="https://www.horizonrando.fr/en/norway/tonsasheia/">Tønsåsheia</a></li>
-          <li><a href="https://huntingforbliss.com/horseid-beach-lofoten">Hunting for Bliss, Horseid</a></li>
-          <li>Tobler, W. (1993), <i>Three presentations on geographical analysis and modeling</i>, NCGIA.</li>
-          <li>Hersbach, H. et al. (2020), <i>The ERA5 global reanalysis</i>, QJRMS 146.</li>
-        </ul>
-        <h3>Limites</h3>
-        <ul>
-          <li>Un seul marcheur, un seul séjour : les effets mesurés décrivent cette traversée, pas une loi générale.</li>
-          <li>Les 5 sorties cotées avec les seuls critères DNT reposent aussi sur le récit et peuvent être révisées.</li>
-          <li>La simulation (partie 07) est calée sur deux jours de beau temps et suit le parcours réellement choisi ; le contrôle porte sur 7 journées et 19 sorties. La probabilité de pluie était connue avant le départ, mais son coût est mesuré sur les J7–J9 eux-mêmes, et il mêle pluie, vent et fatigue.</li>
-          <li>La normale du graphique de pluie cumulée est une moyenne de période sur trois zones ; les centiles (partie 05) ne portent que sur le point centre.</li>
-          <li>La partie 09 ne modélise pas mes réactions à une pluie arrivée plus tôt (sécher le matériel au village, changer d’itinéraire) : elle compte seulement ce que le climat proposait. La grille des décisions est notée par moi, après coup.</li>
-          <li>Les intervalles de confiance de la régression (partie 04) supposent des tronçons indépendants ; la partie 02 montre qu’ils s’enchaînent : ils sont donc un peu trop étroits.</li>
-        </ul>
-      </div>
-    </div>
+    </template>
     <p class="foot mono">LOF-26-RA · v1.0 · calculé par analyse_risque.py et les scripts de outils/ à partir des mêmes données que la carte</p>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip" hidden></div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="data/risque_data.js?v=20261105-8"></script>
+<script src="data/risque_data.js?v=20261125-1"></script>
 <script src="data/risque_dist.js?v=20261108-3"></script>
 <script src="data/risque_sections.js?v=20261108-1"></script>
 <script src="data/risque_episodes.js?v=20261118-1"></script>
-<script src="data/risque_plan.js?v=20261124-2"></script>
+<script src="data/risque_plan.js?v=20261125-1"></script>
 <script src="data/risque_bougies.js?v=20261110-1"></script>
 <script src="data/risque_meteo.js?v=20261110-2"></script>
 <script src="data/risque_indice.js?v=20261112-1"></script>
@@ -434,8 +433,8 @@
 <script src="data/risque_marge.js?v=20261124-2"></script>
 <script src="data/risque_sens.js?v=20261110-2"></script>
 <script src="data/risque_mc.js?v=20261124-2"></script>
-<script src="data/risque_cd.js?v=20261124-3"></script>
+<script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261125-14"></script>
+<script src="js/risque.js?v=20261125-15"></script>
 </body>
 </html>

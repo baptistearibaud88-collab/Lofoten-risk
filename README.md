@@ -57,7 +57,7 @@ video/                le film (1080p, H.264) et ses miniatures
 docs/                 images du README
 ```
 
-## Regénérer les données
+## Régénérer les données
 
 `data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt. Les autres fichiers de `data/` en sont dérivés par les scripts de `outils/`, à relancer dans cet ordre depuis la racine :
 
