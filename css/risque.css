@@ -636,3 +636,6 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
   font: 600 20px/1.15 var(--serif); text-transform: none; letter-spacing: 0; color: var(--text-primary); }
 .gk-card.concept .gk-l { font-size: 24px; }
 @media (max-width: 640px) { .concept .ck, .risk-def.concept h4 { font-size: 18px; } }
+/* notions clés : police principale du rapport (celle des titres de partie), pas la serif */
+.concept .ck, .risk-def.concept h4 { font: 720 19px/1.15 var(--font); letter-spacing: -.015em; }
+@media (max-width: 640px) { .concept .ck, .risk-def.concept h4 { font-size: 17.5px; } }
