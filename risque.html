@@ -312,15 +312,20 @@
         <div class="ex-cols two" id="plan-cols"></div>
         <p class="ex-msg" id="plan-msg"></p>
       </div>
-    </div>
-    <div class="pc mt">
-      <div class="pc-head"><span class="pc-t">De la distance prévue à la distance réelle</span><span class="pc-r mono" id="r-bridge"></span></div>
-      <div class="chart" id="c-bridge" data-h="330"></div>
-      <div class="pc-foot"><span class="legend-row" id="l-bridge"></span><span class="src" id="s-bridge"></span></div>
       <div class="pc-more" id="plan-more"></div>
     </div>
+    <details class="fold" id="bridge-fold">
+      <summary class="act fold-bar"><span class="act-t">De la distance prévue à la distance réelle</span><span class="act-d">154 km prévus, 159 km marchés : chaque écart, un par un.</span><span class="fold-i" aria-hidden="true"></span></summary>
+      <div class="fold-body">
+        <div class="pc">
+          <div class="pc-head"><span class="pc-t">Le pont · du tracé prévu à la distance réelle</span><span class="pc-r mono" id="r-bridge"></span></div>
+          <div class="chart" id="c-bridge" data-h="330"></div>
+          <div class="pc-foot"><span class="legend-row" id="l-bridge"></span><span class="src" id="s-bridge"></span></div>
+        </div>
+      </div>
+    </details>
     <div class="notes two">
-      <div><h4>Comment lire</h4><p>En haut, le plan en clair, le réel en plein, avec et sans le sac. En bas, le pont part du tracé prévu et ajoute chaque écart, jusqu’à la distance réelle.</p></div>
+      <div><h4>Comment lire</h4><p>Le plan en clair, le réel en plein, avec et sans le sac. Le bandeau déplie le pont : du tracé prévu, écart par écart, jusqu’à la distance réelle.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-plan"></p></div>
     </div>
   </section>
@@ -438,6 +443,6 @@
 <script src="data/risque_mc.js?v=20261124-2"></script>
 <script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261125-19"></script>
+<script src="js/risque.js?v=20261125-20"></script>
 </body>
 </html>

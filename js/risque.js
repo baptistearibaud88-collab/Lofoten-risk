@@ -1294,7 +1294,7 @@
     if (!PL) return;
     const P_ = PL.plan, Rl = PL.real, M = PL.match, MO = PL.modes;
     // ---- le pont : de la distance prévue à la distance réelle
-    drawBridge();
+    if ($('bridge-fold').open) drawBridge();   // drawn when the fold opens (a closed fold has no width)
     readout('r-bridge', `<b>${f0(M.bridge.find(b => b.k === 'plan_eq').v)} km</b> prévus → <b>${f0(M.bridge.find(b => b.k === 'real').v)} km</b> marchés`);
     legend('l-bridge', [['', C('--up'), 'distance en moins'], ['', C('--down'), 'distance en plus'], ['', C('--series-avec'), 'jour de marge'], ['', C('--warning'), 'terrain'], ['', C('--text-muted'), 'mesure']]);
     $('s-bridge').textContent = `bateau Kirkefjord → Vindstad retiré · bivouac : ${f1(MO.biv.km)} km en ${MO.biv.n} détours`;
@@ -1494,6 +1494,7 @@
   function drawAll() { charts.forEach(fn => { try { fn(); } catch (e) { console.error(fn.name, e); } }); }
   drawTail(); drawPlan(); drawAll(); initMc();
   // navigation : un rechargement repart du haut ; les liens internes défilent sans laisser d'ancre dans l'adresse
+  $('bridge-fold').addEventListener('toggle', e => { if (e.target.open) drawBridge(); });
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   const cleanUrl = () => history.replaceState(null, '', location.pathname + location.search);
   if (location.hash) {   // lien partagé vers une partie : on y va une fois les graphiques dessinés, puis on retire l'ancre
