@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="css/risque.css?v=20261126-1">
+<link rel="stylesheet" href="css/risque.css?v=20261126-3">
 </head>
 <body>
 <div class="viz-root">
@@ -23,7 +23,7 @@
 
 <header class="hero">
   <div class="hero-head">
-    <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v1.0 · 25/11/2026</span><span>Période : 14–22 juin 2026</span></div>
+    <div class="docmeta"><span>Rapport d’analyse de risque</span><span>Réf. LOF-26-RA</span><span>v1.0 · 26/11/2026</span><span>Période : 14–22 juin 2026</span></div>
     <h1>Analyse de risque d’une traversée autonome&nbsp;: Lofoten, juin 2026</h1>
     <p class="sub">Allure, terrain, météo et récupération sur 9 jours, en trois actes : mesurer, expliquer, piloter.</p>
   </div>
@@ -128,7 +128,7 @@
       </div>
     </div>
     <div class="notes eq">
-      <div><h4>Comment lire</h4><p>z compte l’écart en σ : à z = 3, une loi normale n’en produit qu’un tronçon sur 740 de ce côté. « Temps » : ×3,5, c’est trois fois et demie le temps attendu.</p></div>
+      <div><h4>Comment lire</h4><p>z compte l’écart en σ : à z = 3, une loi normale n’en produit qu’un tronçon sur 740 de ce côté. « Temps » : ×3,5, c’est trois fois et demie le temps attendu. Point bleu : avec le sac ; orange : en trail.</p></div>
       <div><h4>Méthode</h4><p id="n-tail-meth"></p></div>
       <div class="key"><h4>À retenir</h4><p id="t-tail"></p></div>
     </div>
@@ -211,7 +211,7 @@
     <header class="sh"><span class="num">05</span><h2>La météo face à la normale</h2></header>
     <p class="lede">La météo vécue (réanalyse ERA5, heure par heure, sur la zone de chaque jour) est comparée à la moyenne de 30 ans (1996–2025) sur les mêmes dates.</p>
     <div class="grid-2">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Pluie cumulée · vécue contre normale</span><span class="pc-r mono" id="r-rain"></span></div><div class="chart" id="c-rain" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-rain"></span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Pluie cumulée</span><span class="pc-r mono" id="r-rain"></span></div><div class="chart" id="c-rain" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-rain"></span></div></div>
       <div class="pc"><div class="pc-head"><span class="pc-t">Rafale maximale du jour</span><span class="pc-r mono" id="r-gust"></span></div><div class="chart" id="c-gust" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-gust"></span></div></div>
     </div>
     <div class="notes">
@@ -222,12 +222,12 @@
       <h3 class="subh">La pluie arrive en séries : 2026 face à 30 étés</h3>
     <p class="lede">Un cumul ne dit pas tout : les jours de beau temps arrivent ensemble, ceux de pluie aussi. La vraie question est donc de savoir si je suis tombé sur une semaine rare, sur un épisode de pluie hors norme, ou simplement sur un calendrier favorable.</p>
     <div class="grid-2 g-meteo">
-      <div class="pc"><div class="pc-head"><span class="pc-t">Pluie le lendemain · selon la veille</span><span class="pc-r mono" id="r-persist"></span></div><div class="chart" id="c-persist" data-h="250"></div><div class="pc-foot"><span class="src">ERA5 · point centre · juin–juillet 1996–2025</span></div></div>
+      <div class="pc"><div class="pc-head"><span class="pc-t">Pluie le lendemain</span><span class="pc-r mono" id="r-persist"></span></div><div class="chart" id="c-persist" data-h="250"></div><div class="pc-foot"><span class="src">ERA5 · point centre · juin–juillet 1996–2025</span></div></div>
       <div class="pc"><div class="pc-head"><span class="pc-t">2026 parmi 1 200 fenêtres de 9 jours</span><span class="pc-r mono" id="r-strip"></span></div><div class="chart" id="c-strip" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-strip"></span></div></div>
     </div>
     <div class="notes wk">
       <div><h4>Comment lire</h4><p>À gauche, la chance qu’il pleuve un jour donné, selon qu’il a plu ou non la veille. Si les jours étaient indépendants, les deux barres seraient égales. À droite, chaque histogramme range 1 200 fenêtres de 9 jours tirées des étés 1996–2025 ; la barre rouge est la classe de 2026, et le centile dit quelle part des fenêtres fait moins.</p></div>
-      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en partie 09. Un épisode est une suite de jours de pluie. Le classement sur 30 ans se fait à un point fixe, au centre de l’archipel, pour comparer chaque été au même endroit.</p></div>
+      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en parties 07 et 09. Un épisode est une suite de jours de pluie. Le classement sur 30 ans se fait à un point fixe, au centre de l’archipel, pour comparer chaque été au même endroit.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-wx2"></p></div>
     </div>
   </section>
@@ -437,11 +437,11 @@
 <script src="data/risque_bougies.js?v=20261110-1"></script>
 <script src="data/risque_meteo.js?v=20261110-2"></script>
 <script src="data/risque_acte2.js?v=20261121-5"></script>
-<script src="data/risque_marge.js?v=20261124-2"></script>
+<script src="data/risque_marge.js?v=20261126-1"></script>
 <script src="data/risque_sens.js?v=20261110-2"></script>
 <script src="data/risque_mc.js?v=20261124-2"></script>
 <script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261126-2"></script>
+<script src="js/risque.js?v=20261126-7"></script>
 </body>
 </html>

@@ -271,6 +271,7 @@ table.plan td:first-child { font-family: var(--mono); font-weight: 650; white-sp
 .g-tail table.data td.nw { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .notes.eq { grid-template-columns: 1fr 1fr 1fr; }
 @media (max-width: 900px) { .grid-2.g-tail { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .g-tail table.data { min-width: 560px; } }   /* téléphone : le tableau défile plutôt que de se tasser */
 @media (max-width: 900px) { .notes.eq { grid-template-columns: 1fr; } }
 table.data.ep { font-size: 12.5px; }
 table.data.ep td { padding: 5px 10px; vertical-align: middle; }
@@ -435,6 +436,7 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .def-pop.full { left: 12px !important; top: 12px !important; right: 12px; bottom: 12px; width: auto; max-height: none; display: flex; flex-direction: column; }
 .def-pop.full .pm-host { flex: 1; min-height: 0; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; background: var(--bg); cursor: grab; }
 .def-pop.full .pm-host svg { display: block; }
+.pmap .pm-t { paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round; }   /* liseré : les noms restent lisibles sur les traces */
 .pm-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 8px; font-size: 12.5px; }
 .pm-legend i { display: inline-block; width: 14px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 .def-pop[hidden] { display: none !important; }

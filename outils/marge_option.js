@@ -68,14 +68,14 @@ const vs = Object.entries(variants).map(([k, v]) => { const X = draws(v.kept_q);
 const sens = { value_min: Math.min(...vs.map(v => v.value)), value_max: Math.max(...vs.map(v => v.value)), use_min: Math.min(...vs.map(v => v.p_use)), use_max: Math.max(...vs.map(v => v.p_use)), variants: vs,
   by_M: [M, 4, 6, 8].map(m => ({ M_min: mn(m), value: mn(value(X0, K, m)), p_out: r1(X0.filter(x => x > K + m).length) })),
   k_clim: (() => { const s_ = [...X0].sort((a, b) => a - b), kc = (s_[49] + s_[50]) / 2; return { above_min: mn(kc - K), value: mn(value(X0, kc)), p_use: r1(X0.filter(x => x > kc).length) }; })() };
-const c2 = curve[0], c5 = curve.find(c => c.day === 5), c7 = curve.find(c => c.day === 7);
+const c2 = curve[0], c6 = curve.find(c => c.day === 6), c7 = curve.find(c => c.day === 7);   // J6 : dernier soir sec avant la pluie du J7
 const res = {
   K: r2(K), M: r2(M), M_min: mn(M), margin: mg, real_kept: r2(MG.real_kept), used_min: mn(used), stvla_real_min: mn(MG.real_h),
   real_end_min: Math.round(MC.real_dev[MC.real_dev.length - 1] * 60),
   sd: { clim: r2(s0), blocs: r2(sd(draws(MG.evenings[0].blocs.q))), f_minus_k: r2(m0 - K) },
   value_j2: { sim: c2.clim.value, black: c2.clim.black, beau_temps: c2.blocs.value },
   curve, greeks, smile, sens,
-  theta: { j2: c2.clim.value, j5: c5.clim.value, j7: c7.clim.value, per_day: r1((c5.clim.value - c2.clim.value) / 3) },
+  theta: { j2: c2.clim.value, j6: c6.clim.value, j7: c7.clim.value, per_day: r1((c6.clim.value - c2.clim.value) / 4) },
 };
 fs.writeFileSync(path.join(root, 'data', 'risque_marge.js'), `// généré par outils/marge_option.js — ne pas modifier à la main\nwindow.RISK_MARGE = ${JSON.stringify(res)};\n`);
 console.log(`marge M = ${M.toFixed(2)} h (${res.M_min} min) · seuil K = ${K} h (calendrier, beau temps, hors Støvla) · réel hors Støvla ${MG.real_kept} h → marge utilisée ${res.used_min} min (${Math.round(used / M * 100)} %)`);

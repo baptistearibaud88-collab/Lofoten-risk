@@ -6,7 +6,7 @@ Usage :
   python3 outils/apercu/textes.py s2 s3    # certaines parties
   python3 outils/apercu/textes.py s2 -v    # affiche aussi les textes
 
-Repères (CONSIGNES_VERSION_COURTE.md) : intro ≤ 45, « Comment lire » ≤ 35,
+Repères de la version courte : intro ≤ 45, « Comment lire » ≤ 35,
 pas de « Méthode », « À retenir » ≤ 55.
 """
 import os, sys
@@ -25,7 +25,7 @@ JS = r"""
     const c = d.cloneNode(true); const hh = c.querySelector('h4'); if (hh) hh.remove();
     add(nom, c);
   });
-  s.querySelectorAll('.ex-body, .tools .tool p, .procon ul, .cards, .card3').forEach(e => add('Bloc ' + (e.className.split(' ')[0]), e));
+  s.querySelectorAll('.ex-body, .cards').forEach(e => add('Bloc ' + (e.className.split(' ')[0]), e));
   const all = (s.innerText || '').replace(/\s+/g, ' ').trim();
   return { blocs: out, total: all.split(' ').length };
 }
