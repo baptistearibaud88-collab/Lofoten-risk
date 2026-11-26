@@ -405,6 +405,16 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .risk-def { margin: 4px 0 16px; }
 .risk-def > div p { margin: 0; font-size: 14px; line-height: 1.5; }
 
+/* largeurs des encadrés choisies pour que leurs textes finissent à la même hauteur (sur ordinateur ; sur téléphone ils s'empilent) */
+@media (min-width: 901px) {
+  #n-terrain .kcols { grid-template-columns: .55fr 1fr; }
+  #n-ext { grid-template-columns: .55fr .55fr 1fr; }
+  #n-roll, #n-hrv, #n-marge { grid-template-columns: .5fr 1fr; }
+  #n-gk { grid-template-columns: .65fr 1fr; }
+  #n-mc { grid-template-columns: .95fr 1fr; }
+  #n-plan { grid-template-columns: .75fr 1fr; }
+  #mg-greeks { grid-template-columns: .75fr 1.25fr 1fr; }
+}
 /* partie 05 (météo) : en-têtes des graphiques alignés ; largeurs des encadrés pour qu'ils finissent à la même hauteur */
 #s5 .grid-2 > .pc { display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
 @media (min-width: 901px) {

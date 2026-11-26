@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="css/risque.css?v=20261126-5">
+<link rel="stylesheet" href="css/risque.css?v=20261126-6">
 </head>
 <body>
 <div class="viz-root">
@@ -92,7 +92,7 @@
         <div class="grade-legend" id="grade-legend"></div>
       </div>
     </div>
-    <div class="notes one">
+    <div id="n-terrain" class="notes one">
       <div class="key"><h4>À retenir</h4><div class="kcols"><p id="t-terrain"></p><p id="t-terrain-b"></p></div></div>
     </div>
   </section>
@@ -127,7 +127,7 @@
         <div class="table-wrap flat"><table class="data" id="tail-fast"></table></div>
       </div>
     </div>
-    <div class="notes eq">
+    <div id="n-ext" class="notes eq">
       <div><h4>Comment lire</h4><p>z compte l’écart en σ : à z = 3, une loi normale n’en produit qu’un tronçon sur 740 de ce côté. « Temps » : ×3,5, c’est trois fois et demie le temps attendu. Point bleu : avec le sac ; orange : en trail.</p></div>
       <div><h4>Méthode</h4><p id="n-tail-meth"></p></div>
       <div class="key"><h4>À retenir</h4><p id="t-tail"></p></div>
@@ -146,7 +146,7 @@
       <div class="grade-mix cause-wide" id="cause-mix"></div>
       <div class="pc-foot" id="ep-btn" style="justify-content:flex-start"></div>
     </div>
-    <div class="notes two kr">
+    <div id="n-roll" class="notes two kr">
       <div><h4>Comment lire</h4><p>Histogramme : chaque barre compte les tronçons d’un même écart, en rouge au-delà de 2σ. Courbe : au-dessus de 0, plus lent que prévu ; en rouge, les épisodes lents de 10 min ou plus.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-roll"></p></div>
     </div>
@@ -154,10 +154,10 @@
 
   <section id="s3">
     <header class="sh"><span class="num">03</span><h2>Des sommets indépendants, une météo commune</h2></header>
-    <p class="lede">Chaque massif monte de la mer et y redescend : entre deux sommets, on repasse au bord d’un fjord, d’une route ou d’un village. La traversée est une suite de 15 ascensions courtes et indépendantes, chacune avec sa sortie.</p>
+    <p class="lede">Chaque massif part du niveau de la mer et y revient : entre deux sommets, on redescend au bord d’un fjord, d’une route ou d’un village. La traversée est une suite de 15 ascensions courtes et indépendantes, chacune avec sa sortie.</p>
     <div class="notes two risk-def concept">
       <div><h4>Risque spécifique</h4><p>Propre à un massif : un pierrier, un sentier invisible, une barre rocheuse. Il ne dit rien du massif suivant.</p></div>
-      <div><h4>Risque systématique</h4><p>Commun à tous les massifs du moment : la météo. Aucun retour à la mer ne l’efface.</p></div>
+      <div><h4>Risque systématique</h4><p>Commun à tous les massifs du moment : la météo. Aucune redescente ne l’efface.</p></div>
     </div>
     <div class="grid-2">
       <div class="pc"><div class="pc-head"><span class="pc-t">Distance par classe de pente</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="190"></div></div>
@@ -205,7 +205,7 @@
       <div class="chart" id="c-sleep" data-h="120"></div>
       <div class="pc-foot"><span class="src">Source : montre · VFC moyenne de la nuit, en ms</span></div>
     </div>
-    <div class="notes two kr">
+    <div id="n-hrv" class="notes two kr">
       <div><h4>Comment lire</h4><p>La ligne pointillée (0 %) est la VFC habituelle ; la bande grise, la zone normale à ±10 %. En vert, au-dessus de l’habitude ; en rouge, en dessous. Une courbe qui reste sous la bande signale une fatigue qui s’accumule.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-hrv"></p></div>
     </div>
@@ -241,7 +241,7 @@
     <p class="lede">En finance, les « grecs » mesurent comment le prix d’une option réagit à chacune de ses entrées. Cette conclusion reprend les mesures de l’acte 2 et associe à chacune son grec : chaque lettre pose une question sur ce qui fait bouger mon temps, et de combien.</p>
     <div class="gk-btn" id="gk-btn"></div>
     <div class="gk-grid" id="gk-grid"></div>
-    <div class="notes two">
+    <div id="n-gk" class="notes two">
       <div><h4>Comment lire</h4><p>Chaque carte : la question « de combien », puis la mesure sur les 604 tronçons. Le « ? » donne la définition en finance. « n.s. » : effet non distinguable du hasard.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-gk"></p></div>
     </div>
@@ -273,7 +273,7 @@
         <p class="ex-msg" id="mc-msg"></p>
       </div>
     </div>
-    <div class="notes two">
+    <div id="n-mc" class="notes two">
       <div><h4>Comment lire</h4><p>Zéro : la prévision du J2 par beau temps. Chaque trait est une traversée simulée ; le cône en contient 90 %, la distribution de droite leur arrivée. Trait épais : le réel.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-mc"></p></div>
     </div>
@@ -296,7 +296,7 @@
       <div class="pc"><div class="pc-head"><span class="pc-t">Ce que la marge doit absorber, soir après soir</span><span class="pc-r mono" id="r-mg"></span></div><div class="chart" id="c-mg" data-h="250"></div><div class="pc-foot"><span class="legend-row" id="l-mg"></span></div></div>
     </div>
     <div class="notes eq risk-def greeks" id="mg-greeks"></div>
-    <div class="notes two">
+    <div id="n-marge" class="notes two">
       <div><h4>Comment lire</h4><p id="mg-read"></p></div>
       <div class="key"><h4>À retenir</h4><p id="t-mg"></p></div>
     </div>
@@ -328,7 +328,7 @@
         </div>
       </div>
     </details>
-    <div class="notes two">
+    <div id="n-plan" class="notes two">
       <div><h4>Comment lire</h4><p>Le plan en clair, le réel en plein, avec et sans le sac. Le bandeau déplie le pont : du tracé prévu, écart par écart, jusqu’à la distance réelle.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-plan"></p></div>
     </div>
@@ -448,6 +448,6 @@
 <script src="data/risque_mc.js?v=20261124-2"></script>
 <script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261126-9"></script>
+<script src="js/risque.js?v=20261126-10"></script>
 </body>
 </html>
