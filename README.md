@@ -20,6 +20,12 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 
 Une carte interactive qui rassemble toutes les données du trek, classées par nuit, par sortie et dans l'inventaire de départ, avec les annotations et le récit de la traversée.
 
+## Le parcours
+
+![La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages](docs/carte_reel.png)
+
+La trace réelle en relief, colorée selon l'altitude, avec les neuf nuits, les neuf sommets et les villages traversés.
+
 ## Le rapport en trois actes
 
 | Acte | Partie | En une phrase |
@@ -80,6 +86,7 @@ node outils/indice_danger.js          # irrégularité et pente par sortie    �
 node outils/sensibilites.js           # régression et corrélations (04)    → data/risque_sens.js
 node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
 node outils/frequence_cardiaque.js    # le cœur selon le terrain (04, 06)  → data/risque_fc.js
+node outils/carte_reel.js             # carte du parcours (README)          → docs/carte_reel.svg
 node outils/monte_carlo.js            # simulation, contrôle, résistance (07) → data/risque_mc.js
 node outils/conclusion_acte2.js       # les grecs (06)                     → data/risque_acte2.js
 node outils/marge_option.js           # jour de marge, Black-Scholes (07)  → data/risque_marge.js
@@ -93,4 +100,4 @@ node outils/carte_resume.js           # encart « Analyse de risque » de la car
 
 ## Sources
 
-Météo : ERA5 (Copernicus / Open-Meteo). Cotation : DNT (Den Norske Turistforening), 68north, Horizon Rando, Hunting for Bliss. Fonds de carte : relief Mapzen / AWS Terrain Tiles, imagerie Esri World Imagery, topo OpenTopoMap (© OpenStreetMap, CC-BY-SA), rendu MapLibre GL JS.
+Météo : ERA5 (Copernicus / Open-Meteo). Cotation : DNT (Den Norske Turistforening), 68north, Horizon Rando, Hunting for Bliss. Fonds de carte : relief Mapzen / AWS Terrain Tiles, imagerie Esri World Imagery, topo OpenTopoMap (© OpenStreetMap, CC-BY-SA), rendu MapLibre GL JS. Carte du parcours : côtes et lacs © contributeurs OpenStreetMap (ODbL), exports overpass-turbo.
