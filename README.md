@@ -74,11 +74,11 @@ Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`
 node outils/segmentation_terrain.js   # cotation par section (01)          → data/risque_sections.js
 node outils/distribution.js           # écarts à l'allure attendue (02)    → data/risque_dist.js
 node outils/episodes_allure.js        # épisodes lents et massifs (02–03)  → data/risque_episodes.js
-node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
 node outils/bougies_sorties.js        # bougies par sortie (01)            → data/risque_bougies.js
 node outils/meteo_series.js           # pluie sur 1 200 fenêtres (05)      → data/risque_meteo.js
-node outils/indice_danger.js          # rangs d'exposition des sorties     → data/risque_indice.js
+node outils/indice_danger.js          # irrégularité et pente par sortie    → data/risque_indice.js
 node outils/sensibilites.js           # régression et corrélations (04)    → data/risque_sens.js
+node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
 node outils/monte_carlo.js            # simulation, contrôle, résistance (07) → data/risque_mc.js
 node outils/conclusion_acte2.js       # les grecs (06)                     → data/risque_acte2.js
 node outils/marge_option.js           # jour de marge, Black-Scholes (07)  → data/risque_marge.js

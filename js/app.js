@@ -169,7 +169,6 @@
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
   const COL_PHOTO = '#2bb3ac';
-  const kmTxt = a => `km ${nf(a.km, a.km % 1 ? 1 : 0)}`;
 
   const BOAT_FEATURES = Object.entries(BOATS).map(([key, b]) => {
     const [x, y] = key.split('>'), A = ACTS[x].pts[ACTS[x].pts.length - 1], B = ACTS[y].pts[0];
@@ -1757,7 +1756,6 @@
   /* ---------- recaps: all the nights, all the summits ---------- */
   const PH = { deep: '#2f5fc4', light: '#86aaf0', rem: '#b55ac8' };
   const avg = a => { const v = a.filter(x => x != null && isFinite(x)); return v.length ? v.reduce((p, q) => p + q, 0) / v.length : null; };
-  const recapHead = (cls, eyebrow, title, note) => [el('p', { class: `eyebrow-sm ${cls}` }, eyebrow), el('h2', null, title), note ? el('p', { class: 'note' }, note) : null];
   function openRecap(rub) {
     stopAnim(true); setActive(null); highlight(null); setTitleDefault(); setTabs(rub, true); unfoldPanel();
     if (popup) { popup.remove(); popup = null; }

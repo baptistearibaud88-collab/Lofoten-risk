@@ -1,11 +1,11 @@
-// Persistance de la pluie et rang de 2026 (partie 07, bloc « La pluie arrive en séries »).
+// Persistance de la pluie et rang de 2026 (partie 05, bloc « La pluie arrive en séries »).
 // Entrées : donnees/era5_climatology_1996_2025_daily.json (ERA5 via Open-Meteo, point centre,
 // pluie quotidienne 1996–2025) et risque_data.js (pluie 2026 au même point, cf.clim.real_rain_d).
 // Sortie  : risque_meteo.js — à relancer si l'un des deux change :
 //   node outils/meteo_series.js
 //
 // Fenêtres de 9 jours (durée de la traversée), départs du 1er juin au 10 juillet :
-// 30 étés × 40 dates = 1 200 fenêtres, les mêmes que la partie 11.
+// 30 étés × 40 dates = 1 200 fenêtres, les mêmes que les parties 07 et 09.
 // Jour de pluie : au moins 1 mm. Épisode : suite de jours de pluie (juin–juillet).
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');

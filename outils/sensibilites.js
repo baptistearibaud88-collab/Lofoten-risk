@@ -1,4 +1,4 @@
-// Sensibilités (partie 06) : régression et matrice de corrélation, recalculées sans les artefacts GPS.
+// Sensibilités (partie 04) : régression et matrice de corrélation, recalculées sans les artefacts GPS.
 // Entrées : risque_data.js, risque_indice.js (irrégularité et pente des sorties, déjà sans artefact).
 // Sortie  : risque_sens.js — à relancer après outils/indice_danger.js :
 //   node outils/sensibilites.js

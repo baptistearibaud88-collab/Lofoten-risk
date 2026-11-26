@@ -1,5 +1,6 @@
-// Indice de danger (partie 08) : recalculé sans les artefacts GPS, puis réduit aux quatre facteurs
-// connus avant de partir, à poids égaux (voir plus bas).
+// Irrégularité et pente des passages raides de chaque sortie, recalculées sans les artefacts GPS :
+// entrée de outils/sensibilites.js (matrice de corrélation de la partie 04). Le script calcule aussi
+// l'ancien indice de danger (quatre facteurs connus avant de partir, à poids égaux), qui n'est plus affiché.
 // Entrée : risque_data.js (sorties, tronçons de 250 m, contributions terrain / météo / fatigue).
 // Sortie : risque_indice.js — à relancer après chaque régénération de risque_data.js :
 //   node outils/indice_danger.js
