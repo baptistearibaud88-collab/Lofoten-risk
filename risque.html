@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="css/risque.css?v=20261126-3">
+<link rel="stylesheet" href="css/risque.css?v=20261126-5">
 </head>
 <body>
 <div class="viz-root">
@@ -192,6 +192,10 @@
       <div><h4>Comment lire</h4><p>Une barre à droite de zéro ralentit, une barre à gauche accélère. Si la moustache traverse zéro, l’effet n’est pas distinguable du hasard (n.s.). Dans la matrice, rouge = les deux facteurs montent ensemble, bleu = l’un monte quand l’autre baisse.</p></div>
       <div><h4>Méthode</h4><p>Moindres carrés ordinaires sur ln(temps réel / Tobler), avec pente (en valeur absolue : montée ou descente), sac, cote du terrain, rafales, VFC de la nuit précédente et descente raide (&gt; 15 %). Effets convertis en % : e<sup>β</sup> − 1.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-sens"></p></div>
+    </div>
+    <div class="hr-note">
+      <svg class="hr-ico" viewBox="0 0 48 48" aria-hidden="true"><path class="h" d="M24 42C10.5 32.5 4 24.6 4 16.2 4 10 8.7 5.5 14.5 5.5c4 0 7.4 2.2 9.5 5.4 2.1-3.2 5.5-5.4 9.5-5.4C39.3 5.5 44 10 44 16.2 44 24.6 37.5 32.5 24 42Z"/><path class="p" d="M7 21.5h8.5l3-6 4.5 13 4-17 3.5 10H41"/></svg>
+      <div><h4>Ce que dit le cœur</h4><p id="t-fc"></p></div>
     </div>
     <p class="lede">La régression ne trouve aucun effet de la fatigue sur l’allure. Elle existe pourtant. La variabilité de la fréquence cardiaque (VFC), mesurée chaque nuit, reflète la récupération : 0 % est une nuit ordinaire (45 ms, ma valeur habituelle hors traversée). En dessous, la durée de chaque nuit.</p>
     <div class="pc">
@@ -397,6 +401,7 @@
             <li><b>Loi et épisodes</b> : Jarque-Bera, Student par maximum de vraisemblance ; épisodes d’au moins 3 tronçons au-delà de ±0,20, testés par 2 000 mélanges.</li>
             <li><b>Massifs</b> : corrélations d’un massif au suivant ; écarts agrégés en racine de la somme des carrés.</li>
             <li><b>Sensibilités et grecs</b> : moindres carrés sur 604 tronçons, effet propre à chaque cote, 55 croisements testés en retirant chaque sortie.</li>
+            <li><b>Fréquence cardiaque</b> : la même régression sur la fréquence cardiaque moyenne des 604 tronçons (pente, sac, allure, jour, cote), erreurs types par sortie.</li>
             <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, 5 000 tirages par blocs de 2 km, météo tirée dans 1 200 étés ERA5 ; contrôle chaque soir ; test de résistance.</li>
             <li><b>Jour de marge</b> : call spread, prix par Monte Carlo (Boyle, 1977) comparé à la formule de Black (1976) ; option réelle (Myers, 1977).</li>
             <li><b>Reproduire</b> : les scripts du dossier <span class="mono">outils/</span> régénèrent toutes les données (voir le README du dépôt).</li>
@@ -438,10 +443,11 @@
 <script src="data/risque_meteo.js?v=20261110-2"></script>
 <script src="data/risque_acte2.js?v=20261121-5"></script>
 <script src="data/risque_marge.js?v=20261126-1"></script>
+<script src="data/risque_fc.js?v=20261126-1"></script>
 <script src="data/risque_sens.js?v=20261110-2"></script>
 <script src="data/risque_mc.js?v=20261124-2"></script>
 <script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261126-7"></script>
+<script src="js/risque.js?v=20261126-9"></script>
 </body>
 </html>

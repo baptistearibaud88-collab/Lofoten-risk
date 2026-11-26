@@ -529,6 +529,15 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .meth-pop ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
 .meth-pop li { margin: 5px 0; }
 @media (max-width: 760px) { .meth-pop { grid-template-columns: 1fr; } }
+/* partie 04 : encadré « Ce que dit le cœur », avec l'icône de fréquence cardiaque */
+.hr-note { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 26px; padding: 14px 16px; border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--down) 40%, var(--hair)); background: color-mix(in srgb, var(--down) 6%, var(--surface-1)); }
+.hr-ico { flex: none; width: 46px; height: 46px; margin-top: 2px; }
+.hr-ico .h { fill: var(--down); }
+.hr-ico .p { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.hr-note h4 { margin: 0 0 5px; font: 650 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--down); }
+.hr-note p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-primary); }
+@media (max-width: 640px) { .hr-note { gap: 10px; padding: 12px; } .hr-ico { width: 32px; height: 32px; } }
 /* « À retenir » sur toute la largeur (partie 03) */
 .notes.one.full { max-width: none; }
 .notes.one.full .key p { font-size: 15px; line-height: 1.55; }

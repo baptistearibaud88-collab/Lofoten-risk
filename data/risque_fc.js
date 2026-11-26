@@ -1,0 +1,2 @@
+// généré par outils/frequence_cardiaque.js — ne pas modifier à la main
+window.RISK_FC = {"n":604,"sorties":25,"r2":0.61,"steps":{"fm":{"b":14.9,"lo":4.8,"hi":25,"t":2.9},"mex":{"b":0.1,"lo":-7.9,"hi":8.1,"t":0},"exexp":{"b":3.9,"lo":-3.8,"hi":11.6,"t":1}},"loo_mex":[-4.2,2],"inter":{"b":21.3,"lo":8.5,"hi":34.2,"t":3.2,"loo_t":[2.9,4.4]},"e_trail":{"b":-19,"lo":-28,"hi":-10,"t":-4.1},"e_sac":{"b":2.3,"lo":-11,"hi":15.6,"t":0.3},"day":{"b":-4.6,"lo":-7.3,"hi":-2,"t":-3.4}};

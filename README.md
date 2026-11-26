@@ -79,6 +79,7 @@ node outils/meteo_series.js           # pluie sur 1 200 fenêtres (05)      → 
 node outils/indice_danger.js          # irrégularité et pente par sortie    → data/risque_indice.js
 node outils/sensibilites.js           # régression et corrélations (04)    → data/risque_sens.js
 node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
+node outils/frequence_cardiaque.js    # le cœur selon le terrain (04, 06)  → data/risque_fc.js
 node outils/monte_carlo.js            # simulation, contrôle, résistance (07) → data/risque_mc.js
 node outils/conclusion_acte2.js       # les grecs (06)                     → data/risque_acte2.js
 node outils/marge_option.js           # jour de marge, Black-Scholes (07)  → data/risque_marge.js
