@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lofoten traverse</title>
+<meta name="description" content="Self-supported traverse of the Lofoten, 13–23 June 2026: the track, bivouacs and summits in 3D.">
+<!-- link preview (WhatsApp, LinkedIn, iMessage, mail): the cover of the video montage -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:site_name" content="Lofoten traverse">
+<meta property="og:title" content="Lofoten traverse">
+<meta property="og:description" content="170 km, 10,060 m of elevation gain, 9 nights in bivouac and 9 summits in Norway, 13–23 June 2026. The whole traverse in 3D, day by day.">
+<meta property="og:url" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/map.html">
+<meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sitting above a lake in the Lofoten, with the coordinates, LOFOTEN and the Norwegian flag">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#eef3f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141b1f" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+<link rel="stylesheet" href="css/style.css?v=20261126-1">
+</head>
+<body>
+<div id="map" aria-label="3D map of the traverse"></div>
+
+<header class="title-block bubble" id="title">
+  <button type="button" class="fold" id="btn-title-fold" aria-expanded="true" aria-label="Collapse the title">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>
+  </button>
+
+  <div id="title-default">
+    <p class="eyebrow foldable">Norway · 13–23 June 2026</p>
+    <h1>Lofoten traverse</h1>
+    <button type="button" class="sun-btn foldable" id="btn-sun" aria-label="The midnight sun">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="4.2" class="sb-disc"/><path d="M12 4.8v2M5.6 7.4l1.4 1.4M18.4 7.4 17 8.8M3.8 13.4h2M18.2 13.4h2" class="sb-rays"/><path d="M2.5 18.2h19" class="sb-hz"/></svg>
+      <span>Midnight<br>sun</span>
+    </button>
+    <div class="foldable">
+      <p class="lede">Nine days of fully self-supported bivouac under the midnight sun. Tap a point on the map, a section, or play the whole traverse.</p>
+      <dl class="stats" id="stats"></dl>
+      <div class="pill-row">
+        <button type="button" class="pill-btn" id="btn-trek">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z"/></svg>The whole traverse
+        </button>
+        <button type="button" class="pill-btn pill-ghost" id="btn-depart">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h6l2.5 2.5v8.5h-8.5z M6 7h4.5M6 9.5h4.5M6 12h3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/></svg>Gear list
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="title-activity" hidden>
+    <p class="eyebrow foldable" id="act-eyebrow"></p>
+    <h1 class="act-title" id="act-title"></h1>
+    <div class="foldable" id="act-profile"></div>
+  </div>
+</header>
+
+<aside class="panel bubble" id="panel" aria-label="Sections and details">
+  <div class="panel-head">
+    <div class="seg" role="tablist" id="rubric-tabs" aria-label="Sections"></div>
+    <button type="button" class="fold" id="btn-panel-fold" aria-expanded="true" aria-label="Collapse the panel">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 10l4-4 4 4"/></svg>
+    </button>
+  </div>
+  <div class="panel-inner" id="panel-inner" aria-live="polite"></div>
+</aside>
+
+<button type="button" class="compass" id="compass" aria-label="Compass: reset north up" title="Reset north up">
+  <svg viewBox="-50 -50 100 100" aria-hidden="true">
+    <g class="rose" id="compass-rose">
+      <circle r="47" class="c-disc"/>
+      <circle r="41" class="c-ring"/>
+      <g class="c-ticks" id="compass-ticks"></g>
+      <path d="M0-33 7.5 0 0 4-7.5 0Z" class="c-north"/>
+      <path d="M0 33 7.5 0 0-4-7.5 0Z" class="c-south"/>
+      <path d="M-24 0 0-5 24 0 0 5Z" class="c-cross"/>
+      <circle r="3.2" class="c-hub"/>
+      <text y="-34.5" class="c-n">N</text>
+      <text x="35" y="3.6" class="c-l">E</text>
+      <text y="41" class="c-l">S</text>
+      <text x="-35" y="3.6" class="c-l">O</text>
+    </g>
+  </svg>
+</button>
+
+<button type="button" class="tools-btn bubble" id="btn-tools" aria-label="Map display" title="Map display">
+  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 18 6.5 10 10.5 2 6.5Z M2 10l8 4 8-4 M2 13.5l8 4 8-4"/></svg>
+</button>
+
+<div class="controls" role="toolbar" aria-label="Map display">
+  <button type="button" id="btn-overview">Overview</button>
+  <button type="button" id="btn-base">Satellite</button>
+  <button type="button" id="btn-relief" aria-pressed="true">3D relief</button>
+  <button type="button" id="btn-alerts" aria-pressed="false">Alerts</button>
+  <button type="button" id="btn-photos" aria-pressed="false">Photos</button>
+  <button type="button" id="btn-infos" aria-pressed="false">Info</button>
+</div>
+
+<div class="legend bubble" aria-label="Legend">
+  <span><i class="sw sw-avec"></i>with the pack</span>
+  <span><i class="sw sw-sans"></i>without the pack (trail running)</span>
+  <span><i class="sw sw-boat"></i>ferry</span>
+  <span><i class="sw sw-camp"></i>fully self-supported bivouac</span>
+  <span><i class="sw sw-peak"></i>summit</span>
+  <span><i class="sw sw-finish"></i>finish</span>
+  <span><i class="sw sw-alert"></i>alert</span>
+  <span><i class="sw sw-photo"></i>photo</span>
+  <span><i class="sw sw-info"></i>info</span>
+</div>
+
+<button type="button" class="src-btn bubble" id="btn-sources" aria-label="Data sources" title="Data sources">
+  <svg viewBox="0 0 20 20" aria-hidden="true"><ellipse cx="10" cy="5" rx="6.5" ry="2.6"/><path d="M3.5 5v10c0 1.4 2.9 2.6 6.5 2.6s6.5-1.2 6.5-2.6V5M3.5 10c0 1.4 2.9 2.6 6.5 2.6s6.5-1.2 6.5-2.6"/></svg>
+</button>
+
+<div class="map-error bubble" id="map-error" hidden>
+  The map could not load. It needs an internet connection to fetch the base map and the relief.
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script src="data/en/data.js?v=20261126-1"></script>
+<script src="data/en/risque_carte.js?v=20261126-1"></script>
+<script src="js/en/app.js?v=20261126-1"></script>
+</body>
+</html>

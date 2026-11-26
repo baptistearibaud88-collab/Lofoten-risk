@@ -1,99 +1,104 @@
-# Lofoten 2026 — une traversée lue comme une analyse de risque
+# Lofoten 2026 — a traverse read as a risk analysis
 
 ![Lofoten](photos/banniere.jpg)
 
-Neuf jours seul et en autonomie dans les îles Lofoten (Norvège), du 14 au 22 juin 2026, sous le soleil de minuit : **159 km, 9 892 m de dénivelé positif, 25 sorties**, sac de bivouac sur le dos ou en trail léger pour les sommets.
+Nine days alone and self-supported in the Lofoten Islands (Norway), from 14 to 22 June 2026, under the midnight sun: **159 km, 9,892 m of elevation gain, 25 outings**, with a bivouac pack on my back, or running light to the summits.
 
-J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec les outils de la gestion des risques en finance.
+I planned this trek, walked it, then analysed its data with the tools of financial risk management.
 
-> **Problématique** — Seul, en autonomie, sous le soleil de minuit : où le risque s'est-il réellement concentré pendant la traversée, et le plan l'avait-il anticipé ?
+> **Research question** — Alone, self-supported, under the midnight sun: where did the risk really concentrate during the traverse, and had the plan anticipated it?
 
-## Voir le projet
+## See the project
 
 | | |
 |---|---|
-| **Carte 3D** | [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/) |
-| **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) |
-| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — tournage GoPro HERO13 Black, montage personnel |
+| **3D map** | [English](https://baptistearibaud88-collab.github.io/Lofoten-risk/map.html) · [Français](https://baptistearibaud88-collab.github.io/Lofoten-risk/) |
+| **Risk analysis report** | [English](https://baptistearibaud88-collab.github.io/Lofoten-risk/risk.html) · [Français](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) |
+| **The film** | [Watch the film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — shot on a GoPro HERO13 Black, edited by me |
 
-## La carte 3D
+## The 3D map
 
-Une carte interactive qui rassemble toutes les données du trek, classées par nuit, par sortie et dans l'inventaire de départ, avec les annotations et le récit de la traversée.
+An interactive map that brings together all the data of the trek, sorted by night, by outing and in the starting gear list, with the notes and the story of the traverse.
 
-![La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages](docs/carte_reel.png)
+![The traverse in relief: GPS track coloured by altitude, nights, summits and villages](docs/carte_reel_en.png)
 
-## Le rapport en trois actes
+## The report in three acts
 
-| Acte | Partie | En une phrase |
+| Act | Part | In one sentence |
 |---|---|---|
-| **1 · Mesurer** | 01 Relief et cotation | 25 sorties en bougies, terrain coté sur l'échelle norvégienne (DNT) : 52 % de la distance en terrain exigeant ou expert. |
-| | 02 Écarts et temps perdu | Chaque tronçon de 250 m comparé à une allure attendue (Tobler recalé) : écarts presque normaux un par un, mais qui arrivent en série. |
-| | 03 Sommets indépendants, météo commune | Risque spécifique (le terrain d'un massif) diversifié, risque systématique (la pluie) qui touche tout à la fois. |
-| **2 · Expliquer** | 04 Sensibilités et fatigue | Régression à facteurs : sac +41 %, descente raide +22 %, +15 % par niveau de terrain ; fatigue suivie par la VFC nocturne. |
-| | 05 Météo | 2026 face à 30 étés (ERA5) : six jours secs, puis un épisode de pluie rare. |
-| | 06 Les grecs | Les mesures relues comme les sensibilités d'une option : delta, gamma, vega, thêta, rho. |
-| **3 · Piloter** | 07 Monte Carlo et jour de marge | 5 000 traversées simulées dans 1 200 étés réels ; valeur à risque, contrôle a posteriori, test de résistance ; le jour de marge évalué avec Black-Scholes. |
-| | 08 Plan contre réel | Le plan comme indice de référence : 7 km sur 10 du tracé suivis, mais l'effort tenu à 2 % près. |
-| | 09 Chance ou décision | La pluie comme volatilité, le jour de marge comme seule option réelle. |
-| | 10 Conclusion | Ce que la semaine a montré, et les règles pour la prochaine traversée. |
+| **1 · Measure** | 01 Relief and grading | 25 outings as candles, terrain graded on the Norwegian scale (DNT): 52% of the distance on demanding or expert terrain. |
+| | 02 Deviations and time lost | Each 250 m segment compared with an expected pace (recalibrated Tobler): deviations almost normal one by one, but they come in streaks. |
+| | 03 Independent summits, shared weather | Specific risk (the terrain of one massif) diversified, systematic risk (the rain) hitting everything at once. |
+| **2 · Explain** | 04 Sensitivities and fatigue | Factor regression: pack +41%, steep descent +22%, +15% per terrain level; fatigue tracked by night-time HRV. |
+| | 05 Weather | 2026 against 30 summers (ERA5): six dry days, then a rare rain episode. |
+| | 06 The Greeks | The measurements read as the sensitivities of an option: delta, gamma, vega, theta, rho. |
+| **3 · Steer** | 07 Monte Carlo and the reserve day | 5,000 traverses simulated in 1,200 real summers; value at risk, backtest, stress test; the reserve day valued with Black-Scholes. |
+| | 08 Plan versus actual | The plan as a benchmark: 7 km out of 10 of the route followed, but the effort held within 2%. |
+| | 09 Luck or decision | Rain as volatility, the reserve day as the only real option. |
+| | 10 Conclusion | What the week showed, and the rules for the next traverse. |
 
-![Un trek, lu comme une analyse de risque](docs/conclusion_analyse.jpg)
+![A trek, read as a risk analysis](docs/conclusion_analyse_en.jpg)
 
-## Les données et les méthodes
+## Data and methods
 
-- **Données** : montre GPS (7 184 points, fréquence cardiaque, VFC et sommeil de 9 nuits), météo ERA5 (Copernicus, 30 étés 1996–2025), cotes des sorties (DNT et guides), plan tracé avant le départ (Strava).
-- **Traitement** : traversée découpée en 604 tronçons de 250 m, un tronçon faux écarté (altitude GPS erronée) ; chaque tronçon rattaché à sa météo, à la nuit précédente, à sa cote et au port ou non du sac.
-- **Méthodes** : loi de Tobler recalée, tests de normalité et de séries, régression à facteurs (moindres carrés), simulation de Monte Carlo par blocs avec climat tiré dans 1 200 fenêtres réelles, valeur à risque et expected shortfall, contrôle a posteriori (Kupiec, Bâle), test de résistance, Black-Scholes / Black 1976 sur un call spread, attribution de performance (Brinson), options réelles (Myers).
+- **Data**: GPS watch (7,184 points, heart rate, HRV and sleep over 9 nights), ERA5 weather (Copernicus, 30 summers 1996–2025), grades of the outings (DNT and hiking guides), route planned before leaving (Strava).
+- **Processing**: traverse cut into 604 segments of 250 m, one wrong segment left out (faulty GPS altitude); each segment linked to its weather, the previous night, its grade and whether the pack was carried.
+- **Methods**: recalibrated Tobler's rule, normality and runs tests, factor regression (least squares), block Monte Carlo simulation with the climate drawn from 1,200 real windows, value at risk and expected shortfall, backtest (Kupiec, Basel), stress test, Black-Scholes / Black 1976 on a call spread, performance attribution (Brinson), real options (Myers).
 
-Le détail de chaque méthode, ses limites et ses sources sont dans le rapport (boutons « ? » et partie « Méthodes et sources »).
+Each method, its limits and its sources are detailed in the report (the "?" buttons and the "Methods and sources" part).
 
-## Organisation du dépôt
+## Repository layout
 
 ```
-index.html            carte 3D (page d'accueil)
-risque.html           rapport d'analyse de risque
-css/                  styles des deux pages
-js/                   code des deux pages (app.js : carte ; risque.js : rapport)
-data/                 données chargées par les pages (data.js, risque_*.js, ressentis_episodes.js)
-donnees/              données brutes : plan tracé (plan.gpx), pluie ERA5 1996–2025
-outils/               scripts de calcul (Node.js) qui produisent data/risque_*.js
-outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
-photos/               photos de la traversée (et miniatures)
-video/                le film (1080p, H.264) et ses miniatures
-docs/                 image du README
+index.html            3D map, French (home page)
+risque.html           risk analysis report, French
+map.html, risk.html   the same two pages in English (generated by outils/anglais.js)
+css/                  page styles
+js/                   page code (app.js: map; risque.js: report; js/en/: English versions)
+data/                 data loaded by the pages (data.js, risque_*.js, ressentis_episodes.js; data/en/: English texts)
+donnees/              raw data: planned route (plan.gpx), ERA5 rain 1996–2025
+outils/               computation scripts (Node.js) that produce data/risque_*.js
+outils/anglais/       translation dictionaries for the English pages
+outils/apercu/        screenshots and word counts (Python + Playwright), for proofreading
+photos/               photos of the traverse (and thumbnails)
+video/                the film (1080p, H.264) and its thumbnails
+docs/                 README images (French and English)
 ```
 
-## Reproduire les calculs
+## Reproducing the calculations
 
-Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`, à partir des données de `donnees/` et `data/`. Les simulations utilisent une graine fixe : relancer les scripts redonne exactement les mêmes résultats.
+Every figure in the report is computed by the scripts in `outils/`, from the data in `donnees/` and `data/`. The simulations use a fixed seed: rerunning the scripts gives exactly the same results.
 
 <details>
-<summary>Les commandes, dans l'ordre</summary>
+<summary>The commands, in order</summary>
 
-`data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt ; les autres fichiers de `data/` en sont dérivés. Depuis la racine :
+`data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the root:
 
 ```bash
-node outils/segmentation_terrain.js   # cotation par section (01)          → data/risque_sections.js
-node outils/distribution.js           # écarts à l'allure attendue (02)    → data/risque_dist.js
-node outils/episodes_allure.js        # épisodes lents et massifs (02–03)  → data/risque_episodes.js
-node outils/bougies_sorties.js        # bougies par sortie (01)            → data/risque_bougies.js
-node outils/meteo_series.js           # pluie sur 1 200 fenêtres (05)      → data/risque_meteo.js
-node outils/indice_danger.js          # irrégularité et pente par sortie    → data/risque_indice.js
-node outils/sensibilites.js           # régression et corrélations (04)    → data/risque_sens.js
-node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
-node outils/frequence_cardiaque.js    # le cœur selon le terrain (04, 06)  → data/risque_fc.js
-node outils/carte_reel.js             # carte du parcours (README)          → docs/carte_reel.svg
-node outils/monte_carlo.js            # simulation, contrôle, résistance (07) → data/risque_mc.js
-node outils/conclusion_acte2.js       # les grecs (06)                     → data/risque_acte2.js
-node outils/marge_option.js           # jour de marge, Black-Scholes (07)  → data/risque_marge.js
-node outils/chance_decision.js        # volatilité et option (09)          → data/risque_cd.js
-node outils/carte_resume.js           # encart « Analyse de risque » de la carte → data/risque_carte.js
+node outils/segmentation_terrain.js   # grading by section (01)            → data/risque_sections.js
+node outils/distribution.js           # deviations from expected pace (02) → data/risque_dist.js
+node outils/episodes_allure.js        # slow episodes and massifs (02–03)  → data/risque_episodes.js
+node outils/bougies_sorties.js        # candles per outing (01)            → data/risque_bougies.js
+node outils/meteo_series.js           # rain over 1,200 windows (05)       → data/risque_meteo.js
+node outils/indice_danger.js          # irregularity and slope per outing  → data/risque_indice.js
+node outils/sensibilites.js           # regression and correlations (04)   → data/risque_sens.js
+node outils/plan_reel.js              # plan versus actual (08)            → data/risque_plan.js
+node outils/frequence_cardiaque.js    # the heart by terrain (04, 06)      → data/risque_fc.js
+node outils/carte_reel.js             # route map (README)                 → docs/carte_reel.svg
+node outils/monte_carlo.js            # simulation, backtest, stress (07)  → data/risque_mc.js
+node outils/conclusion_acte2.js       # the Greeks (06)                    → data/risque_acte2.js
+node outils/marge_option.js           # reserve day, Black-Scholes (07)    → data/risque_marge.js
+node outils/chance_decision.js        # volatility and option (09)         → data/risque_cd.js
+node outils/carte_resume.js           # "Risk analysis" card on the map    → data/risque_carte.js
+node outils/anglais.js                # English version of the pages       → map.html, risk.html, js/en/, data/en/
 ```
 
-`data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.
+The English version is regenerated after any change to the French pages; its translations live in `outils/anglais/`. `data/ressentis_episodes.js` is filled in by hand (cause of each slow episode). After a change, bump the file's `?v=` number in the page to avoid the browser cache. To proofread locally: `python3 outils/apercu/captures.py s1 s7` (`--mobile` for phone width) and `python3 outils/apercu/textes.py`.
 
 </details>
 
 ## Sources
 
-Météo : ERA5 (Copernicus / Open-Meteo). Cotation : DNT (Den Norske Turistforening), 68north, Horizon Rando, Hunting for Bliss. Fonds de carte : relief Mapzen / AWS Terrain Tiles, imagerie Esri World Imagery, topo OpenTopoMap (© OpenStreetMap, CC-BY-SA), rendu MapLibre GL JS. Carte du parcours : côtes et lacs © contributeurs OpenStreetMap (ODbL), exports overpass-turbo.
+Weather: ERA5 (Copernicus / Open-Meteo). Grading: DNT (Den Norske Turistforening), 68north, Horizon Rando, Hunting for Bliss. Base maps: Mapzen / AWS Terrain Tiles relief, Esri World Imagery, OpenTopoMap topo (© OpenStreetMap, CC-BY-SA), rendered with MapLibre GL JS. Route map: coastline and lakes © OpenStreetMap contributors (ODbL), overpass-turbo exports.
+
+<sub>[Version française](README.fr.md)</sub>
