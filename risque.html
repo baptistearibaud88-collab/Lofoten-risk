@@ -11,7 +11,7 @@
 <meta property="og:description" content="604 tronçons de 250 m, 9 nuits, 30 ans de météo et 5 000 simulations Monte Carlo : où le risque s’est réellement concentré pendant la traversée.">
 <meta property="og:image" content="https://baptistearibaud88-collab.github.io/Lofoten-risk/photos/apercu.jpg">
 <meta name="theme-color" content="#0b1015">
-<link rel="stylesheet" href="css/risque.css?v=20261126-6">
+<link rel="stylesheet" href="css/risque.css?v=20261126-8">
 </head>
 <body>
 <div class="viz-root">
@@ -157,7 +157,7 @@
     <p class="lede">Chaque massif part du niveau de la mer et y revient : entre deux sommets, on redescend au bord d’un fjord, d’une route ou d’un village. La traversée est une suite de 15 ascensions courtes et indépendantes, chacune avec sa sortie.</p>
     <div class="notes two risk-def concept">
       <div><h4>Risque spécifique</h4><p>Propre à un massif : un pierrier, un sentier invisible, une barre rocheuse. Il ne dit rien du massif suivant.</p></div>
-      <div><h4>Risque systématique</h4><p>Commun à tous les massifs du moment : la météo. Aucune redescente ne l’efface.</p></div>
+      <div><h4>Risque systématique</h4><p>Commun à tous les massifs du moment : la météo. Aucun retour au niveau de la mer ne l’efface.</p></div>
     </div>
     <div class="grid-2">
       <div class="pc"><div class="pc-head"><span class="pc-t">Distance par classe de pente</span><span class="pc-r mono" id="r-acf1"></span></div><div class="chart" id="c-acf1" data-h="190"></div></div>
@@ -231,7 +231,7 @@
     </div>
     <div class="notes wk">
       <div><h4>Comment lire</h4><p>À gauche, la chance qu’il pleuve un jour donné, selon qu’il a plu ou non la veille. Si les jours étaient indépendants, les deux barres seraient égales. À droite, chaque histogramme range 1 200 fenêtres de 9 jours tirées des étés 1996–2025 ; la barre rouge est la classe de 2026, et le centile dit quelle part des fenêtres fait moins.</p></div>
-      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en parties 07 et 09. Un épisode est une suite de jours de pluie. Le classement sur 30 ans se fait à un point fixe, au centre de l’archipel, pour comparer chaque été au même endroit.</p></div>
+      <div><h4>Méthode</h4><p>ERA5 (Open-Meteo), point centre, pluie quotidienne de 1996 à 2025. Un jour de pluie reçoit au moins 1 mm. Persistance mesurée sur les 1 800 passages d’un jour au suivant en juin et juillet. Fenêtres de 9 jours, comme la traversée, avec un départ chaque jour du 1er juin au 10 juillet : 30 étés × 40 dates = 1 200 fenêtres, les mêmes qu’en parties 07 et 09.</p></div>
       <div class="key"><h4>À retenir</h4><p id="t-wx2"></p></div>
     </div>
   </section>
@@ -448,6 +448,6 @@
 <script src="data/risque_mc.js?v=20261124-2"></script>
 <script src="data/risque_cd.js?v=20261125-1"></script>
 <script src="data/ressentis_episodes.js?v=20261118-3"></script>
-<script src="js/risque.js?v=20261126-10"></script>
+<script src="js/risque.js?v=20261126-13"></script>
 </body>
 </html>

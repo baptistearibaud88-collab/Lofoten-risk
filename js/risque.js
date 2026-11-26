@@ -553,8 +553,8 @@
       [`Risque systématique${defBtn('sysspec')}`, `pluie : ${fs0(rainPct)} % à terrain égal · ${SY.n_wet} massifs · ${fs0(AG.sys)} min`,
         'La pluie pèse sur tous les massifs du moment, quel que soit leur terrain : elle ne s’efface pas.', 'Ajouter un facteur météo commun : ses minutes s’ajoutent bout à bout, massif après massif.'],
       ['Risque spécifique', `± ${f0(AG.spec)} min sur les ${M.length} massifs · terrain d’un massif au suivant r = ${f2(T.grad_next.r)}`,
-        'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les redescentes effacent : il passe de ± ${f0(AG.block)} à ± ${f0(AG.spec)} min.`],
-      ['Option de sortie', `redescente en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
+        'Pierrier, sentier invisible, barre rocheuse : ce qui n’appartient qu’à un massif et ne dit rien du suivant.', `C’est lui que les retours au niveau de la mer effacent : il passe de ± ${f0(AG.block)} à ± ${f0(AG.spec)} min.`],
+      ['Option de sortie', `retour au niveau de la mer en ${f0(med('t_exit'))} min médianes après le sommet (max ${f0(d3.max(M, m => m.t_exit))} min)`,
         `Chaque massif se termine au niveau de la mer : la perte est bornée. Pire massif : ${fs0(worst.lost)} min (${mName(worst)}).`, 'Un massif raté ne se propage pas au reste de la traversée.'],
       ['Durée d’engagement', `${f0(med('t_tot'))} min médianes par massif, dont ${f0(med('t_engage'))} min de montée à partir de 15 %`,
         `Des engagements courts : la décision d’y aller ou de renoncer se reprend au pied de chacun des ${M.length} massifs.`, 'Renoncer garde de la valeur, parce qu’on peut le faire sans compromettre la suite.'],
@@ -562,16 +562,16 @@
         'Le risque n’est pas réparti : il se concentre sur de courts passages très raides, où l’effort est maximal et où une erreur se paie cher.', 'La pente moyenne ne suffit pas : compter la part du massif au-dessus de 20 % et l’effet propre des descentes raides (partie 04).'],
     ];
     $('risk-sheet').innerHTML = `<thead><tr><th>Indicateur</th><th>Mesure</th><th>Lecture risque</th><th>Conséquence pour le modèle</th></tr></thead><tbody>${rows.map(r => `<tr><td${/def-btn/.test(r[0]) ? ' class="def-mid"' : ''}><b>${r[0]}</b></td><td class="mono rs-m">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join('')}</tbody>`;
-    readout('r-sheet', `${M.length} massifs · ${M.length - 1} redescentes`);
+    readout('r-sheet', `${M.length} massifs · ${M.length - 1} retours au niveau de la mer`);
 
     // 3. diversification, in words: one block, independent massifs, with the rain
     $('ex-intro').innerHTML = `<b>Indépendants, les écarts des massifs s’additionnent en racine de la somme des carrés et se compensent en partie ; liés, ils s’additionnent bout à bout.</b>`;
     $('ex-cols').innerHTML = [
       [C('--down'), 'Sans indépendance', 'Un seul bloc sans sortie', AG.block, `Toute la traversée comme une seule arête, sans jamais redescendre : les deux risques s’additionnent bout à bout, le terrain de chaque massif comme la météo. Aucun écart ne compense l’autre.`],
-      [C('--accent'), 'Le bénéfice : le risque spécifique se dilue', 'Massifs indépendants', AG.spec, `Chaque redescente remet le compteur à zéro : un pierrier sur un massif ne dit rien du suivant, et un massif difficile est compensé par un plus facile. Sur ${M.length} massifs, le risque propre à chacun est divisé par ${f0(AG.block / AG.spec)}.`],
-      [C('--series-avec'), 'La limite : le risque systématique reste', 'Plus la pluie', AG.total, `Les redescentes n’arrêtent pas la pluie : elle a touché les ${SY.n_wet} derniers massifs en même temps, et ses ${fs0(AG.sys)} min s’ajoutent bout à bout. √(${f0(AG.spec)}² + ${f0(AG.sys)}²) = ± ${f0(AG.total)}.`],
+      [C('--accent'), 'Le bénéfice : le risque spécifique se dilue', 'Massifs indépendants', AG.spec, `Chaque retour au niveau de la mer remet le compteur à zéro : un pierrier sur un massif ne dit rien du suivant, et un massif difficile est compensé par un plus facile. Sur ${M.length} massifs, le risque propre à chacun est divisé par ${f0(AG.block / AG.spec)}.`],
+      [C('--series-avec'), 'La limite : le risque systématique reste', 'Plus la pluie', AG.total, `Les retours au niveau de la mer n’arrêtent pas la pluie : elle a touché les ${SY.n_wet} derniers massifs en même temps, et ses ${fs0(AG.sys)} min s’ajoutent bout à bout. <span class="nw">√(${f0(AG.spec)}² + ${f0(AG.sys)}²) = ± ${f0(AG.total)}</span>.`],
     ].map(([c, s_, t, v, p]) => `<div style="--c:${c}"><span class="s">${s_}</span><div class="t">${t}</div><b class="v">± ${f0(v)} min</b><p>${p}</p></div>`).join('');
-    $('ex-msg').innerHTML = `<b>L’indépendance est un bénéfice, pas une protection totale.</b> Plus il y a de massifs indépendants, plus le risque propre à chacun se dilue ; le risque commun, lui, reste entier. Sans redescente : ± ${f0(AG.block)} min. Avec : ± ${f0(AG.spec)}. Mais la pluie remet ${fs0(AG.sys)} min que rien ne dilue : ± ${f0(AG.total)}.`;
+    $('ex-msg').innerHTML = `<b>L’indépendance est un bénéfice, pas une protection totale.</b> Plus il y a de massifs indépendants, plus le risque propre à chacun se dilue ; le risque commun, lui, reste entier. Sans retour au niveau de la mer : ± ${f0(AG.block)} min. Avec : ± ${f0(AG.spec)}. Mais la pluie remet ${fs0(AG.sys)} min que rien ne dilue : ± ${f0(AG.total)}.`;
     readout('r-acf2', `bloc <b>± ${f0(AG.block)}</b> · indépendants <b>± ${f0(AG.spec)}</b> · avec la pluie <b>± ${f0(AG.total)}</b>`);
 
     // the « ? » button: systematic and specific risk, how the rain effect is measured
@@ -583,8 +583,8 @@
       <p><b>Les autres facteurs communs essayés</b>, à terrain égal (p : part des tirages au hasard qui font aussi bien) :</p>
       <div class="table-wrap flat"><table class="data"><tbody>${SY.tried.map(t => `<tr><td>${t.l}</td><td class="n mono">p = ${f2(t.p)}</td></tr>`).join('')}</tbody></table></div>
       <p class="muted">La température ressort le plus, mais elle va avec la pluie : sur 9 jours, froid et pluie arrivent ensemble, on ne peut pas les séparer. Disons « la météo ». La VFC ressort aussi, mais sur six facteurs essayés, l’un ressort souvent par hasard, et la partie 04 ne trouve pas d’effet de la fatigue sur les tronçons : une piste, pas un résultat. Avec ${SY.n_wet} massifs sous la pluie, l’effet est un ordre de grandeur ; la simulation (partie 07) le mesure sur tous les tronçons et trouve un effet du même ordre.</p>
-      <p class="muted">Repères : si les tronçons étaient indépendants, on aurait ± ${f0(T.agg.seg)} min ; si tous les massifs l’étaient, pluie comprise, ± ${f0(AG.indep)} min. Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux redescentes sous 60 m. Chaque massif pèse les minutes réellement perdues ou gagnées.</p>` };
-    $('t-acf').innerHTML = `Grâce à <b>la diversification</b>, les massifs indépendants ramènent l’incertitude de ± ${f0(AG.block)} à <b>± ${f0(AG.spec)} min</b> : chaque redescente efface une partie du risque propre au massif. Mais la pluie touche tous les massifs à la fois : <b>${fs0(AG.sys)} min</b> que rien ne dilue. Décider massif par massif, et garder la marge pour la météo.`;
+      <p class="muted">Repères : si les tronçons étaient indépendants, on aurait ± ${f0(T.agg.seg)} min ; si tous les massifs l’étaient, pluie comprise, ± ${f0(AG.indep)} min. Massif : portion continue au-dessus de 60 m qui culmine à plus de 150 m, entre deux retours au niveau de la mer (sous 60 m). Chaque massif pèse les minutes réellement perdues ou gagnées.</p>` };
+    $('t-acf').innerHTML = `Grâce à <b>la diversification</b>, les massifs indépendants ramènent l’incertitude de ± ${f0(AG.block)} à <b>± ${f0(AG.spec)} min</b> : chaque retour au niveau de la mer efface une partie du risque propre au massif. Mais la pluie touche tous les massifs à la fois : <b>${fs0(AG.sys)} min</b> que rien ne dilue. Décider massif par massif, et garder la marge pour la météo.`;
   }
 
 
@@ -835,7 +835,7 @@
       d => `<b>${dayLbl(d.day)} · rafale max ${d.gust} km/h</b>${row('référence de la période', `${ref} km/h`)}${row('écart', `${fs0(d.gust - ref)} km/h`)}`);
     legend('l-gust', [['ln', C('--accent'), 'rafale max du jour (km/h)'], ['dash', '', 'rafale max normale'], ['', C('--down'), 'dépassement']]);
     readout('r-gust', `max <b>${W_.gust_max} km/h</b> · jours > réf. <b>${Dd.filter(d => d.gust > ref).length}</b>`);
-    $('t-wx').textContent = `Six jours secs et plus chauds que la normale (${f1(W_.tmax_mean)} °C de max moyen contre ${f1(W_.climato.tmax)}), puis ${f1(lateRain)} mm en trois jours, soit ${f0((lateRain / W_.climato.pluie_mm - 1) * 100)} % de plus que la normale de toute la période, avec des rafales jusqu’à ${W_.gust_max} km/h. Les trois incidents de terrain les plus graves (escalade, éboulement, grotte) tombent dans ces trois jours, quand la VFC était déjà sous la zone normale (environ −30 %). Le nombre de jours de pluie est normal (${W_.rainy_days}) : c’est leur regroupement en fin de séjour qui a fait le risque.`;
+    $('t-wx').textContent = `Six jours secs et plus chauds que la normale (${f1(W_.tmax_mean)} °C de max moyen contre ${f1(W_.climato.tmax)}), puis ${f1(lateRain)} mm en trois jours, soit ${f0((lateRain / W_.climato.pluie_mm - 1) * 100)} % de plus que la normale de toute la période, avec des rafales jusqu’à ${W_.gust_max} km/h. Le nombre de jours de pluie est normal (${W_.rainy_days}) : c’est leur regroupement en fin de séjour qui a fait le risque.`;
   }
 
   /* ---------- 06 · les grecs du trek ---------- */
@@ -1471,7 +1471,7 @@
   drawTail(); drawPlan(); drawAll(); initMc();
   // espaces insécables : un nombre reste sur la même ligne que son unité (+41 %, 1 h 36, ± 67 min), et « : ; ? ! » ne passent pas seuls à la ligne,
   // y compris dans les textes produits plus tard
-  const NB = [[/(\d) (?=(?:%|°C|(?:min|h|km|m|mm|ms|bpm|j)(?![\p{L}\d])))/gu, '$1\u00a0'], [/([±×≈]) (?=\d)/g, '$1\u00a0'], [/(\d\u00a0h) (?=\d)/g, '$1\u00a0'], [/ ([:;?!»])/g, '\u00a0$1'], [/« /g, '«\u00a0']];
+  const NB = [[/(\d) (?=(?:%|°C|(?:min|h|km|m|mm|ms|bpm|j)(?![\p{L}\d])))/gu, '$1\u00a0'], [/([±×≈]) (?=\d)/g, '$1\u00a0'], [/(^|[^\d,])(\d{1,3}) (?=\d{3}(?!\d))/g, '$1$2\u00a0'], [/(\d\u00a0h) (?=\d)/g, '$1\u00a0'], [/ ([:;?!»])/g, '\u00a0$1'], [/« /g, '«\u00a0']];
   const glueText = t => { if (!/ /.test(t.nodeValue) || (t.parentNode && t.parentNode.closest && t.parentNode.closest('svg, script, style'))) return;
     const v = NB.reduce((a, [re, r]) => a.replace(re, r), t.nodeValue); if (v !== t.nodeValue) t.nodeValue = v; };
   const glue = n => { if (n.nodeType === 3) return glueText(n); if (n.nodeType !== 1 || n.closest('svg')) return;

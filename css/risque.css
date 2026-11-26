@@ -161,6 +161,7 @@ table.data tr:last-child td { border-bottom: 0; }
 table.data tbody tr:hover td { background: var(--surface-2); }
 table.data td.n, table.data th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 table.data td.nw { white-space: nowrap; }
+span.nw { white-space: nowrap; }
 table.data .muted { color: var(--text-muted); font-size: 12px; }
 .tag { display: inline-flex; align-items: center; gap: 5px; font: 600 11px var(--mono); padding: 2px 7px; border-radius: 4px; background: color-mix(in srgb, var(--warning) 14%, transparent); color: var(--warning); white-space: nowrap; }
 .tag svg { width: 12px; height: 11px; }
@@ -418,8 +419,8 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 /* partie 05 (météo) : en-têtes des graphiques alignés ; largeurs des encadrés pour qu'ils finissent à la même hauteur */
 #s5 .grid-2 > .pc { display: grid; grid-template-rows: subgrid; grid-row: span 3; row-gap: 0; }
 @media (min-width: 901px) {
-  #s5 .notes { grid-template-columns: 1fr .8fr 1.9fr; }
-  #s5 .notes.wk { grid-template-columns: .6fr 1fr 1.1fr; }
+  #s5 .notes { grid-template-columns: .7fr .6fr 1fr; }
+  #s5 .notes.wk { grid-template-columns: .55fr .6fr 1fr; }
 }
 /* partie 06 (bilan de l'acte 2) : lettres grecques sans majuscule forcée */
 .greeks h4 .gk { text-transform: none; font: 700 14px var(--font); letter-spacing: 0; margin-right: 2px; color: var(--accent); }
