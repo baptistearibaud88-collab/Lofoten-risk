@@ -20,11 +20,7 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 
 Une carte interactive qui rassemble toutes les données du trek, classées par nuit, par sortie et dans l'inventaire de départ, avec les annotations et le récit de la traversée.
 
-## Le parcours
-
 ![La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages](docs/carte_reel.png)
-
-La trace réelle en relief, colorée selon l'altitude, avec les neuf nuits, les neuf sommets et les villages traversés.
 
 ## Le rapport en trois actes
 
