@@ -66,7 +66,8 @@ outils/anglais/       translation dictionaries for the English pages
 outils/apercu/        screenshots and word counts (Python + Playwright), for proofreading
 photos/               photos of the traverse (and thumbnails)
 video/                the film (1080p, H.264) and its thumbnails
-docs/                 README images (French and English)
+docs/                 README images, French README, content licence
+icons/                browser tab icon
 ```
 
 ## Reproducing the calculations
@@ -97,7 +98,7 @@ node outils/carte_resume.js           # "Risk analysis" card on the map    → d
 node outils/anglais.js                # English version of the pages       → map.html, risk.html, js/en/, data/en/
 ```
 
-The English version is regenerated after any change to the French pages; its translations live in `outils/anglais/`. `data/ressentis_episodes.js` is filled in by hand (cause of each slow episode). After a change, bump the file's `?v=` number in the page to avoid the browser cache. To proofread locally (`pip install -r requirements.txt`, then `playwright install chromium`): `python3 outils/apercu/captures.py s1 s7` (`--mobile` for phone width) and `python3 outils/apercu/textes.py`.
+The English version is regenerated after any change to the French pages; its translations live in `outils/anglais/`. `data/ressentis_episodes.js` is filled in by hand (cause of each slow episode). After a change, bump the file's `?v=` number in the page to avoid the browser cache. To proofread locally (`pip install -r outils/apercu/requirements.txt`, then `playwright install chromium`): `python3 outils/apercu/captures.py s1 s7` (`--mobile` for phone width) and `python3 outils/apercu/textes.py`.
 
 </details>
 
@@ -107,6 +108,6 @@ Weather: ERA5 (Copernicus / Open-Meteo). Grading: DNT (Den Norske Turistforening
 
 ## Licence
 
-Code under the [MIT licence](LICENSE); photos, film, texts and images under [CC BY-NC 4.0](LICENSE-CONTENT.md); OpenStreetMap data under ODbL.
+Code under the [MIT licence](LICENSE); photos, film, texts and images under [CC BY-NC 4.0](docs/LICENSE-CONTENT.md); OpenStreetMap data under ODbL.
 
-<sub>[Version française](README.fr.md)</sub>
+<sub>[Version française](docs/README.fr.md)</sub>

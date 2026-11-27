@@ -1,6 +1,6 @@
 # Lofoten 2026 — une traversée lue comme une analyse de risque
 
-![Lofoten](photos/banniere.jpg)
+![Lofoten](../photos/banniere.jpg)
 
 Neuf jours seul et en autonomie dans les îles Lofoten (Norvège), du 14 au 22 juin 2026, sous le soleil de minuit : **159 km, 9 892 m de dénivelé positif, 25 sorties**, sac de bivouac sur le dos ou en trail léger pour les sommets.
 
@@ -18,7 +18,7 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 
 ## La carte 3D
 
-<img src="docs/carte_reel.png?v=2" alt="La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages" width="340" align="left">
+<img src="carte_reel.png?v=2" alt="La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages" width="340" align="left">
 
 Une carte interactive qui rassemble toutes les données du trek, classées par nuit, par sortie et dans l'inventaire de départ, avec les annotations et le récit de la traversée. On la parcourt en relief 3D ou en satellite, et chaque étape se rejoue en survol.
 
@@ -41,7 +41,7 @@ Ci-contre, la traversée vue d'en haut : la trace GPS de la montre, en relief et
 | | 09 Chance ou décision | La pluie comme volatilité, le jour de marge comme seule option réelle. |
 | | 10 Conclusion | Ce que la semaine a montré, et les règles pour la prochaine traversée. |
 
-![Un trek, lu comme une analyse de risque](docs/conclusion_analyse.jpg)
+![Un trek, lu comme une analyse de risque](conclusion_analyse.jpg)
 
 ## Les données et les méthodes
 
@@ -65,7 +65,8 @@ outils/               scripts de calcul (Node.js) qui produisent data/risque_*.j
 outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
 photos/               photos de la traversée (et miniatures)
 video/                le film (1080p, H.264) et ses miniatures
-docs/                 images du README (français et anglais)
+docs/                 images du README, README français, licence du contenu
+icons/                icône d'onglet
 ```
 
 ## Reproduire les calculs
@@ -96,7 +97,7 @@ node outils/carte_resume.js           # encart « Analyse de risque » de la car
 node outils/anglais.js                # version anglaise des pages        → map.html, risk.html, js/en/, data/en/
 ```
 
-La version anglaise se régénère après toute modification des pages françaises : ses traductions sont dans `outils/anglais/`. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local (`pip install -r requirements.txt`, puis `playwright install chromium`) : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.
+La version anglaise se régénère après toute modification des pages françaises : ses traductions sont dans `outils/anglais/`. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local (`pip install -r outils/apercu/requirements.txt`, puis `playwright install chromium`) : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.
 
 </details>
 
@@ -106,6 +107,6 @@ Météo : ERA5 (Copernicus / Open-Meteo). Cotation : DNT (Den Norske Turistforen
 
 ## Licence
 
-Code sous [licence MIT](LICENSE) ; photos, film, textes et images sous [CC BY-NC 4.0](LICENSE-CONTENT.md) ; données OpenStreetMap sous ODbL.
+Code sous [licence MIT](../LICENSE) ; photos, film, textes et images sous [CC BY-NC 4.0](LICENSE-CONTENT.md) ; données OpenStreetMap sous ODbL.
 
-<sub>[English version](README.md)</sub>
+<sub>[English version](../README.md)</sub>
