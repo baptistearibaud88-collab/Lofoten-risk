@@ -317,8 +317,6 @@ table.data.ep .tag { font-size: 10px; padding: 1px 5px; }
 
 .def-pop .def-f { font: 500 13px var(--mono); color: var(--text-primary); padding: 6px 10px; border-left: 2px solid var(--accent); background: color-mix(in srgb, var(--text-primary) 4%, transparent); }
 .pc-t .def-btn { text-transform: none; letter-spacing: 0; }
-table.data td.over { color: var(--down); font-weight: 700; }
-#mc-stats span em { display: block; margin-bottom: 2px; font: 650 12.5px var(--font); font-style: normal; color: var(--text-primary); }
 
 table.data td.over, span.over { color: var(--down); font-weight: 650; }
 .explain .ex-cols b.v small { font: 600 12px var(--mono); color: var(--text-muted); margin-left: 4px; }
@@ -328,7 +326,6 @@ details.fold > summary::-webkit-details-marker { display: none; }
 details.fold > summary .pc-t::before { content: '▸'; display: inline-block; margin-right: 8px; color: var(--accent); }
 details.fold[open] > summary .pc-t::before { content: '▾'; }
 details.fold[open] > summary { border-bottom: 1px solid var(--hair); }
-#plan-stats span em { display: block; margin-bottom: 2px; font: 650 12.5px var(--font); font-style: normal; color: var(--text-primary); }
 
 /* 14 · the rain episode moved to every arrival day */
 
@@ -430,7 +427,6 @@ div.act .act-d { flex: 1 1 260px; font-size: 14.5px; line-height: 1.4; color: rg
 .gk-l { font: 700 18px var(--font); color: var(--accent); line-height: 1; }
 .gk-body { padding: 10px 14px 0; flex: 1; }
 .gk-body p { margin: 0 0 7px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
-.gk-body .gk-lab { display: block; font: 650 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1px; }
 .gk-body .gk-tr { color: var(--text-primary); }
 .gk-body .gk-tr b { color: var(--text-primary); }
 .gk-ns { display: inline-block; padding: 0 5px; border-radius: 4px; font: 600 10.5px var(--mono); color: var(--text-muted); border: 1px solid var(--hair); }

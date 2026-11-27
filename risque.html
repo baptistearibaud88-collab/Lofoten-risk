@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Analyse de risque · Lofoten</title>
-<meta name="description" content="Rapport d’analyse de risque de la traversée autonome des Lofoten (14–22 juin 2026) : distribution des écarts d’allure, cotation du terrain, dispersion glissante, sensibilités, météo et simulation Monte Carlo.">
+<meta name="description" content="Rapport d’analyse de risque de la traversée autonome des Lofoten (14–22 juin 2026) : terrain, écarts d’allure, sensibilités, météo, simulation Monte Carlo, plan contre réel et part de chance.">
 <meta property="og:type" content="article">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="Analyse de risque · Traversée des Lofoten">
@@ -14,7 +14,7 @@
 <link rel="icon" href="projet/icons/favicon.svg?v=1" type="image/svg+xml">
 <link rel="icon" href="projet/icons/favicon-32.png?v=1" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="projet/icons/apple-touch-icon.png?v=1">
-<link rel="stylesheet" href="projet/css/risque.css?v=20261126-8">
+<link rel="stylesheet" href="projet/css/risque.css?v=20261127-1">
 </head>
 <body>
 <div class="viz-root">
@@ -407,7 +407,7 @@
             <li><b>Fréquence cardiaque</b> : la même régression sur la fréquence cardiaque moyenne des 604 tronçons (pente, sac, allure, jour, cote), erreurs types par sortie.</li>
             <li><b>Simulation</b> : modèle à facteurs calé sur J1–J2, 5 000 tirages par blocs de 2 km, météo tirée dans 1 200 étés ERA5 ; contrôle chaque soir ; test de résistance.</li>
             <li><b>Jour de marge</b> : call spread, prix par Monte Carlo (Boyle, 1977) comparé à la formule de Black (1976) ; option réelle (Myers, 1977).</li>
-            <li><b>Reproduire</b> : les scripts du dossier <span class="mono">outils/</span> régénèrent toutes les données (voir le README du dépôt).</li>
+            <li><b>Reproduire</b> : les scripts du dossier <span class="mono">projet/outils/</span> régénèrent toutes les données (voir le README du dépôt).</li>
           </ul>
         </div>
         <div>
@@ -431,7 +431,7 @@
         </div>
       </div>
     </template>
-    <p class="foot mono">LOF-26-RA · v1.0 · calculé par analyse_risque.py et les scripts de outils/ à partir des mêmes données que la carte</p>
+    <p class="foot mono">LOF-26-RA · v1.0 · calculé à partir des mêmes données que la carte : analyse de base en amont, puis scripts de projet/outils/</p>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip" hidden></div>

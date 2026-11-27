@@ -46,7 +46,7 @@ Opposite, the traverse seen from above: the watch's GPS track, in relief and col
 ## Data and methods
 
 - **Data**: GPS watch (7,184 points, heart rate, HRV and sleep over 9 nights), ERA5 weather (Copernicus, 30 summers 1996–2025), grades of the outings (DNT and hiking guides), route planned before leaving (Strava).
-- **Processing**: traverse cut into 604 segments of 250 m, one wrong segment left out (faulty GPS altitude); each segment linked to its weather, the previous night, its grade and whether the pack was carried.
+- **Processing**: traverse cut into 605 segments of 250 m, 604 analysed (one left out for a faulty GPS altitude); each segment linked to its weather, the previous night, its grade and whether the pack was carried.
 - **Methods**: recalibrated Tobler's rule, normality and runs tests, factor regression (least squares), block Monte Carlo simulation with the climate drawn from 1,200 real windows, value at risk and expected shortfall, backtest (Kupiec, Basel), stress test, Black-Scholes / Black 1976 on a call spread, performance attribution (Brinson), real options (Myers).
 
 Each method, its limits and its sources are detailed in the report (the "?" buttons and the "Methods and sources" part).
@@ -77,7 +77,7 @@ Every figure in the report is computed by the scripts in `outils/`, from the dat
 <details>
 <summary>The commands, in order</summary>
 
-Requires Node.js: run `npm install` once (modules used by the English version and the previews). `data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the `projet/` folder (`cd projet`):
+Requires Node.js: run `npm install` once at the root of the repository (modules used by the English version and the previews). `data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the `projet/` folder (`cd projet`):
 
 ```bash
 node outils/segmentation_terrain.js   # grading by section (01)            → data/risque_sections.js
@@ -85,7 +85,7 @@ node outils/distribution.js           # deviations from expected pace (02) → d
 node outils/episodes_allure.js        # slow episodes and massifs (02–03)  → data/risque_episodes.js
 node outils/bougies_sorties.js        # candles per outing (01)            → data/risque_bougies.js
 node outils/meteo_series.js           # rain over 1,200 windows (05)       → data/risque_meteo.js
-node outils/indice_danger.js          # irregularity and slope per outing  → data/risque_indice.js
+node outils/irregularite_pente.js     # irregularity and slope per outing  → data/risque_irregularite.js
 node outils/sensibilites.js           # regression and correlations (04)   → data/risque_sens.js
 node outils/plan_reel.js              # plan versus actual (08)            → data/risque_plan.js
 node outils/frequence_cardiaque.js    # the heart by terrain (04, 06)      → data/risque_fc.js

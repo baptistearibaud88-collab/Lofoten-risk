@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Risk analysis · Lofoten</title>
-<meta name="description" content="Risk analysis report of the self-supported Lofoten traverse (14–22 June 2026): distribution of pace deviations, terrain grading, rolling dispersion, sensitivities, weather and Monte Carlo simulation.">
+<meta name="description" content="Risk analysis report of the self-supported Lofoten traverse (14–22 June 2026): terrain, pace deviations, sensitivities, weather, Monte Carlo simulation, plan versus actual and the share of luck.">
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_GB">
 <meta property="og:title" content="Risk analysis · Lofoten traverse">
@@ -14,7 +14,7 @@
 <link rel="icon" href="projet/icons/favicon.svg?v=1" type="image/svg+xml">
 <link rel="icon" href="projet/icons/favicon-32.png?v=1" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="projet/icons/apple-touch-icon.png?v=1">
-<link rel="stylesheet" href="projet/css/risque.css?v=20261126-8">
+<link rel="stylesheet" href="projet/css/risque.css?v=20261127-1">
 <link rel="stylesheet" href="projet/css/risque_en.css?v=20261126-1">
 </head>
 <body>
@@ -408,7 +408,7 @@
             <li><b>Heart rate</b>: the same regression on the average heart rate of the 604 segments (slope, pack, pace, day, grade), standard errors by outing.</li>
             <li><b>Simulation</b>: factor model fitted on D1–D2, 5,000 draws in 2 km blocks, weather drawn from 1,200 ERA5 summers; check each evening; stress test.</li>
             <li><b>Reserve day</b>: call spread, priced by Monte Carlo (Boyle, 1977) and compared with Black’s formula (1976); real option (Myers, 1977).</li>
-            <li><b>Reproduce</b>: the scripts in the folder <span class="mono">outils/</span> regenerate all the data (see the repository README).</li>
+            <li><b>Reproduce</b>: the scripts in the folder <span class="mono">projet/outils/</span> regenerate all the data (see the repository README).</li>
           </ul>
         </div>
         <div>
@@ -432,7 +432,7 @@
         </div>
       </div>
     </template>
-    <p class="foot mono">LOF-26-RA · v1.0 · computed by analyse_risque.py and the scripts in outils/ from the same data as the map</p>
+    <p class="foot mono">LOF-26-RA · v1.0 · computed from the same data as the map: base analysis upstream, then the scripts in projet/outils/</p>
   </section>
 </main>
 <div class="tip" id="tip" role="tooltip" hidden></div>

@@ -1,6 +1,6 @@
 // Sensibilités (partie 04) : régression et matrice de corrélation, recalculées sans les artefacts GPS.
-// Entrées : risque_data.js, risque_indice.js (irrégularité et pente des sorties, déjà sans artefact).
-// Sortie  : risque_sens.js — à relancer après outils/indice_danger.js :
+// Entrées : risque_data.js, risque_irregularite.js (irrégularité et pente des sorties, déjà sans artefact).
+// Sortie  : risque_sens.js — à relancer après outils/irregularite_pente.js :
 //   node outils/sensibilites.js
 //
 // analyse_risque.py estime la régression sur les 605 tronçons, artefact GPS de Kvalvika compris
@@ -13,8 +13,8 @@
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
-require(path.join(root, 'data', 'risque_data.js')); require(path.join(root, 'data', 'risque_indice.js'));
-const R = window.RISK, IX = window.RISK_INDICE, S = R.series, mm = R.dist.mode_mu, GPS_SLOPE = 60;
+require(path.join(root, 'data', 'risque_data.js')); require(path.join(root, 'data', 'risque_irregularite.js'));
+const R = window.RISK, IX = window.RISK_IRREG, S = R.series, mm = R.dist.mode_mu, GPS_SLOPE = 60;
 const rowOf = Object.fromEntries(R.rows.map(r => [r.id, r]));
 
 // --- petite algèbre linéaire ---

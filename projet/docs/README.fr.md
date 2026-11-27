@@ -46,7 +46,7 @@ Ci-contre, la traversée vue d'en haut : la trace GPS de la montre, en relief et
 ## Les données et les méthodes
 
 - **Données** : montre GPS (7 184 points, fréquence cardiaque, VFC et sommeil de 9 nuits), météo ERA5 (Copernicus, 30 étés 1996–2025), cotes des sorties (DNT et guides), plan tracé avant le départ (Strava).
-- **Traitement** : traversée découpée en 604 tronçons de 250 m, un tronçon faux écarté (altitude GPS erronée) ; chaque tronçon rattaché à sa météo, à la nuit précédente, à sa cote et au port ou non du sac.
+- **Traitement** : traversée découpée en 605 tronçons de 250 m, dont 604 analysés (un écarté pour une altitude GPS erronée) ; chaque tronçon rattaché à sa météo, à la nuit précédente, à sa cote et au port ou non du sac.
 - **Méthodes** : loi de Tobler recalée, tests de normalité et de séries, régression à facteurs (moindres carrés), simulation de Monte Carlo par blocs avec climat tiré dans 1 200 fenêtres réelles, valeur à risque et expected shortfall, contrôle a posteriori (Kupiec, Bâle), test de résistance, Black-Scholes / Black 1976 sur un call spread, attribution de performance (Brinson), options réelles (Myers).
 
 Le détail de chaque méthode, ses limites et ses sources sont dans le rapport (boutons « ? » et partie « Méthodes et sources »).
@@ -77,7 +77,7 @@ Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`
 <details>
 <summary>Les commandes, dans l'ordre</summary>
 
-Il faut Node.js : lancer `npm install` une fois (modules utilisés par la version anglaise et les aperçus). `data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt ; les autres fichiers de `data/` en sont dérivés. Depuis le dossier `projet/` (`cd projet`) :
+Il faut Node.js : lancer `npm install` une fois, à la racine du dépôt (modules utilisés par la version anglaise et les aperçus). `data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt ; les autres fichiers de `data/` en sont dérivés. Depuis le dossier `projet/` (`cd projet`) :
 
 ```bash
 node outils/segmentation_terrain.js   # cotation par section (01)          → data/risque_sections.js
@@ -85,7 +85,7 @@ node outils/distribution.js           # écarts à l'allure attendue (02)    →
 node outils/episodes_allure.js        # épisodes lents et massifs (02–03)  → data/risque_episodes.js
 node outils/bougies_sorties.js        # bougies par sortie (01)            → data/risque_bougies.js
 node outils/meteo_series.js           # pluie sur 1 200 fenêtres (05)      → data/risque_meteo.js
-node outils/indice_danger.js          # irrégularité et pente par sortie    → data/risque_indice.js
+node outils/irregularite_pente.js     # irrégularité et pente par sortie   → data/risque_irregularite.js
 node outils/sensibilites.js           # régression et corrélations (04)    → data/risque_sens.js
 node outils/plan_reel.js              # plan contre réel (08)              → data/risque_plan.js
 node outils/frequence_cardiaque.js    # le cœur selon le terrain (04, 06)  → data/risque_fc.js
