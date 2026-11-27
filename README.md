@@ -14,13 +14,13 @@ I planned this trek, walked it, then analysed its data with the tools of financi
 |---|---|
 | **3D map** | [English](https://baptistearibaud88-collab.github.io/Lofoten-risk/map.html) · [Français](https://baptistearibaud88-collab.github.io/Lofoten-risk/) |
 | **Risk analysis report** | [English](https://baptistearibaud88-collab.github.io/Lofoten-risk/risk.html) · [Français](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) |
-| **The film** | [Watch the film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — shot on a GoPro HERO13 Black, edited by me |
+| **The film** | [Watch the film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — shot on a GoPro HERO13 Black |
 
 ## The 3D map
 
 An interactive map that brings together all the data of the trek, sorted by night, by outing and in the starting gear list, with the notes and the story of the traverse.
 
-![The traverse in relief: GPS track coloured by altitude, nights, summits and villages](docs/carte_reel_en.png)
+<img src="docs/carte_reel_en.png" alt="The traverse in relief: GPS track coloured by altitude, nights, summits and villages" width="520">
 
 ## The report in three acts
 

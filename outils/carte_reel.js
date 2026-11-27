@@ -149,7 +149,7 @@ T.summits.forEach(s => { const alt = s.hauteur_officielle_m || s.alt_gps_m, [x, 
   add(`<text x="${x0}" y="${y0}" font-size="12" letter-spacing="3" font-weight="600" fill="#6b7f86">TRAVERSÉE AUTONOME · NORVÈGE</text>`);
   add(`<text x="${x0 - 3}" y="${y0 + 62}" font-size="64" font-weight="800" letter-spacing="-1.5" fill="#1d2b33">Lofoten <tspan fill="#d9822b">2026</tspan></text>`);
   add(`<text x="${x0}" y="${y0 + 94}" font-size="16" fill="#50646b">14 – 22 juin, sous le soleil de minuit</text>`);
-  const st = [['170', 'km', 0], ['10\u202f000', 'm de D+', 104], ['9', 'jours', 266], [String(T.summits.length), 'sommets', 340]];
+  const st = [['159', 'km', 0], ['9\u202f892', 'm de D+', 104], ['9', 'jours', 266], [String(T.summits.length), 'sommets', 340]];
   st.forEach(([v, u, dx], i) => { const x = x0 + dx;
     if (i) add(`<path d="M${x - 18},${y0 + 128}v46" stroke="#6b7f86" stroke-opacity=".25"/>`);
     add(`<text x="${x}" y="${y0 + 152}" font-size="32" font-weight="700" letter-spacing="-.5" fill="#1d2b33" style="font-variant-numeric: tabular-nums">${v}</text><text x="${x}" y="${y0 + 172}" font-size="13" fill="#6b7f86">${u}</text>`); });

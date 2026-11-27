@@ -105,9 +105,9 @@
 <text x="893" y="642" font-size="12" letter-spacing="3" font-weight="600" fill="#6b7f86">SELF-SUPPORTED TRAVERSE · NORWAY</text>
 <text x="890" y="704" font-size="64" font-weight="800" letter-spacing="-1.5" fill="#1d2b33">Lofoten <tspan fill="#d9822b">2026</tspan></text>
 <text x="893" y="736" font-size="16" fill="#50646b">14 – 22 June, under the midnight sun</text>
-<text x="893" y="794" font-size="32" font-weight="700" letter-spacing="-.5" fill="#1d2b33" style="font-variant-numeric: tabular-nums">170</text><text x="893" y="814" font-size="13" fill="#6b7f86">km</text>
+<text x="893" y="794" font-size="32" font-weight="700" letter-spacing="-.5" fill="#1d2b33" style="font-variant-numeric: tabular-nums">159</text><text x="893" y="814" font-size="13" fill="#6b7f86">km</text>
 <path d="M979,770v46" stroke="#6b7f86" stroke-opacity=".25"/>
-<text x="997" y="794" font-size="32" font-weight="700" letter-spacing="-.5" fill="#1d2b33" style="font-variant-numeric: tabular-nums">10,000</text><text x="997" y="814" font-size="13" fill="#6b7f86">m of D+</text>
+<text x="997" y="794" font-size="32" font-weight="700" letter-spacing="-.5" fill="#1d2b33" style="font-variant-numeric: tabular-nums">9,892</text><text x="997" y="814" font-size="13" fill="#6b7f86">m of D+</text>
 <path d="M1141,770v46" stroke="#6b7f86" stroke-opacity=".25"/>
 <text x="1159" y="794" font-size="32" font-weight="700" letter-spacing="-.5" fill="#1d2b33" style="font-variant-numeric: tabular-nums">9</text><text x="1159" y="814" font-size="13" fill="#6b7f86">days</text>
 <path d="M1215,770v46" stroke="#6b7f86" stroke-opacity=".25"/>

@@ -110,7 +110,7 @@ if (fs.existsSync(path.join(__dirname, '..', 'docs', 'carte_reel.svg'))) {
   [['>DÉPART · 14/06<', '>START · 14/06<'], ['>ARRIVÉE AU PORT · 22/06<', '>FINISH AT THE PORT · 22/06<'],
    ['>TRAVERSÉE AUTONOME · NORVÈGE<', '>SELF-SUPPORTED TRAVERSE · NORWAY<'], ['>14 – 22 juin, sous le soleil de minuit<', '>14 – 22 June, under the midnight sun<'],
    ['>m de D+<', '>m of D+<'], ['>jours<', '>days<'], ['>sommets<', '>summits<'], ['>ALTITUDE DE LA TRACE<', '>ALTITUDE OF THE TRACK<'], ['>bateau<', '>boat<'],
-   ['10 000', '10,000'],
+   ['9 892', '9,892'],
    [/>Trace GPS de la montre \(7 184 points\) · relief exagéré ×(\d),(\d) · une nuit = un rond · couleur = altitude</, '>Watch GPS track (7,184 points) · relief exaggerated ×$1.$2 · one dot = one night · colour = altitude<'],
    ['>Côtes et lacs © contributeurs OpenStreetMap (ODbL)<', '>Coastline and lakes © OpenStreetMap contributors (ODbL)<'],
   ].forEach(([a, b]) => { const hit = a instanceof RegExp ? a.test(svg) : svg.includes(a); if (!hit) missing.push(`carte_reel.svg : introuvable « ${a} »`); svg = a instanceof RegExp ? svg.replace(a, b) : svg.split(a).join(b); });
