@@ -76,7 +76,7 @@ Every figure in the report is computed by the scripts in `outils/`, from the dat
 <details>
 <summary>The commands, in order</summary>
 
-`data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the root:
+Requires Node.js; the English version also needs two parsing modules: `npm install acorn acorn-walk`. `data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the root:
 
 ```bash
 node outils/segmentation_terrain.js   # grading by section (01)            → data/risque_sections.js
@@ -104,5 +104,9 @@ The English version is regenerated after any change to the French pages; its tra
 ## Sources
 
 Weather: ERA5 (Copernicus / Open-Meteo). Grading: DNT (Den Norske Turistforening), 68north, Horizon Rando, Hunting for Bliss. Base maps: Mapzen / AWS Terrain Tiles relief, Esri World Imagery, OpenTopoMap topo (© OpenStreetMap, CC-BY-SA), rendered with MapLibre GL JS. Route map: coastline and lakes © OpenStreetMap contributors (ODbL), overpass-turbo exports.
+
+## Licence
+
+Code under the [MIT licence](LICENSE); photos, film, texts and images under [CC BY-NC 4.0](LICENSE-CONTENT.md); OpenStreetMap data under ODbL.
 
 <sub>[Version française](README.fr.md)</sub>
