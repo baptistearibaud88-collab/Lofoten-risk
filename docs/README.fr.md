@@ -1,4 +1,4 @@
-# Lofoten 2026 — une traversée lue comme une analyse de risque
+# Lofoten, juin 2026 — une traversée lue comme une analyse de risque
 
 ![Lofoten](../photos/banniere.jpg)
 
