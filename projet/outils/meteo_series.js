@@ -1,5 +1,5 @@
 // Persistance de la pluie et rang de 2026 (partie 05, bloc « La pluie arrive en séries »).
-// Entrées : data/brutes/era5_climatology_1996_2025_daily.json (ERA5 via Open-Meteo, point centre,
+// Entrées : donnees/era5_climatology_1996_2025_daily.json (ERA5 via Open-Meteo, point centre,
 // pluie quotidienne 1996–2025) et risque_data.js (pluie 2026 au même point, cf.clim.real_rain_d).
 // Sortie  : risque_meteo.js — à relancer si l'un des deux change :
 //   node outils/meteo_series.js
@@ -11,7 +11,7 @@ const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
 global.window = global;
 require(path.join(root, 'data', 'risque_data.js'));
-const E = JSON.parse(fs.readFileSync(path.join(root, 'data', 'brutes', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
+const E = JSON.parse(fs.readFileSync(path.join(root, 'donnees', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
 const TH = 1, LEN = 9, N_START = 40, START = [6, 1];
 const r26 = window.RISK.cf.clim.real_rain_d;
 const P = E.precipitation_sum.map(v => v || 0), idx = new Map(E.time.map((t, i) => [t, i]));

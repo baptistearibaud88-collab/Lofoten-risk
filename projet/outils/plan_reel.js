@@ -1,5 +1,5 @@
 // Plan contre réel (partie 08).
-// Entrées : data/brutes/plan.gpx (itinéraire prévu, tracé sur Strava), data.js (trace réelle), risque_data.js.
+// Entrées : donnees/plan.gpx (itinéraire prévu, tracé sur Strava), data.js (trace réelle), risque_data.js.
 // Sortie  : risque_plan.js — à relancer si l'une des entrées change :
 //   node outils/plan_reel.js
 //
@@ -17,7 +17,7 @@ const r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100;
 const hav = (a, b) => { const la = (b[0] - a[0]) * Math.PI / 180, lo = (b[1] - a[1]) * Math.PI / 180 * Math.cos(a[0] * Math.PI / 180); return 6371000 * Math.hypot(la, lo); };
 
 // ---- plan track
-const gpx = fs.readFileSync(path.join(root, 'data', 'brutes', 'plan.gpx'), 'utf8');
+const gpx = fs.readFileSync(path.join(root, 'donnees', 'plan.gpx'), 'utf8');
 const P = [...gpx.matchAll(/<trkpt lat="([^"]+)" lon="([^"]+)">\s*<ele>([^<]+)<\/ele>/g)].map(m => [+m[1], +m[2], +m[3]]);
 const cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + hav(P[i - 1], P[i]));
 const KM = cum.map(c => c / 1000), idx = km => { let b = 0; KM.forEach((k, i) => { if (Math.abs(k - km) < Math.abs(KM[b] - km)) b = i; }); return b; };

@@ -8,7 +8,7 @@
   "author": "Baptiste Aribaud",
   "license": "MIT",
   "scripts": {
-    "anglais": "node outils/anglais.js"
+    "anglais": "node projet/outils/anglais.js"
   },
   "devDependencies": {
     "acorn": "^8.18.0",

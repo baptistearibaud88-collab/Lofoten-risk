@@ -578,7 +578,7 @@
     placeRisk(); riskHome(true);
   }
   /* home bubble: the film of the trek (montage, GoPro), opened full screen on demand ; nothing downloads before the click */
-  const FILM = { src: 'assets/video/lofoten_norvege_1080p.mp4', poster: 'assets/video/miniature.jpg', thumb: 'assets/video/miniature_carte.jpg', dur: '2 min 13' };
+  const FILM = { src: 'projet/video/lofoten_norvege_1080p.mp4', poster: 'projet/video/miniature.jpg', thumb: 'projet/video/miniature_carte.jpg', dur: '2 min 13' };
   function buildFilmHome() {
     const play = sv('svg', { viewBox: '0 0 24 24', class: 'fh-play', 'aria-hidden': 'true' });
     play.append(sv('circle', { cx: 12, cy: 12, r: 11 }), sv('path', { d: 'M10 7.8v8.4l6.6-4.2Z' }));

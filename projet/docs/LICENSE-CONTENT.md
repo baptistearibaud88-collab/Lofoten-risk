@@ -2,7 +2,7 @@
 
 © 2026 Baptiste Aribaud
 
-The photos (`assets/photos/`), the film (`assets/video/`), the texts of the map and the report, and the README images (`docs/`) are licensed under the **Creative Commons Attribution-NonCommercial 4.0 International** licence (CC BY-NC 4.0): https://creativecommons.org/licenses/by-nc/4.0/
+The photos (`projet/photos/`), the film (`projet/video/`), the texts of the map and the report, and the README images (`projet/docs/`) are licensed under the **Creative Commons Attribution-NonCommercial 4.0 International** licence (CC BY-NC 4.0): https://creativecommons.org/licenses/by-nc/4.0/
 
 You may share and adapt them, for non-commercial purposes only, provided you credit Baptiste Aribaud and link to this repository.
 

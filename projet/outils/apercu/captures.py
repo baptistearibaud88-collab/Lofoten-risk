@@ -12,7 +12,7 @@ d3 est servi depuis une copie locale si le CDN n'est pas joignable.
 import functools, http.server, os, socketserver, sys, threading
 from playwright.sync_api import sync_playwright
 
-RACINE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+RACINE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 SORTIE = os.path.join(RACINE, 'apercu')
 # d3 servi en local (npm install) pour que les captures marchent sans réseau ; D3_PATH pour un autre emplacement
 D3_LOCAL = [p for p in (os.environ.get('D3_PATH'), os.path.join(RACINE, 'node_modules/d3/dist/d3.min.js')) if p]
