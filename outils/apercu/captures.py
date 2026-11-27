@@ -14,10 +14,10 @@ from playwright.sync_api import sync_playwright
 
 RACINE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SORTIE = os.path.join(RACINE, 'apercu')
-D3_LOCAL = [
-    '/opt/npm-tools/node_modules/d3/dist/d3.min.js',
-    os.path.join(RACINE, 'node_modules/d3/dist/d3.min.js'),
-]
+# d3 servi en local (npm install) pour que les captures marchent sans réseau ; D3_PATH pour un autre emplacement
+D3_LOCAL = [p for p in (os.environ.get('D3_PATH'), os.path.join(RACINE, 'node_modules/d3/dist/d3.min.js')) if p]
+# Chromium de Playwright par défaut ; CHROME=/chemin/vers/chrome pour utiliser un autre navigateur
+LANCEMENT = {'args': ['--no-sandbox'], **({'executable_path': os.environ['CHROME']} if os.environ.get('CHROME') else {})}
 TOUTES = [f's{i}' for i in range(1, 11)]
 
 
@@ -40,7 +40,7 @@ def main():
     url = f'http://127.0.0.1:{s.server_address[1]}/risque.html'
     d3 = next((p for p in D3_LOCAL if os.path.exists(p)), None)
     with sync_playwright() as p:
-        nav = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
+        nav = p.chromium.launch(**LANCEMENT)
         vp = {'width': 390, 'height': 844} if mobile else {'width': 1280, 'height': 900}
         page = nav.new_page(viewport=vp, device_scale_factor=2 if mobile else 1)
         erreurs = []

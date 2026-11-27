@@ -75,7 +75,7 @@ Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`
 <details>
 <summary>Les commandes, dans l'ordre</summary>
 
-Il faut Node.js ; la version anglaise demande aussi deux modules de lecture du code : `npm install acorn acorn-walk`. `data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt ; les autres fichiers de `data/` en sont dérivés. Depuis la racine :
+Il faut Node.js : lancer `npm install` une fois (modules utilisés par la version anglaise et les aperçus). `data/risque_data.js` (analyse de base) et `data/data.js` (trace et récit) sont produits en amont, hors de ce dépôt ; les autres fichiers de `data/` en sont dérivés. Depuis la racine :
 
 ```bash
 node outils/segmentation_terrain.js   # cotation par section (01)          → data/risque_sections.js
@@ -96,7 +96,7 @@ node outils/carte_resume.js           # encart « Analyse de risque » de la car
 node outils/anglais.js                # version anglaise des pages        → map.html, risk.html, js/en/, data/en/
 ```
 
-La version anglaise se régénère après toute modification des pages françaises : ses traductions sont dans `outils/anglais/`. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.
+La version anglaise se régénère après toute modification des pages françaises : ses traductions sont dans `outils/anglais/`. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local (`pip install -r requirements.txt`, puis `playwright install chromium`) : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.
 
 </details>
 

@@ -4,8 +4,8 @@
 // Le français reste la source : après une modification d'un texte français, relancer ce script ;
 // il signale chaque texte français qui n'a pas de traduction (« à traduire »).
 const fs = require('fs'), path = require('path');
-const acorn = require(fs.existsSync('/opt/npm-tools/node_modules/acorn') ? '/opt/npm-tools/node_modules/acorn' : 'acorn');
-const walk = require(fs.existsSync('/opt/npm-tools/node_modules/acorn-walk') ? '/opt/npm-tools/node_modules/acorn-walk' : 'acorn-walk');
+const acorn = require('acorn');
+const walk = require('acorn-walk');
 const root = path.join(__dirname, '..'), dict = f => JSON.parse(fs.readFileSync(path.join(__dirname, 'anglais', f), 'utf8'));
 const missing = [];
 const FRENCH = /[àâçéèêëîïôûùüÿœ]|\b(le|la|les|des|du|et|une|pour|par|avec|sans|dans|est|sont|jour|jours|nuit|sortie|pluie|sac)\b/i;

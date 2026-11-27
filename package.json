@@ -1,0 +1,18 @@
+{
+  "name": "lofoten-risk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Statistical data analysis and risk modelling of a 9-day solo traverse of the Lofoten Islands",
+  "homepage": "https://baptistearibaud88-collab.github.io/Lofoten-risk/",
+  "repository": "github:baptistearibaud88-collab/Lofoten-risk",
+  "author": "Baptiste Aribaud",
+  "license": "MIT",
+  "scripts": {
+    "anglais": "node outils/anglais.js"
+  },
+  "devDependencies": {
+    "acorn": "^8.18.0",
+    "acorn-walk": "^8.3.5",
+    "d3": "^7.9.0"
+  }
+}

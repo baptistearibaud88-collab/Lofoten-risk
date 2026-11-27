@@ -76,7 +76,7 @@ Every figure in the report is computed by the scripts in `outils/`, from the dat
 <details>
 <summary>The commands, in order</summary>
 
-Requires Node.js; the English version also needs two parsing modules: `npm install acorn acorn-walk`. `data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the root:
+Requires Node.js: run `npm install` once (modules used by the English version and the previews). `data/risque_data.js` (base analysis) and `data/data.js` (track and story) are produced upstream, outside this repository; the other files in `data/` derive from them. From the root:
 
 ```bash
 node outils/segmentation_terrain.js   # grading by section (01)            → data/risque_sections.js
@@ -97,7 +97,7 @@ node outils/carte_resume.js           # "Risk analysis" card on the map    → d
 node outils/anglais.js                # English version of the pages       → map.html, risk.html, js/en/, data/en/
 ```
 
-The English version is regenerated after any change to the French pages; its translations live in `outils/anglais/`. `data/ressentis_episodes.js` is filled in by hand (cause of each slow episode). After a change, bump the file's `?v=` number in the page to avoid the browser cache. To proofread locally: `python3 outils/apercu/captures.py s1 s7` (`--mobile` for phone width) and `python3 outils/apercu/textes.py`.
+The English version is regenerated after any change to the French pages; its translations live in `outils/anglais/`. `data/ressentis_episodes.js` is filled in by hand (cause of each slow episode). After a change, bump the file's `?v=` number in the page to avoid the browser cache. To proofread locally (`pip install -r requirements.txt`, then `playwright install chromium`): `python3 outils/apercu/captures.py s1 s7` (`--mobile` for phone width) and `python3 outils/apercu/textes.py`.
 
 </details>
 

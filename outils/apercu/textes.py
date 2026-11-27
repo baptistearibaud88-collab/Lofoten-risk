@@ -11,7 +11,7 @@ pas de « Méthode », « À retenir » ≤ 55.
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
-from captures import serveur, D3_LOCAL
+from captures import serveur, D3_LOCAL, LANCEMENT
 from playwright.sync_api import sync_playwright
 
 JS = r"""
@@ -40,7 +40,7 @@ def main():
     s = serveur()
     d3 = next((p for p in D3_LOCAL if os.path.exists(p)), None)
     with sync_playwright() as p:
-        nav = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
+        nav = p.chromium.launch(**LANCEMENT)
         page = nav.new_page(viewport={'width': 1280, 'height': 900})
         if d3:
             page.route('**/d3.min.js', lambda r: r.fulfill(path=d3, content_type='application/javascript'))
