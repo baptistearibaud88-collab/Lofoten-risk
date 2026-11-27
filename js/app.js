@@ -295,7 +295,7 @@
   const S = T.stats;
   /* first row: distance, D+, days, summits; second row: moving time, with the pack, trail running */
   const statItems = () => [
-    ['Distance', nf(S.strava_distance || S.km), 'km'], ['Dénivelé +', nf(S.dplus_watch || S.dplus), 'm'], ['Jours', S.days], ['Sommets', S.summits],
+    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus), 'm'], ['Jours', S.days], ['Sommets', S.summits],
     ['Temps total', hm(S.pack_min + S.trail_min)], ['Avec le sac', hm(S.pack_min)], ['Trail running', hm(S.trail_min)],
   ];
   document.getElementById('stats').append(...statItems().map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
@@ -1051,7 +1051,7 @@
         el('div', { class: 'src-body' },
           sec('Trace et effort',
             `Montre GPS Garmin Forerunner 255 Music : positions, altitude, fréquence cardiaque et calories, 24 activités enregistrées (fichiers .FIT bruts).`,
-            `Distance totale : ${nf(S.strava_distance)} km, dont ${nf(S.km)} km mesurés sur la trace GPS de la montre. Dénivelé : ${nf(S.dplus_watch)} m selon la montre (altimètre barométrique).`,
+            `Distance et dénivelé : ${nf(S.km)} km et ${nf(S.dplus)} m de D+, mesurés sur la trace GPS de la montre (chiffres retenus pour l’analyse de risque).`,
             'Passages non enregistrés (ferry Kirkefjord → Vindstad, liaisons) : sautés dans les chiffres ; le ferry est dessiné en arc sur la carte.',
             'Allure ajustée à la pente : coût énergétique de la course en pente, Minetti et al. (2002).'),
           sec('Nuits et corps',
