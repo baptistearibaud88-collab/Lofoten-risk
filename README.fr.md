@@ -18,9 +18,13 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 
 ## La carte 3D
 
+<img src="docs/carte_reel.png" alt="La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages" width="300" align="left">
+
 Une carte interactive qui rassemble toutes les données du trek, classées par nuit, par sortie et dans l'inventaire de départ, avec les annotations et le récit de la traversée.
 
-<img src="docs/carte_reel.png" alt="La traversée en relief : trace GPS colorée selon l'altitude, nuits, sommets et villages" width="520">
+Ci-contre, la traversée vue d'en haut : la trace GPS de la montre, en relief et colorée selon l'altitude, avec les neuf nuits, les neuf sommets et les villages, de Napp jusqu'au port de Moskenes. Le pointillé marque le seul trajet en bateau, de Kirkefjord à Vindstad.
+
+<br clear="left">
 
 ## Le rapport en trois actes
 

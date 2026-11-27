@@ -73,7 +73,7 @@ add(`<rect width="${W}" height="${H}" fill="url(#bg)"/>`);
 add(`<g transform="translate(${G(12.95, 68.10).map(r1).join(",")}) scale(1.9)" opacity=".6" stroke="#50646b" fill="none" stroke-width="1"><circle r="30"/><circle r="22" stroke-opacity=".5"/>
   ${[0, 90, 180, 270].map(a => `<path transform="rotate(${a})" d="M0,-36L5,-5L0,0L-5,-5Z" fill="${a ? '#fbf8f1' : '#50646b'}"/>`).join('')}
   ${[45, 135, 225, 315].map(a => `<path transform="rotate(${a})" d="M0,-24L3,-3L0,0L-3,-3Z" fill="#fbf8f1"/>`).join('')}
-  <text y="-42" text-anchor="middle" font-size="12" font-weight="700" fill="#50646b" stroke="none">N</text></g>`);
+  <g font-size="12" font-weight="700" fill="#50646b" stroke="none" text-anchor="middle"><text y="-42">N</text><text x="45" y="4.5">E</text><text y="51">S</text><text x="-45" y="4.5">O</text></g></g>`);
 add(`<rect width="${W}" height="${H}" fill="url(#sun)"/>`);
 
 // graticule au sol : méridiens et parallèles, très discrets

@@ -18,9 +18,13 @@ I planned this trek, walked it, then analysed its data with the tools of financi
 
 ## The 3D map
 
+<img src="docs/carte_reel_en.png" alt="The traverse in relief: GPS track coloured by altitude, nights, summits and villages" width="300" align="left">
+
 An interactive map that brings together all the data of the trek, sorted by night, by outing and in the starting gear list, with the notes and the story of the traverse.
 
-<img src="docs/carte_reel_en.png" alt="The traverse in relief: GPS track coloured by altitude, nights, summits and villages" width="520">
+Opposite, the traverse seen from above: the watch's GPS track, in relief and coloured by altitude, with the nine nights, the nine summits and the villages, from Napp to the harbour of Moskenes. The dotted line marks the only boat crossing, from Kirkefjord to Vindstad.
+
+<br clear="left">
 
 ## The report in three acts
 
