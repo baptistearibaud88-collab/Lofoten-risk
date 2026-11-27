@@ -14,7 +14,7 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 |---|---|
 | **Carte 3D** | [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/) |
 | **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) |
-| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/projet/video/lofoten_norvege_1080p.mp4) — tournage GoPro HERO13 Black |
+| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/projet/video/) — tournage GoPro HERO13 Black |
 
 ## La carte 3D
 
@@ -65,7 +65,7 @@ projet/               tout le reste
   outils/             scripts de calcul (Node.js) qui produisent data/risque_*.js
                       (outils/anglais/ : traductions ; outils/apercu/ : captures et comptage des mots, Python + Playwright)
   photos/             photos de la traversée (et miniatures)
-  video/              le film (1080p, H.264) et ses miniatures
+  video/              le film (1080p, H.264), sa page (index.html) et ses miniatures
   docs/               images du README, README français, licence du contenu
   icons/              icône d'onglet
 ```
