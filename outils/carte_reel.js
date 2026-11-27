@@ -1,6 +1,6 @@
 // Carte de la trace réelle, en relief (vue oblique) : une image autonome, sans fond de carte.
-// Entrées : data.js (trace GPS de la montre, campements, sommets) ; donnees/cotes_osm.json (trait de côte
-//           OpenStreetMap) et donnees/eaux_osm.json (lacs) : © contributeurs OpenStreetMap, ODbL, exports overpass-turbo simplifiés à 4 m.
+// Entrées : data.js (trace GPS de la montre, campements, sommets) ; data/brutes/cotes_osm.json (trait de côte
+//           OpenStreetMap) et data/brutes/eaux_osm.json (lacs) : © contributeurs OpenStreetMap, ODbL, exports overpass-turbo simplifiés à 4 m.
 // Sortie : docs/carte_reel.svg   (node outils/carte_reel.js)
 //
 // Le sol est vu en oblique (nord en haut, profondeur écrasée), et chaque point de la trace est relevé de son altitude :
@@ -10,8 +10,8 @@ const root = path.join(__dirname, '..');
 global.window = {};
 eval(fs.readFileSync(path.join(root, 'data', 'data.js'), 'utf8'));
 const T = window.TREK;
-const EAUX = JSON.parse(fs.readFileSync(path.join(root, 'donnees', 'eaux_osm.json'), 'utf8')).eaux;
-const COTES = JSON.parse(fs.readFileSync(path.join(root, 'donnees', 'cotes_osm.json'), 'utf8')).lignes;
+const EAUX = JSON.parse(fs.readFileSync(path.join(root, 'data', 'brutes', 'eaux_osm.json'), 'utf8')).eaux;
+const COTES = JSON.parse(fs.readFileSync(path.join(root, 'data', 'brutes', 'cotes_osm.json'), 'utf8')).lignes;
 
 // ---------- géométrie ----------
 const W = 1460, H = 1060, TILT = 0.64, EXAG = 2.2;

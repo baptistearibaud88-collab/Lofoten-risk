@@ -1,6 +1,6 @@
 // Version anglaise du site : produite à partir des pages françaises et des dictionnaires de outils/anglais/.
 //   node outils/anglais.js
-// Sorties : en/index.html (carte), en/risk.html (rapport), js/en/*.js, data/en/*.js
+// Sorties : map.html (carte), risk.html (rapport), assets/js/en/*.js, data/en/*.js
 // Le français reste la source : après une modification d'un texte français, relancer ce script ;
 // il signale chaque texte français qui n'a pas de traduction (« à traduire »).
 const fs = require('fs'), path = require('path');
@@ -43,7 +43,7 @@ const w = (rel, s) => { const f = path.join(root, rel); fs.mkdirSync(path.dirnam
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 
 // rapport
-w('js/en/risque.js', script(read('js/risque.js'), dict('risque.json'), 'risque.js', [
+w('assets/js/en/risque.js', script(read('assets/js/risque.js'), dict('risque.json'), 'risque.js', [
   [/decimal: ',', thousands: '[^']*'/, "decimal: '.', thousands: ','"],
   [/(\d|\})( |\\u00a0|&nbsp;)%/g, '$1%'],
   ["${f0(v)} j`", "${f0(v)} d`"], ["unit: 'j'", "unit: 'd'"], ["s.unit === 'j'", "s.unit === 'd'"],
@@ -55,7 +55,7 @@ w('js/en/risque.js', script(read('js/risque.js'), dict('risque.json'), 'risque.j
   ["'without pack'", "'no pack'"], ["stage${k > 1 ? 's' : ''}", "stage${k !== 1 ? 's' : ''}"], ["stage${d.k > 1 ? 's' : ''}", "stage${d.k !== 1 ? 's' : ''}"],
 ]));
 if (fs.existsSync(path.join(__dirname, 'anglais', 'app.json')))
-  w('js/en/app.js', script(read('js/app.js'), dict('app.json'), 'app.js', [["'fr-FR'", "'en-GB'"],
+  w('assets/js/en/app.js', script(read('assets/js/app.js'), dict('app.json'), 'app.js', [["'fr-FR'", "'en-GB'"],
       ['`de ${act.name}`', '`of ${act.name}`'], ['D${m.day} to ${hFr(m.heure)}`', 'D${m.day} at ${hFr(m.heure)}`'], ["a.rubrique === 'summit'", "a.rubrique === 'sommet'"], [/const MONTHS = \[[^\]]*\];/, "const MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];"], ['} nuits`', '} nights`'], ['} sommets`', '} summits`'], ["P.age, 'ans')", "P.age, 'years')"],
       ["['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf']", "['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']"],
       ['`${s.sommet} à`', '`${s.sommet} at`'],]));
@@ -89,10 +89,10 @@ const DD = dict('donnees.json');
 const DATA_FR = ['data.js', 'risque_data.js', 'risque_plan.js', 'risque_cd.js', 'ressentis_episodes.js', 'risque_carte.js', 'risque_episodes.js', 'risque_acte2.js', 'risque_bougies.js', 'risque_mc.js', 'risque_sens.js'];
 DATA_FR.forEach(f => w('data/en/' + f, data(read('data/' + f), DD, f)));
 const useEn = html => html.replace(/src="data\/([a-z0-9_]+\.js)(\?v=[^"]*)?"/g, (m, f, v) => DATA_FR.includes(f) ? `src="data/en/${f}${v || ''}"` : m)
-  .replace(/src="js\/(risque|app)\.js(\?v=[^"]*)?"/g, 'src="js/en/$1.js$2"');
+  .replace(/src="assets\/js\/(risque|app)\.js(\?v=[^"]*)?"/g, 'src="assets/js/en/$1.js$2"');
 w('risk.html', useEn(page(read('risque.html'), dict('page_rapport.json'), 'risque.html', [
   ['href="index.html"', 'href="map.html"'],
-  [/(<link rel="stylesheet" href="css\/risque\.css[^"]*">)/, '$1\n<link rel="stylesheet" href="css/risque_en.css?v=20261126-1">'],
+  [/(<link rel="stylesheet" href="assets\/css\/risque\.css[^"]*">)/, '$1\n<link rel="stylesheet" href="assets/css/risque_en.css?v=20261126-1">'],
   [/<\/b> :/g, '</b>:'],
 ])));
 w('map.html', useEn(page(read('index.html'), dict('page_carte.json'), 'index.html', [

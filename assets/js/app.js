@@ -9,9 +9,9 @@
   let liveTitleWasOpen = false, curLive = null;   // declared early: the home panel can be reset before the map is ready
   let filmEl = null;   // home bubble to the film (buildFilmHome), next to the risk bubble
   let riskEl = null;   // home bubble to the risk report (buildRiskHome)
-  const MONTHS = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+  const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   const COL = { pack: '#1d3f8f', camp: '#1d3f8f', trail: '#e0472f', casing: '#f4f7fa', boat: '#8fd3ff', finish: '#111418' };
-  const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const nf = (v, d = 0) => v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   /* A summit's outing = the trail activities of that day that lead to it.
      Reinebringen and Helvete: the whole day from Munkebu, not only from Reine. */
@@ -20,7 +20,7 @@
   /* Boat crossings that the watch did not record: a smooth curve over the sea between
      the end of one activity and the start of the next, through a few points on the water
      (here: down Kjerkfjorden, then west along the shore to Vindstad). */
-  const BOATS = { 'horseid_kirkefjord>vindstad_bunes': { label: 'Boat Kirkefjord → Vindstad',
+  const BOATS = { 'horseid_kirkefjord>vindstad_bunes': { label: 'Bateau Kirkefjord → Vindstad',
     via: [[13.0202, 67.9871], [13.0264, 67.9784], [13.0316, 67.9702], [13.0353, 67.9630], [13.0349, 67.9583], [13.0272, 67.9559], [13.0152, 67.9566]] } };
 
   /* villages named on the satellite map (the topo map has its own labels) */
@@ -64,7 +64,7 @@
   function sv(tag, attrs) { const n = document.createElementNS(SVGNS, tag); for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v); return n; }
   function svText(attrs, text) { const t = sv('text', attrs); t.textContent = text; return t; }
   const day = iso => { const d = new Date(iso + 'T12:00:00'); return { d: d.getDate(), m: MONTHS[d.getMonth()] }; };
-  const nightLabel = (night, wake) => { const a = day(night), b = day(wake); return `night of ${a.d} to ${b.d} ${b.m}`; };
+  const nightLabel = (night, wake) => { const a = day(night), b = day(wake); return `nuit du ${a.d} au ${b.d} ${b.m}`; };
   const hm = min => min == null ? '—' : `${Math.floor(min / 60)} h ${String(Math.round(min % 60)).padStart(2, '0')}`;
   const hms = s => `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, '0')}`;
   const pace = minPerKm => { if (!isFinite(minPerKm)) return '—'; let m = Math.floor(minPerKm), s = Math.round((minPerKm - m) * 60); if (s === 60) { m++; s = 0; } return `${m}′${String(s).padStart(2, '0')}″`; };
@@ -141,18 +141,18 @@
     if (a.rubrique === 'bivouac') {   // a point at a camp (reference = camp number)
       const c = camps.find(x => String(x.id) === String(a.reference)), n = c.nights[0];
       return { ...a, lon: c.lon, lat: c.lat, alt: c.alt, heure: a.heure ? String(a.heure).split(';')[0] : null, heures: a.heure || null,   // a camp photo has no trace: its times come from photos.csv
-        day: n.next_day - 1, where: `at the bivouac ${c.name}`,
-        label: `Bivouac ${camps.indexOf(c) + 1} · ${c.name} · ${nightLabel(n.night, n.wake)}`, open: () => openCamp(c), replay: 'See the bivouac' };
+        day: n.next_day - 1, where: `au bivouac ${c.name}`,
+        label: `Bivouac ${camps.indexOf(c) + 1} · ${c.name} · ${nightLabel(n.night, n.wake)}`, open: () => openCamp(c), replay: 'Voir le bivouac' };
     }
     if (a.rubrique === 'activite') {   // an outing that is in no rubric (reference = activity id)
       const act = ACTS[a.reference];
-      ids = [a.reference]; where = `of ${act.name}`; open = null; replay = null;
+      ids = [a.reference]; where = `de ${act.name}`; open = null; replay = null;
     } else if (a.rubrique === 'etape') {
       const e = T.etapes.find(x => String(x.day) === String(a.reference));
-      ids = e.acts; where = `of the stage ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Replay the stage';
+      ids = e.acts; where = `de l’étape ${e.from} → ${e.to}`; open = () => openEtape(e); replay = 'Rejouer l’étape';
     } else {
       const sm = T.summits.find(x => x.sommet === a.reference);
-      ids = SUMMIT_OUTINGS[sm.activite] || [sm.activite]; where = `of the outing ${sm.sommet}`; open = () => openSummit(sm); replay = 'Replay the outing';
+      ids = SUMMIT_OUTINGS[sm.activite] || [sm.activite]; where = `de la sortie ${sm.sommet}`; open = () => openSummit(sm); replay = 'Rejouer la sortie';
     }
     const seq = buildSeq(ids);
     if (a.km == null && a.rubrique === 'sommet') {   // no km given: the summit itself
@@ -165,7 +165,7 @@
     // a time given in photos.csv (one per file) wins over the passage on the trace
     const given = a.heure ? String(a.heure).split(';').map(x => x.trim()) : null;
     return { ...a, lon: p.lon, lat: p.lat, act: p.id, alt: p.alt, heure: (given && given[0]) || p.heure, heures: given ? given.map(t => t || p.heure).join(';') : null, day: p.day, where, open, replay,   // a blank time falls back on the trace
-      label: a.atTop ? `D${p.day} · at the summit of ${a.reference}` : `D${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
+      label: a.atTop ? `J${p.day} · au sommet du ${a.reference}` : `J${p.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${where}` };
   });
   const ALERTS = routePoints(T.alerts), PHOTOS = routePoints(T.photos), INFOS = routePoints(T.infos);
   const COL_PHOTO = '#2bb3ac';
@@ -295,8 +295,8 @@
   const S = T.stats;
   /* first row: distance, D+, days, summits; second row: moving time, with the pack, trail running */
   const statItems = () => [
-    ['Distance', nf(S.km), 'km'], ['Elevation +', nf(S.dplus), 'm'], ['Days', S.days], ['Summits', S.summits],
-    ['Total time', hm(S.pack_min + S.trail_min)], ['With the pack', hm(S.pack_min)], ['Trail running', hm(S.trail_min)],
+    ['Distance', nf(S.km), 'km'], ['Dénivelé +', nf(S.dplus), 'm'], ['Jours', S.days], ['Sommets', S.summits],
+    ['Temps total', hm(S.pack_min + S.trail_min)], ['Avec le sac', hm(S.pack_min)], ['Trail running', hm(S.trail_min)],
   ];
   document.getElementById('stats').append(...statItems().map(([k, v, u]) => el('div', null, el('dt', null, k), el('dd', null, v, u ? el('small', null, ` ${u}`) : null))));
 
@@ -334,16 +334,16 @@
   function setFold(cls, btn, folded, label) {
     document.body.classList.toggle(cls, folded);
     btn.setAttribute('aria-expanded', String(!folded));
-    btn.setAttribute('aria-label', `${folded ? 'Expand' : 'Collapse'} ${label}`);
+    btn.setAttribute('aria-label', `${folded ? 'Agrandir' : 'Réduire'} ${label}`);
     layoutChanged();
   }
   const btnTitleFold = document.getElementById('btn-title-fold');
   const btnPanelFold = document.getElementById('btn-panel-fold');
-  btnTitleFold.addEventListener('click', () => { setFold('title-folded', btnTitleFold, !document.body.classList.contains('title-folded'), 'the title'); placeDepart(); });
-  btnPanelFold.addEventListener('click', () => setFold('panel-folded', btnPanelFold, !document.body.classList.contains('panel-folded'), 'the panel'));
-  const unfoldPanel = () => { if (document.body.classList.contains('panel-folded')) setFold('panel-folded', btnPanelFold, false, 'the panel'); };
+  btnTitleFold.addEventListener('click', () => { setFold('title-folded', btnTitleFold, !document.body.classList.contains('title-folded'), 'le titre'); placeDepart(); });
+  btnPanelFold.addEventListener('click', () => setFold('panel-folded', btnPanelFold, !document.body.classList.contains('panel-folded'), 'le panneau'));
+  const unfoldPanel = () => { if (document.body.classList.contains('panel-folded')) setFold('panel-folded', btnPanelFold, false, 'le panneau'); };
   // phone: open on the map, the panel folded down to its tabs (a tab unfolds it)
-  if (matchMedia('(max-width: 600px)').matches) setFold('panel-folded', btnPanelFold, true, 'the panel');
+  if (matchMedia('(max-width: 600px)').matches) setFold('panel-folded', btnPanelFold, true, 'le panneau');
 
   // "Inventaire" centred under the last figure of the title stats (Trail running)
   function placeDepart() {
@@ -421,7 +421,7 @@
   }
 
   /* ---------- panel head: the three rubrics, always visible ---------- */
-  const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Summits'], ['etapes', 'Stages'], ['alerts', 'Alerts'], ['photos', 'Photos'], ['infos', 'Info']];
+  const RUBRICS = [['camps', 'Bivouacs'], ['summits', 'Sommets'], ['etapes', 'Étapes'], ['alerts', 'Alertes'], ['photos', 'Photos'], ['infos', 'Infos']];
   const tabBox = document.getElementById('rubric-tabs');
   const tabBtns = RUBRICS.map(([id, label]) => {
     const b = el('button', { type: 'button', role: 'tab', 'data-r': id }, label);
@@ -443,7 +443,7 @@
       const on = b.dataset.r === active;
       b.setAttribute('aria-selected', String(on));
       b.classList.toggle('in-detail', on && !!detail);
-      b.title = on && detail ? 'Back to the list' : '';
+      b.title = on && detail ? 'Revenir à la liste' : '';
     });
   }
 
@@ -461,35 +461,35 @@
     const body = el('div');
     if (rubric === 'camps') {
       body.append(
-        el('h2', null, 'Seven bivouacs, nine nights'),
-        el('p', { class: 'note note-1' }, 'Choose a bivouac to read the night’s statistics.'),
-        recapRow('rem', 'Nights summary', `${T.camps.length} nights`, openNightsRecap),
+        el('h2', null, 'Sept bivouacs, neuf nuits'),
+        el('p', { class: 'note note-1' }, 'Choisis un bivouac pour lire les statistiques de la nuit.'),
+        recapRow('rem', 'Récap des nuits', `${T.camps.length} nuits`, openNightsRecap),
         el('ul', { class: 'camp-list' }, camps.map((c, i) => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openCamp(c) },
             el('span', { class: `camp-num${i === 0 ? ' camp-start' : ''}` }, String(i + 1)),
             el('span', { class: 'camp-name' }, c.name),
             el('span', { class: 'camp-dates' }, c.nights.map(n => day(n.night).d).join(' + ') + ' ' + day(c.nights[0].night).m))))),
-        el('h3', { class: 'rec-title' }, 'Night records'),
+        el('h3', { class: 'rec-title' }, 'Records des nuits'),
         nightRecords(),
-        el('button', { type: 'button', class: 'law-link', onclick: openLaw }, 'Bivouacking in Norway: the right to roam ›'));
+        el('button', { type: 'button', class: 'law-link', onclick: openLaw }, 'Bivouaquer en Norvège : le droit d’accès ›'));
     } else if (rubric === 'summits') {
       body.append(
-        el('h2', null, 'Nine summits'),
-        el('p', { class: 'note note-1' }, 'Choose a summit to replay the day’s outing.'),
-        recapRow('peak', 'Summits summary', `${T.summits.length} summits`, openSummitsRecap),
+        el('h2', null, 'Neuf sommets'),
+        el('p', { class: 'note note-1' }, 'Choisis un sommet pour rejouer la sortie du jour.'),
+        recapRow('peak', 'Récap des sommets', `${T.summits.length} sommets`, openSummitsRecap),
         el('ul', { class: 'camp-list' }, T.summits.map(s => el('li', null,
           el('button', { type: 'button', class: 'camp-row', onclick: () => openSummit(s) },
             el('span', { class: 'camp-num num-peak' }, peakIcon()),
             el('span', { class: 'camp-name' }, s.sommet),
             el('span', { class: 'camp-dates' }, `${nf(s.alt_gps_m)} m`))))),
-        el('h3', { class: 'rec-title' }, 'Summit records'),
+        el('h3', { class: 'rec-title' }, 'Records des sommets'),
         summitRecords());
     } else if (rubric === 'photos' || rubric === 'infos') {
       const isPh = rubric === 'photos', list = isPh ? PHOTOS : INFOS;
       body.append(
-        el('h2', null, isPh ? 'Photos' : 'Info'),
-        el('p', { class: 'note' }, isPh ? 'Photos placed where they were taken.' : 'Anecdotes, at the right spot on the route.'),
-        ...(isPh ? [recapRow('photo', 'All photos', `${PHOTOS.reduce((n, a) => n + photoFiles(a).length, 0)} photos`, openPhotoWall)] : []),
+        el('h2', null, isPh ? 'Photos' : 'Infos'),
+        el('p', { class: 'note' }, isPh ? 'Les photos placées là où elles ont été prises.' : 'Anecdotes, au bon endroit du parcours.'),
+        ...(isPh ? [recapRow('photo', 'Toutes les photos', `${PHOTOS.reduce((n, a) => n + photoFiles(a).length, 0)} photos`, openPhotoWall)] : []),
         el('ul', { class: 'camp-list' }, list.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openRoutePoint(rubric, a) },
             el('span', { class: `camp-num num-peak${isPh && a.favori === 'oui' ? ' fav' : ''}` }, isPh ? photoIcon() : infoIcon()),
@@ -498,29 +498,29 @@
               el('span', { class: 'stage-meta' }, a.label)))))));
     } else if (rubric === 'alerts') {
       body.append(
-        el('h2', null, 'Alerts'),
-        el('p', { class: 'note' }, 'The moments when the route challenged me.'),
+        el('h2', null, 'Alertes'),
+        el('p', { class: 'note' }, 'Les moments où le parcours m’a mis au défi.'),
         el('ul', { class: 'camp-list' }, ALERTS.map(a => el('li', null,
           el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openAlert(a) },
             el('span', { class: 'camp-num num-peak' }, warnIcon()),
             el('span', { class: 'stage-main' },
               el('span', { class: 'camp-name' }, a.titre),
-              el('span', { class: 'stage-meta' }, `D${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`)))))),
+              el('span', { class: 'stage-meta' }, `J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`)))))),
         riskCard());
     } else {
       body.append(
-        el('h2', null, 'Seven stages with the pack'),
-        el('p', { class: 'note' }, 'From bivouac to bivouac, with the backpack.'),
+        el('h2', null, 'Sept étapes avec le sac'),
+        el('p', { class: 'note' }, 'De bivouac en bivouac, avec le sac de rando.'),
         el('ul', { class: 'camp-list' }, T.etapes.map(e => {
           const seq = buildSeq(e.acts), last = seq[seq.length - 1];
           return el('li', null,
             el('button', { type: 'button', class: 'camp-row stage-row', onclick: () => openEtape(e) },
-              el('span', { class: 'camp-num num-day' }, `D${e.day}`),
+              el('span', { class: 'camp-num num-day' }, `J${e.day}`),
               el('span', { class: 'stage-main' },
                 el('span', { class: 'camp-name' }, `${e.from} → ${e.to}`),
-                el('span', { class: 'stage-meta' }, `${nf(last.wk, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}${seq.some(p => p.sac === 2) ? ' · boat' : ''}`))));
+                el('span', { class: 'stage-meta' }, `${nf(last.wk, 1)} km · ${nf(last.dplus)} m D+ · ${hms(last.mov)}${seq.some(p => p.sac === 2) ? ' · bateau' : ''}`))));
         })),
-        el('h3', { class: 'rec-title' }, 'Stage records'),
+        el('h3', { class: 'rec-title' }, 'Records des étapes'),
         stageRecords());
     }
     panel.replaceChildren(body);   // no grey footnote under the lists
@@ -539,14 +539,14 @@
       sv('line', { x1: 0, x2: W, y1: Y(K.long_sd), y2: Y(K.long_sd), class: 'rk-mean' }));
     K.alerts.forEach(([km]) => s.append(sv('path', { d: `M${(X(km) - 3.5).toFixed(1)},0.5H${(X(km) + 3.5).toFixed(1)}L${X(km).toFixed(1)},6.5Z`, class: 'rk-tri' })));
     const fig = (v, t) => el('span', { class: 'rk-fig' }, el('b', null, v), el('span', null, t));
-    return el('a', { class: 'risk-card', href: 'risk.html', 'aria-label': 'Open the full risk analysis' },
-      el('span', { class: 'rk-title' }, el('i', { class: 'rk-pulse' }), 'Risk analysis'),
-      el('span', { class: 'rk-spark-wrap', title: 'Pace irregularity over the 159 km; triangles: alerts' }, s),
+    return el('a', { class: 'risk-card', href: 'risque.html', 'aria-label': 'Ouvrir l’analyse de risque complète' },
+      el('span', { class: 'rk-title' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
+      el('span', { class: 'rk-spark-wrap', title: 'Irrégularité de l’allure sur les 159 km ; triangles : alertes' }, s),
       el('span', { class: 'rk-figs' },
-        fig(`+${K.sac} %`, 'of time with the pack'),
-        fig(`+${K.raide} %`, 'on steep descents'),
-        fig(`+${K.terrain} %`, 'per difficulty level')),
-      el('span', { class: 'rk-cta' }, 'Full report', el('span', { 'aria-hidden': 'true' }, ' ›')));
+        fig(`+${K.sac} %`, 'de temps avec le sac'),
+        fig(`+${K.raide} %`, 'en descente raide'),
+        fig(`+${K.terrain} %`, 'par niveau de difficulté')),
+      el('span', { class: 'rk-cta' }, 'Rapport complet', el('span', { 'aria-hidden': 'true' }, ' ›')));
   }
 
   /* home bubble: direct access to the risk report, with a stylised Monte Carlo fan.
@@ -570,32 +570,32 @@
       s.append(e);
     });
     s.append(sv('path', { d: line(K.p95), class: 'rh-q' }), sv('path', { d: line(K.p5), class: 'rh-q' }), sv('path', { d: line(K.real), class: 'rh-real', pathLength: 1 }));
-    riskEl = el('a', { class: 'risk-home bubble', href: 'risk.html', 'aria-label': 'Risk analysis: open the full report' },
-      el('span', { class: 'rh-head' }, el('i', { class: 'rk-pulse' }), 'Risk analysis'),
+    riskEl = el('a', { class: 'risk-home bubble', href: 'risque.html', 'aria-label': 'Analyse de risque : ouvrir le rapport complet' },
+      el('span', { class: 'rh-head' }, el('i', { class: 'rk-pulse' }), 'Analyse de risque'),
       s,
-      el('span', { class: 'rh-foot' }, el('span', { class: 'rh-cta' }, 'Full report ›'), el('span', { class: 'rh-meta' }, '5,000 sim.')));
+      el('span', { class: 'rh-foot' }, el('span', { class: 'rh-cta' }, 'Rapport complet ›'), el('span', { class: 'rh-meta' }, '5 000 sim.')));
     document.body.append(riskEl);
     placeRisk(); riskHome(true);
   }
   /* home bubble: the film of the trek (montage, GoPro), opened full screen on demand ; nothing downloads before the click */
-  const FILM = { src: 'video/lofoten_norvege_1080p.mp4', poster: 'video/miniature.jpg', thumb: 'video/miniature_carte.jpg', dur: '2 min 13' };
+  const FILM = { src: 'assets/video/lofoten_norvege_1080p.mp4', poster: 'assets/video/miniature.jpg', thumb: 'assets/video/miniature_carte.jpg', dur: '2 min 13' };
   function buildFilmHome() {
     const play = sv('svg', { viewBox: '0 0 24 24', class: 'fh-play', 'aria-hidden': 'true' });
     play.append(sv('circle', { cx: 12, cy: 12, r: 11 }), sv('path', { d: 'M10 7.8v8.4l6.6-4.2Z' }));
-    filmEl = el('button', { type: 'button', class: 'film-home bubble rh-off', 'aria-label': `Watch the film of the traverse (${FILM.dur})`, onclick: openFilm },
-      el('span', { class: 'rh-head' }, el('i', { class: 'fh-dot' }), 'The film'),
+    filmEl = el('button', { type: 'button', class: 'film-home bubble rh-off', 'aria-label': `Regarder le film de la traversée (${FILM.dur})`, onclick: openFilm },
+      el('span', { class: 'rh-head' }, el('i', { class: 'fh-dot' }), 'Le film'),
       el('span', { class: 'fh-media' }, el('img', { class: 'fh-thumb', src: FILM.thumb, alt: '', loading: 'lazy', decoding: 'async' }), play),
-      el('span', { class: 'rh-foot' }, el('span', { class: 'rh-cta' }, 'Watch ›'), el('span', { class: 'rh-meta' }, FILM.dur)));
+      el('span', { class: 'rh-foot' }, el('span', { class: 'rh-cta' }, 'Regarder ›'), el('span', { class: 'rh-meta' }, FILM.dur)));
     document.body.append(filmEl);
   }
   function openFilm() {
     const video = el('video', { class: 'film-video', controls: '', playsinline: '', preload: 'metadata', poster: FILM.poster, src: FILM.src });
     const close = () => { video.pause(); video.removeAttribute('src'); video.load(); box.remove(); removeEventListener('keydown', onKey); filmEl && filmEl.focus(); };
     const onKey = ev => { if (ev.key === 'Escape') close(); };
-    const box = el('div', { class: 'film-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'The film of the traverse' },
+    const box = el('div', { class: 'film-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Le film de la traversée' },
       el('div', { class: 'film-frame' }, video,
-        el('p', { class: 'film-cap' }, 'Lofoten, June 2026 · filmed on GoPro HERO13 Black, edited by Baptiste Aribaud')),
-      el('button', { type: 'button', class: 'film-x', 'aria-label': 'Close the video', onclick: close }, '×'));
+        el('p', { class: 'film-cap' }, 'Lofoten, juin 2026 · tournage GoPro HERO13 Black, montage Baptiste Aribaud')),
+      el('button', { type: 'button', class: 'film-x', 'aria-label': 'Fermer la vidéo', onclick: close }, '×'));
     box.addEventListener('click', ev => { if (ev.target === box) close(); });
     addEventListener('keydown', onKey);
     document.body.append(box);
@@ -689,11 +689,11 @@
       clearTimeout(openAlert.t); openAlert.t = setTimeout(() => fireCheckpoint({ type: 'alert', a }), reduceMotion ? 0 : 2700);
     }
     panel.replaceChildren(
-      backButton('All alerts', 'alerts'),
-      el('p', { class: 'eyebrow-sm warn-ink' }, `Alert · D${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`),
+      backButton('Toutes les alertes', 'alerts'),
+      el('p', { class: 'eyebrow-sm warn-ink' }, `Alerte · J${a.day} · km ${nf(a.km, a.km % 1 ? 1 : 0)} ${a.where}`),
       el('h2', null, a.titre),
-      el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · around ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
-      a.recit ? el('p', { class: 'info-text' }, a.recit) : el('p', { class: 'empty' }, 'Story to come.'),
+      el('p', { class: 'meta' }, `${nf(a.alt)} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      a.recit ? el('p', { class: 'info-text' }, a.recit) : el('p', { class: 'empty' }, 'Récit à venir.'),
       el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)));
     panel.scrollTop = 0;
   }
@@ -743,10 +743,10 @@
     return f.map((_, i) => (t[i] || t[0] || a.heure || '').trim() || null); };
   function photoGallery(a, withTimes = true) {
     const files = photoFiles(a), times = withTimes ? photoTimes(a) : [];   // an info's photos were not taken at the info's spot: no time
-    if (!files.length) return el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, 'Photo to add'));
-    const items = files.map((f, i) => ({ src: f, title: a.titre, sub: [`D${a.day}`, times[i]].filter(Boolean).join(' · ') }));
+    if (!files.length) return el('div', { class: 'photo-frame' }, photoIcon(), el('span', null, 'Photo à ajouter'));
+    const items = files.map((f, i) => ({ src: f, title: a.titre, sub: [`J${a.day}`, times[i]].filter(Boolean).join(' · ') }));
     return el('div', { class: 'gallery' }, files.map((f, i) =>
-      el('button', { type: 'button', class: 'gallery-item', 'aria-label': `Enlarge the photo ${i + 1}`, onclick: () => lightbox(items, i) },
+      el('button', { type: 'button', class: 'gallery-item', 'aria-label': `Agrandir la photo ${i + 1}`, onclick: () => lightbox(items, i) },
         el('img', { src: f, alt: `${a.titre}, photo ${i + 1}`, loading: 'lazy', decoding: 'async' }),
         times[i] ? el('span', { class: 'ph-time' }, times[i]) : null)));
   }
@@ -758,7 +758,7 @@
     const img = el('img', { alt: '' });
     const count = el('span', { class: 'lb-count' });
     const capT = el('strong'), capS = el('span');
-    const onMap = el('button', { type: 'button', class: 'lb-map' }, 'See on the map');
+    const onMap = el('button', { type: 'button', class: 'lb-map' }, 'Voir sur la carte');
     const cap = el('div', { class: 'lb-cap' }, el('div', null, capT, capS), onMap);
     // size the photo ourselves: as big as the screen allows, whatever its shape (Safari otherwise
     // keeps some landscape photos small inside the centred grid)
@@ -791,11 +791,11 @@
     };
     onMap.onclick = e => { e.stopPropagation(); const it = items[k]; close(); document.querySelector('.photo-wall')?.remove(); openRoutePoint('photos', it.point); };
     const many = items.length > 1;
-    const box = el('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Photo in full size' },
+    const box = el('div', { class: 'lightbox', role: 'dialog', 'aria-label': 'Photo en grand' },
       img, count, cap,
-      el('button', { type: 'button', class: 'lb-close', 'aria-label': 'Close', onclick: close }, '×'),
-      many ? el('button', { type: 'button', class: 'lb-prev', 'aria-label': 'Previous photo', onclick: e => { e.stopPropagation(); go(-1); } }, '‹') : null,
-      many ? el('button', { type: 'button', class: 'lb-next', 'aria-label': 'Next photo', onclick: e => { e.stopPropagation(); go(1); } }, '›') : null);
+      el('button', { type: 'button', class: 'lb-close', 'aria-label': 'Fermer', onclick: close }, '×'),
+      many ? el('button', { type: 'button', class: 'lb-prev', 'aria-label': 'Photo précédente', onclick: e => { e.stopPropagation(); go(-1); } }, '‹') : null,
+      many ? el('button', { type: 'button', class: 'lb-next', 'aria-label': 'Photo suivante', onclick: e => { e.stopPropagation(); go(1); } }, '›') : null);
     box.addEventListener('click', e => { if (e.target === box && z === 1) close(); });
     // pinch to zoom the photo itself (never the page), drag to look around, double tap to zoom in or out;
     // changing photo is only done with the two round arrows, so a zoom never jumps to another photo
@@ -845,7 +845,7 @@
       return el('section', null, el('h4', null, cat, el('span', null, g(sum))),
         el('ul', null, rows.map(r => el('li', { class: r.pris ? null : 'dp-off' },
           el('span', { class: 'dp-o' }, r.objet, r.marque ? el('small', null, ` · ${r.marque}`) : null,
-            !r.pris ? el('small', { class: 'dp-tag' }, ' not taken') : r.porte ? el('small', { class: 'dp-tag' }, ' carried') : null),
+            !r.pris ? el('small', { class: 'dp-tag' }, ' non emporté') : r.porte ? el('small', { class: 'dp-tag' }, ' porté') : null),
           el('span', { class: 'dp-q' }, !r.quantite || String(r.quantite) === '1' || String(r.quantite) === '0' ? '' : /^\d+$/.test(r.quantite) ? `×${r.quantite}` : r.quantite),
           el('span', { class: 'dp-w' }, g(r.poids_g))))));
     }));
@@ -857,39 +857,39 @@
           el('span', { class: 'dp-q' }, r.quantite == null ? '?' : r.unite === 'ml' && r.quantite >= 1000 ? `${nf(r.quantite / 1000, r.quantite % 1000 ? 1 : 0)} L` : r.unite === 'g' || r.unite === 'ml' ? `${nf(r.quantite)} ${r.unite}` : `×${nf(r.quantite)}`),
           el('span', { class: 'dp-w' }, r.kcal == null ? '—' : `${nf(r.kcal)} kcal`)))));
     }));
-    const tabG = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'true' }, 'Gear');
-    const tabF = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'false' }, `Food · ${nf(kcal)} kcal`);
+    const tabG = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'true' }, 'Équipement');
+    const tabF = el('button', { type: 'button', class: 'dp-tab', 'aria-pressed': 'false' }, `Nourriture · ${nf(kcal)} kcal`);
     const pick = food => { tabG.setAttribute('aria-pressed', String(!food)); tabF.setAttribute('aria-pressed', String(food)); gearList.hidden = food; foodList.hidden = !food; };
     tabG.onclick = () => pick(false); tabF.onclick = () => pick(true);
     const close = () => { sheet.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
     const P = D.profil;
     // left: the photo of all the gear, then my profile below it; right: the two lists, full height
-    const sheet = el('div', { class: 'depart', role: 'dialog', 'aria-label': 'Gear list' },
+    const sheet = el('div', { class: 'depart', role: 'dialog', 'aria-label': 'Inventaire' },
       el('div', { class: 'dp-card' },
         el('div', { class: 'dp-body' },
           el('div', { class: 'dp-left' },
           el('header', { class: 'dp-head' },
-            el('div', null, el('h2', null, 'Starting gear list'))),
+            el('div', null, el('h2', null, 'Inventaire de départ'))),
           el('figure', { class: 'dp-photo' },
-            el('button', { type: 'button', 'aria-label': 'Enlarge the gear photo', onclick: () => lightbox([{ src: D.photo, title: 'All the gear, the day before leaving' }], 0) },
-              el('img', { src: D.photo, alt: 'All the gear laid out on the ground before leaving' })),
-            el('figcaption', null, 'All the gear laid out the day before leaving · tap to enlarge')),
-          el('h2', { class: 'dp-sub' }, 'The pack in figures'),
+            el('button', { type: 'button', 'aria-label': 'Agrandir la photo de l’équipement', onclick: () => lightbox([{ src: D.photo, title: 'Tout l’équipement, la veille du départ' }], 0) },
+              el('img', { src: D.photo, alt: 'Tout l’équipement étalé au sol avant le départ' })),
+            el('figcaption', null, 'Tout l’équipement étalé la veille du départ · touche pour agrandir')),
+          el('h2', { class: 'dp-sub' }, 'Le sac en chiffres'),
           el('div', { class: 'dp-tiles' },
-            tile('Pack at the start', `≈ ${nf(D.sac_kg, 1)}`, 'kg', 'without water'),
-            tile('Share of my weight', nf(100 * D.sac_kg / P.poids_kg), '%', `${nf(D.sac_kg, 1)} kg for ${nf(P.poids_kg, 1)} kg`),
-            tile('Food', nf(foodKg, 1), 'kg', `${nf(kcal)} kcal`),
-            tile('Per day', nf(kcal / 9), 'kcal', 'over 9 days')),
-          el('h2', { class: 'dp-sub dp-profile' }, 'My profile'),
+            tile('Sac au départ', `≈ ${nf(D.sac_kg, 1)}`, 'kg', 'sans eau'),
+            tile('Part de mon poids', nf(100 * D.sac_kg / P.poids_kg), '%', `${nf(D.sac_kg, 1)} kg pour ${nf(P.poids_kg, 1)} kg`),
+            tile('Nourriture', nf(foodKg, 1), 'kg', `${nf(kcal)} kcal`),
+            tile('Par jour', nf(kcal / 9), 'kcal', 'sur 9 jours')),
+          el('h2', { class: 'dp-sub dp-profile' }, 'Mon profil'),
           el('div', { class: 'dp-tiles dp-profile' },
-            tile('Age', P.age, 'years'), tile('Height', P.taille_cm, 'cm'), tile('Weight', nf(P.poids_kg, 1), 'kg', 'at the start'),
-            tile('VO2max', P.vo2max, 'ml/kg/min', 'Garmin estimate')),
+            tile('Âge', P.age, 'ans'), tile('Taille', P.taille_cm, 'cm'), tile('Poids', nf(P.poids_kg, 1), 'kg', 'au départ'),
+            tile('VO2max', P.vo2max, 'ml/kg/min', 'estimation Garmin')),
           el('p', { class: 'dp-thanks' },
-            el('b', null, 'Thanks to my uncle, Cyrille Livet. '),
-            'Without everything he taught me, his help with gear and the taste for the mountains passed on through adventures, this project would never have happened.')),
+            el('b', null, 'Merci à mon oncle, Cyrille Livet. '),
+            'Sans tout ce qu’il m’a appris, son aide matérielle et le goût de la montagne transmis au travers d’aventures, ce projet n’aurait jamais vu le jour.')),
           el('div', { class: 'dp-lists' },
-            el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Close', onclick: close }, '×')),
+            el('div', { class: 'dp-tabs' }, tabG, tabF, el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
             gearList, foodList))));
     sheet.addEventListener('click', e => { if (e.target === sheet) close(); });
     document.addEventListener('keydown', onKey);
@@ -906,10 +906,10 @@
     const close = () => { wall.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.lightbox')) close(); };
     const grid = el('div', { class: 'pw-grid', style: `grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${Math.ceil(items.length / cols)}, 1fr)` },
-      items.map((it, i) => el('button', { type: 'button', class: 'pw-tile', 'aria-label': `${it.title}, open full size`, onclick: () => lightbox(items, i) },
+      items.map((it, i) => el('button', { type: 'button', class: 'pw-tile', 'aria-label': `${it.title}, ouvrir en grand`, onclick: () => lightbox(items, i) },
         el('img', { src: it.mini, alt: it.title, decoding: 'async', onerror: function () { this.onerror = null; this.src = it.src; } }))));
-    const wall = el('div', { class: 'photo-wall', role: 'dialog', 'aria-label': 'All photos' }, grid,
-      el('button', { type: 'button', class: 'pw-close', 'aria-label': 'Close', onclick: close }, '×'));
+    const wall = el('div', { class: 'photo-wall', role: 'dialog', 'aria-label': 'Toutes les photos' }, grid,
+      el('button', { type: 'button', class: 'pw-close', 'aria-label': 'Fermer', onclick: close }, '×'));
     document.addEventListener('keydown', onKey);
     document.body.append(wall);
   }
@@ -945,13 +945,13 @@
     }
     panel.replaceChildren(...[
       // from a replay: the list link on the left, a big "Reprendre" like the Lancer / Pause button on the right
-      back ? el('div', { class: 'resume-row' }, backButton(isPh ? 'All photos' : 'All info', kind),
-               el('div', { class: 'player' }, el('button', { type: 'button', class: 'play back-resume', 'aria-label': `Resume ${back.label}`, onclick: back.go }, `▶ ${back.short}`)))
-           : backButton(isPh ? 'All photos' : 'All info', kind),
+      back ? el('div', { class: 'resume-row' }, backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
+               el('div', { class: 'player' }, el('button', { type: 'button', class: 'play back-resume', 'aria-label': `Reprendre ${back.label}`, onclick: back.go }, `▶ ${back.short}`)))
+           : backButton(isPh ? 'Toutes les photos' : 'Toutes les infos', kind),
       el('p', { class: 'eyebrow-sm' }, `${isPh ? 'Photo' : 'Info'} · ${a.label}`),
       el('h2', null, a.titre),
-      el('p', { class: 'meta' }, `${nf(Math.max(0, a.alt))} m${a.heure ? ` · around ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
-      isPh ? null : el('p', { class: 'info-text' }, a.texte || 'Text to come.'),   // an info: its story first, then its photo if any
+      el('p', { class: 'meta' }, `${nf(Math.max(0, a.alt))} m${a.heure ? ` · vers ${a.heure}` : ''} · ${a.lat.toFixed(4)} N, ${a.lon.toFixed(4)} E`),
+      isPh ? null : el('p', { class: 'info-text' }, a.texte || 'Texte à venir.'),   // an info: its story first, then its photo if any
       isPh || photoFiles(a).length ? photoGallery(a, isPh) : null,
       isPh && a.legende ? el('p', { class: 'note' }, a.legende) : null,
       a.open ? el('div', { class: 'player' }, el('button', { type: 'button', class: 'play', onclick: a.open }, `▶ ${a.replay}`)) : null].filter(Boolean));
@@ -969,7 +969,7 @@
     // where: 'to' (arrival, default), 'from' (departure) or 'both' (departure, then → arrival below)
     const tile = (k, label, r, value, note, where = 'to') => el('button', { type: 'button', class: 'rec-tile', onclick: () => openEtape(r.e) },
       el('span', { class: `rec-l${label.length > 18 ? ' rec-l-long' : ''}` }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value),
-      el('span', { class: 'rec-s' }, `D${r.e.day} · ${where === 'to' ? r.e.to : r.e.from}`),
+      el('span', { class: 'rec-s' }, `J${r.e.day} · ${where === 'to' ? r.e.to : r.e.from}`),
       where === 'both' ? el('span', { class: 'rec-s' }, `→ ${r.e.to}`) : null,
       note ? el('span', { class: 'rec-s rec-d' }, note) : null);
     const RE = T.records_etapes || {};
@@ -977,12 +977,12 @@
     const slow = (RE.plus_lente && byDay(RE.plus_lente.day)) || best(r => r.kmh, false);   // chosen by him (records_etapes_declares.csv)
     const hard = RE.conditions_difficiles && byDay(RE.conditions_difficiles.day);
     const tiles = [
-      tile('k-top', 'the longest', best(r => r.km), `${nf(best(r => r.km).km, 1)} km`),
-      tile('k-fast', 'the most D+', best(r => r.dplus), `${nf(best(r => r.dplus).dplus)} m`, null, 'both'),
-      tile('k-hard', 'the slowest', slow, `${nf(slow.kmh, 1)} km/h`, null, 'both'),
-      tile('k-cold', 'early start', best(r => r.depM, false), best(r => r.depM, false).dep.replace(/^0/, '').replace(':', ' h '), null, 'from'),
-      tile('k-rain', 'late finish', best(r => r.arrM), best(r => r.arrM).arr.replace(':', ' h ')),
-      hard ? tile('k-wind', 'tough conditions', hard, `${nf(RE.conditions_difficiles.valeur)} ${RE.conditions_difficiles.unite}`, 'gusts · rain') : null,
+      tile('k-top', 'la plus longue', best(r => r.km), `${nf(best(r => r.km).km, 1)} km`),
+      tile('k-fast', 'le plus de D+', best(r => r.dplus), `${nf(best(r => r.dplus).dplus)} m`, null, 'both'),
+      tile('k-hard', 'la plus lente', slow, `${nf(slow.kmh, 1)} km/h`, null, 'both'),
+      tile('k-cold', 'départ matinal', best(r => r.depM, false), best(r => r.depM, false).dep.replace(/^0/, '').replace(':', ' h '), null, 'from'),
+      tile('k-rain', 'arrivée tardive', best(r => r.arrM), best(r => r.arrM).arr.replace(':', ' h ')),
+      hard ? tile('k-wind', 'conditions difficiles', hard, `${nf(RE.conditions_difficiles.valeur)} ${RE.conditions_difficiles.unite}`, 'rafales · pluie') : null,
     ].filter(Boolean);
     return el('div', { class: 'rec-grid' }, tiles);
   }
@@ -1000,13 +1000,13 @@
       el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label), el('b', { class: 'rec-v' }, value), el('span', { class: 'rec-s' }, r.s.sommet),
       extra ? el('span', { class: 'rec-s rec-d rec-wrap' }, extra) : null);
     return el('div', { class: 'rec-grid' },
-      recTile('k-top', 'the highest', high, `${nf(altOf(high))} m`),
-      recTile('k-fast', 'fast climb', best, `${pace(best.gap)} /km`),
-      recTile('k-hard', 'slow climb', hard, `${pace(hard.gap)} /km`),
-      recTile('k-down', 'fast descent', down, `${pace(down.downS / 60 / down.downKm)} /km`),
-      recTile('k-cold', 'the coldest', cold, `${nf(cold.s.temp_c, 0)} °C`),
-      recTile('k-warm', 'the warmest', warm, `${nf(warm.s.temp_c, 0)} °C`,
-        (T.ressentis || {})[warm.s.sommet] ? `ressenti ${T.ressentis[warm.s.sommet].pied} °C at the foot` : null));
+      recTile('k-top', 'le plus haut', high, `${nf(altOf(high))} m`),
+      recTile('k-fast', 'montée rapide', best, `${pace(best.gap)} /km`),
+      recTile('k-hard', 'montée lente', hard, `${pace(hard.gap)} /km`),
+      recTile('k-down', 'descente rapide', down, `${pace(down.downS / 60 / down.downKm)} /km`),
+      recTile('k-cold', 'le plus froid', cold, `${nf(cold.s.temp_c, 0)} °C`),
+      recTile('k-warm', 'le plus chaud', warm, `${nf(warm.s.temp_c, 0)} °C`,
+        (T.ressentis || {})[warm.s.sommet] ? `ressenti ${T.ressentis[warm.s.sommet].pied} °C au pied` : null));
   }
 
   /* records of the nights, each one flies to its bivouac */
@@ -1019,12 +1019,12 @@
     const lived = key => { const d = DECL[key]; if (!d) return null; const x = N.find(x => x.n.night === d.night); return x ? { ...x, lived: d } : null; };
     const livedVal = (x, dec) => `${nf(x.lived.valeur, dec)} ${x.lived.unite}`;
     const rows = [
-      ['k-top', 'the highest', camps.reduce((a, b) => b.alt > a.alt ? b : a), c => `${nf(c.alt)} m`],
-      ['k-best', 'the best', pick(n => n.sleep && n.sleep.sleep_score, hi), x => `${nf(x.n.sleep.sleep_score)} / 100`],
-      ['k-cold', 'the coldest', lived('plus_froide') || pick(n => n.weather && n.weather.temp_min_camp, lo), x => `${nf(x.n.weather.temp_min_camp, 1)} °C`],
-      ['k-wind', 'the windiest', lived('plus_venteuse') || pick(n => n.weather && n.weather.gust_max, hi), x => x.lived && x.lived.valeur != null ? livedVal(x, 0) : `${nf(x.n.weather.gust_max)} km/h`],
-      ['k-rain', 'the wettest', lived('plus_arrosee') || pick(n => n.weather && n.weather.rain_mm, hi), x => x.lived && x.lived.valeur != null ? livedVal(x, 1) : `${nf(x.n.weather.rain_mm, 1)} mm`],
-      ['k-short', 'the shortest', pick(n => n.sleep && n.sleep.sommeil_min, lo), x => hm(x.n.sleep.sommeil_min)],
+      ['k-top', 'le plus haut', camps.reduce((a, b) => b.alt > a.alt ? b : a), c => `${nf(c.alt)} m`],
+      ['k-best', 'la meilleure', pick(n => n.sleep && n.sleep.sleep_score, hi), x => `${nf(x.n.sleep.sleep_score)} / 100`],
+      ['k-cold', 'la plus froide', lived('plus_froide') || pick(n => n.weather && n.weather.temp_min_camp, lo), x => `${nf(x.n.weather.temp_min_camp, 1)} °C`],
+      ['k-wind', 'la plus venteuse', lived('plus_venteuse') || pick(n => n.weather && n.weather.gust_max, hi), x => x.lived && x.lived.valeur != null ? livedVal(x, 0) : `${nf(x.n.weather.gust_max)} km/h`],
+      ['k-rain', 'la plus arrosée', lived('plus_arrosee') || pick(n => n.weather && n.weather.rain_mm, hi), x => x.lived && x.lived.valeur != null ? livedVal(x, 1) : `${nf(x.n.weather.rain_mm, 1)} mm`],
+      ['k-short', 'la plus courte', pick(n => n.sleep && n.sleep.sommeil_min, lo), x => hm(x.n.sleep.sommeil_min)],
     ];
     // small tiles, three per line: what, the figure, where and when
     return el('div', { class: 'rec-grid' }, rows.map(([k, label, r, fmt]) => {
@@ -1033,7 +1033,7 @@
         el('span', { class: 'rec-l' }, el('i', { class: `rec-dot ${k}` }), label),
         el('b', { class: 'rec-v' }, fmt(r)),
         el('span', { class: 'rec-s' }, c.name),
-        el('span', { class: 'rec-s rec-d' }, r.n ? `night of ${day(r.n.night).d} ${day(r.n.night).m}` : `${nf(c.nights.length)} night${c.nights.length > 1 ? 's' : ''}`));
+        el('span', { class: 'rec-s rec-d' }, r.n ? `nuit du ${day(r.n.night).d} ${day(r.n.night).m}` : `${nf(c.nights.length)} nuit${c.nights.length > 1 ? 's' : ''}`));
     }));
   }
 
@@ -1044,34 +1044,34 @@
     const sec = (title, ...lines) => el('section', null, el('h4', null, title), el('ul', null, lines.map(l => el('li', null, l))));
     const close = () => { box.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape') close(); };
-    const box = el('div', { class: 'sources', role: 'dialog', 'aria-label': 'Data sources' },
+    const box = el('div', { class: 'sources', role: 'dialog', 'aria-label': 'Sources des données' },
       el('div', { class: 'src-card' },
-        el('header', null, el('h2', null, 'Data sources'),
-          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Close', onclick: close }, '×')),
+        el('header', null, el('h2', null, 'Sources des données'),
+          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
         el('div', { class: 'src-body' },
-          sec('Track and effort',
-            `Garmin Forerunner 255 Music GPS watch: positions, altitude, heart rate and calories, 24 recorded activities (raw .FIT files).`,
-            `Distance and elevation gain: ${nf(S.km)} km and ${nf(S.dplus)} m of gain, measured on the watch’s GPS track (the figures used in the risk analysis).`,
-            'Unrecorded legs (ferry Kirkefjord → Vindstad, transfers): skipped in the figures; the ferry is drawn as an arc on the map.',
-            'Grade-adjusted pace: energy cost of running on slopes, Minetti et al. (2002).'),
-          sec('Nights and body',
-            'Sleep, stages, resting HR, HRV, Body Battery, daily calories: Garmin Connect, night by night.',
-            'Watch battery: logged by the watch every 5 minutes.',
-            'Profile (age, height, starting weight, VO2max): self-reported; VO2max estimated by Garmin.'),
-          sec('Weather',
-            'ERA5 reanalysis (Copernicus / ECMWF), via Open-Meteo: hour by hour, over 3 areas of the route (north, centre, south), grid of about 30 km.',
-            'Temperature adjusted to the point’s altitude (−6.5 °C per 1,000 m); feels-like = wind chill.',
-            'Night records: ERA5, except three nights experienced differently on the spot (wind at Horseid, rain at Sørvågen, cold on the heights of Kvalvika), self-reported.'),
-          sec('Pack, gear and food',
-            'Gear: weighed when possible, otherwise product sheets or typical values.',
-            'Food: quantities carried; calories from product sheets or typical values.',
-            `Pack weight at the start: estimate of ${nf(T.depart ? T.depart.sac_kg : 0, 1)} kg without water, then consumption day by day.`),
-          sec('Story and photos',
-            'Alerts, info, photos and their viewing direction: placed and written by me, from the track.',
-            'Photos: iPhone and GoPro; time of shooting read on the GPS track, or noted on the photo for the bivouacs.'),
-          sec('Map',
-            'Satellite: Esri World Imagery (Maxar, Earthstar Geographics). Topo map: OpenTopoMap, © OpenStreetMap contributors (CC-BY-SA).',
-            '3D relief: Mapzen / AWS Terrain Tiles. Engine: MapLibre GL; site hosted on GitHub Pages.'))));
+          sec('Trace et effort',
+            `Montre GPS Garmin Forerunner 255 Music : positions, altitude, fréquence cardiaque et calories, 24 activités enregistrées (fichiers .FIT bruts).`,
+            `Distance et dénivelé : ${nf(S.km)} km et ${nf(S.dplus)} m de D+, mesurés sur la trace GPS de la montre (chiffres retenus pour l’analyse de risque).`,
+            'Passages non enregistrés (ferry Kirkefjord → Vindstad, liaisons) : sautés dans les chiffres ; le ferry est dessiné en arc sur la carte.',
+            'Allure ajustée à la pente : coût énergétique de la course en pente, Minetti et al. (2002).'),
+          sec('Nuits et corps',
+            'Sommeil, phases, FC au repos, HRV, Body Battery, calories du jour : Garmin Connect, nuit par nuit.',
+            'Batterie de la montre : relevée par la montre toutes les 5 minutes.',
+            'Profil (âge, taille, poids au départ, VO2max) : déclaré ; VO2max estimée par Garmin.'),
+          sec('Météo',
+            'Réanalyse ERA5 (Copernicus / ECMWF), via Open-Meteo : heure par heure, sur 3 zones du parcours (nord, centre, sud), maille d’environ 30 km.',
+            'Température ramenée à l’altitude du point (−6,5 °C par 1 000 m) ; ressenti = refroidissement par le vent.',
+            'Records des nuits : ERA5, sauf trois nuits vécues autrement sur place (vent à Horseid, pluie à Sørvågen, froid aux hauteurs de Kvalvika), déclarées.'),
+          sec('Sac, équipement et nourriture',
+            'Équipement : pesées quand elles existent, sinon fiches produits ou valeurs typiques.',
+            'Nourriture : quantités emportées ; calories des fiches produits ou valeurs typiques.',
+            `Poids du sac au départ : estimation de ${nf(T.depart ? T.depart.sac_kg : 0, 1)} kg sans eau, puis consommation jour après jour.`),
+          sec('Récit et photos',
+            'Alertes, infos, photos et leur direction de vue : placées et racontées par moi, à partir de la trace.',
+            'Photos : iPhone et GoPro ; heure de prise de vue lue sur la trace GPS, ou relevée sur la photo pour les bivouacs.'),
+          sec('Carte',
+            'Satellite : Esri World Imagery (Maxar, Earthstar Geographics). Carte topo : OpenTopoMap, © contributeurs OpenStreetMap (CC-BY-SA).',
+            'Relief 3D : Mapzen / AWS Terrain Tiles. Moteur : MapLibre GL ; site hébergé sur GitHub Pages.'))));
     box.addEventListener('click', e => { if (e.target === box) close(); });
     document.addEventListener('keydown', onKey);
     document.body.append(box);
@@ -1081,16 +1081,16 @@
   function openLaw() {
     const old = document.querySelector('.law-card'); if (old) { old.remove(); return; }
     const close = () => card.remove();
-    const card = el('aside', { class: 'law-card bubble', role: 'dialog', 'aria-label': 'The right to roam in Norway' },
-      el('button', { type: 'button', class: 'fold law-close', 'aria-label': 'Close', onclick: close }, '×'),
+    const card = el('aside', { class: 'law-card bubble', role: 'dialog', 'aria-label': 'Le droit d’accès en Norvège' },
+      el('button', { type: 'button', class: 'fold law-close', 'aria-label': 'Fermer', onclick: close }, '×'),
       el('p', { class: 'eyebrow-sm' }, 'Allemannsretten'),
-      el('h3', null, 'Bivouacking in Norway'),
-      el('p', null, 'The right to roam, written into law since 1957, lets you walk and pitch your tent almost anywhere outside cultivated land, free of charge.'),
+      el('h3', null, 'Bivouaquer en Norvège'),
+      el('p', null, 'Le droit d’accès, inscrit dans la loi depuis 1957, permet de marcher et de planter sa tente presque partout hors des terres cultivées, gratuitement.'),
       el('ul', null,
-        el('li', null, 'tent at least ', el('b', null, '150 m'), ' from an inhabited house or cabin;'),
-        el('li', null, el('b', null, '2 nights'), ' in the same place at most without the owner’s consent (more in the mountains, far from everything);'),
-        el('li', null, 'no fire in or near forests from ', el('b', null, '15 April to 15 September'), ': stove only;'),
-        el('li', null, 'leave no trace, rubbish included.')));
+        el('li', null, 'tente à au moins ', el('b', null, '150 m'), ' d’une maison ou d’un chalet habité ;'),
+        el('li', null, el('b', null, '2 nuits'), ' au même endroit au plus sans l’accord du propriétaire (plus en montagne, loin de tout) ;'),
+        el('li', null, 'pas de feu en forêt ou près d’une forêt du ', el('b', null, '15 avril au 15 septembre'), ' : réchaud seulement ;'),
+        el('li', null, 'on repart sans laisser de trace, déchets compris.')));
     document.body.append(card);
   }
 
@@ -1101,10 +1101,10 @@
     let raf = 0;
     const close = () => { cancelAnimationFrame(raf); box.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape') close(); };
-    const dateFr = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+    const dateFr = iso => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
     const hFr = t => `${parseInt(t, 10)}\u00a0h\u00a0${t.slice(3)}`;      // 01:09 -> 1 h 09
     const deg = (v, d = 1) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${nf(Math.abs(v), d)}°`;
-    const dir = az => ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(az / 45) % 8];
+    const dir = az => ['nord', 'nord-est', 'est', 'sud-est', 'sud', 'sud-ouest', 'ouest', 'nord-ouest'][Math.round(az / 45) % 8];
 
     /* panorama: south (through west) on the left, north in the middle, south (through east) on the right */
     const narrow = window.innerWidth <= 600;
@@ -1131,7 +1131,7 @@
                           : `M${pts[0][0].toFixed(1)},${H0} L${ys.join(' L')} L${W},${H0} Z`;
     };
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'sun-fig', role: 'img',
-      'aria-label': `Path of the sun over 24 hours seen from Reine on 18 June: at its highest ${nf(S.el_max, 1)}° due south, at its lowest ${nf(S.el_min[0], 1)}° due north, never below the horizon` });
+      'aria-label': `Course du soleil sur 24 heures vue de Reine le 18 juin : au plus haut ${nf(S.el_max, 1)}° plein sud, au plus bas ${nf(S.el_min[0], 1)}° plein nord, jamais sous l’horizon` });
     const defs = sv('defs');
     const sky = sv('linearGradient', { id: 'sun-sky', x1: 0, y1: 0, x2: 0, y2: 1 });
     const st = [0, .62, 1].map(o => { const s = sv('stop', { offset: o }); sky.append(s); return s; });
@@ -1167,13 +1167,13 @@
     const moms = S.moments.map(m => {
       const dot = sv('circle', { cx: xOf(m.az), cy: yOf(m.el), r: 3.6, class: 'sf-mom' });
       svg.append(dot);
-      const items = m.photo ? [{ src: `${m.photo}?v=${PHOTO_V}`, title: m.photo_titre, sub: `D${m.day}, ${hFr(m.heure)}: sun at ${deg(m.el)}, ${dir(m.az)}` }] : null;
-      const row = el('button', { type: 'button', class: 'sun-chip', 'aria-label': `${m.texte}, D${m.day} at ${hFr(m.heure)}`, onclick: items ? () => lightbox(items, 0) : null },
-        el('em', null, `D${m.day}`), el('b', null, hFr(m.heure)), el('i', null, deg(m.el)));
-      const words = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+      const items = m.photo ? [{ src: `${m.photo}?v=${PHOTO_V}`, title: m.photo_titre, sub: `J${m.day}, ${hFr(m.heure)} : soleil à ${deg(m.el)}, ${dir(m.az)}` }] : null;
+      const row = el('button', { type: 'button', class: 'sun-chip', 'aria-label': `${m.texte}, J${m.day} à ${hFr(m.heure)}`, onclick: items ? () => lightbox(items, 0) : null },
+        el('em', null, `J${m.day}`), el('b', null, hFr(m.heure)), el('i', null, deg(m.el)));
+      const words = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
       const cap = m.ecart_solstice != null ? el('p', { class: 'sun-pcap' },
-        `On the GoPro timer, at the lowest point of the night, ${words[m.jours_avant_solstice] || m.jours_avant_solstice} days before the solstice: same height, within ${nf(m.ecart_solstice, 2)}°.`) : null;
-      const shot = items ? el('button', { type: 'button', class: 'sun-photo', 'aria-label': `${m.texte}, open full size`, onclick: () => lightbox(items, 0) },
+        `Au retardateur de la GoPro, au plus bas de la nuit, ${words[m.jours_avant_solstice] || m.jours_avant_solstice} jours avant le solstice : même hauteur, à ${nf(m.ecart_solstice, 2)}° près.`) : null;
+      const shot = items ? el('button', { type: 'button', class: 'sun-photo', 'aria-label': `${m.texte}, ouvrir en grand`, onclick: () => lightbox(items, 0) },
         el('img', { src: items[0].src, alt: m.texte, loading: 'lazy' })) : null;
       return { m, dot, row, shot, cap, at: toMin(m.heure) };
     });
@@ -1207,7 +1207,7 @@
       const mins = (parseInt(a.t) * 60 + parseInt(a.t.slice(3)) + Math.round(f * MIN)) % 1440;
       const az = (x / W * 360 + 180) % 360;
       read.firstChild.textContent = `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
-      read.lastChild.textContent = `sun at ${deg(e)}, ${dir(az)}`;
+      read.lastChild.textContent = `soleil à ${deg(e)}, ${dir(az)}`;
       for (const o of moms) {                                    // within 25 min of the moment: lit
         const d = Math.abs(mins - o.at), lit = Math.min(d, 1440 - d) <= 25;
         o.row.classList.toggle('is-lit', lit); o.dot.classList.toggle('is-lit', lit); if (o.shot) o.shot.classList.toggle('is-lit', lit);
@@ -1226,31 +1226,31 @@
       }
       last = now; draw(); raf = requestAnimationFrame(tick);
     };
-    const setPlay = () => { play.classList.toggle('is-paused', paused); play.setAttribute('aria-label', paused ? 'Play' : 'Pause'); };
+    const setPlay = () => { play.classList.toggle('is-paused', paused); play.setAttribute('aria-label', paused ? 'Lecture' : 'Pause'); };
     play.addEventListener('click', () => { paused = !paused; setPlay(); });
     svg.addEventListener('click', () => { paused = !paused; setPlay(); });
     setPlay(); draw(); raf = requestAnimationFrame(tick);
 
-    const box = el('div', { class: 'sun-modal', role: 'dialog', 'aria-label': 'The midnight sun' },
+    const box = el('div', { class: 'sun-modal', role: 'dialog', 'aria-label': 'Le soleil de minuit' },
       el('div', { class: 'src-card sun-card' },
         el('header', null,
-          el('div', null, el('p', { class: 'eyebrow-sm' }, 'Above the Arctic Circle'), el('h2', null, 'Midnight sun')),
-          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Close', onclick: close }, '×')),
+          el('div', null, el('p', { class: 'eyebrow-sm' }, 'Au-dessus du cercle polaire'), el('h2', null, 'Soleil de minuit')),
+          el('button', { type: 'button', class: 'pw-close dp-close', 'aria-label': 'Fermer', onclick: close }, '×')),
         el('div', { class: 'sun-scroll' },
           fig,
-          el('p', { class: 'sun-cap' }, `Path of the sun over 24 h, seen from Reine on 18 June, in the middle of the traverse, clear sea horizon. Turquoise dot: my 1 a.m. photo at Bunes beach.`),
+          el('p', { class: 'sun-cap' }, `Course du soleil sur 24 h, vue de Reine le 18 juin, au milieu de la traversée, horizon de mer dégagé. Point turquoise : ma photo de 1\u00a0h du matin à Bunes beach.`),
           el('div', { class: 'sun-body' },
             el('section', null,
-              el('h4', null, 'Why it does not set'),
-              el('p', null, `The Lofoten lie between ${nf(S.lat[0], 1)}° and ${nf(S.lat[1], 1)}° north, ${S.km_nord[0]}–${S.km_nord[1]} km north of the Arctic Circle (${nf(S.cercle_polaire, 2)}° N). The Earth’s axis is tilted by ${nf(S.inclinaison, 1)}°: around the solstice, the North Pole stays turned towards the Sun and, north of the Circle, the Sun no longer goes below the horizon.`),
-              el('p', null, `In Reine, it does not set from `, el('b', null, `${dateFr(S.debut)} to ${dateFr(S.fin)}`), `, i.e. ${S.nuits} nights. My traverse, from 13 to 23 June, fell right inside, including the 21 June solstice.`),
-              el('p', null, `In 24 h it goes round the sky: at its highest due south around ${hFr(S.midi_solaire)} (${nf(S.el_max, 1)}°), at its lowest due north around ${hFr(S.minuit_solaire)}, still ${nf(S.el_min[0], 1)} to ${nf(S.el_min[1], 1)}° above the horizon. The same day in Paris: ${nf(S.paris.max, 1)}° at noon, but ${nf(-S.paris.min, 1)}° below the horizon at night.`)),
+              el('h4', null, 'Pourquoi il ne se couche pas'),
+              el('p', null, `Les Lofoten sont entre ${nf(S.lat[0], 1)}° et ${nf(S.lat[1], 1)}° nord, à ${S.km_nord[0]}–${S.km_nord[1]} km au nord du cercle polaire (${nf(S.cercle_polaire, 2)}° N). L’axe de la Terre est incliné de ${nf(S.inclinaison, 1)}° : autour du solstice, le pôle Nord reste tourné vers le Soleil et, au nord du cercle, il ne passe plus sous l’horizon.`),
+              el('p', null, `À Reine, il ne se couche pas du `, el('b', null, `${dateFr(S.debut)} au ${dateFr(S.fin)}`), `, soit ${S.nuits} nuits. Ma traversée, du 13 au 23 juin, tombait en plein dedans, solstice du 21 juin compris.`),
+              el('p', null, `En 24 h, il fait le tour du ciel : au plus haut plein sud vers ${hFr(S.midi_solaire)} (${nf(S.el_max, 1)}°), au plus bas plein nord vers ${hFr(S.minuit_solaire)}, encore ${nf(S.el_min[0], 1)} à ${nf(S.el_min[1], 1)}° au-dessus de l’horizon. Le même jour à Paris : ${nf(S.paris.max, 1)}° à midi, mais ${nf(-S.paris.min, 1)}° sous l’horizon la nuit.`)),
             el('section', null,
-              el('div', { class: 'sun-h' }, el('h4', null, 'On my traverse'), moms.map(o => o.row)),
+              el('div', { class: 'sun-h' }, el('h4', null, 'Sur ma traversée'), moms.map(o => o.row)),
               moms.flatMap(o => [o.shot, o.cap])),
             el('div', { class: 'sun-band' },                     // across both columns
-              el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'of walking between 10 p.m. and 6 a.m.')),
-              el('p', null, 'No headlamp in the pack: light no longer set the schedule. The downside: without night, I no longer felt tiredness and began to make footing mistakes.'))))));
+              el('p', { class: 'sun-kpi' }, el('b', null, hm(S.marche_nuit_min)), el('span', null, 'de marche entre 22\u00a0h et 6\u00a0h')),
+              el('p', null, 'Pas de frontale dans le sac : la lumière ne fixait plus l’horaire. Le revers : sans nuit, je ne sentais plus la fatigue et je commençais à faire des fautes de pied.'))))));
     box.addEventListener('click', e => { if (e.target === box) close(); });
     // Safari: only the text scrolls, up and down; nothing slides sideways and the page behind never moves
     let tx0 = 0, ty0 = 0;
@@ -1278,38 +1278,38 @@
   /* ---------- panel: one camp ---------- */
   function nightBlock(n) {
     const s = n.sleep, w = n.weather;
-    const kids = [el('h3', null, 'The night')];
+    const kids = [el('h3', null, 'La nuit')];
     if (s && s.sommeil_min) {
       kids.push(el('dl', { class: 'kv' },
-        el('div', null, el('dt', null, 'Bedtime → wake-up'), el('dd', null, `${s.coucher} → ${s.reveil}`)),
-        el('div', null, el('dt', null, 'Sleep'), el('dd', null, hm(s.sommeil_min))),
-        el('div', null, el('dt', null, 'Resting HR'), el('dd', null, nf(s.fc_repos), el('small', null, ' bpm'))),
-        el('div', null, el('dt', null, 'Average HRV'), el('dd', null, nf(s.hrv_moy_ms), el('small', null, ' ms'))),
+        el('div', null, el('dt', null, 'Coucher → réveil'), el('dd', null, `${s.coucher} → ${s.reveil}`)),
+        el('div', null, el('dt', null, 'Sommeil'), el('dd', null, hm(s.sommeil_min))),
+        el('div', null, el('dt', null, 'FC au repos'), el('dd', null, nf(s.fc_repos), el('small', null, ' bpm'))),
+        el('div', null, el('dt', null, 'HRV moyenne'), el('dd', null, nf(s.hrv_moy_ms), el('small', null, ' ms'))),
         el('div', null, el('dt', null, 'Body Battery'), el('dd', null, `+${nf(s.body_battery_recharge)}`)),
-        el('div', null, el('dt', null, 'Garmin score'), el('dd', null, nf(s.sleep_score), el('small', null, ' / 100')))));
+        el('div', null, el('dt', null, 'Score Garmin'), el('dd', null, nf(s.sleep_score), el('small', null, ' / 100')))));
       if (s.profond_pct != null) {
         kids.push(el('div', { class: 'phases' },
-          el('div', { class: 'phase-bar', role: 'img', 'aria-label': `Deep ${nf(s.profond_pct)}%, light ${nf(s.leger_pct)}%, REM ${nf(s.paradoxal_pct)} %` },
+          el('div', { class: 'phase-bar', role: 'img', 'aria-label': `Profond ${nf(s.profond_pct)} %, léger ${nf(s.leger_pct)} %, paradoxal ${nf(s.paradoxal_pct)} %` },
             el('span', { class: 'ph-deep', style: `width:${s.profond_pct}%` }),
             el('span', { class: 'ph-light', style: `width:${s.leger_pct}%` }),
             el('span', { class: 'ph-rem', style: `width:${s.paradoxal_pct}%` })),
           el('div', { class: 'phase-key' },
             el('span', null, el('i', { class: 'ph-deep' }), `profond ${nf(s.profond_pct)} %`),
-            el('span', null, el('i', { class: 'ph-light' }), `light ${nf(s.leger_pct)} %`),
+            el('span', null, el('i', { class: 'ph-light' }), `léger ${nf(s.leger_pct)} %`),
             el('span', null, el('i', { class: 'ph-rem' }), `paradoxal ${nf(s.paradoxal_pct)} %`))));
       }
     } else {
-      kids.push(el('p', { class: 'empty' }, 'No sleep data for this night.'));
+      kids.push(el('p', { class: 'empty' }, 'Pas de données de sommeil pour cette nuit.'));
     }
-    kids.push(el('h3', null, 'Night weather'));
+    kids.push(el('h3', null, 'Météo de la nuit'));
     kids.push(el('dl', { class: 'kv' },
-      el('div', { title: `ERA5 ${nf(w.temp_min_era5, 1)} °C, corrected for the camp’s altitude (−6.5 °C per 1,000 m)` }, el('dt', null, 'Minimum at camp'), el('dd', null, nf(w.temp_min_camp, 1), el('small', null, ' °C'))),
-      el('div', null, el('dt', null, 'Rain'), el('dd', null, nf(w.rain_mm, 1), el('small', null, ' mm'))),
-      el('div', null, el('dt', null, 'Max gusts'), el('dd', null, nf(w.gust_max), el('small', null, ' km/h'))),
-      el('div', null, el('dt', null, 'Clouds'), el('dd', null, nf(w.cloud_pct), el('small', null, ' %')))));
+      el('div', { title: `ERA5 ${nf(w.temp_min_era5, 1)} °C, corrigé de l’altitude du camp (−6,5 °C par 1 000 m)` }, el('dt', null, 'Minimum au camp'), el('dd', null, nf(w.temp_min_camp, 1), el('small', null, ' °C'))),
+      el('div', null, el('dt', null, 'Pluie'), el('dd', null, nf(w.rain_mm, 1), el('small', null, ' mm'))),
+      el('div', null, el('dt', null, 'Rafales max'), el('dd', null, nf(w.gust_max), el('small', null, ' km/h'))),
+      el('div', null, el('dt', null, 'Nuages'), el('dd', null, nf(w.cloud_pct), el('small', null, ' %')))));
     if (n.bag_next_morning_kg != null) {
-      kids.push(el('h3', null, `The next morning · D${n.next_day}`));
-      kids.push(el('dl', { class: 'kv' }, el('div', { title: T.bag_note }, el('dt', null, 'Pack, without water'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg')))));
+      kids.push(el('h3', null, `Le lendemain matin · J${n.next_day}`));
+      kids.push(el('dl', { class: 'kv' }, el('div', { title: T.bag_note }, el('dt', null, 'Sac, sans eau'), el('dd', null, `≈ ${nf(n.bag_next_morning_kg, 1)}`, el('small', null, ' kg')))));
     }
     return kids;
   }
@@ -1332,9 +1332,9 @@
         render(i);
       } }, nightLabel(n.night, n.wake)))) : null;
     panel.replaceChildren(
-      backButton('All bivouacs', 'camps'),
+      backButton('Tous les bivouacs', 'camps'),
       el('h2', null, c.name),
-      el('p', { class: 'meta' }, `${c.nights.length > 1 ? `${c.nights.length} nights · ` : nightLabel(c.nights[0].night, c.nights[0].wake) + ' · '}${nf(c.alt)} m · ${c.lat.toFixed(4)} N, ${c.lon.toFixed(4)} E`),
+      el('p', { class: 'meta' }, `${c.nights.length > 1 ? `${c.nights.length} nuits · ` : nightLabel(c.nights[0].night, c.nights[0].wake) + ' · '}${nf(c.alt)} m · ${c.lat.toFixed(4)} N, ${c.lon.toFixed(4)} E`),
       ...[(T.camp_recits || {})[c.id] ? el('p', { class: 'info-text camp-recit' }, T.camp_recits[c.id]) : null,   // the bivouac's story
         tabs, body].filter(Boolean));
     render(nightIdx);
@@ -1349,7 +1349,7 @@
     const aMax = Math.max(100, Math.ceil(Math.max(...alts) / 100) * 100);
     const x = km => L + (km / kmMax) * (W - L - R);
     const ya = a => Tp + (1 - a / aMax) * (H - Tp - B);
-    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'profile', role: 'img', 'aria-label': `Altitude profile, ${nf(kmMax, 1)} km, up to ${nf(Math.max(...alts))} m` });
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'profile', role: 'img', 'aria-label': `Profil d’altitude, ${nf(kmMax, 1)} km, jusqu’à ${nf(Math.max(...alts))} m` });
     [0, 0.5, 1].forEach(f => {
       svg.append(sv('line', { x1: L, x2: W - R, y1: ya(f * aMax), y2: ya(f * aMax), class: 'grid' }));
       svg.append(svText({ x: L - 5, y: ya(f * aMax) + 3, class: 'axis', 'text-anchor': 'end' }, nf(f * aMax)));
@@ -1408,7 +1408,7 @@
     const bw = (W - L - R) / bins.length, gap = Math.min(2, bw * 0.18);
     const y = v => Tp + (1 - Math.min(isFinite(v) ? v : 0, yMax) / yMax) * (H - Tp - B);
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'pace', role: 'img',
-      'aria-label': `Speed per ${bin} km stretch, from ${nf(vals[0], 1)} to ${nf(vals[vals.length - 1], 1)} km/h` });
+      'aria-label': `Vitesse par tranche de ${bin} km, de ${nf(vals[0], 1)} à ${nf(vals[vals.length - 1], 1)} km/h` });
     [0, 0.5, 1].forEach(f => {
       svg.append(sv('line', { x1: L, x2: W - R, y1: y(f * yMax), y2: y(f * yMax), class: 'grid' }));
       svg.append(svText({ x: L - 5, y: y(f * yMax) + 3, class: 'axis', 'text-anchor': 'end' }, nf(f * yMax, (f * yMax) % 1 ? 1 : 0)));
@@ -1433,21 +1433,21 @@
       curBin = j;
       rects.forEach((r, k) => { r.classList.toggle('future', k > j); r.classList.toggle('now', k === j); });
       const b = bins[j];
-      caption.replaceChildren(`${bin === 1 ? `km ${j + 1}` : `km ${nf(b.k0)} to ${nf(b.k1)}`} · `, el('b', null, `${nf(b.v, 1)} km/h`),
-        ` (${pace(60 / b.v)} per km) · `, b.sac ? 'with the pack' : 'without the pack');
+      caption.replaceChildren(`${bin === 1 ? `km ${j + 1}` : `km ${nf(b.k0)} à ${nf(b.k1)}`} · `, el('b', null, `${nf(b.v, 1)} km/h`),
+        ` (${pace(60 / b.v)} par km) · `, b.sac ? 'avec le sac' : 'sans sac');
     }
     const key = el('div', { class: 'key' },
-      bins.some(b => b.sac) ? el('span', null, el('i', { class: 'k-avec' }), 'with the pack') : null,
-      bins.some(b => !b.sac) ? el('span', null, el('i', { class: 'k-sans' }), 'without the pack') : null,
-      el('span', null, 'km/h moving · tap a bar to go there'));
+      bins.some(b => b.sac) ? el('span', null, el('i', { class: 'k-avec' }), 'avec le sac') : null,
+      bins.some(b => !b.sac) ? el('span', null, el('i', { class: 'k-sans' }), 'sans sac') : null,
+      el('span', null, 'km/h en mouvement · touche une barre pour y aller'));
     return { nodes: [svg, caption], key, move };
   }
 
   /* ---------- live weather of a replay: ERA5 hour by hour, nearest of the 3 zones,
      temperature brought to the walker's altitude, wind chill as "ressenti" ---------- */
   const WX = T.weather, WX_T0 = WX ? Date.parse(WX.start + 'Z') : 0;
-  const BEAUFORT = [[1, 'calme'], [6, 'light air'], [12, 'light breeze'], [20, 'gentle breeze'], [29, 'moderate breeze'],
-    [39, 'fresh breeze'], [50, 'strong breeze'], [62, 'near gale'], [75, 'gale'], [89, 'strong gale'], [Infinity, 'storm']];
+  const BEAUFORT = [[1, 'calme'], [6, 'très légère brise'], [12, 'légère brise'], [20, 'petite brise'], [29, 'jolie brise'],
+    [39, 'bonne brise'], [50, 'vent frais'], [62, 'grand frais'], [75, 'coup de vent'], [89, 'fort coup de vent'], [Infinity, 'tempête']];
   const wxIcon = {   // 24 x 24 pictograms; the sun never sets in June up here
     sun: () => [sv('circle', { cx: 12, cy: 12, r: 4.6, class: 'wi-sun' }),
       ...Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return sv('line', { x1: 12 + 7 * Math.cos(a), y1: 12 + 7 * Math.sin(a), x2: 12 + 9.6 * Math.cos(a), y2: 12 + 9.6 * Math.sin(a), class: 'wi-ray' }); })],
@@ -1465,7 +1465,7 @@
     if (cloud >= 40) { const g = sv('g', { transform: 'translate(-1.5 -2.5) scale(.78)' }); g.append(...wxIcon.sun()); return svgIcon([g, ...wxIcon.cloud(2, 1.5)], 'wi-big'); }
     return svgIcon(wxIcon.sun(), 'wi-big');
   }
-  const skyWord = (cloud, rain) => rain >= 2 ? 'rain' : rain >= 0.3 ? 'showers' : cloud >= 85 ? 'overcast' : cloud >= 40 ? 'sunny spells' : 'sun';
+  const skyWord = (cloud, rain) => rain >= 2 ? 'pluie' : rain >= 0.3 ? 'averses' : cloud >= 85 ? 'couvert' : cloud >= 40 ? 'éclaircies' : 'soleil';
   function weatherAt(p) {
     if (!WX || !/^\d\d:\d\d$/.test(p.heure || '')) return null;
     const [h, m] = p.heure.split(':').map(Number);
@@ -1481,7 +1481,7 @@
     const big = el('span', { class: 'wx-sky' }), temp = el('b', { class: 'wx-t' }), sub = el('span', { class: 'wx-sub' });
     // two short lines: the sky, the air temperature and how it feels; then wind, gusts and rain
     const cell = (icon, label) => { const v = el('b', { class: 'wx-v' }), u = el('small'), node = el('span', { class: 'wx-c', title: label }, svgIcon(icon(), 'wi-small'), v, u, el('span', { class: 'wx-u' }, ` ${label.toLowerCase()}`)); return { node, v, u, label }; };
-    const c = { wind: cell(wxIcon.wind, 'Wind'), gust: cell(wxIcon.gust, 'Gusts'), rain: cell(wxIcon.drop, 'Rain') };
+    const c = { wind: cell(wxIcon.wind, 'Vent'), gust: cell(wxIcon.gust, 'Rafales'), rain: cell(wxIcon.drop, 'Pluie') };
     const feelV = el('b', { class: 'wx-v' });
     const feel = el('span', { class: 'wx-feel' }, svgIcon(wxIcon.therm(), 'wi-small'), el('span', { class: 'wx-u' }, 'ressenti '), feelV);
     const node = el('div', { class: 'wx' },
@@ -1497,12 +1497,12 @@
       last = key;
       big.replaceChildren(skyIcon(w.cloud, w.rain));
       temp.replaceChildren(`${nf(w.temp, 1)}`, el('small', null, ' °C'));
-      sub.textContent = `${skyWord(w.cloud, w.rain)} · clouds ${nf(w.cloud)} %`;
+      sub.textContent = `${skyWord(w.cloud, w.rain)} · nuages ${nf(w.cloud)} %`;
       const force = v => BEAUFORT.findIndex(b => v < b[0]);
       c.wind.v.textContent = nf(w.wind); c.wind.u.textContent = ' km/h';
-      c.wind.node.title = `Wind: ${nf(w.wind)} km/h, ${BEAUFORT[force(w.wind)][1]} (force ${force(w.wind)} Beaufort)`;
+      c.wind.node.title = `Vent : ${nf(w.wind)} km/h, ${BEAUFORT[force(w.wind)][1]} (force ${force(w.wind)} Beaufort)`;
       c.gust.v.textContent = nf(w.gust); c.gust.u.textContent = ' km/h';
-      c.gust.node.title = `Gusts: ${nf(w.gust)} km/h, ${BEAUFORT[force(w.gust)][1]} (force ${force(w.gust)} Beaufort)`;
+      c.gust.node.title = `Rafales : ${nf(w.gust)} km/h, ${BEAUFORT[force(w.gust)][1]} (force ${force(w.gust)} Beaufort)`;
       c.rain.v.textContent = nf(w.rain, 1); c.rain.u.textContent = ' mm';
       feelV.replaceChildren(nf(w.chill, 0), el('small', null, ' °C'));
     } };
@@ -1526,7 +1526,7 @@
     const icon = sv('svg', { viewBox: '0 0 26 12', class: 'bt-icon', 'aria-hidden': 'true' });
     icon.append(sv('rect', { x: .7, y: .7, width: 21.6, height: 10.6, rx: 2.6, class: 'bt-shell' }), sv('rect', { x: 23, y: 3.8, width: 2.3, height: 4.4, rx: 1, class: 'bt-tip' }), fill);
     const lvl = el('b'), rate = el('span', { class: 'bt-rate' });
-    const node = el('div', { class: 'batt' }, icon, el('span', { class: 'bt-l' }, 'Watch battery'), lvl, rate);
+    const node = el('div', { class: 'batt' }, icon, el('span', { class: 'bt-l' }, 'Batterie de la montre'), lvl, rate);
     let last = '';
     return { node, move: p => {
       const b = batteryAt(p);
@@ -1538,14 +1538,14 @@
       fill.setAttribute('width', (19.2 * b.level / 100).toFixed(2));
       fill.classList.toggle('bt-low', b.level <= 20);
       lvl.replaceChildren(String(b.level), el('small', null, ' %'));
-      rate.textContent = b.drain == null ? '' : `${b.drain > 0 ? '−' : ''}${nf(Math.abs(b.drain), 1)}% per hour`;
+      rate.textContent = b.drain == null ? '' : `${b.drain > 0 ? '−' : ''}${nf(Math.abs(b.drain), 1)} % par heure`;
     } };
   }
 
   /* ---------- player: buttons, live counters, profile and speed in the panel ---------- */
   const kvItem = (label, value, unit) => el('div', null, el('dt', null, label), el('dd', null, value, unit ? el('small', null, ` ${unit}`) : null));
   const SPEEDS = [1, 2, 4, 8], TREK_SPEEDS = [1, 1.25, 1.5, 1.75, 2];
-  const CAMS = [['drone', 'Drone'], ['orbit', 'Orbit'], ['fixed', 'Fixed']];
+  const CAMS = [['drone', 'Drone'], ['orbit', 'Orbite'], ['fixed', 'Fixe']];
 
   const live = { saved: null };
   function player(pts, opts) {
@@ -1553,8 +1553,8 @@
     const cnt = (key, label, unit) => el('div', null, el('dt', null, label),
       el('dd', null, (counters[key] = el('span', null, '—')), unit ? el('small', null, ` ${unit}`) : null));
     const board = el('dl', { class: 'kv counters' },
-      cnt('km', 'Distance', 'km'), cnt('dplus', 'Elevation +', 'm'), cnt('mov', 'Moving'),
-      cnt('kcal', 'Calories', 'kcal'), cnt('heure', 'Time'), cnt('hr', 'HR', 'bpm'));
+      cnt('km', 'Distance', 'km'), cnt('dplus', 'Dénivelé +', 'm'), cnt('mov', 'En mouvement'),
+      cnt('kcal', 'Calories', 'kcal'), cnt('heure', 'Heure'), cnt('hr', 'FC', 'bpm'));
     const where = opts.showWhere ? el('p', { class: 'where' }, '—') : null;
     const state = { km: 0, speed: 1, cam: 'drone' };
     const seek = km => { state.km = km; state.lastCk = km; render(km, true); };
@@ -1576,7 +1576,7 @@
       counters.km.textContent = nf(p.wk, 1); counters.dplus.textContent = nf(p.dplus);
       counters.mov.textContent = hms(p.mov); counters.kcal.textContent = nf(p.kcal);
       counters.heure.textContent = p.heure; counters.hr.textContent = nf(p.hr);
-      if (where) where.textContent = p.sac === 2 ? p.act : `D${p.day} · ${p.act}`;
+      if (where) where.textContent = p.sac === 2 ? p.act : `J${p.day} · ${p.act}`;
       if (!full && state.lastCk != null) {
         cps.forEach(c => { if (c.km > state.lastCk && c.km <= km) fireCheckpoint(c, opts.keepPopup); });
         state.lastCk = km;
@@ -1589,21 +1589,21 @@
       drawHead(headAt(pts, km, i));
     }
 
-    const playBtn = el('button', { type: 'button', class: 'play' }, '▶ Play');
-    const speedBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Speed' }, '×1');
+    const playBtn = el('button', { type: 'button', class: 'play' }, '▶ Lancer');
+    const speedBtn = el('button', { type: 'button', class: 'ghost', 'aria-label': 'Vitesse' }, '×1');
     const speeds = opts.speeds || SPEEDS;
     speedBtn.addEventListener('click', () => { state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length]; speedBtn.textContent = `×${nf(state.speed, (state.speed * 10) % 1 ? 2 : state.speed % 1 ? 1 : 0)}`; if (anim) anim.speed = state.speed; });
-    const camBtn = el('button', { type: 'button', class: 'ghost cam-btn', 'aria-label': 'Camera mode' }, `Camera: ${CAMS[0][1]}`);
+    const camBtn = el('button', { type: 'button', class: 'ghost cam-btn', 'aria-label': 'Mode de caméra' }, `Caméra : ${CAMS[0][1]}`);
     camBtn.addEventListener('click', () => {
       const i = (CAMS.findIndex(c => c[0] === state.cam) + 1) % CAMS.length;
-      state.cam = CAMS[i][0]; camBtn.textContent = `Camera: ${CAMS[i][1]}`;
+      state.cam = CAMS[i][0]; camBtn.textContent = `Caméra : ${CAMS[i][1]}`;
       if (anim) { anim.cam = state.cam; anim.orbitStart = performance.now(); anim.orbitBase = map ? map.getBearing() : 0; anim.bearing = map ? map.getBearing() : anim.bearing; }
     });
     playBtn.addEventListener('click', () => {
-      if (anim && anim.running) { anim.running = false; playBtn.textContent = '▶ Resume'; phoneLive(false); return; }
+      if (anim && anim.running) { anim.running = false; playBtn.textContent = '▶ Reprendre'; phoneLive(false); return; }
       if (state.km >= pts[pts.length - 1].km) state.km = 0;
       state.lastCk = state.km === 0 ? -1 : state.km;
-      startAnim(pts, state, opts.view, render, () => { playBtn.textContent = '↺ Replay'; phoneLive(false); opts.onEnd && opts.onEnd(); });
+      startAnim(pts, state, opts.view, render, () => { playBtn.textContent = '↺ Rejouer'; phoneLive(false); opts.onEnd && opts.onEnd(); });
       phoneLive(true);
       playBtn.textContent = document.body.classList.contains('ph-live') ? '■ Stop' : '❚❚ Pause';
     });
@@ -1612,14 +1612,14 @@
     setTitleActivity(opts.eyebrow, opts.name, opts.summary || [], opts.photos);
     render(0, true);
     // the replay can be left for a photo or an info, then taken up again where it was
-    curReplay = opts.reopen ? { label: opts.resumeLabel, short: opts.resumeShort || 'Resume', reopen: opts.reopen, state } : null;
+    curReplay = opts.reopen ? { label: opts.resumeLabel, short: opts.resumeShort || 'Reprendre', reopen: opts.reopen, state } : null;
     return {
       nodes: [el('div', { class: 'player' }, playBtn, speedBtn, camBtn), where, board,
-        el('h3', null, 'Altitude profile', el('span', { class: 'h3-hint' }, ' · in m, tap to move')), altBox,
-        el('h3', null, opts.paceBin > 1 ? `Speed per ${opts.paceBin} km` : 'Speed per kilometre', el('span', { class: 'h3-hint' }, ' · km/h, tap a bar')), speedBox,
+        el('h3', null, 'Profil d’altitude', el('span', { class: 'h3-hint' }, ' · en m, touche pour te déplacer')), altBox,
+        el('h3', null, opts.paceBin > 1 ? `Vitesse par tranche de ${opts.paceBin} km` : 'Vitesse par kilomètre', el('span', { class: 'h3-hint' }, ' · km/h, touche une barre')), speedBox,
         wx ? null : paces.key,
-        ...(wx ? [el('h3', null, 'Live weather', el('span', { class: 'h3-hint' }, ' · at your altitude')), wx.node, batt.node,
-          el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), hour by hour, nearest area: north, centre or south. Temperature adjusted to your altitude (−6.5 °C per 1,000 m), feels-like = wind chill. Wind and gusts at 10 m on a grid of about 30 km: often stronger on the ridges. Rain: total for the hour.')] : [])].filter(Boolean),
+        ...(wx ? [el('h3', null, 'Météo en direct', el('span', { class: 'h3-hint' }, ' · à ton altitude')), wx.node, batt.node,
+          el('p', { class: 'wx-note' }, 'ERA5 (Open-Meteo), heure par heure, zone la plus proche : nord, centre ou sud. Température ramenée à ton altitude (−6,5 °C par 1 000 m), ressenti = refroidissement par le vent. Vent et rafales à 10 m sur une maille d’environ 30 km : souvent plus fort sur les crêtes. Pluie : cumul de l’heure.')] : [])].filter(Boolean),
       start: () => playBtn.click(),
       // back from a photo or an info: same place, same speed, and on it goes
       resume: (km, speed) => {
@@ -1667,14 +1667,14 @@
     const hrs = pts.map(p => p.hr).filter(v => v != null);
     const d = day(ACTS[e.acts[0]].date);
     const summary = el('dl', { class: 'title-kv' },
-      kvItem('Distance', nf(last.wk, 1), 'km'), kvItem('Elevation +', nf(last.dplus), 'm'), kvItem('Moving', hms(last.mov)),
-      kvItem('Average HR', nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), 'bpm'), kvItem('Calories', nf(last.kcal), 'kcal'),
-      kvItem('Pack in the morning', night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? 'kg' : null));
+      kvItem('Distance', nf(last.wk, 1), 'km'), kvItem('Dénivelé +', nf(last.dplus), 'm'), kvItem('En mouvement', hms(last.mov)),
+      kvItem('FC moyenne', nf(hrs.reduce((a, b) => a + b, 0) / Math.max(1, hrs.length)), 'bpm'), kvItem('Calories', nf(last.kcal), 'kcal'),
+      kvItem('Sac le matin', night && night.bag_next_morning_kg ? `≈ ${nf(night.bag_next_morning_kg, 1)}` : '—', night && night.bag_next_morning_kg ? 'kg' : null));
     const pl = player(pts, { view: VIEW.etape, weather: true, onEnd: () => fitPts(pts), summary: [summary], photos: true,
-      reopen: r => openEtape(e, r), resumeLabel: `the stage D${e.day}`, resumeShort: 'Resume the stage',
-      eyebrow: `Stage D${e.day} · ${d.d} ${d.m} · with the pack`, name: `${e.from} → ${e.to}` });
+      reopen: r => openEtape(e, r), resumeLabel: `l’étape J${e.day}`, resumeShort: 'Reprendre l’étape',
+      eyebrow: `Étape J${e.day} · ${d.d} ${d.m} · avec le sac`, name: `${e.from} → ${e.to}` });
     panel.replaceChildren(
-      backButton('All stages', 'etapes'),
+      backButton('Toutes les étapes', 'etapes'),
       ...pl.nodes);
     panel.scrollTop = 0;
     curFit = pl.fit; curLive = pl.live; pl.fit();
@@ -1734,19 +1734,19 @@
     const d = day(s.heure.slice(0, 10));
     const several = ids.length > 1;
     const summary = [
-      el('p', { class: 'title-meta' }, (s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m by GPS · ${nf(s.hauteur_officielle_m)} m official` : `${nf(s.alt_gps_m)} m by GPS`)
-        + (several ? ` · outing from ${ACTS[ids[0]].name}` : '')),
+      el('p', { class: 'title-meta' }, (s.hauteur_officielle_m ? `${nf(s.alt_gps_m)} m au GPS · ${nf(s.hauteur_officielle_m)} m officiels` : `${nf(s.alt_gps_m)} m au GPS`)
+        + (several ? ` · sortie depuis ${ACTS[ids[0]].name}` : '')),
       // two rows of four: the outing at a glance, then the climb itself
       el('dl', { class: 'title-kv kv4' },
-        kvItem('Outing D+', nf(last.dplus), 'm'), kvItem('Vert. speed', nf(climbM / Math.max(1 / 60, climbS / 3600)), 'm/h'),
-        kvItem('Max HR', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'), kvItem(tops.length > 1 ? `${s.sommet} at` : 'At the summit at', s.heure.slice(11, 16)),
-        kvItem('Climb', hms(climbS)), kvItem('Climb D+', nf(climbM), 'm'),
-        kvItem(several ? 'Day’s outing' : 'Full outing', nf(last.wk, 1), 'km'), kvItem('Calories', nf(last.kcal), 'kcal'))];
+        kvItem('D+ sortie', nf(last.dplus), 'm'), kvItem('Vit. verticale', nf(climbM / Math.max(1 / 60, climbS / 3600)), 'm/h'),
+        kvItem('FC max', nf(hrs.length ? Math.max(...hrs) : null), 'bpm'), kvItem(tops.length > 1 ? `${s.sommet} à` : 'Au sommet à', s.heure.slice(11, 16)),
+        kvItem('Montée', hms(climbS)), kvItem('D+ montée', nf(climbM), 'm'),
+        kvItem(several ? 'Sortie du jour' : 'Sortie complète', nf(last.wk, 1), 'km'), kvItem('Calories', nf(last.kcal), 'kcal'))];
     const pl = player(pts, { view: VIEW.summit, weather: true, keepPopup: true, summary, photos: true,
-      reopen: r => openSummit(s, r), resumeShort: 'Resume the outing', resumeLabel: `the outing ${tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet}`, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
-      eyebrow: `Summit · ${d.d} ${d.m} · ${several ? 'the whole day’s outing' : 'trail outing without the pack'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
+      reopen: r => openSummit(s, r), resumeShort: 'Reprendre la sortie', resumeLabel: `la sortie ${tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet}`, marks: tops.map(t => ({ km: pts[t.i].km, alt: pts[t.i].alt, label: t.s.sommet })), onEnd: () => fitPts(pts, 13.2),
+      eyebrow: `Sommet · ${d.d} ${d.m} · ${several ? 'toute la sortie du jour' : 'sortie trail sans sac'}`, name: tops.length > 1 ? tops.map(t => t.s.sommet).join(' · ') : s.sommet });
     panel.replaceChildren(
-      backButton('All summits', 'summits'),
+      backButton('Tous les sommets', 'summits'),
       ...pl.nodes);
     panel.scrollTop = 0;
     curFit = pl.fit; curLive = pl.live; pl.fit();
@@ -1793,7 +1793,7 @@
     // 1. sleep: stacked phases, deep at the bottom, light in the middle, REM on top
     const H1 = 112 + ex / 3, T1 = 6, B1 = 17, maxH = 11 * 60;
     const y1 = m => T1 + (1 - m / maxH) * (H1 - T1 - B1);
-    const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Sleep length per night, split into stages' });
+    const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Durée de sommeil par nuit, découpée en phases' });
     grid(s1, y1, [0, 300, 600], m => `${m / 60} h`);
     N.forEach((n, j) => {
       const sl = n.sleep; if (!sl || !sl.sommeil_min) return;
@@ -1810,8 +1810,8 @@
     // legend and averages on the same line, under each chart
     const avgItem = (cls, label, value) => el('span', null, cls ? el('i', { class: cls }) : null, `${label} `, el('b', null, value));
     const sleepKv = el('div', { class: 'avg-line' },
-      avgItem('ph-deep', 'deep', `${hm(dp)} · ${pct(dp)}`), avgItem('ph-light', 'light', `${hm(lg)} · ${pct(lg)}`),
-      avgItem('ph-rem', 'paradoxal', `${hm(rm)} · ${pct(rm)}`), avgItem(null, 'average night', hm(tot)));
+      avgItem('ph-deep', 'profond', `${hm(dp)} · ${pct(dp)}`), avgItem('ph-light', 'léger', `${hm(lg)} · ${pct(lg)}`),
+      avgItem('ph-rem', 'paradoxal', `${hm(rm)} · ${pct(rm)}`), avgItem(null, 'nuit moyenne', hm(tot)));
 
     // 2. resting heart rate (white dots, red ring and line) and HRV (dashed, right axis)
     const H2 = 124 + ex / 3, T2 = 8, B2 = 17;
@@ -1819,7 +1819,7 @@
     const fcMin = 40, fcMax = 55, hvMin = 20, hvMax = 70;
     const y2 = v => T2 + (1 - (v - fcMin) / (fcMax - fcMin)) * (H2 - T2 - B2);
     const y2h = v => T2 + (1 - (v - hvMin) / (hvMax - hvMin)) * (H2 - T2 - B2);
-    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart', role: 'img', 'aria-label': 'Resting HR and HRV per night' });
+    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart', role: 'img', 'aria-label': 'FC au repos et HRV par nuit' });
     grid(s2, y2, [40, 45, 50, 55], v => nf(v));
     [20, 45, 70].forEach(v => s2.append(svText({ x: W - R + 5, y: y2h(v) + 3, class: 'axis hrv-axis', 'text-anchor': 'start' }, nf(v))));
     const path = (vals, y) => vals.map((v, j) => v == null ? '' : `${j && vals[j - 1] != null ? 'L' : 'M'}${cx(j).toFixed(1)},${y(v).toFixed(1)}`).join('');
@@ -1829,13 +1829,13 @@
     fc.forEach((v, j) => v != null && s2.append(sv('circle', { cx: cx(j).toFixed(1), cy: y2(v).toFixed(1), r: 3.6, class: 'fc-dot' })));
     xLabels(s2, H2);
     const fcKv = el('div', { class: 'avg-line' },
-      avgItem('k-fc', 'Resting HR (left)', `${nf(avg(fc))} bpm`), avgItem('k-hrv', 'HRV (right)', `${nf(avg(hv))} ms`),
-      avgItem(null, 'Lowest HR', `${nf(Math.min(...fc.filter(v => v != null)))} bpm`), avgItem(null, 'Highest HRV', `${nf(Math.max(...hv.filter(v => v != null)))} ms`));
+      avgItem('k-fc', 'FC au repos (gauche)', `${nf(avg(fc))} bpm`), avgItem('k-hrv', 'HRV (droite)', `${nf(avg(hv))} ms`),
+      avgItem(null, 'FC la plus basse', `${nf(Math.min(...fc.filter(v => v != null)))} bpm`), avgItem(null, 'HRV la plus haute', `${nf(Math.max(...hv.filter(v => v != null)))} ms`));
 
     // 3. Body Battery of the following day: from its low to its high, with the night's recharge
     const H3 = 112 + ex / 3, T3 = 8, B3 = 17;
     const y3 = v => T3 + (1 - v / 100) * (H3 - T3 - B3);
-    const s3 = sv('svg', { viewBox: `0 0 ${W} ${H3}`, class: 'recap-chart', role: 'img', 'aria-label': 'Next-day Body Battery, from minimum to maximum' });
+    const s3 = sv('svg', { viewBox: `0 0 ${W} ${H3}`, class: 'recap-chart', role: 'img', 'aria-label': 'Body Battery du lendemain, du minimum au maximum' });
     grid(s3, y3, [0, 25, 50, 75, 100], v => nf(v));
     N.forEach((n, j) => {
       const b = n.body_battery_day; if (!b) return;
@@ -1846,13 +1846,13 @@
     const BB = N.map(n => n.body_battery_day || {});
     const bbKv = el('div', { class: 'avg-line' },
       avgItem('k-bb', 'max', nf(avg(BB.map(b => b.max)))), avgItem(null, 'min', nf(avg(BB.map(b => b.min)))),
-      avgItem(null, 'recharge per night', `+${nf(avg(S9.map(x => x.body_battery_recharge)))}`));
+      avgItem(null, 'recharge par nuit', `+${nf(avg(S9.map(x => x.body_battery_recharge)))}`));
 
     panel.replaceChildren(
-      el('h2', { class: 'recap-title', title: 'Garmin Connect, night by night. Averages over the 9 nights, short night at Bunes beach included.' }, 'Nights summary'),
-      el('h3', null, 'Sleep and stages · nights of 13 to 21'), s1, sleepKv,
-      el('h3', null, 'Resting HR and HRV'), s2, fcKv,
-      el('h3', null, 'Next-day Body Battery (min → max)'), s3, bbKv);
+      el('h2', { class: 'recap-title', title: 'Garmin Connect, nuit par nuit. Moyennes sur les 9 nuits, nuit courte de Bunes beach comprise.' }, 'Récap des nuits'),
+      el('h3', null, 'Sommeil et phases · nuits du 13 au 21'), s1, sleepKv,
+      el('h3', null, 'FC au repos et HRV'), s2, fcKv,
+      el('h3', null, 'Body Battery du lendemain (min → max)'), s3, bbKv);
     });
   }
 
@@ -1868,7 +1868,7 @@
     const W = 340, L = 100, R = 72, T0 = 2, rowH = 15 + 0.4 * ex / T.summits.length;
     // 1. altitude of each summit, with the air temperature up there
     const H1 = T0 + rows.length * rowH + 4, aMax = 800;
-    const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude and temperature of each summit' });
+    const s1 = sv('svg', { viewBox: `0 0 ${W} ${H1}`, class: 'recap-chart', role: 'img', 'aria-label': 'Altitude et température de chaque sommet' });
     rows.forEach((r, j) => {
       const y = T0 + j * rowH, alt = r.s.hauteur_officielle_m || r.s.alt_gps_m, w = (W - L - R) * alt / aMax;
       s1.append(svText({ x: L - 8, y: y + 11.5, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
@@ -1879,7 +1879,7 @@
     // 2. grade-adjusted pace of each climb (the longer the line, the faster)
     const sp = r => 60 / r.gap, vMax = Math.ceil(Math.max(...rows.map(sp)) / 2) * 2;
     const rowH2 = 20 + 0.6 * ex / rows.length, H2 = T0 + rows.length * rowH2 + 4;   // the pace chart gets more room
-    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart chart-big', role: 'img', 'aria-label': 'Grade-adjusted pace of each climb' });
+    const s2 = sv('svg', { viewBox: `0 0 ${W} ${H2}`, class: 'recap-chart chart-big', role: 'img', 'aria-label': 'Allure ajustée à la pente de chaque montée' });
     rows.forEach((r, j) => {
       const y = T0 + j * rowH2, w = (W - L - R) * sp(r) / vMax;
       s2.append(svText({ x: L - 8, y: y + 14, class: 'axis peak-label', 'text-anchor': 'end' }, r.s.sommet));
@@ -1897,21 +1897,21 @@
     const cell = (v, u) => el('td', null, v, u ? el('small', null, ` ${u}`) : null);
     const line = (label, t, sign) => el('tr', null, el('th', null, label), cell(`${sign}${nf(t.m)}`, 'm'), cell(hms(t.s)), cell(nf(t.km, 1), 'km'), cell(nf(t.kcal), 'kcal'));
     const kv = el('table', { class: 'tot-table' },
-      el('thead', null, el('tr', null, el('th'), el('th', null, 'elevation gain'), el('th', null, 'time'), el('th', null, 'distance'), el('th', null, 'calories'))),
+      el('thead', null, el('tr', null, el('th'), el('th', null, 'dénivelé'), el('th', null, 'temps'), el('th', null, 'distance'), el('th', null, 'calories'))),
       el('tbody', null,
-        line('Climbs', up, '+'), line('Descents', dn, '−'), line('Outings', all, '+')));
+        line('Montées', up, '+'), line('Descentes', dn, '−'), line('Sorties', all, '+')));
     const av = (label, value, unit) => el('div', null, el('span', null, label), el('b', null, value, el('small', null, ` ${unit}`)));
     const avgs = el('div', { class: 'tot-avg' },
-      av('vert. speed ↗', nf(up.m / (up.s / 3600)), 'm/h'), av('adjusted pace ↗', pace(up.s / 60 / sum(r => r.eqKm)), '/km'),
-      av('burn ↗', nf(up.kcal / (up.s / 3600)), 'kcal/h'), av('burn ↘', nf(dn.kcal / (dn.s / 3600)), 'kcal/h'));
+      av('vit. verticale ↗', nf(up.m / (up.s / 3600)), 'm/h'), av('allure ajustée ↗', pace(up.s / 60 / sum(r => r.eqKm)), '/km'),
+      av('dépense ↗', nf(up.kcal / (up.s / 3600)), 'kcal/h'), av('dépense ↘', nf(dn.kcal / (dn.s / 3600)), 'kcal/h'));
     const hard = rows.reduce((a, b) => b.gap > a.gap ? b : a);
     const down = rows.filter(r => r.downKm > 0.2).reduce((a, b) => b.downS / b.downKm < a.downS / a.downKm ? b : a);
 
     panel.replaceChildren(
-      el('h2', { class: 'recap-title' }, 'Summits summary'),
-      el('h3', null, 'Altitude and temperature at the summit'), s1,
-      el('h3', { title: 'Each stretch of climbing counts as the flat distance that takes the same effort (Minetti et al., 2002).' }, 'Grade-adjusted pace, from foot to summit'), s2,
-      el('h3', null, 'Totals and averages'), kv, avgs);
+      el('h2', { class: 'recap-title' }, 'Récap des sommets'),
+      el('h3', null, 'Altitude et température au sommet'), s1,
+      el('h3', { title: 'Chaque morceau de montée compte comme la distance à plat qui demande le même effort (Minetti et al., 2002).' }, 'Allure ajustée à la pente, du pied au sommet'), s2,
+      el('h3', null, 'Totaux et moyennes'), kv, avgs);
     });
   }
 
@@ -1926,11 +1926,11 @@
       ...statItems().map(([k, v, u]) => kvItem(k, v, u)));
     summary.classList.add('stats-grid');
     const pl = player(pts, { view: VIEW.trek, paceBin: 5, speeds: TREK_SPEEDS, showWhere: true, marks: [], onEnd: () => overview(), summary: [summary],
-      reopen: r => openTrek(r), resumeLabel: 'the traverse', resumeShort: 'Resume',
-      eyebrow: '14 → 22 June 2026 · Napp → Moskenes', name: 'The whole traverse' });
+      reopen: r => openTrek(r), resumeLabel: 'la traversée', resumeShort: 'Reprendre',
+      eyebrow: '14 → 22 juin 2026 · Napp → Moskenes', name: 'Toute la traversée' });
     panel.replaceChildren(
-      backButton('Back to the sections'),
-      el('p', { class: 'note trek-note' }, 'Everything in order, with and without the pack, summits included. Speed it up for the effect, slow it down to read.'),
+      backButton('Retour aux rubriques'),
+      el('p', { class: 'note trek-note' }, 'Tout dans l’ordre, avec et sans sac, sommets compris. Monte la vitesse pour l’effet, baisse-la pour lire.'),
       ...pl.nodes);
     panel.scrollTop = 0;
     curLive = pl.live;
@@ -1959,7 +1959,7 @@
 
   const DEM = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
     encoding: 'terrarium', tileSize: 256, maxzoom: 15,
-    attribution: 'Relief: <a href="https://registry.opendata.aws/terrain-tiles/">Mapzen / AWS Terrain Tiles</a>' };
+    attribution: 'Relief : <a href="https://registry.opendata.aws/terrain-tiles/">Mapzen / AWS Terrain Tiles</a>' };
   map = new maplibregl.Map({
     container: 'map',
     style: {
@@ -1967,7 +1967,7 @@
       sources: {
         sat: { type: 'raster', tileSize: 256, maxzoom: 18,
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-          attribution: 'Imagery © Esri, Maxar, Earthstar Geographics' },
+          attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics' },
         topo: { type: 'raster', tileSize: 256, maxzoom: 17,
           tiles: ['https://a.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://b.tile.opentopomap.org/{z}/{x}/{y}.png', 'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],
           attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)' },
@@ -2146,8 +2146,8 @@
     const back = document.querySelector('#panel-inner .back'), row = document.querySelector('#panel-inner .player');
     if (back && row) { if (on) row.prepend(back); else panel.prepend(back); }
     if (curLive) curLive(on);
-    if (on) { liveTitleWasOpen = !document.body.classList.contains('title-folded'); if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, true, 'the title'); }
-    else if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, false, 'the title');
+    if (on) { liveTitleWasOpen = !document.body.classList.contains('title-folded'); if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, true, 'le titre'); }
+    else if (liveTitleWasOpen) setFold('title-folded', btnTitleFold, false, 'le titre');
     layoutChanged();
   }
   function stopAnim(clear) {
@@ -2246,8 +2246,8 @@
       new maplibregl.Popup({ closeButton: false, offset: 8 }).setLngLat(e.lngLat)
         .setDOMContent(el('div', null,
           el('div', { class: 'pop-title' }, p.name),
-          el('div', { class: 'pop-meta' }, `D${p.day} · ${day(p.date).d} ${day(p.date).m} · start ${p.start}`),
-          el('div', { class: 'pop-meta' }, `${nf(p.km, 1)} km · ${nf(p.dplus)} m D+ · ${p.sac === 'avec' ? 'with the pack' : 'without the pack'}`)))
+          el('div', { class: 'pop-meta' }, `J${p.day} · ${day(p.date).d} ${day(p.date).m} · départ ${p.start}`),
+          el('div', { class: 'pop-meta' }, `${nf(p.km, 1)} km · ${nf(p.dplus)} m D+ · ${p.sac === 'avec' ? 'avec le sac' : 'sans sac'}`)))
         .addTo(map);
     });
     map.on('mouseenter', 'trace', () => { map.getCanvas().style.cursor = 'pointer'; });
@@ -2456,9 +2456,9 @@
     if (matchMedia('(max-width: 600px)').matches) {
       phoneLive(false); stopAnim(true);
       document.body.classList.remove('ph-tools');
-      if (document.body.classList.contains('title-folded')) setFold('title-folded', btnTitleFold, false, 'the title');
+      if (document.body.classList.contains('title-folded')) setFold('title-folded', btnTitleFold, false, 'le titre');
       showHome();
-      setFold('panel-folded', btnPanelFold, true, 'the panel');
+      setFold('panel-folded', btnPanelFold, true, 'le panneau');
       layoutChanged();
       requestAnimationFrame(() => overview());
       return;
@@ -2490,7 +2490,7 @@
     base = base === 'sat' ? 'topo' : 'sat';
     map.setLayoutProperty('sat', 'visibility', base === 'sat' ? 'visible' : 'none');
     map.setLayoutProperty('topo', 'visibility', base === 'topo' ? 'visible' : 'none');
-    btnBase.textContent = base === 'sat' ? 'Satellite' : 'Topo map';
+    btnBase.textContent = base === 'sat' ? 'Satellite' : 'Carte topo';
     document.body.classList.toggle('base-topo', base === 'topo');
     if (map.getLayer('villages')) map.setLayoutProperty('villages', 'visibility', base === 'sat' ? 'visible' : 'none');
     if (map.getLayer('photos')) map.setLayoutProperty('photos', 'icon-image', photoIconExpr(base));

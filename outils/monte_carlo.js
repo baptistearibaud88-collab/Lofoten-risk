@@ -1,7 +1,7 @@
 // Simulation de risque (partie 07) : une vraie prévision, hors échantillon, avec le climat.
 // Entrées : risque_data.js (tronçons, sorties, météo des 9 jours), risque_sections.js (cote du terrain par tronçon),
 //           risque_episodes.js (effet de la pluie de la partie 03, pour la sensibilité),
-//           donnees/era5_climatology_1996_2025_daily.json (les 1 200 mondes météo des parties 05 et 09).
+//           data/brutes/era5_climatology_1996_2025_daily.json (les 1 200 mondes météo des parties 05 et 09).
 // Sortie  : risque_mc.js — à relancer après outils/segmentation_terrain.js, puis relancer
 //   node outils/conclusion_acte2.js (carte Thêta de la partie 06) et node outils/marge_option.js :
 //   node outils/monte_carlo.js
@@ -41,7 +41,7 @@ if (!rowOf[MARGIN_ACT]) throw new Error('sortie du jour de marge introuvable');
 const realWet = [null, ...R.weather.days.map(d => d.rain >= TH)];                    // index = jour
 const WET_FROM = realWet.findIndex(Boolean);
 if (WET_FROM !== 7 || !realWet.slice(7).every(Boolean)) throw new Error('épisode de pluie inattendu');
-const E = JSON.parse(fs.readFileSync(path.join(root, 'donnees', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
+const E = JSON.parse(fs.readFileSync(path.join(root, 'data', 'brutes', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
 const Pm = E.precipitation_sum.map(v => v || 0), tIdx = new Map(E.time.map((t, i) => [t, i]));
 const iso = (y, m, d) => new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10);
 const WORLDS = [];

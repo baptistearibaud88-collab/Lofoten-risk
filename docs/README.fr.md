@@ -1,6 +1,6 @@
 # Lofoten, juin 2026 — une traversée lue comme une analyse de risque
 
-![Lofoten](../photos/banniere.jpg)
+![Lofoten](../assets/photos/banniere.jpg)
 
 Neuf jours seul et en autonomie dans les îles Lofoten (Norvège), du 14 au 22 juin 2026, sous le soleil de minuit : **159 km, 9 892 m de dénivelé positif, 25 sorties**, sac de bivouac sur le dos ou en trail léger pour les sommets.
 
@@ -14,7 +14,7 @@ J'ai organisé ce trek, je l'ai marché, puis j'en ai analysé les données avec
 |---|---|
 | **Carte 3D** | [baptistearibaud88-collab.github.io/Lofoten-risk](https://baptistearibaud88-collab.github.io/Lofoten-risk/) |
 | **Rapport d'analyse de risque** | [baptistearibaud88-collab.github.io/Lofoten-risk/risque.html](https://baptistearibaud88-collab.github.io/Lofoten-risk/risque.html) |
-| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/video/lofoten_norvege_1080p.mp4) — tournage GoPro HERO13 Black |
+| **Le film** | [Regarder le film (2 min 13)](https://baptistearibaud88-collab.github.io/Lofoten-risk/assets/video/lofoten_norvege_1080p.mp4) — tournage GoPro HERO13 Black |
 
 ## La carte 3D
 
@@ -57,21 +57,23 @@ Le détail de chaque méthode, ses limites et ses sources sont dans le rapport (
 index.html            carte 3D (page d'accueil)
 risque.html           rapport d'analyse de risque
 map.html, risk.html   les mêmes pages en anglais (générées par outils/anglais.js)
-css/                  styles des pages
-js/                   code des pages (app.js : carte ; risque.js : rapport ; js/en/ : versions anglaises)
+assets/               tout ce que les pages affichent
+  css/                styles des pages
+  js/                 code des pages (app.js : carte ; risque.js : rapport ; js/en/ : versions anglaises)
+  photos/             photos de la traversée (et miniatures)
+  video/              le film (1080p, H.264) et ses miniatures
+  icons/              icône d'onglet
 data/                 données chargées par les pages (data.js, risque_*.js, ressentis_episodes.js ; data/en/ : textes en anglais)
-donnees/              données brutes : plan tracé (plan.gpx), pluie ERA5 1996–2025
+  brutes/             données brutes : plan tracé (plan.gpx), pluie ERA5 1996–2025, trait de côte OpenStreetMap
 outils/               scripts de calcul (Node.js) qui produisent data/risque_*.js
-outils/apercu/        captures d'écran et comptage des mots (Python + Playwright), pour relire
-photos/               photos de la traversée (et miniatures)
-video/                le film (1080p, H.264) et ses miniatures
+  anglais/            dictionnaires de traduction des pages anglaises
+  apercu/             captures d'écran et comptage des mots (Python + Playwright), pour relire
 docs/                 images du README, README français, licence du contenu
-icons/                icône d'onglet
 ```
 
 ## Reproduire les calculs
 
-Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`, à partir des données de `donnees/` et `data/`. Les simulations utilisent une graine fixe : relancer les scripts redonne exactement les mêmes résultats.
+Tous les chiffres du rapport sont calculés par les scripts du dossier `outils/`, à partir des données de `data/brutes/` et `data/`. Les simulations utilisent une graine fixe : relancer les scripts redonne exactement les mêmes résultats.
 
 <details>
 <summary>Les commandes, dans l'ordre</summary>
@@ -94,7 +96,7 @@ node outils/conclusion_acte2.js       # les grecs (06)                     → d
 node outils/marge_option.js           # jour de marge, Black-Scholes (07)  → data/risque_marge.js
 node outils/chance_decision.js        # volatilité et option (09)          → data/risque_cd.js
 node outils/carte_resume.js           # encart « Analyse de risque » de la carte → data/risque_carte.js
-node outils/anglais.js                # version anglaise des pages        → map.html, risk.html, js/en/, data/en/
+node outils/anglais.js                # version anglaise des pages        → map.html, risk.html, assets/js/en/, data/en/
 ```
 
 La version anglaise se régénère après toute modification des pages françaises : ses traductions sont dans `outils/anglais/`. `data/ressentis_episodes.js` se remplit à la main (cause de chaque épisode lent). Après une modification, monter le numéro `?v=` du fichier dans la page pour éviter le cache du navigateur. Pour relire en local (`pip install -r outils/apercu/requirements.txt`, puis `playwright install chromium`) : `python3 outils/apercu/captures.py s1 s7` (`--mobile` pour le téléphone) et `python3 outils/apercu/textes.py`.

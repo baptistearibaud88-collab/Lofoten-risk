@@ -1,6 +1,6 @@
 // Chance ou décision (partie 09) : séparer la volatilité (la pluie, subie) de la seule vraie option (le jour de marge).
 // Entrées : risque_data.js (pluie 2026 au point centre, grille des décisions, sorties), risque_plan.js (jours d'étape du
-//           plan), donnees/era5_climatology_1996_2025_daily.json (les mêmes 1 200 étés que les parties 05 et 07 :
+//           plan), data/brutes/era5_climatology_1996_2025_daily.json (les mêmes 1 200 étés que les parties 05 et 07 :
 //           30 étés × 40 dates de départ, du 1er juin au 10 juillet ; jour de pluie ≥ 1 mm).
 // Sortie  : risque_cd.js — à relancer après outils/plan_reel.js :
 //   node outils/chance_decision.js
@@ -19,7 +19,7 @@ global.window = global;
 const R = window.RISK, PL = window.RISK_PLAN, r1 = v => Math.round(v * 10) / 10, r2 = v => Math.round(v * 100) / 100, mean = a => a.reduce((s, v) => s + v, 0) / a.length;
 const TH = 1, rain = R.cf.clim.real_rain_d, real = rain.map(v => v >= TH);
 if (real.filter(Boolean).length !== 3 || !real.slice(6).every(Boolean)) throw new Error('épisode réel inattendu');
-const E = JSON.parse(fs.readFileSync(path.join(root, 'donnees', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
+const E = JSON.parse(fs.readFileSync(path.join(root, 'data', 'brutes', 'era5_climatology_1996_2025_daily.json'), 'utf8')).daily;
 const Pm = E.precipitation_sum.map(v => v || 0), tIdx = new Map(E.time.map((t, i) => [t, i]));
 const iso = (y, m, d) => new Date(Date.UTC(y, m - 1, d)).toISOString().slice(0, 10);
 const W = []; [...new Set(E.time.map(t => +t.slice(0, 4)))].forEach(y => { for (let k = 0; k < 40; k++) { const i = tIdx.get(iso(y, 6, 1 + k)); W.push(Pm.slice(i, i + 9).map(v => v >= TH)); } });

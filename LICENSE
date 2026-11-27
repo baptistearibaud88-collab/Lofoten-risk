@@ -25,5 +25,5 @@ SOFTWARE.
 This MIT licence covers the code only (HTML, CSS, JavaScript and the scripts in outils/).
 The photos, the film, the texts of the pages and the README images are licensed under
 CC BY-NC 4.0: see docs/LICENSE-CONTENT.md. The coastline and lake data
-(donnees/cotes_osm.json, donnees/eaux_osm.json) come from OpenStreetMap and remain
+(data/brutes/cotes_osm.json, data/brutes/eaux_osm.json) come from OpenStreetMap and remain
 under the Open Database License (ODbL), © OpenStreetMap contributors.
